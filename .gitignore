@@ -15,3 +15,11 @@ data/raw/
 # Divers
 .DS_Store
 node_modules/
+
+# Passages volumineux regeneres par ingest/run.py (seule la Constitution est versionnee)
+data/passages/*.jsonl
+!data/passages/constitution_1958.jsonl
+data/passages/*.tmp
+
+# Cache d'embeddings (regenere par ingest/embed.py)
+data/embeddings/

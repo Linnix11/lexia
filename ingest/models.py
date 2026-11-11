@@ -17,10 +17,19 @@ class Passage:
     url: str = ""           # lien direct vers la source officielle (avec ancre)
     version: str = ""       # mention de version telle que donnee par la source
     date_recuperation: str = ""  # ISO 8601
+    # Metadonnees propres a la source : juridiction, date, numero, ECLI, etat de vigueur...
+    meta: dict = field(default_factory=dict)
+    # Ligne de contexte ajoutee devant le texte pour la recherche (ex. "Cons. const., 2023-1075 QPC, 2024-01-19")
+    entete: str = ""
 
     @property
     def texte(self) -> str:
         return "\n\n".join(self.alineas)
+
+    @property
+    def texte_index(self) -> str:
+        """Texte envoye au moteur de recherche et aux embeddings."""
+        return f"{self.entete}\n\n{self.texte}" if self.entete else self.texte
 
     @property
     def empreinte(self) -> str:
