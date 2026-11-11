@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import Site from './Site'
 import type { ReponseChat } from './lib/api'
 import { ecrireFavoris, lireFavoris } from './lib/favoris'
 
@@ -21,6 +21,12 @@ const REPONSE: ReponseChat = {
   controle: { citations_retirees: 0, elements_retires: 1, references_non_verifiees: [], recherche: 'hybride' },
 }
 
+const PROFIL = {
+  email: 'etu@exemple.fr', cree_le: '2026-11-11T10:00:00+00:00', formule_fin: null,
+  formule: { id: 'gratuit', nom: 'Gratuit', prix_mensuel_euros: 0, questions_par_jour: 10, quiz_par_jour: 2, description: '', avantages: [] },
+  usage: { jour: '2026-11-11', questions: 3, quiz: 0 },
+}
+
 function repondre(corps: unknown, status = 200) {
   return Promise.resolve(new Response(JSON.stringify(corps), { status, headers: { 'Content-Type': 'application/json' } }))
 }
@@ -29,7 +35,10 @@ let fetchMock: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   localStorage.clear()
+  window.history.pushState({}, '', '/app')
   fetchMock = vi.fn((url: string) => {
+    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre(PROFIL)
+    if (url.endsWith('/config')) return repondre({ comptes: true, contact_email: null })
     if (url.endsWith('/matieres')) return repondre([{ id: 'droit_civil', libelle: 'Droit civil', sources: ['code_civil'] }])
     if (url.endsWith('/chat')) return repondre(REPONSE)
     if (url.includes('/vigueur')) return repondre({ id: 'code_civil:A1240', applicable: true, en_vigueur: true, version: 'v',
@@ -43,7 +52,8 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 async function poser(question: string) {
-  render(<App />)
+  render(<Site />)
+  await screen.findByLabelText('Votre question')
   fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: question } })
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
@@ -83,8 +93,10 @@ describe('Assistant', () => {
 
   it('affiche un message clair si le modele est indisponible', async () => {
     fetchMock.mockImplementation((url: string) =>
-      url.endsWith('/chat') ? repondre({ detail: 'Le modèle est momentanément indisponible.' }, 503) : repondre([]))
-    render(<App />)
+      url.endsWith('/chat') ? repondre({ detail: 'Le modèle est momentanément indisponible.' }, 503)
+        : url.endsWith('/auth/session') || url.endsWith('/auth/moi') ? repondre(PROFIL) : repondre([]))
+    render(<Site />)
+    await screen.findByLabelText('Votre question')
     fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'article 1240' } })
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))

@@ -2,7 +2,7 @@
 
 Copilote d'étude en droit français pour étudiants (L1 en priorité). Réponses fondées uniquement sur des sources officielles citées.
 
-État : **phase 4** (évaluation : 150 cas, seuils automatiques atteints, notation enseignant à faire). Phase suivante : pilote fermé.
+État : **site complet** (accueil, tarifs, comptes, 3 formules, panel, pages légales) en ligne sur un VPS ; évaluation : seuils automatiques atteints, notation enseignant à faire. Phase suivante : pilote fermé.
 
 ## Corpus actuel
 

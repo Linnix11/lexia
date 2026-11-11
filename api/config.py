@@ -35,6 +35,9 @@ class Settings:
     expansion_fallback_models: tuple[str, ...] = ()
     expansion_timeout: float = 8.0
     rerank_model: str = ""                     # vide = pas de reclassement
+    comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
+    app_db: Path = ROOT / "donnees" / "lexia.db"
+    contact_email: str = ""                    # adresse affichee pour demander une formule payante
 
 
 def get_settings() -> Settings:
@@ -58,4 +61,7 @@ def get_settings() -> Settings:
         expansion_fallback_models=_list("QUERY_EXPANSION_FALLBACK_MODELS"),
         expansion_timeout=float(os.environ.get("QUERY_EXPANSION_TIMEOUT", "8")),
         rerank_model=os.environ.get("RERANK_MODEL", ""),
+        comptes_actifs=os.environ.get("COMPTES_ACTIFS", "1") not in ("0", "false", "non"),
+        app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
+        contact_email=os.environ.get("CONTACT_EMAIL", ""),
     )

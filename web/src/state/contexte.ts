@@ -11,6 +11,7 @@ export interface Message {
   etat: 'en_cours' | 'ok' | 'erreur'
   reponse?: ReponseChat
   erreur?: string
+  statut?: number
 }
 
 export interface AppState {

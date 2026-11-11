@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, ApiError, type Correction, type FormatQuiz, type Quiz, type ResultatQuestion } from '../lib/api'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
+import { useSession } from '../state/session'
 
 type Valeur = number | boolean | string | null
 
@@ -34,6 +35,7 @@ export function QuizModal() {
 
 function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; matiereInitiale: string | null }) {
   const { fermerQuiz, matieres, niveau, ouvrirSource } = useApp()
+  const { rafraichir } = useSession()
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
   const [theme, setTheme] = useState(themeInitial)
   const [nombre, setNombre] = useState(5)
@@ -62,7 +64,10 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
         if (!q.quiz_id) setErreur(q.message)
       })
       .catch((e) => setErreur(e instanceof ApiError ? e.message : 'La génération a échoué.'))
-      .finally(() => setEtat('libre'))
+      .finally(() => {
+        setEtat('libre')
+        void rafraichir()
+      })
   }
 
   const corriger = () => {

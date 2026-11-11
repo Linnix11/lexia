@@ -73,6 +73,15 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D30 | Modes méthode | En cas pratique, commentaire et dissertation, la méthode peut être expliquée sans extrait ; le droit positif exige toujours une source et les numéros inventés restent bloqués. |
 | D31 | Jeu d'évaluation | 150 cas (`eval/cas.yaml`), brouillon à faire valider par l'enseignant référent (D11) avant toute conclusion. |
 
+### Site et formules (2026-11-11)
+
+| # | Sujet | Décision |
+|---|---|---|
+| D32 | Formules | Gratuit (compte requis) : 10 questions + 2 questionnaires par jour ; Étudiant 4,99 €/mois : 100 + 20 ; Intensif 9,99 €/mois : 300 + 100. Limites dans `api/plans.py`, remise à zéro à minuit (Paris). Une question n'est décomptée que si le modèle a répondu. |
+| D33 | Paiement | Pas de paiement en ligne pour l'instant : formules payantes attribuées par l'administrateur (`python -m api.admin`), demande par e-mail (`CONTACT_EMAIL`). |
+| D34 | Comptes | E-mail + mot de passe (scrypt), cookie de session HttpOnly / SameSite=Lax / Secure, contrôle de l'en-tête Origin, freins aux tentatives, suppression du compte en libre-service. Base SQLite `donnees/lexia.db`, jamais versionnée ni écrasée au déploiement. |
+| D35 | Pages légales | Mentions légales, CGU, confidentialité : modèles à compléter ([À COMPLÉTER]) et à faire relire avant l'ouverture publique. |
+
 ## Journal des changements
 
 - 2026-11-11 : création du document.
@@ -82,3 +91,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-11 : D9 validé, front en Vite + React + TypeScript + Tailwind.
 - 2026-11-11 : reclassement et reformulation de la question (D27, D28).
 - 2026-11-11 : phase 4, évaluation (D29 à D31).
+- 2026-11-11 : site complet, comptes et formules (D32 à D35).

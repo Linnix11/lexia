@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Mode } from '../lib/api'
 import { MODES } from '../lib/modes'
+import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
 import { Reponse } from './Reponse'
 
@@ -110,11 +111,15 @@ export function Chat({ complet = false }: { complet?: boolean }) {
               {m.etat === 'en_cours' && <Attente />}
               {m.etat === 'erreur' && (
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#ecd9c4] bg-cream px-3.5 py-3 text-[12px] text-[#746347]">
-                  {m.erreur}
-                  <button type="button" onClick={() => envoyer(m.question, m.mode)} disabled={occupe}
-                    className="text-[11px] font-semibold text-forest hover:underline disabled:opacity-50">
-                    Réessayer
-                  </button>
+                  <span>{m.erreur}</span>
+                  {m.statut === 402 ? (
+                    <Lien href="/tarifs" className="text-[11px] font-semibold text-forest hover:underline">Voir les formules</Lien>
+                  ) : (
+                    <button type="button" onClick={() => envoyer(m.question, m.mode)} disabled={occupe}
+                      className="text-[11px] font-semibold text-forest hover:underline disabled:opacity-50">
+                      Réessayer
+                    </button>
+                  )}
                 </div>
               )}
               {m.etat === 'ok' && m.reponse && <Reponse message={m} />}

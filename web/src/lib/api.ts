@@ -106,6 +106,29 @@ export interface Correction {
   sources: FicheSource[]
 }
 
+export interface Formule {
+  id: 'gratuit' | 'etudiant' | 'intensif'
+  nom: string
+  prix_mensuel_euros: number
+  questions_par_jour: number
+  quiz_par_jour: number
+  description: string
+  avantages: string[]
+}
+
+export interface Profil {
+  email: string
+  cree_le: string
+  formule: Formule
+  formule_fin: string | null
+  usage: { jour: string; questions: number; quiz: number }
+}
+
+export interface ConfigPublique {
+  comptes: boolean
+  contact_email: string | null
+}
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -115,6 +138,8 @@ export class ApiError extends Error {
 }
 
 const MESSAGES: Record<number, string> = {
+  401: 'Votre session a expiré : reconnectez-vous.',
+  402: 'Limite du jour atteinte pour votre formule.',
   404: 'Élément introuvable.',
   413: 'Votre texte est trop long.',
   429: 'Trop de requêtes : patientez une minute avant de réessayer.',
@@ -140,6 +165,7 @@ async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
     } catch {
       /* corps non JSON : message par defaut */
     }
+    if (r.status === 401 && !chemin.startsWith('/auth/')) surSessionExpiree?.()
     throw new ApiError(r.status, detail)
   }
   return r.json() as Promise<T>
@@ -148,7 +174,22 @@ async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
 const post = <T,>(chemin: string, corps: unknown) =>
   requete<T>(chemin, { method: 'POST', body: JSON.stringify(corps) })
 
+/** Appele quand une requete renvoie 401 (session expiree) : le site redirige vers la connexion. */
+let surSessionExpiree: (() => void) | null = null
+export function quandSessionExpiree(fn: (() => void) | null) {
+  surSessionExpiree = fn
+}
+
 export const api = {
+  config: () => requete<ConfigPublique>('/config'),
+  formules: () => requete<Formule[]>('/formules'),
+  moi: () => requete<Profil>('/auth/moi'),
+  session: () => requete<Profil | null>('/auth/session'),
+  inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean) =>
+    post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu }),
+  connexion: (email: string, mot_de_passe: string) => post<Profil>('/auth/connexion', { email, mot_de_passe }),
+  deconnexion: () => post<void>('/auth/deconnexion', {}),
+  supprimerCompte: (mot_de_passe: string) => post<void>('/auth/supprimer', { mot_de_passe }),
   matieres: () => requete<Matiere[]>('/matieres'),
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau }),

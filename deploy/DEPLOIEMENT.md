@@ -90,6 +90,29 @@ Puis ouvrir `https://lexia.mondomaine.fr` : le panel doit afficher « Mon espace
 
 Mettre à jour le corpus : sur le Mac, `python -m ingest.run --all`, `python -m ingest.embed --all`, `python -m ingest.build_index`, puis `deploy/publier.sh`.
 
+## Comptes et formules
+
+Les comptes étudiants sont stockés dans `/opt/lexia/donnees/lexia.db` (SQLite). `publier.sh` n'envoie ni n'efface jamais ce dossier.
+
+Attribuer une formule payante (en attendant le paiement en ligne), sur le serveur :
+
+```bash
+cd /opt/lexia
+sudo -u lexia .venv/bin/python -m api.admin liste
+sudo -u lexia .venv/bin/python -m api.admin formule etudiant@exemple.fr etudiant --jours 31
+sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
+```
+
+Formules : `gratuit`, `etudiant`, `intensif` (limites dans `api/plans.py`). À l'échéance de `--jours`, le compte repasse en gratuit. Renseigner `CONTACT_EMAIL` dans `/opt/lexia/.env` pour afficher « Demander cette formule » sur la page Tarifs.
+
+Sauvegarde quotidienne de la base des comptes (14 jours conservés) :
+
+```bash
+crontab -e
+# ajouter la ligne :
+15 3 * * * /opt/lexia/deploy/sauvegarder_comptes.sh
+```
+
 ## Variante : base PostgreSQL
 
 Si une base PostgreSQL avec l'extension **pgvector** est disponible (sur le VPS ou ailleurs) :

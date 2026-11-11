@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{len(a_faire)} cas a evaluer ({len(deja)} deja faits) -> {sortie}", flush=True)
 
     logs = Path(tempfile.mkdtemp(prefix="lexia-eval-"))
-    settings = dataclasses.replace(get_settings(), logs_dir=logs, rate_limit_per_minute=0)
+    settings = dataclasses.replace(get_settings(), logs_dir=logs, rate_limit_per_minute=0, comptes_actifs=False)
     app = create_app(settings)
     client = TestClient(app)
     retriever = app.state.retriever

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { api, ApiError, type Matiere, type Mode, type Niveau } from '../lib/api'
 import { ecrireFavoris, lireFavoris, type Favori } from '../lib/favoris'
 import { Ctx, type AppState, type Message, type Vue } from './contexte'
+import { useSession } from './session'
 
 let compteur = 0
 const nouvelId = () => `m${Date.now()}-${compteur++}`
@@ -17,6 +18,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [quizOuvert, setQuizOuvert] = useState<{ theme?: string; id: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const minuteur = useRef<number | undefined>(undefined)
+  const { rafraichir } = useSession()
 
   const notifier = useCallback((msg: string) => {
     setToast(msg)
@@ -57,10 +59,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .then((reponse) => setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'ok', reponse } : m))))
         .catch((e: unknown) => {
           const erreur = e instanceof ApiError ? e.message : 'Une erreur est survenue.'
-          setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'erreur', erreur } : m)))
+          const statut = e instanceof ApiError ? e.status : undefined
+          setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'erreur', erreur, statut } : m)))
         })
+        .finally(() => void rafraichir())
     },
-    [matiere, niveau, occupe],
+    [matiere, niveau, occupe, rafraichir],
   )
 
   const basculerFavori = useCallback(

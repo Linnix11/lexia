@@ -12,7 +12,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: API, changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, '') },
+      // changeOrigin: false : l'API compare l'en-tete Origin a l'hote (protection contre les requetes intersites)
+      '/api': { target: API, changeOrigin: false, rewrite: (p) => p.replace(/^\/api/, '') },
     },
   },
   test: {

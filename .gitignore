@@ -32,3 +32,9 @@ logs/
 
 # Journaux d'execution de l'evaluation (les resultats .jsonl/.md/.csv sont versionnes)
 eval/resultats/*.log
+
+# Base des comptes (donnees personnelles : jamais versionnee)
+donnees/
+
+# Configuration locale des apercus
+.claude/

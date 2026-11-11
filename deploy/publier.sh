@@ -27,6 +27,7 @@ test -f data/index/lexia.sqlite || { echo "data/index absent : lancer python -m 
 echo "== Envoi du code, du front et de l'index (rsync)"
 rsync -az --delete \
   --exclude '.git' --exclude '.venv' --exclude '.cache' --exclude 'node_modules' --exclude '.env' \
+  --exclude 'donnees' --exclude '.claude' --exclude 'sauvegardes' \
   --exclude 'data/raw' --exclude 'data/embeddings' --exclude 'data/passages' \
   --exclude 'logs' --exclude 'eval/resultats' --exclude '__pycache__' --exclude '.pytest_cache' \
   --exclude 'web/src' --exclude 'tests' \
@@ -43,6 +44,7 @@ ssh "$SERVEUR" bash -s <<EOF
 set -euo pipefail
 cd $APP
 chmod 600 .env
+mkdir -p donnees sauvegardes && chmod 700 donnees sauvegardes
 test -d .venv || python3 -m venv .venv
 .venv/bin/pip install -q --upgrade pip
 .venv/bin/pip install -q -r deploy/requirements-serveur.txt

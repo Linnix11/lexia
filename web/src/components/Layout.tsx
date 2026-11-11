@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import type { Niveau } from '../lib/api'
+import { Lien } from '../lib/router'
 import { useApp, type Vue } from '../state/contexte'
+import { useSession } from '../state/session'
 
 const VUES: { id: Vue; label: string; ico: string }[] = [
   { id: 'espace', label: 'Mon espace', ico: '⌂' },
@@ -71,6 +73,9 @@ export function Sidebar() {
 
 export function Topbar() {
   const { vue, niveau, setNiveau } = useApp()
+  const { profil } = useSession()
+  const initiales = (profil?.email ?? 'ét').slice(0, 2).toUpperCase()
+  const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
   const libelle = VUES.find((v) => v.id === vue)?.label
   return (
     <header className="flex h-14 items-center justify-between border-b border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
@@ -90,7 +95,15 @@ export function Topbar() {
             <option key={n.id} value={n.id}>{n.label}</option>
           ))}
         </select>
-        <div aria-hidden className="grid size-[31px] place-items-center rounded-full bg-[#e9dfd0] text-[11px] font-bold text-[#694b31]">ÉT</div>
+        {profil && (
+          <Lien href="/compte" title="Mon compte" className="hidden items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:flex">
+            <span className="font-semibold">{restant}</span> question{(restant ?? 0) > 1 ? 's' : ''} restante{(restant ?? 0) > 1 ? 's' : ''} · {profil.formule.nom}
+          </Lien>
+        )}
+        <Lien href="/compte" aria-label="Mon compte" title={profil?.email}
+          className="grid size-[31px] place-items-center rounded-full bg-[#e9dfd0] text-[11px] font-bold text-[#694b31] hover:ring-2 hover:ring-[#d6c6ad]">
+          {initiales}
+        </Lien>
       </div>
     </header>
   )

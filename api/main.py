@@ -16,6 +16,8 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.auth import creer_routes, routes_formules
+from api.comptes import Comptes, Utilisateur
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
@@ -99,7 +101,7 @@ def _construire_reclasseur(settings: Settings):
 
 def create_app(settings: Settings | None = None, *, retriever: Retriever | None = None,
                llm: LLM | None = None, journal: Journal | None = None, embedder=None,
-               expanseur=None, reclasseur=None) -> FastAPI:
+               expanseur=None, reclasseur=None, comptes: Comptes | None = None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     llm = llm or _construire_llm(settings)
@@ -118,6 +120,37 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                   description="Assistant d'étude en droit français : réponses fondées sur des sources officielles citées.")
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                        allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
+
+    # --- comptes et quotas -------------------------------------------------------
+    if settings.comptes_actifs and comptes is None:
+        comptes = Comptes(settings.app_db)
+    utilisateur_requis = None
+    if comptes is not None:
+        routes_auth, utilisateur_requis = creer_routes(comptes)
+        app.include_router(routes_auth, prefix="/auth")
+    app.include_router(routes_formules())
+
+    def _utilisateur(request: Request) -> Utilisateur | None:
+        return utilisateur_requis(request) if utilisateur_requis else None
+
+    def _consommer(u: Utilisateur | None, type_: str) -> None:
+        if u is None:
+            return
+        if not comptes.reserver(u, type_):
+            f = u.formule
+            limite = f.questions_par_jour if type_ == "questions" else f.quiz_par_jour
+            quoi = "questions" if type_ == "questions" else "questionnaires"
+            raise HTTPException(402, f"Limite du jour atteinte : {limite} {quoi} avec la formule {f.nom}. "
+                                     "Elle se renouvelle à minuit, ou passez à une formule supérieure.")
+
+    def _avec_quota(u: Utilisateur | None, type_: str, action):
+        _consommer(u, type_)
+        try:
+            return action()
+        except Exception:
+            if u is not None:
+                comptes.rembourser(u, type_)  # le modele n'a pas repondu : pas decompte
+            raise
 
     @app.exception_handler(LLMError)
     async def _llm_indisponible(request: Request, exc: LLMError):
@@ -140,24 +173,31 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                 "reformulation_modele": settings.expansion_model or None,
                 "reclassement_modele": getattr(reclasseur, "model", None)}
 
+    @app.get("/config")
+    def config_publique():
+        return {"comptes": comptes is not None, "contact_email": settings.contact_email or None}
+
     @app.get("/matieres")
     def matieres():
         return [{"id": m, "libelle": LIBELLES.get(m, m), "sources": list(s)} for m, s in sources_par_matiere().items()]
 
     @app.post("/chat", dependencies=[Depends(limite)])
-    def chat(req: ChatRequest):
+    def chat(req: ChatRequest, request: Request):
+        u = _utilisateur(request)
         _taille(req.question)
         _matiere(req.matiere)
-        return lexia.chat(req.question.strip(), req.mode, req.matiere)
+        return _avec_quota(u, "questions", lambda: lexia.chat(req.question.strip(), req.mode, req.matiere))
 
     @app.post("/quiz", dependencies=[Depends(limite)])
-    def creer_quiz(req: QuizRequest):
+    def creer_quiz(req: QuizRequest, request: Request):
+        u = _utilisateur(request)
         _taille(req.theme)
         _matiere(req.matiere)
-        return quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere)
+        return _avec_quota(u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere))
 
     @app.post("/quiz/correct", dependencies=[Depends(limite)])
-    def corriger_quiz(req: CorrectionRequest):
+    def corriger_quiz(req: CorrectionRequest, request: Request):
+        _utilisateur(request)
         res = quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses])
         if res is None:
             raise HTTPException(404, "Questionnaire introuvable ou expiré : générez-en un nouveau.")
@@ -183,6 +223,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         journal.ecrire("feedback", reponse_id=req.reponse_id, utile=req.utile, motif=req.motif)
 
     app.state.retriever = retriever  # utile aux outils d'evaluation
+    app.state.comptes = comptes
     return app
 
 
