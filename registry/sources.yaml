@@ -1,0 +1,92 @@
+# Registre des sources Lexia.
+# Une entree par source. Les champs marques "a_verifier" doivent etre confirmes
+# (conditions d'utilisation, mode d'acces) avant toute ingestion.
+#
+# statut : actif | a_verifier | en_attente_acces | exclu
+
+sources:
+  - id: constitution_1958
+    nom: Constitution du 4 octobre 1958 (texte integral en vigueur)
+    type: texte_officiel
+    autorite: Conseil constitutionnel
+    url: https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur
+    acces: page_html
+    licence: a_verifier  # texte officiel ; verifier les mentions legales du site
+    frequence_maj: a_chaque_revision_constitutionnelle
+    matieres: [droit_constitutionnel, introduction_au_droit]
+    niveaux: [L1]
+    ingestion: ingest/sources/constitution.py
+    statut: actif
+    derniere_synchro: null
+
+  - id: code_civil
+    nom: Code civil
+    type: texte_officiel
+    autorite: DILA / Legifrance
+    url: https://www.legifrance.gouv.fr/liste/code
+    acces: api_piste  # alternative : fonds open data DILA (LEGI)
+    licence: a_verifier
+    frequence_maj: hebdomadaire
+    matieres: [droit_civil, introduction_au_droit]
+    niveaux: [L1]
+    ingestion: null
+    statut: en_attente_acces
+    derniere_synchro: null
+
+  - id: decisions_conseil_constitutionnel
+    nom: Decisions du Conseil constitutionnel (DC, QPC)
+    type: jurisprudence
+    autorite: Conseil constitutionnel
+    url: https://www.conseil-constitutionnel.fr/decisions
+    acces: a_verifier  # page site ou fonds open data DILA
+    licence: a_verifier
+    frequence_maj: hebdomadaire
+    matieres: [droit_constitutionnel]
+    niveaux: [L1]
+    ingestion: null
+    statut: a_verifier
+    derniere_synchro: null
+
+  - id: judilibre
+    nom: Decisions de la Cour de cassation (Judilibre)
+    type: jurisprudence
+    autorite: Cour de cassation
+    url: https://www.courdecassation.fr/acces-rapide-judilibre/donnees-ouvertes-open-data-et-api
+    acces: api_piste
+    licence: a_verifier
+    frequence_maj: hebdomadaire
+    perimetre: arrets publies au Bulletin, matieres pilotes
+    matieres: [droit_civil]
+    niveaux: [L1]
+    ingestion: null
+    statut: en_attente_acces
+    derniere_synchro: null
+
+  # Bibliographies : metadonnees uniquement (auteur, titre, edition, etablissement, lien).
+  - id: bibliographie_faculte_1
+    nom: Bibliographie publique - faculte a choisir
+    type: bibliographie
+    autorite: a_choisir
+    url: null
+    acces: saisie_manuelle
+    licence: metadonnees_uniquement
+    frequence_maj: annuelle
+    matieres: [introduction_au_droit, droit_constitutionnel, droit_civil]
+    niveaux: [L1]
+    ingestion: null
+    statut: a_verifier
+    derniere_synchro: null
+
+  - id: bibliographie_faculte_2
+    nom: Bibliographie publique - faculte a choisir
+    type: bibliographie
+    autorite: a_choisir
+    url: null
+    acces: saisie_manuelle
+    licence: metadonnees_uniquement
+    frequence_maj: annuelle
+    matieres: [introduction_au_droit, droit_constitutionnel, droit_civil]
+    niveaux: [L1]
+    ingestion: null
+    statut: a_verifier
+    derniere_synchro: null

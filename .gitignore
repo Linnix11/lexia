@@ -1,0 +1,17 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Donnees telechargees (regenerables via ingest/run.py)
+data/raw/
+
+# Divers
+.DS_Store
+node_modules/
