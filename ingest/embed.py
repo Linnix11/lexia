@@ -1,14 +1,17 @@
-"""Calcule les embeddings Gemini des passages, avec cache et reprise.
+"""Calcule les embeddings des passages, avec cache et reprise.
 
 Usage :
-    python -m ingest.embed --source constitution_1958
-    python -m ingest.embed --all
-    python -m ingest.embed --all --limit 500      # s'arrete apres 500 nouveaux embeddings
+    python -m ingest.embed --all                    # fournisseur et modele : EMBED_PROVIDER / EMBED_MODEL
+    python -m ingest.embed --source code_civil
+    python -m ingest.embed --all --limit 500        # s'arrete apres 500 nouveaux embeddings
 
-Le cache data/embeddings/<source>.jsonl contient une ligne par passage :
+Par defaut, modele open source local (intfloat/multilingual-e5-base) : ~40 min pour tout le
+corpus sur un Mac M3, sans quota. Voir ingest/embedders.py.
+
+Le cache data/embeddings/<source>.jsonl contient une ligne par passage et par modele :
     {"id", "empreinte", "model", "dim", "b64"}   (b64 = float32 little-endian encode en base64)
 Un passage deja calcule avec la meme empreinte et le meme modele n'est jamais recalcule :
-le script peut etre interrompu et relance a tout moment (quota gratuit limite).
+le script peut etre interrompu et relance a tout moment.
 
 Passages exclus : versions d'articles qui ne sont plus en vigueur (meta.en_vigueur == false).
 """
@@ -24,17 +27,14 @@ import sys
 import time
 from pathlib import Path
 
-import httpx
-
+from ingest import embedders
 from ingest.env import load_env
 
 ROOT = Path(__file__).resolve().parent.parent
 PASSAGES_DIR = ROOT / "data" / "passages"
 CACHE_DIR = ROOT / "data" / "embeddings"
-API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:batchEmbedContents"
-BATCH = 100          # maximum accepte par batchEmbedContents
-DIM = 768
-MAX_CHARS = 20000    # garde-fou sous la limite de tokens du modele
+LOT = 256            # passages ecrits dans le cache a chaque etape
+MAX_CHARS = 20000    # garde-fou ; le modele local tronque de toute facon a sa longueur maximale
 
 
 def encode(values: list[float]) -> str:
@@ -61,6 +61,20 @@ def load_cache(path: Path, model: str) -> dict[str, str]:
     return done
 
 
+def iter_cache(path: Path, model: str):
+    """Lignes du cache pour un modele donne (les vecteurs d'autres modeles sont ignores)."""
+    if not path.exists():
+        return
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("model") == model:
+                yield row
+
+
 def a_calculer(passages_file: Path, done: dict[str, str]):
     with passages_file.open(encoding="utf-8") as f:
         for line in f:
@@ -73,68 +87,28 @@ def a_calculer(passages_file: Path, done: dict[str, str]):
             yield p["id"], p["empreinte"], texte[:MAX_CHARS]
 
 
-MAX_DELAY = 600  # on reessaie au moins toutes les 10 min, meme si l'API annonce plus long
-
-
-def _quota_info(resp: httpx.Response, attempt: int) -> tuple[float, str]:
-    """(delai d'attente, nom du quota depasse) a partir de la reponse 429."""
-    delay, quota = min(60 * 2**attempt, MAX_DELAY), "?"
-    try:
-        for d in resp.json()["error"].get("details", []):
-            if "retryDelay" in d:
-                delay = min(float(d["retryDelay"].rstrip("s")) + 1, MAX_DELAY)
-            for v in d.get("violations", []):
-                quota = f"{v.get('quotaId')}={v.get('quotaValue')}"
-    except Exception:
-        pass
-    return delay, quota
-
-
-def embed_batch(client: httpx.Client, model: str, textes: list[str]) -> list[list[float]]:
-    body = {
-        "requests": [
-            {
-                "model": f"models/{model}",
-                "content": {"parts": [{"text": t}]},
-                "taskType": "RETRIEVAL_DOCUMENT",
-                "outputDimensionality": DIM,
-            }
-            for t in textes
-        ]
-    }
-    attempt = 0
-    while True:
-        resp = client.post(API.format(model=model), json=body, timeout=120)
-        if resp.status_code == 200:
-            return [e["values"] for e in resp.json()["embeddings"]]
-        if resp.status_code in (429, 500, 503):
-            delay, quota = _quota_info(resp, attempt)
-            print(f"  HTTP {resp.status_code} ({quota}), nouvelle tentative dans {delay:.0f} s", flush=True)
-            time.sleep(delay)
-            attempt = min(attempt + 1, 4)
-            continue
-        raise RuntimeError(f"Erreur API {resp.status_code} : {resp.text[:300]}")
-
-
-def run(source_id: str, client: httpx.Client, model: str, limit: int | None, batch: int) -> int:
+def run(source_id: str, emb: embedders.Embedder, limit: int | None) -> int:
     passages_file = PASSAGES_DIR / f"{source_id}.jsonl"
     cache = CACHE_DIR / f"{source_id}.jsonl"
     cache.parent.mkdir(parents=True, exist_ok=True)
-    done = load_cache(cache, model)
+    done = load_cache(cache, emb.model)
     todo = list(a_calculer(passages_file, done))
     if limit is not None:
         todo = todo[:limit]
-    print(f"{source_id}: {len(done)} en cache, {len(todo)} a calculer", flush=True)
-    n = 0
+    print(f"{source_id}: {len(done)} en cache, {len(todo)} a calculer ({emb.model})", flush=True)
+    n, debut = 0, time.monotonic()
     with cache.open("a", encoding="utf-8") as out:
-        for i in range(0, len(todo), batch):
-            chunk = todo[i : i + batch]
-            vectors = embed_batch(client, model, [t for _, _, t in chunk])
+        for i in range(0, len(todo), LOT):
+            chunk = todo[i : i + LOT]
+            vectors = emb.embed_documents([t for _, _, t in chunk])
             for (pid, emp, _), vec in zip(chunk, vectors, strict=True):
-                out.write(json.dumps({"id": pid, "empreinte": emp, "model": model, "dim": len(vec), "b64": encode(vec)}) + "\n")
+                out.write(json.dumps({"id": pid, "empreinte": emp, "model": emb.model, "dim": len(vec),
+                                      "b64": encode(vec)}) + "\n")
             out.flush()
             n += len(chunk)
-            print(f"  {n}/{len(todo)}", flush=True)
+            vitesse = n / max(time.monotonic() - debut, 1e-6)
+            reste = (len(todo) - n) / vitesse if vitesse else 0
+            print(f"  {n}/{len(todo)} ({vitesse:.1f}/s, reste ~{reste / 60:.0f} min)", flush=True)
     return n
 
 
@@ -145,24 +119,18 @@ def main(argv: list[str] | None = None) -> int:
     group.add_argument("--source")
     group.add_argument("--all", action="store_true")
     parser.add_argument("--limit", type=int, help="Nombre maximum de nouveaux embeddings")
-    parser.add_argument("--batch", type=int, default=BATCH)
     args = parser.parse_args(argv)
 
-    key = os.environ.get("GEMINI_API_KEY")
-    model = os.environ.get("GEMINI_EMBED_MODEL")
-    if not key or not model:
-        print("GEMINI_API_KEY et GEMINI_EMBED_MODEL doivent etre definis dans .env", file=sys.stderr)
-        return 1
-
+    provider, model = embedders.config_env()
+    emb = embedders.creer(provider, model, os.environ.get("GEMINI_API_KEY", ""))
     sources = sorted(p.stem for p in PASSAGES_DIR.glob("*.jsonl")) if args.all else [args.source]
     remaining = args.limit
-    with httpx.Client(headers={"x-goog-api-key": key}) as client:
-        for s in sources:
-            n = run(s, client, model, remaining, min(args.batch, BATCH))
-            if remaining is not None:
-                remaining -= n
-                if remaining <= 0:
-                    break
+    for s in sources:
+        n = run(s, emb, remaining)
+        if remaining is not None:
+            remaining -= n
+            if remaining <= 0:
+                break
     return 0
 
 

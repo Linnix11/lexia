@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ingest import embedders
 from ingest.env import load_env
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,7 +21,8 @@ class Settings:
     gemini_api_key: str = ""
     gemini_models: tuple[str, ...] = ()        # modele principal puis modeles de secours
     gemini_thinking_level: str = "low"
-    gemini_embed_model: str = ""
+    embed_provider: str = ""                   # "local", "gemini" ou "" (pas de recherche vectorielle)
+    embed_model: str = ""
     llm_timeout: float = 30.0
     retriever: str = "local"                   # "local" (SQLite + numpy) ou "postgres"
     database_url: str = ""
@@ -35,11 +37,13 @@ def get_settings() -> Settings:
     load_env(ROOT / ".env")
     principal = os.environ.get("GEMINI_MODEL", "")
     secours = _list("GEMINI_FALLBACK_MODELS")
+    embed_provider, embed_model = embedders.config_env()
     return Settings(
         gemini_api_key=os.environ.get("GEMINI_API_KEY", ""),
         gemini_models=tuple(m for m in (principal, *secours) if m),
         gemini_thinking_level=os.environ.get("GEMINI_THINKING_LEVEL", "low"),
-        gemini_embed_model=os.environ.get("GEMINI_EMBED_MODEL", ""),
+        embed_provider=embed_provider,
+        embed_model=embed_model,
         llm_timeout=float(os.environ.get("LLM_TIMEOUT_SECONDS", "30")),
         retriever=os.environ.get("RETRIEVER", "local"),
         database_url=os.environ.get("DATABASE_URL", ""),

@@ -55,18 +55,20 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
 
 
 class Lexia:
-    def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None):
+    def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None):
         self.retriever = retriever
         self.llm = llm
         self.journal = journal or Journal(None)
+        self.embedder = embedder  # None : recherche lexicale seule
 
     def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], str]:
         sources = sources_pour(matiere)
         vecteur = None
         toutes = tuple(sorted({s for ids in sources_par_matiere().values() for s in ids}))
         textes, juris = groupes(sources, toutes)
-        if any(g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris)):
-            vecteur = self.llm.embed_query(texte)  # consomme du quota : seulement si la recherche s'en sert
+        if self.embedder is not None and any(
+                g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris)):
+            vecteur = self.embedder.embed_query(texte)  # consomme du quota : seulement si la recherche s'en sert
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur)
         mode = "hybride" if any("vecteur" in h.via for h in hits) else "lexicale"
         return [h.passage for h in hits], mode

@@ -43,12 +43,16 @@ Le texte est récupéré depuis la page officielle du Conseil constitutionnel (�
 | D23 | Questionnaires | Réponses gardées en mémoire du serveur 3 h, jamais envoyées avant correction. |
 | D24 | Retours | Utile oui / non + motif dans une liste fermée, pas de texte libre (aucune donnée personnelle). |
 
-### Point ouvert : quota d'embeddings
+### Embeddings (tranché le 2026-11-11)
 
-Le niveau gratuit de l'API Gemini limite les embeddings à 1 000 par jour (et 100 par minute). Vectoriser tout le corpus (~41 700 passages) prendrait environ 42 jours, et chaque question d'étudiant consomme aussi ce quota. À trancher avant le pilote : passer au niveau payant, utiliser un modèle d'embeddings open source hébergé sur le serveur, ou réduire le périmètre vectorisé.
+| # | Sujet | Décision |
+|---|---|---|
+| D25 | Modèle d'embeddings | Modèle open source local `intfloat/multilingual-e5-base` (MIT, 768 dimensions) à la place de Gemini, dont le niveau gratuit plafonne à 1 000 embeddings par jour. Remplace D16. Gemini reste disponible via `EMBED_PROVIDER=gemini`. |
+| D26 | Calcul en production | Embeddings du corpus calculés hors serveur puis chargés en base ; le serveur ne vectorise que les questions. |
 
 ## Journal des changements
 
 - 2026-11-11 : création du document.
 - 2026-11-11 : phase 1, ajout de D12 à D18.
 - 2026-11-11 : phase 2, ajout de D19 à D24 et du point ouvert sur le quota d'embeddings.
+- 2026-11-11 : embeddings open source en local (D25, D26).

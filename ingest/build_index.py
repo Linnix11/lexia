@@ -21,7 +21,9 @@ from pathlib import Path
 
 import numpy as np
 
-from ingest.embed import CACHE_DIR, decode
+from ingest import embedders
+from ingest.embed import CACHE_DIR, decode, iter_cache
+from ingest.env import load_env
 
 ROOT = Path(__file__).resolve().parent.parent
 PASSAGES_DIR = ROOT / "data" / "passages"
@@ -59,7 +61,12 @@ def en_vigueur(p: dict):
     return 1 if p["source_id"] == "constitution_1958" else None
 
 
-def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_dir: Path = CACHE_DIR) -> None:
+def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_dir: Path = CACHE_DIR,
+          model: str | None = None) -> None:
+    """model : seuls les vecteurs de ce modele sont repris (par defaut EMBED_MODEL)."""
+    if model is None:
+        load_env(ROOT / ".env")
+        model = embedders.config_env()[1]
     index_dir.mkdir(parents=True, exist_ok=True)
     tmp = index_dir / "lexia.sqlite.tmp"
     tmp.unlink(missing_ok=True)
@@ -89,21 +96,17 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
     ids: list[str] = []
     vecs: list[list[float]] = []
     for f in sorted(cache_dir.glob("*.jsonl")) if cache_dir.exists() else []:
-        with f.open(encoding="utf-8") as fh:
-            for line in fh:
-                try:
-                    r = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if empreintes.get(r["id"]) == r["empreinte"]:
-                    ids.append(r["id"])
-                    vecs.append(decode(r["b64"]))
+        for r in iter_cache(f, model):
+            if empreintes.get(r["id"]) == r["empreinte"]:
+                ids.append(r["id"])
+                vecs.append(decode(r["b64"]))
     arr = np.asarray(vecs, dtype=np.float32).reshape(len(vecs), -1 if vecs else 0)
     if len(arr):
         arr /= np.linalg.norm(arr, axis=1, keepdims=True)
     np.save(index_dir / "vectors.npy", arr)
     (index_dir / "vectors_ids.json").write_text(json.dumps(ids))
-    print(f"index : {n} passages, {len(ids)} embeddings -> {index_dir}")
+    (index_dir / "vectors_model.txt").write_text(model)
+    print(f"index : {n} passages, {len(ids)} embeddings ({model}) -> {index_dir}")
 
 
 def main() -> int:

@@ -21,15 +21,12 @@ RETRY_STATUS = {429, 500, 503}
 
 
 class GeminiLLM:
-    def __init__(self, *, api_key: str, models: tuple[str, ...], embed_model: str = "",
-                 thinking_level: str = "low", timeout: float = 45.0, embed_dim: int = 768):
+    def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0):
         if not api_key or not models:
             raise ValueError("GEMINI_API_KEY et GEMINI_MODEL sont requis")
         self._models = models
-        self._embed_model = embed_model
         self._thinking = thinking_level
         self._timeout = timeout
-        self._embed_dim = embed_dim
         self._client = httpx.Client(headers={"x-goog-api-key": api_key})
 
     # --- generation ----------------------------------------------------------
@@ -86,23 +83,3 @@ class GeminiLLM:
                     break
                 time.sleep(1.5 * (tentative + 1))
         raise LLMError("; ".join(erreurs) or "aucun modele configure")
-
-    # --- embeddings ----------------------------------------------------------
-
-    def embed_query(self, text):
-        if not self._embed_model:
-            return None
-        body = {"requests": [{
-            "model": f"models/{self._embed_model}",
-            "content": {"parts": [{"text": text}]},
-            "taskType": "RETRIEVAL_QUERY",
-            "outputDimensionality": self._embed_dim,
-        }]}
-        try:
-            r = self._client.post(f"{BASE}/{self._embed_model}:batchEmbedContents", json=body, timeout=10)
-            if r.status_code == 200:
-                return r.json()["embeddings"][0]["values"]
-            log.info("embedding de la question indisponible (HTTP %s), recherche lexicale seule", r.status_code)
-        except httpx.HTTPError as e:
-            log.info("embedding de la question indisponible (%s)", type(e).__name__)
-        return None

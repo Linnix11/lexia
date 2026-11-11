@@ -50,13 +50,19 @@ python -m ingest.run --all
 La première exécution extrait les fichiers du Code civil de l'archive LEGI (quelques minutes), ensuite tout prend ~20 s.
 Chaque source échoue volontairement si son format change (articles manquants, structure inconnue).
 
-## 3. Calculer les embeddings (Gemini)
+## 3. Calculer les embeddings
 
 ```bash
 python -m ingest.embed --all
 ```
 
-Modèle et dimension : `GEMINI_EMBED_MODEL` (768 dimensions). Le niveau gratuit est limité à 100 embeddings par minute : compter ~7 h pour tout le corpus. Le script attend automatiquement quand le quota est atteint, et peut être interrompu puis relancé sans rien recalculer (cache par empreinte). Les versions d'articles qui ne sont plus en vigueur ne sont pas vectorisées.
+Par défaut, modèle open source exécuté en local : `intfloat/multilingual-e5-base` (licence MIT, 768 dimensions, multilingue). Environ 40 minutes pour tout le corpus sur un Mac M3 (GPU Apple), sans quota et sans envoyer les textes à un tiers. Le modèle (~1 Go) est téléchargé au premier lancement.
+
+Le script peut être interrompu puis relancé sans rien recalculer (cache par empreinte et par modèle). Les versions d'articles qui ne sont plus en vigueur ne sont pas vectorisées. Les vecteurs de modèles différents ne sont jamais mélangés : changer `EMBED_MODEL` impose de recalculer.
+
+`EMBED_PROVIDER=gemini` reste possible, mais le niveau gratuit est limité à 1 000 embeddings par jour.
+
+**En production** : calculer les embeddings sur une machine avec GPU (ou un Mac), puis les charger en base avec `ingest.load_db`. Le serveur n'a besoin du modèle que pour vectoriser les questions (rapide, même sur CPU).
 
 ## 4. Charger dans PostgreSQL
 
@@ -93,7 +99,7 @@ En production : `RETRIEVER=postgres` et `DATABASE_URL` (base chargée par `inges
 
 - **Citations contrôlées côté serveur** : une source citée doit être un des extraits fournis ; une affirmation de droit positif sans source valide est retirée ; tout numéro d'article, de décision ou de pourvoi absent des extraits fait retirer l'élément. Sans affirmation sourcée restante, la réponse devient une abstention. Le détail est renvoyé dans `controle`.
 - **Abstention** si rien n'est trouvé (le modèle n'est alors pas appelé) et **hors champ** pour les demandes de conseil personnel.
-- **Recherche** : références citées (article, décision, pourvoi) d'abord, puis textes officiels avant jurisprudence, une entrée par décision. La recherche vectorielle n'est utilisée que si au moins 90 % des passages concernés ont un embedding (sinon elle fausserait le classement) ; sinon recherche lexicale seule.
+- **Recherche** : modèle d'embeddings local chargé au démarrage de l'API ; références citées (article, décision, pourvoi) d'abord, puis textes officiels avant jurisprudence, une entrée par décision. La recherche vectorielle n'est utilisée que si au moins 90 % des passages concernés ont un embedding (sinon elle fausserait le classement) ; sinon recherche lexicale seule.
 - **Modèle** : principal puis secours (`GEMINI_FALLBACK_MODELS`) en cas de 429 / 503 / délai dépassé ; réponse 503 claire si tous échouent.
 - **Données** : clé côté serveur uniquement ; journaux `logs/*.jsonl` sans le texte des questions ; limite de requêtes par IP et de taille des questions.
 

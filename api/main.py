@@ -57,24 +57,33 @@ def _construire_retriever(settings: Settings) -> Retriever:
         return PostgresRetriever(settings.database_url)
     from api.retrieval.local import LocalRetriever
 
-    return LocalRetriever(settings.index_dir)
+    return LocalRetriever(settings.index_dir, embed_model=settings.embed_model or None)
+
+
+def _construire_embedder(settings: Settings):
+    if not settings.embed_provider:
+        return None
+    from ingest import embedders
+
+    return embedders.creer(settings.embed_provider, settings.embed_model, settings.gemini_api_key)
 
 
 def _construire_llm(settings: Settings) -> LLM:
     from api.llm.gemini import GeminiLLM
 
     return GeminiLLM(api_key=settings.gemini_api_key, models=settings.gemini_models,
-                     embed_model=settings.gemini_embed_model, thinking_level=settings.gemini_thinking_level,
-                     timeout=settings.llm_timeout)
+                     thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout)
 
 
 def create_app(settings: Settings | None = None, *, retriever: Retriever | None = None,
-               llm: LLM | None = None, journal: Journal | None = None) -> FastAPI:
+               llm: LLM | None = None, journal: Journal | None = None, embedder=None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     llm = llm or _construire_llm(settings)
     journal = journal if journal is not None else Journal(settings.logs_dir)
-    lexia = Lexia(retriever, llm, journal)
+    if embedder is None:
+        embedder = _construire_embedder(settings)  # charge le modele au demarrage (pas a la 1re question)
+    lexia = Lexia(retriever, llm, journal, embedder)
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
 
@@ -99,7 +108,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.get("/sante")
     def sante():
-        return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models)}
+        return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
+                "embeddings_modele": getattr(embedder, "model", None)}
 
     @app.get("/matieres")
     def matieres():

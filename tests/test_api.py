@@ -12,6 +12,7 @@ from api.main import create_app
 from api.references import extraire, references_non_couvertes
 from api.retrieval.local import LocalRetriever
 from ingest.build_index import build
+from ingest.embed import encode
 from ingest.sources import cass, constit, legi
 
 FIX = Path(__file__).parent / "fixtures"
@@ -32,9 +33,6 @@ class FakeLLM:
             raise r
         return r, "fake-model"
 
-    def embed_query(self, text):
-        return None
-
 
 @pytest.fixture(scope="module")
 def index_dir(tmp_path_factory):
@@ -50,8 +48,38 @@ def index_dir(tmp_path_factory):
         rows.append(legi.parse_article((FIX / f).read_bytes(), date_recuperation="d", version_archive="a").to_dict())
     (passages / "fixtures.jsonl").write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows))
     (passages / "constitution_1958.jsonl").write_text(CONSTITUTION.read_text(encoding="utf-8"))
-    build(passages_dir=passages, index_dir=base / "index", cache_dir=base / "vide")
+    build(passages_dir=passages, index_dir=base / "index", cache_dir=base / "vide", model="aucun")
     return base / "index"
+
+
+@pytest.fixture(scope="module")
+def index_vectorise(tmp_path_factory, index_dir):
+    """Meme corpus, avec un vecteur factice par passage : l'article 1240 pointe dans la direction (1, 0, 0)."""
+    base = tmp_path_factory.mktemp("lexia_vec")
+    passages = index_dir.parent / "passages"
+    cache = base / "cache"
+    cache.mkdir()
+    lignes = []
+    for f in passages.glob("*.jsonl"):
+        for l in f.read_text(encoding="utf-8").splitlines():
+            p = json.loads(l)
+            vec = [1.0, 0.0, 0.0] if p["numero"] == "1240" else [0.0, 1.0, 0.0]
+            lignes.append(json.dumps({"id": p["id"], "empreinte": p["empreinte"], "model": "fake-embed",
+                                      "dim": 3, "b64": encode(vec)}))
+    (cache / "tout.jsonl").write_text("\n".join(lignes))
+    build(passages_dir=passages, index_dir=base / "index", cache_dir=cache, model="fake-embed")
+    return base / "index"
+
+
+class FakeEmbedder:
+    model, dim = "fake-embed", 3
+
+    def __init__(self):
+        self.appels = 0
+
+    def embed_query(self, texte):
+        self.appels += 1
+        return [1.0, 0.0, 0.0]
 
 
 @pytest.fixture
@@ -78,6 +106,31 @@ def test_recherche_textes_avant_jurisprudence(index_dir):
     r = LocalRetriever(index_dir)
     hits = r.search("dommage causé à autrui et responsabilité", sources=None, k=4)
     assert hits[0].passage["source_id"] in ("code_civil", "constitution_1958")
+
+
+def test_recherche_hybride(index_vectorise, tmp_path):
+    llm, emb = FakeLLM(), FakeEmbedder()
+    settings = Settings(gemini_models=("fake",), index_dir=index_vectorise, logs_dir=tmp_path)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_vectorise, embed_model="fake-embed"),
+                                   llm=llm, embedder=emb))
+    llm.reponses.append({"statut": "abstention", "titre": "", "droit_positif": [], "explication": [],
+                         "points_incertains": [], "message": ""})
+    data = client.post("/chat", json={"question": "dommage causé par une faute"}).json()
+    assert emb.appels == 1 and data["controle"]["recherche"] == "hybride"
+    assert "Code civil, article 1240" in llm.prompts[-1]
+
+
+def test_vecteurs_d_un_autre_modele_ignores(index_vectorise):
+    r = LocalRetriever(index_vectorise, embed_model="autre-modele")
+    assert r.stats()["embeddings"] == 0 and r.couverture(None) == 0
+
+
+def test_sans_couverture_pas_d_appel_au_modele_d_embeddings(index_dir, tmp_path):
+    llm, emb = FakeLLM(), FakeEmbedder()
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, embedder=emb))
+    client.post("/chat", json={"question": "zzqqwx"})
+    assert emb.appels == 0
 
 
 # --- Chat ----------------------------------------------------------------------

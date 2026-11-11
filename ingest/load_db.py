@@ -23,7 +23,8 @@ from pathlib import Path
 
 import yaml
 
-from ingest.embed import CACHE_DIR, decode
+from ingest import embedders
+from ingest.embed import CACHE_DIR, decode, iter_cache
 from ingest.env import load_env
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -116,23 +117,22 @@ def charger_passages(conn, source_id: str) -> dict:
     return stats
 
 
-def charger_embeddings(conn, source_id: str) -> int:
+def charger_embeddings(conn, source_id: str, model: str) -> int:
     cache = CACHE_DIR / f"{source_id}.jsonl"
     if not cache.exists():
         return 0
     with conn.cursor() as cur:
+        # jamais de melange de modeles : les vecteurs d'un autre modele sont effaces
+        cur.execute("UPDATE passages SET embedding = NULL, embedding_model = NULL"
+                    " WHERE source_id = %s AND embedding IS NOT NULL AND embedding_model IS DISTINCT FROM %s",
+                    (source_id, model))
         cur.execute(
             "CREATE TEMP TABLE tmp_emb (id text, empreinte char(64), model text, embedding vector(768)) ON COMMIT DROP"
         )
         with cur.copy("COPY tmp_emb (id, empreinte, model, embedding) FROM STDIN") as copy:
-            with cache.open(encoding="utf-8") as f:
-                for l in f:
-                    try:
-                        r = json.loads(l)
-                    except json.JSONDecodeError:
-                        continue
-                    vec = "[" + ",".join(f"{x:.7g}" for x in decode(r["b64"])) + "]"
-                    copy.write_row((r["id"], r["empreinte"], r["model"], vec))
+            for r in iter_cache(cache, model):
+                vec = "[" + ",".join(f"{x:.7g}" for x in decode(r["b64"])) + "]"
+                copy.write_row((r["id"], r["empreinte"], r["model"], vec))
         cur.execute(
             """UPDATE passages p SET embedding = t.embedding, embedding_model = t.model
                FROM (SELECT DISTINCT ON (id) * FROM tmp_emb ORDER BY id) t
@@ -166,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
                 with conn.transaction():
                     stats = charger_passages(conn, s)
                 with conn.transaction():
-                    n_emb = charger_embeddings(conn, s)
+                    n_emb = charger_embeddings(conn, s, embedders.config_env()[1])
                 print(f"{s}: {stats}, embeddings appliques : {n_emb}")
     return 0
 

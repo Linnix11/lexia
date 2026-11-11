@@ -7,6 +7,7 @@ la production utilise PostgresRetriever.
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 import threading
 from pathlib import Path
@@ -17,12 +18,13 @@ from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Hit, assembler, diversifier, doc_de, fusion_rrf, groupes, paires, termes
 
 N_CANDIDATS = 50
+log = logging.getLogger("lexia.recherche")
 
 
 class LocalRetriever:
     mode = "local"
 
-    def __init__(self, index_dir: Path):
+    def __init__(self, index_dir: Path, embed_model: str | None = None):
         db = index_dir / "lexia.sqlite"
         if not db.exists():
             raise FileNotFoundError(f"Index absent : {db}. Lancer `python -m ingest.build_index`.")
@@ -32,8 +34,14 @@ class LocalRetriever:
         self._vecs = np.zeros((0, 0), dtype=np.float32)
         vec_file, ids_file = index_dir / "vectors.npy", index_dir / "vectors_ids.json"
         if vec_file.exists() and ids_file.exists():
-            self._vecs = np.load(vec_file)
-            self._ids = json.loads(ids_file.read_text())
+            modele_index = (index_dir / "vectors_model.txt").read_text().strip() \
+                if (index_dir / "vectors_model.txt").exists() else None
+            if embed_model and modele_index and modele_index != embed_model:
+                log.warning("Index vectorise avec %s mais EMBED_MODEL=%s : recherche vectorielle desactivee "
+                            "(relancer ingest.build_index)", modele_index, embed_model)
+            else:
+                self._vecs = np.load(vec_file)
+                self._ids = json.loads(ids_file.read_text())
         # metadonnees minimales des passages vectorises (filtrage sans relire le JSON)
         self._meta_vec: dict[str, tuple[str, int | None]] = {}
         if self._ids:
