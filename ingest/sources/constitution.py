@@ -82,6 +82,10 @@ def parse(html: str, *, date_recuperation: str | None = None, min_articles: int 
                 url=f"{URL}#{current['ancre']}",
                 version=version,
                 date_recuperation=date_recuperation,
+                entete=(
+                    "Constitution du 4 octobre 1958, préambule" if current["numero"] is None
+                    else f"Constitution du 4 octobre 1958, article {current['numero']}"
+                ) + (f" - {current['titre']}" if current["titre"] else ""),
             )
         )
 

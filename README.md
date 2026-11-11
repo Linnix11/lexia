@@ -2,7 +2,7 @@
 
 Copilote d'étude en droit français pour étudiants (L1 en priorité). Réponses fondées uniquement sur des sources officielles citées.
 
-État : **phase 1** (corpus officiel, embeddings, schéma de base). Phase suivante : backend RAG.
+État : **phase 2** (API de réponse sourcée et questionnaires). Phase suivante : brancher le front (maquette Lexia).
 
 ## Corpus actuel
 
@@ -69,10 +69,38 @@ python -m ingest.load_db --all      # insère / met à jour / supprime + appliqu
 
 Rejouable : seuls les passages modifiés sont réécrits (et leur embedding remis à zéro), chaque exécution est tracée dans la table `synchros`.
 
+## 5. Lancer l'API
+
+```bash
+python -m ingest.build_index          # index local (SQLite FTS5 + vecteurs), sans base de données
+uvicorn api.main:app --port 8000      # documentation interactive : http://localhost:8000/docs
+python eval/essai_api.py http://localhost:8000   # essai rapide avec de vraies questions
+```
+
+En production : `RETRIEVER=postgres` et `DATABASE_URL` (base chargée par `ingest.load_db`).
+
+| Route | Rôle |
+|---|---|
+| `POST /chat` | question + mode (`expliquer`, `fiche`, `cas_pratique`, `commentaire`, `dissertation`) + matière |
+| `POST /quiz` | thème, `format` (`qcm`, `vrai_faux`, `ouvertes`), `nombre` (1-15) ; les réponses restent côté serveur |
+| `POST /quiz/correct` | correction (automatique pour QCM / vrai-faux, par le modèle pour les questions ouvertes) |
+| `GET /sources/{id}` | texte complet et métadonnées d'un passage |
+| `GET /sources/{id}/vigueur` | version en vigueur d'un article (ou « non applicable » pour une décision) |
+| `POST /feedback` | utile oui / non + motif (pas de texte libre) |
+| `GET /matieres`, `GET /sante` | listes et état du service |
+
+### Garde-fous
+
+- **Citations contrôlées côté serveur** : une source citée doit être un des extraits fournis ; une affirmation de droit positif sans source valide est retirée ; tout numéro d'article, de décision ou de pourvoi absent des extraits fait retirer l'élément. Sans affirmation sourcée restante, la réponse devient une abstention. Le détail est renvoyé dans `controle`.
+- **Abstention** si rien n'est trouvé (le modèle n'est alors pas appelé) et **hors champ** pour les demandes de conseil personnel.
+- **Recherche** : références citées (article, décision, pourvoi) d'abord, puis textes officiels avant jurisprudence, une entrée par décision. La recherche vectorielle n'est utilisée que si au moins 90 % des passages concernés ont un embedding (sinon elle fausserait le classement) ; sinon recherche lexicale seule.
+- **Modèle** : principal puis secours (`GEMINI_FALLBACK_MODELS`) en cas de 429 / 503 / délai dépassé ; réponse 503 claire si tous échouent.
+- **Données** : clé côté serveur uniquement ; journaux `logs/*.jsonl` sans le texte des questions ; limite de requêtes par IP et de taille des questions.
+
 ## Tests
 
 ```bash
 python -m pytest -q
 ```
 
-Les tests utilisent de vrais documents extraits des archives (`tests/fixtures/`).
+Les tests utilisent de vrais documents extraits des archives (`tests/fixtures/`) et un modèle simulé pour l'API.

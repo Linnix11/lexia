@@ -73,14 +73,21 @@ def a_calculer(passages_file: Path, done: dict[str, str]):
             yield p["id"], p["empreinte"], texte[:MAX_CHARS]
 
 
-def _retry_delay(resp: httpx.Response, attempt: int) -> float:
+MAX_DELAY = 600  # on reessaie au moins toutes les 10 min, meme si l'API annonce plus long
+
+
+def _quota_info(resp: httpx.Response, attempt: int) -> tuple[float, str]:
+    """(delai d'attente, nom du quota depasse) a partir de la reponse 429."""
+    delay, quota = min(60 * 2**attempt, MAX_DELAY), "?"
     try:
         for d in resp.json()["error"].get("details", []):
             if "retryDelay" in d:
-                return float(d["retryDelay"].rstrip("s")) + 1
+                delay = min(float(d["retryDelay"].rstrip("s")) + 1, MAX_DELAY)
+            for v in d.get("violations", []):
+                quota = f"{v.get('quotaId')}={v.get('quotaValue')}"
     except Exception:
         pass
-    return min(60 * 2**attempt, 600)
+    return delay, quota
 
 
 def embed_batch(client: httpx.Client, model: str, textes: list[str]) -> list[list[float]]:
@@ -95,17 +102,18 @@ def embed_batch(client: httpx.Client, model: str, textes: list[str]) -> list[lis
             for t in textes
         ]
     }
-    for attempt in range(8):
+    attempt = 0
+    while True:
         resp = client.post(API.format(model=model), json=body, timeout=120)
         if resp.status_code == 200:
             return [e["values"] for e in resp.json()["embeddings"]]
         if resp.status_code in (429, 500, 503):
-            delay = _retry_delay(resp, attempt)
-            print(f"  HTTP {resp.status_code}, nouvelle tentative dans {delay:.0f} s", flush=True)
+            delay, quota = _quota_info(resp, attempt)
+            print(f"  HTTP {resp.status_code} ({quota}), nouvelle tentative dans {delay:.0f} s", flush=True)
             time.sleep(delay)
+            attempt = min(attempt + 1, 4)
             continue
         raise RuntimeError(f"Erreur API {resp.status_code} : {resp.text[:300]}")
-    raise RuntimeError("Quota toujours depasse apres plusieurs tentatives ; relancer plus tard.")
 
 
 def run(source_id: str, client: httpx.Client, model: str, limit: int | None, batch: int) -> int:

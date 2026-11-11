@@ -23,3 +23,9 @@ data/passages/*.tmp
 
 # Cache d'embeddings (regenere par ingest/embed.py)
 data/embeddings/
+
+# Index local de recherche (regenere par ingest/build_index.py)
+data/index/
+
+# Journaux de l'API
+logs/

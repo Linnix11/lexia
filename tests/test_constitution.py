@@ -39,6 +39,12 @@ def test_article_premier_hors_titre_et_alineas(passages):
     assert len(art1.alineas) == 2
 
 
+def test_entete(passages):
+    assert passages["constitution_1958:art:61-1"].entete == (
+        "Constitution du 4 octobre 1958, article 61-1 - Titre VII - LE CONSEIL CONSTITUTIONNEL")
+    assert passages["constitution_1958:preambule"].entete == "Constitution du 4 octobre 1958, préambule"
+
+
 def test_rattachement_au_titre(passages):
     assert passages["constitution_1958:art:2"].titre == "Titre premier - DE LA SOUVERAINETÉ"
     assert passages["constitution_1958:art:89"].titre == "Titre XVI - DE LA RÉVISION"

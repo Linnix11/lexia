@@ -118,7 +118,7 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str) -
         titre=" > ".join(chemin) or None,
         alineas=alineas,
         url=URL_ARTICLE.format(id=art_id),
-        version=f"Version {statut}, {periode} ({version_archive})",
+        version=f"Version {periode}, article {statut} ({version_archive})",
         date_recuperation=date_recuperation,
         meta=meta,
         entete=f"{CODE_NOM}, article {num} ({statut}, {periode})" + (f" - {chemin[-1]}" if chemin else ""),

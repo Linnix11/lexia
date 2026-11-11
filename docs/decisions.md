@@ -32,7 +32,23 @@ Le texte est récupéré depuis la page officielle du Conseil constitutionnel (�
 | D17 | Modèle de génération | `gemini-3.8-flash` (nom vérifié dans la liste des modèles de l'API), configurable. |
 | D18 | Base | PostgreSQL + pgvector hébergée par l'équipe (Hostinger) ; pas de Docker. |
 
+## Phase 2 - choix retenus
+
+| # | Sujet | Décision |
+|---|---|---|
+| D19 | Modèle de génération | `gemini-3.5-flash` (le plus rapide aux essais), secours `gemini-3.8-flash`, raisonnement `low`, délai 30 s. Remplace D17. |
+| D20 | Recherche sans base | Index local SQLite FTS5 + numpy pour le développement ; même interface que PostgreSQL. |
+| D21 | Recherche vectorielle | Utilisée seulement si au moins 90 % des passages concernés ont un embedding. |
+| D22 | Contrôle des citations | Côté serveur, après le modèle : sources inconnues, affirmations non sourcées et numéros absents des extraits sont retirés. |
+| D23 | Questionnaires | Réponses gardées en mémoire du serveur 3 h, jamais envoyées avant correction. |
+| D24 | Retours | Utile oui / non + motif dans une liste fermée, pas de texte libre (aucune donnée personnelle). |
+
+### Point ouvert : quota d'embeddings
+
+Le niveau gratuit de l'API Gemini limite les embeddings à 1 000 par jour (et 100 par minute). Vectoriser tout le corpus (~41 700 passages) prendrait environ 42 jours, et chaque question d'étudiant consomme aussi ce quota. À trancher avant le pilote : passer au niveau payant, utiliser un modèle d'embeddings open source hébergé sur le serveur, ou réduire le périmètre vectorisé.
+
 ## Journal des changements
 
 - 2026-11-11 : création du document.
 - 2026-11-11 : phase 1, ajout de D12 à D18.
+- 2026-11-11 : phase 2, ajout de D19 à D24 et du point ouvert sur le quota d'embeddings.
