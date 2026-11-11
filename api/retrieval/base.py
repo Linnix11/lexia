@@ -13,20 +13,37 @@ SOURCES_TEXTES = ("constitution_1958", "code_civil")  # sources primaires, servi
 # En dessous de cette part de passages vectorises, la recherche vectorielle biaiserait les
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
 SEUIL_COUVERTURE = 0.9
+N_RECLASSEMENT = 30  # candidats relus par le modele de reclassement, par groupe de sources
 
 
 @dataclass
 class Hit:
     passage: dict
     score: float
-    via: set[str] = field(default_factory=set)   # "reference", "lexical", "vecteur"
+    via: set[str] = field(default_factory=set)   # "reference", "suggestion", "lexical", "vecteur", "reclasse"
+
+
+@dataclass
+class Complement:
+    """Informations ajoutees a la question avant la recherche (voir api/expansion.py)."""
+    reformulation: str = ""
+    vecteur_reformulation: list[float] | None = None
+    # (source_id, numero) d'articles proposes par le modele : on n'en garde que le texte officiel du corpus
+    suggestions: list[tuple[str, str]] = field(default_factory=list)
+
+
+class Reclasseur(Protocol):
+    model: str
+
+    def reordonner(self, question: str, hits: list[Hit]) -> list[Hit]: ...
 
 
 class Retriever(Protocol):
     mode: str
 
     def search(self, question: str, *, sources: tuple[str, ...] | None, k: int,
-               query_vector: list[float] | None = None) -> list[Hit]: ...
+               query_vector: list[float] | None = None, complement: Complement | None = None,
+               reclasseur: Reclasseur | None = None) -> list[Hit]: ...
 
     def get(self, passage_id: str) -> dict | None: ...
 
@@ -104,6 +121,30 @@ def assembler(refs: list["Hit"], textes: list["Hit"], juris: list["Hit"], k: int
     ajouter(juris, k)
     ajouter(textes, k)
     return out[:max(k, len(refs))]
+
+
+def construire_groupe(classements: dict[str, list[tuple[str, dict]]], k: int, *,
+                      question: str = "", suggestions: list[dict] | None = None,
+                      reclasseur: Reclasseur | None = None) -> list[Hit]:
+    """Fusionne des classements (RRF), reclasse eventuellement, place les suggestions en tete.
+
+    classements : nom -> [(id, passage)], ex. {"lexical": ..., "vecteur": ..., "lexical_reformulation": ...}
+    """
+    par_id: dict[str, dict] = {}
+    via: dict[str, set[str]] = {}
+    for nom, liste in classements.items():
+        famille = "vecteur" if nom.startswith("vecteur") else "lexical"
+        for pid, p in liste:
+            par_id.setdefault(pid, p)
+            via.setdefault(pid, set()).add(famille)
+    scores = fusion_rrf(*[[pid for pid, _ in liste] for liste in classements.values()])
+    hits = [Hit(par_id[pid], sc, via[pid]) for pid, sc in sorted(scores.items(), key=lambda x: -x[1])]
+    if reclasseur is not None and hits:
+        hits = reclasseur.reordonner(question, hits[:N_RECLASSEMENT]) + hits[N_RECLASSEMENT:]
+    if suggestions:
+        ids = {p["id"] for p in suggestions}
+        hits = [Hit(p, float("inf"), {"suggestion"}) for p in suggestions] + [h for h in hits if h.passage["id"] not in ids]
+    return diversifier(hits, k, doc_de)
 
 
 def fusion_rrf(*classements: list[str]) -> dict[str, float]:

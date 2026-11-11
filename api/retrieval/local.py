@@ -15,7 +15,8 @@ from pathlib import Path
 import numpy as np
 
 from api.references import extraire
-from api.retrieval.base import SEUIL_COUVERTURE, Hit, assembler, diversifier, doc_de, fusion_rrf, groupes, paires, termes
+from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
+                                groupes, paires, termes)
 
 N_CANDIDATS = 50
 log = logging.getLogger("lexia.recherche")
@@ -158,36 +159,51 @@ class LocalRetriever:
                     break
         return out
 
-    def _groupe(self, question, sources, k, query_vector) -> list[Hit]:
+    def _suggestions(self, complement: Complement | None, sources: tuple[str, ...]) -> list[dict]:
+        if not complement or not complement.suggestions or not sources:
+            return []
+        out: list[dict] = []
+        for src, num in complement.suggestions:
+            if src in sources:
+                rows = self._q("SELECT data FROM passages WHERE source_id = ? AND numero = ?"
+                               " AND (en_vigueur IS NULL OR en_vigueur = 1)", (src, num))
+                out.extend(json.loads(r[0]) for r in rows)
+        return out
+
+    def _par_ids(self, ids: list[str]) -> list[tuple[str, dict]]:
+        out = []
+        for pid in ids:
+            p = self.get(pid)
+            if p:
+                out.append((pid, p))
+        return out
+
+    def _groupe(self, question, sources, k, query_vector, complement=None, reclasseur=None) -> list[Hit]:
         if not sources:
             return []
-        classements = self._lexical(question, sources)
-        vec_ids = []
-        if query_vector is not None and self.couverture(sources) >= SEUIL_COUVERTURE:
-            vec_ids = self._vectoriel(query_vector, sources)
-        par_id: dict[str, dict] = {}
-        for c in classements:
-            par_id.update({pid: p for pid, p in c})
-        for pid in vec_ids:
-            if pid not in par_id:
-                p = self.get(pid)
-                if p:
-                    par_id[pid] = p
-        lex_ids = set(par_id) - set(vec_ids) | {pid for c in classements for pid, _ in c}
-        scores = fusion_rrf(*[[pid for pid, _ in c] for c in classements], vec_ids)
-        hits = []
-        for pid, sc in sorted(scores.items(), key=lambda x: -x[1]):
-            via = ({"lexical"} if pid in lex_ids else set()) | ({"vecteur"} if pid in vec_ids else set())
-            hits.append(Hit(par_id[pid], sc, via))
-        return diversifier(hits, k, doc_de)
+        classements: dict[str, list[tuple[str, dict]]] = {}
+        for i, c in enumerate(self._lexical(question, sources)):
+            classements[f"lexical_{i}"] = c
+        vectoriel = self.couverture(sources) >= SEUIL_COUVERTURE
+        if query_vector is not None and vectoriel:
+            classements["vecteur"] = self._par_ids(self._vectoriel(query_vector, sources))
+        if complement and complement.reformulation:
+            for i, c in enumerate(self._lexical(complement.reformulation, sources)):
+                classements[f"lexical_reformulation_{i}"] = c
+            if complement.vecteur_reformulation is not None and vectoriel:
+                classements["vecteur_reformulation"] = self._par_ids(
+                    self._vectoriel(complement.vecteur_reformulation, sources))
+        return construire_groupe(classements, k, question=question, reclasseur=reclasseur,
+                                 suggestions=self._suggestions(complement, sources))
 
-    def search(self, question, *, sources, k, query_vector=None):
+    def search(self, question, *, sources, k, query_vector=None, complement: Complement | None = None,
+               reclasseur: Reclasseur | None = None):
         refs = [Hit(p, float("inf"), {"reference"}) for p in self._par_reference(question, sources)]
         textes, juris = groupes(sources, self._toutes_sources())
         return assembler(
             refs,
-            self._groupe(question, textes, k, query_vector),
-            self._groupe(question, juris, k, query_vector),
+            self._groupe(question, textes, k, query_vector, complement, reclasseur),
+            self._groupe(question, juris, k, query_vector, complement, reclasseur),
             k,
         )
 

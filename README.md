@@ -2,7 +2,7 @@
 
 Copilote d'étude en droit français pour étudiants (L1 en priorité). Réponses fondées uniquement sur des sources officielles citées.
 
-État : **phase 2** (API de réponse sourcée et questionnaires). Phase suivante : brancher le front (maquette Lexia).
+État : **phase 3** (panel étudiant en Vite + React + Tailwind branché sur l'API). Phase suivante : évaluation.
 
 ## Corpus actuel
 
@@ -18,7 +18,7 @@ Chaque passage garde : lien officiel, version / dates de vigueur, date de récup
 ## Arborescence
 
 ```
-web/          front (maquette Lexia à porter, phase 3)
+web/          panel étudiant : Vite + React + TypeScript + Tailwind (voir web/README.md)
 api/          backend FastAPI (phase 2) : llm/, retrieval/, schemas/
 ingest/       import (sources/), embeddings (embed.py), chargement en base (load_db.py)
 db/           schema.sql (PostgreSQL + pgvector)
@@ -99,14 +99,23 @@ En production : `RETRIEVER=postgres` et `DATABASE_URL` (base chargée par `inges
 
 - **Citations contrôlées côté serveur** : une source citée doit être un des extraits fournis ; une affirmation de droit positif sans source valide est retirée ; tout numéro d'article, de décision ou de pourvoi absent des extraits fait retirer l'élément. Sans affirmation sourcée restante, la réponse devient une abstention. Le détail est renvoyé dans `controle`.
 - **Abstention** si rien n'est trouvé (le modèle n'est alors pas appelé) et **hors champ** pour les demandes de conseil personnel.
-- **Recherche** : modèle d'embeddings local chargé au démarrage de l'API ; références citées (article, décision, pourvoi) d'abord, puis textes officiels avant jurisprudence, une entrée par décision. La recherche vectorielle n'est utilisée que si au moins 90 % des passages concernés ont un embedding (sinon elle fausserait le classement) ; sinon recherche lexicale seule.
+- **Recherche** : la question est reformulée par un modèle rapide qui propose aussi des articles (seul leur texte officiel est utilisé, abandon après 8 s), puis recherche hybride et reclassement des 30 meilleurs candidats par un cross-encoder local (`eval/recherche.py` mesure l'effet) ; modèle d'embeddings local chargé au démarrage de l'API ; références citées (article, décision, pourvoi) d'abord, puis textes officiels avant jurisprudence, une entrée par décision. La recherche vectorielle n'est utilisée que si au moins 90 % des passages concernés ont un embedding (sinon elle fausserait le classement) ; sinon recherche lexicale seule.
 - **Modèle** : principal puis secours (`GEMINI_FALLBACK_MODELS`) en cas de 429 / 503 / délai dépassé ; réponse 503 claire si tous échouent.
 - **Données** : clé côté serveur uniquement ; journaux `logs/*.jsonl` sans le texte des questions ; limite de requêtes par IP et de taille des questions.
+
+## 6. Lancer le panel étudiant
+
+```bash
+cd web && npm install && npm run dev   # http://localhost:5173, /api relayé vers l'API sur le port 8000
+```
+
+Détails : [web/README.md](web/README.md).
 
 ## Tests
 
 ```bash
-python -m pytest -q
+python -m pytest -q          # ingestion + API
+cd web && npm test            # panel étudiant
 ```
 
 Les tests utilisent de vrais documents extraits des archives (`tests/fixtures/`) et un modèle simulé pour l'API.

@@ -7,7 +7,8 @@ une entree par decision). Schema : db/schema.sql. Active avec RETRIEVER=postgres
 from __future__ import annotations
 
 from api.references import extraire
-from api.retrieval.base import SEUIL_COUVERTURE, Hit, assembler, diversifier, doc_de, fusion_rrf, groupes, termes
+from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
+                                groupes, termes)
 
 N_CANDIDATS = 50
 COLONNES = "id, source_id, type, numero, titre, entete, texte, url, version, date_recuperation, empreinte, meta"
@@ -68,39 +69,57 @@ class PostgresRetriever:
                 out.extend(_ligne(r) for r in rows)
         return out
 
-    def _groupe(self, question: str, sources: tuple[str, ...], k: int, vecteur) -> list[Hit]:
+    def _lexical(self, texte: str, sources: tuple[str, ...]) -> list[tuple[str, dict]]:
+        mots = termes(texte, garder_accents=True)
+        if not mots:
+            return []
+        rows = self._q(
+            f"SELECT {COLONNES} FROM passages, websearch_to_tsquery('french', %s) q"
+            " WHERE tsv @@ q AND source_id = ANY(%s) AND en_vigueur IS NOT FALSE"
+            " ORDER BY ts_rank_cd(tsv, q) DESC LIMIT %s",
+            (" or ".join(mots), list(sources), N_CANDIDATS),
+        )
+        return [(r[0], _ligne(r)) for r in rows]
+
+    def _vectoriel(self, vecteur: list[float], sources: tuple[str, ...]) -> list[tuple[str, dict]]:
+        lit = "[" + ",".join(f"{x:.7g}" for x in vecteur) + "]"
+        rows = self._q(
+            f"SELECT {COLONNES} FROM passages WHERE embedding IS NOT NULL AND source_id = ANY(%s)"
+            " AND en_vigueur IS NOT FALSE ORDER BY embedding <=> %s::vector LIMIT %s",
+            (list(sources), lit, N_CANDIDATS),
+        )
+        return [(r[0], _ligne(r)) for r in rows]
+
+    def _suggestions(self, complement: Complement | None, sources: tuple[str, ...]) -> list[dict]:
+        out: list[dict] = []
+        for src, num in (complement.suggestions if complement else []):
+            if src in sources:
+                rows = self._q(f"SELECT {COLONNES} FROM passages WHERE source_id = %s AND numero = %s"
+                               " AND en_vigueur IS NOT FALSE", (src, num))
+                out.extend(_ligne(r) for r in rows)
+        return out
+
+    def _groupe(self, question: str, sources: tuple[str, ...], k: int, vecteur,
+                complement: Complement | None = None, reclasseur: Reclasseur | None = None) -> list[Hit]:
         if not sources:
             return []
-        mots = termes(question, garder_accents=True)
-        lex: list[tuple] = []
-        if mots:
-            requete = " or ".join(mots)
-            lex = self._q(
-                f"SELECT {COLONNES} FROM passages, websearch_to_tsquery('french', %s) q"
-                " WHERE tsv @@ q AND source_id = ANY(%s) AND en_vigueur IS NOT FALSE"
-                " ORDER BY ts_rank_cd(tsv, q) DESC LIMIT %s",
-                (requete, list(sources), N_CANDIDATS),
-            )
-        vec: list[tuple] = []
-        if vecteur is not None and self.couverture(sources) >= SEUIL_COUVERTURE:
-            lit = "[" + ",".join(f"{x:.7g}" for x in vecteur) + "]"
-            vec = self._q(
-                f"SELECT {COLONNES} FROM passages WHERE embedding IS NOT NULL AND source_id = ANY(%s)"
-                " AND en_vigueur IS NOT FALSE ORDER BY embedding <=> %s::vector LIMIT %s",
-                (list(sources), lit, N_CANDIDATS),
-            )
-        par_id = {r[0]: _ligne(r) for r in (*lex, *vec)}
-        lex_ids, vec_ids = [r[0] for r in lex], [r[0] for r in vec]
-        scores = fusion_rrf(lex_ids, vec_ids)
-        hits = [Hit(par_id[pid], s, ({"lexical"} if pid in lex_ids else set()) | ({"vecteur"} if pid in vec_ids else set()))
-                for pid, s in sorted(scores.items(), key=lambda x: -x[1])]
-        return diversifier(hits, k, doc_de)
+        classements: dict[str, list[tuple[str, dict]]] = {"lexical": self._lexical(question, sources)}
+        vectoriel = self.couverture(sources) >= SEUIL_COUVERTURE
+        if vecteur is not None and vectoriel:
+            classements["vecteur"] = self._vectoriel(vecteur, sources)
+        if complement and complement.reformulation:
+            classements["lexical_reformulation"] = self._lexical(complement.reformulation, sources)
+            if complement.vecteur_reformulation is not None and vectoriel:
+                classements["vecteur_reformulation"] = self._vectoriel(complement.vecteur_reformulation, sources)
+        return construire_groupe(classements, k, question=question, reclasseur=reclasseur,
+                                 suggestions=self._suggestions(complement, sources))
 
-    def search(self, question, *, sources, k, query_vector=None):
+    def search(self, question, *, sources, k, query_vector=None, complement: Complement | None = None,
+               reclasseur: Reclasseur | None = None):
         refs = [Hit(p, float("inf"), {"reference"}) for p in self._par_reference(question, sources)]
         textes, juris = groupes(sources, self._toutes_sources())
-        return assembler(refs, self._groupe(question, textes, k, query_vector),
-                         self._groupe(question, juris, k, query_vector), k)
+        return assembler(refs, self._groupe(question, textes, k, query_vector, complement, reclasseur),
+                         self._groupe(question, juris, k, query_vector, complement, reclasseur), k)
 
     def couverture(self, sources: tuple[str, ...] | None) -> float:
         srcs = list(sources or self._toutes_sources())

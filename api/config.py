@@ -31,6 +31,9 @@ class Settings:
     max_question_chars: int = 2000
     rate_limit_per_minute: int = 10
     cors_origins: tuple[str, ...] = field(default_factory=tuple)
+    expansion_model: str = ""                  # vide = pas de reformulation de la question
+    expansion_timeout: float = 8.0
+    rerank_model: str = ""                     # vide = pas de reclassement
 
 
 def get_settings() -> Settings:
@@ -50,4 +53,7 @@ def get_settings() -> Settings:
         max_question_chars=int(os.environ.get("MAX_QUESTION_CHARS", "2000")),
         rate_limit_per_minute=int(os.environ.get("RATE_LIMIT_PER_MINUTE", "10")),
         cors_origins=_list("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"),
+        expansion_model=os.environ.get("QUERY_EXPANSION_MODEL", ""),
+        expansion_timeout=float(os.environ.get("QUERY_EXPANSION_TIMEOUT", "8")),
+        rerank_model=os.environ.get("RERANK_MODEL", ""),
     )

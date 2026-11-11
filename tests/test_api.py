@@ -302,3 +302,75 @@ def test_references_verification():
     assert references_non_couvertes("article 1241 ; 2020-1 QPC ; pourvoi 21-86.418", p) == [
         "article 1241", "2020-1 QPC", "pourvoi 21-86.418"]
     assert extraire("l'article premier de la Constitution").articles == ("1",)
+
+
+# --- Reformulation et reclassement ------------------------------------------------
+
+from api.expansion import Expanseur  # noqa: E402
+from api.retrieval.base import Complement, Hit, construire_groupe  # noqa: E402
+
+
+class ExpanseurFixe:
+    def __init__(self, complement):
+        self.complement = complement
+
+    def etendre(self, question):
+        return self.complement
+
+
+class ReclasseurInverse:
+    model = "inverse"
+
+    def __init__(self):
+        self.appels = 0
+
+    def reordonner(self, question, hits):
+        self.appels += 1
+        return [Hit(h.passage, -i, h.via | {"reclasse"}) for i, h in enumerate(reversed(hits))]
+
+
+def test_expanseur_filtre_les_suggestions():
+    llm = FakeLLM()
+    llm.reponses.append({"articles": [
+        {"code": "code_civil", "numero": "1240"},
+        {"code": "code_civil", "numero": "1240"},            # doublon
+        {"code": "constitution", "numero": "61-1"},
+        {"code": "code_penal", "numero": "121-3"},           # code hors corpus
+        {"code": "code_civil", "numero": "art. 1241 ; DROP"},  # numero invalide
+    ], "reformulation": "Responsabilité civile extracontractuelle pour faute"})
+    c = Expanseur(llm).etendre("conditions de la responsabilité pour faute")
+    assert c.suggestions == [("code_civil", "1240"), ("constitution_1958", "61-1")]
+    assert c.reformulation.startswith("Responsabilité")
+    llm.reponses.append(LLMError("503"))
+    assert Expanseur(llm).etendre("question") is None
+
+
+def test_suggestion_ajoute_le_texte_officiel_de_l_article(index_dir, tmp_path):
+    llm = FakeLLM()
+    exp = ExpanseurFixe(Complement(reformulation="", suggestions=[("code_civil", "1240"), ("code_civil", "99999")]))
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, expanseur=exp))
+    llm.reponses.append({"statut": "abstention", "titre": "", "droit_positif": [], "explication": [],
+                         "points_incertains": [], "message": ""})
+    data = client.post("/chat", json={"question": "quel est le principe en matière de faute civile ?"}).json()
+    assert "Code civil, article 1240" in llm.prompts[-1]  # retrouve grace a la suggestion
+    assert data["controle"]["reformulation"] is True and data["controle"]["suggestions_retenues"] == 1
+
+
+def test_reformulation_en_echec_ne_bloque_pas(index_dir, tmp_path):
+    llm = FakeLLM()
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, expanseur=ExpanseurFixe(None)))
+    llm.reponses.append({"statut": "abstention", "titre": "", "droit_positif": [], "explication": [],
+                         "points_incertains": [], "message": ""})
+    r = client.post("/chat", json={"question": "article 1240"})
+    assert r.status_code == 200 and r.json()["controle"]["reformulation"] is False
+
+
+def test_construire_groupe_reclasse_puis_place_les_suggestions():
+    p = lambda i: {"id": f"p{i}", "texte": "", "meta": {}}  # noqa: E731
+    rec = ReclasseurInverse()
+    hits = construire_groupe({"lexical": [(f"p{i}", p(i)) for i in range(3)]}, 10,
+                             question="q", reclasseur=rec, suggestions=[p(9)])
+    assert [h.passage["id"] for h in hits] == ["p9", "p2", "p1", "p0"]
+    assert rec.appels == 1 and "suggestion" in hits[0].via and "reclasse" in hits[1].via

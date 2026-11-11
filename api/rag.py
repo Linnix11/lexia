@@ -55,28 +55,41 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
 
 
 class Lexia:
-    def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None):
+    def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
+                 expanseur=None, reclasseur=None):
         self.retriever = retriever
         self.llm = llm
         self.journal = journal or Journal(None)
-        self.embedder = embedder  # None : recherche lexicale seule
+        self.embedder = embedder      # None : recherche lexicale seule
+        self.expanseur = expanseur    # None : pas de reformulation de la question
+        self.reclasseur = reclasseur  # None : pas de reclassement
 
-    def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], str]:
+    def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], dict]:
+        """Renvoie les passages et un resume de la recherche (pour le controle et les journaux)."""
         sources = sources_pour(matiere)
-        vecteur = None
         toutes = tuple(sorted({s for ids in sources_par_matiere().values() for s in ids}))
         textes, juris = groupes(sources, toutes)
-        if self.embedder is not None and any(
-                g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris)):
-            vecteur = self.embedder.embed_query(texte)  # consomme du quota : seulement si la recherche s'en sert
-        hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur)
-        mode = "hybride" if any("vecteur" in h.via for h in hits) else "lexicale"
-        return [h.passage for h in hits], mode
+        vectoriel = self.embedder is not None and any(
+            g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris))
+        complement = self.expanseur.etendre(texte) if self.expanseur is not None else None
+        vecteur = self.embedder.embed_query(texte) if vectoriel else None
+        if complement and complement.reformulation and vectoriel:
+            complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
+        hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
+                                     complement=complement, reclasseur=self.reclasseur)
+        infos = {
+            "recherche": "hybride" if any("vecteur" in h.via for h in hits) else "lexicale",
+            "reformulation": complement is not None,
+            "reclassement": self.reclasseur is not None,
+            "suggestions_retenues": sum(1 for h in hits if "suggestion" in h.via),
+        }
+        return [h.passage for h in hits], infos
 
     def chat(self, question: str, mode: str, matiere: str | None) -> dict:
         debut = time.monotonic()
         reponse_id = str(uuid.uuid4())
-        passages, recherche = self.rechercher(question, matiere, K_CHAT)
+        passages, infos = self.rechercher(question, matiere, K_CHAT)
+        recherche = infos["recherche"]
         table = table_extraits(passages)
         modele = None
         if not passages:
@@ -93,14 +106,14 @@ class Lexia:
             "requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,
             statut=reponse["statut"], recherche=recherche, modele=modele,
             passages_fournis=[p["id"] for p in passages], passages_cites=[s["id"] for s in sources],
-            controle=controle.as_dict(), duree_ms=int((time.monotonic() - debut) * 1000),
+            controle=controle.as_dict(), recherche_detail=infos, duree_ms=int((time.monotonic() - debut) * 1000),
         )
         return {
             "reponse_id": reponse_id,
             **reponse,
             "sources": sources,
             "avertissement": AVERTISSEMENT,
-            "controle": {**controle.as_dict(), "recherche": recherche, "passages_consultes": len(passages)},
+            "controle": {**controle.as_dict(), **infos, "passages_consultes": len(passages)},
         }
 
     # --- verification de vigueur ----------------------------------------------

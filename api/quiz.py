@@ -108,7 +108,8 @@ class QuizService:
 
     def generer(self, theme: str, fmt: str, nombre: int, matiere: str | None) -> dict:
         debut = time.monotonic()
-        passages, recherche = self.lexia.rechercher(theme, matiere, K_QUIZ)
+        passages, infos = self.lexia.rechercher(theme, matiere, K_QUIZ)
+        recherche = infos["recherche"]
         table = table_extraits(passages)
         controle = Controle()
         questions: list[dict] = []

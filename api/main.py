@@ -75,15 +75,40 @@ def _construire_llm(settings: Settings) -> LLM:
                      thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout)
 
 
+def _construire_expanseur(settings: Settings):
+    if not settings.expansion_model:
+        return None
+    from api.expansion import Expanseur
+    from api.llm.gemini import GeminiLLM
+
+    # une seule tentative et un delai court : la reformulation ne doit jamais bloquer la reponse
+    return Expanseur(GeminiLLM(api_key=settings.gemini_api_key, models=(settings.expansion_model,),
+                               thinking_level=settings.gemini_thinking_level,
+                               timeout=settings.expansion_timeout, tentatives=1))
+
+
+def _construire_reclasseur(settings: Settings):
+    if not settings.rerank_model:
+        return None
+    from api.rerank import CrossEncoderReclasseur
+
+    return CrossEncoderReclasseur(settings.rerank_model)
+
+
 def create_app(settings: Settings | None = None, *, retriever: Retriever | None = None,
-               llm: LLM | None = None, journal: Journal | None = None, embedder=None) -> FastAPI:
+               llm: LLM | None = None, journal: Journal | None = None, embedder=None,
+               expanseur=None, reclasseur=None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     llm = llm or _construire_llm(settings)
     journal = journal if journal is not None else Journal(settings.logs_dir)
     if embedder is None:
         embedder = _construire_embedder(settings)  # charge le modele au demarrage (pas a la 1re question)
-    lexia = Lexia(retriever, llm, journal, embedder)
+    if expanseur is None:
+        expanseur = _construire_expanseur(settings)
+    if reclasseur is None:
+        reclasseur = _construire_reclasseur(settings)
+    lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur)
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
 
@@ -109,7 +134,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     @app.get("/sante")
     def sante():
         return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
-                "embeddings_modele": getattr(embedder, "model", None)}
+                "embeddings_modele": getattr(embedder, "model", None),
+                "reformulation_modele": settings.expansion_model or None,
+                "reclassement_modele": getattr(reclasseur, "model", None)}
 
     @app.get("/matieres")
     def matieres():

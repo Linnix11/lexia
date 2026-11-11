@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Palette et typographie de la maquette Lexia (vert foret, papier, Georgia + Inter). */
+@theme {
+  --color-ink: #202724;
+  --color-muted: #707873;
+  --color-paper: #f5f4ef;
+  --color-surface: #fffefa;
+  --color-line: #e4e4dc;
+  --color-line-soft: #eeede7;
+  --color-forest: #315e4b;
+  --color-forest-dark: #244735;
+  --color-mint: #e7efe9;
+  --color-sage: #e2e8e1;
+  --color-side: #f0efe9;
+  --color-chip: #f8f7f2;
+  --color-gold: #bd8951;
+  --color-cream: #fbf7ef;
+
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Points de rupture de la maquette : 620 px (mobile) et 900 px (barre laterale complete) */
+  --breakpoint-tab: 621px;
+  --breakpoint-desk: 901px;
+}
+
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-paper font-sans text-[14px] text-ink antialiased;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

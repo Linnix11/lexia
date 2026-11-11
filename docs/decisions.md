@@ -12,7 +12,7 @@ Statut : **proposées, à valider**. Changer une ligne = noter la date et la rai
 | D6 | Données personnelles | Aucune en V1 : pas de compte, pas d'historique serveur, favoris en localStorage | proposé |
 | D7 | Backend | Python + FastAPI | proposé |
 | D8 | Base | PostgreSQL + pgvector + plein texte français (recherche hybride) | proposé |
-| D9 | Front | Reprise de la maquette Lexia (`panel-ia-droit-v1.html`) en React / Next.js | proposé |
+| D9 | Front | Reprise de la maquette Lexia (`panel-ia-droit-v1.html`) en **Vite + React + TypeScript + Tailwind CSS** (décidé le 2026-11-11) | validé |
 | D10 | Manuels | Métadonnées + liens uniquement ; aucun texte intégral sans licence écrite | proposé |
 | D11 | Référent pédagogique | 1 enseignant ou chargé de TD, à trouver | ouvert |
 
@@ -50,9 +50,26 @@ Le texte est récupéré depuis la page officielle du Conseil constitutionnel (�
 | D25 | Modèle d'embeddings | Modèle open source local `intfloat/multilingual-e5-base` (MIT, 768 dimensions) à la place de Gemini, dont le niveau gratuit plafonne à 1 000 embeddings par jour. Remplace D16. Gemini reste disponible via `EMBED_PROVIDER=gemini`. |
 | D26 | Calcul en production | Embeddings du corpus calculés hors serveur puis chargés en base ; le serveur ne vectorise que les questions. |
 
+### Classement des résultats (2026-11-11)
+
+Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe attendu figure-t-il parmi les extraits envoyés au modèle ?
+
+| Configuration | Trouvés | Temps de recherche moyen |
+|---|---|---|
+| Hybride seul | 5/8 | 0,2 s |
+| + reclassement | 7/8 | 2,5 s |
+| + reformulation | 8/8 | 1,8 s (si Gemini répond) |
+
+| # | Sujet | Décision |
+|---|---|---|
+| D27 | Reclassement | Cross-encoder local `antoinelouis/crossencoder-camembert-base-mmarcoFR` (MIT, français) sur les 30 meilleurs candidats. Comparé à `mmarco-mMiniLMv2` (plus rapide, moins bon) et `bge-reranker-v2-m3` (meilleur sur certains cas mais ~4x plus lent). `RERANK_MODEL` vide = désactivé. |
+| D28 | Reformulation | `gemini-3.5-flash` reformule la question et propose au plus 4 articles ; seul leur texte officiel du corpus est utilisé. Une tentative, 8 s maximum, sinon recherche sans reformulation. Double l'usage du quota Gemini par question. `QUERY_EXPANSION_MODEL` vide = désactivé. |
+
 ## Journal des changements
 
 - 2026-11-11 : création du document.
 - 2026-11-11 : phase 1, ajout de D12 à D18.
 - 2026-11-11 : phase 2, ajout de D19 à D24 et du point ouvert sur le quota d'embeddings.
 - 2026-11-11 : embeddings open source en local (D25, D26).
+- 2026-11-11 : D9 validé, front en Vite + React + TypeScript + Tailwind.
+- 2026-11-11 : reclassement et reformulation de la question (D27, D28).

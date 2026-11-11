@@ -21,12 +21,14 @@ RETRY_STATUS = {429, 500, 503}
 
 
 class GeminiLLM:
-    def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0):
+    def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0,
+                 tentatives: int = 2):
         if not api_key or not models:
             raise ValueError("GEMINI_API_KEY et GEMINI_MODEL sont requis")
         self._models = models
         self._thinking = thinking_level
         self._timeout = timeout
+        self._tentatives = tentatives
         self._client = httpx.Client(headers={"x-goog-api-key": api_key})
 
     # --- generation ----------------------------------------------------------
@@ -60,7 +62,7 @@ class GeminiLLM:
         body = self._body(system, prompt, schema, temperature)
         erreurs: list[str] = []
         for model in self._models:
-            for tentative in range(2):
+            for tentative in range(self._tentatives):
                 debut = time.monotonic()
                 try:
                     r = self._client.post(f"{BASE}/{model}:generateContent", json=body, timeout=self._timeout)
@@ -81,5 +83,6 @@ class GeminiLLM:
                 log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, duree)
                 if r.status_code not in RETRY_STATUS:
                     break
-                time.sleep(1.5 * (tentative + 1))
+                if tentative + 1 < self._tentatives:
+                    time.sleep(1.5 * (tentative + 1))
         raise LLMError("; ".join(erreurs) or "aucun modele configure")
