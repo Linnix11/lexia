@@ -69,7 +69,12 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
     return out
 
 
-def valider_reponse(brut: dict, table: dict[str, dict]) -> tuple[dict, Controle]:
+MODES_METHODE = {"cas_pratique", "commentaire", "dissertation"}
+
+
+def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer") -> tuple[dict, Controle]:
+    """mode : dans les modes methode, une explication de methode sans source est acceptee
+    (la methode n'est pas une regle de droit) ; le droit positif exige toujours une source."""
     controle = Controle()
     statut = brut.get("statut") if brut.get("statut") in ("reponse", "abstention", "hors_champ") else "abstention"
     message = str(brut.get("message") or "").strip()
@@ -86,7 +91,8 @@ def valider_reponse(brut: dict, table: dict[str, dict]) -> tuple[dict, Controle]
     expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False)
     incert = nettoyer_elements(brut.get("points_incertains"), table, controle, exiger_source=False)
 
-    if not droit and not any(e["sources"] for e in expl):
+    methode_seule = mode in MODES_METHODE and bool(expl)
+    if not droit and not any(e["sources"] for e in expl) and not methode_seule:
         return {"statut": "abstention", "titre": titre, "droit_positif": [], "explication": [],
                 "points_incertains": [], "message": _message_defaut("abstention")}, controle
     return {"statut": "reponse", "titre": titre, "droit_positif": droit, "explication": expl,

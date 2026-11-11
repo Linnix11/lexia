@@ -1,0 +1,14 @@
+# Dependances du serveur de production (sans outils de test ni d'ingestion lourde).
+# PyTorch en version CPU uniquement (evite plusieurs Go de bibliotheques GPU) :
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+
+fastapi==0.162.4
+uvicorn==0.54.0
+httpx==0.28.1
+numpy==2.5.4
+PyYAML==6.0.2
+sentence-transformers==6.2.0
+# Variante PostgreSQL (RETRIEVER=postgres)
+psycopg[binary]==3.3.8
+psycopg-pool==3.3.3

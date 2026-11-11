@@ -100,7 +100,7 @@ class Lexia:
                 prompt=prompts.prompt_chat(question, mode, passages),
                 schema=prompts.SCHEMA_REPONSE,
             )
-            reponse, controle = valider_reponse(brut, table)
+            reponse, controle = valider_reponse(brut, table, mode)
         sources = sources_citees(reponse, table)
         self.journal.ecrire(
             "requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,

@@ -44,6 +44,14 @@ MODES = {
     ),
 }
 
+# Ajoute aux modes de methode : la methode n'est pas une regle de droit et peut s'expliquer sans extrait.
+METHODE_SANS_EXTRAIT = (
+    " La méthode elle-même ne nécessite pas d'extrait : si les extraits ne couvrent pas le thème, explique quand même "
+    "la méthode dans 'explication' (sources vides), laisse 'droit_positif' vide et indique dans 'points_incertains' "
+    "que les règles de fond doivent être vérifiées dans les textes."
+)
+MODES_METHODE = ("cas_pratique", "commentaire", "dissertation")
+
 _ELEMENT = {
     "type": "object",
     "properties": {
@@ -80,8 +88,9 @@ def format_extraits(passages: list[dict]) -> str:
 
 
 def prompt_chat(question: str, mode: str, passages: list[dict]) -> str:
+    consigne = MODES[mode] + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else "")
     return (
-        f"{MODES[mode]}\n\n<extraits>\n{format_extraits(passages)}\n</extraits>\n\n"
+        f"{consigne}\n\n<extraits>\n{format_extraits(passages)}\n</extraits>\n\n"
         f"<question>\n{question}\n</question>"
     )
 

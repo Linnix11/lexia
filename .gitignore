@@ -29,3 +29,6 @@ data/index/
 
 # Journaux de l'API
 logs/
+
+# Journaux d'execution de l'evaluation (les resultats .jsonl/.md/.csv sont versionnes)
+eval/resultats/*.log

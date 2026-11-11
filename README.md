@@ -2,7 +2,7 @@
 
 Copilote d'étude en droit français pour étudiants (L1 en priorité). Réponses fondées uniquement sur des sources officielles citées.
 
-État : **phase 3** (panel étudiant en Vite + React + Tailwind branché sur l'API). Phase suivante : évaluation.
+État : **phase 4** (évaluation : 150 cas, seuils automatiques atteints, notation enseignant à faire). Phase suivante : pilote fermé.
 
 ## Corpus actuel
 
@@ -24,7 +24,7 @@ ingest/       import (sources/), embeddings (embed.py), chargement en base (load
 db/           schema.sql (PostgreSQL + pgvector)
 registry/     sources.yaml : registre des sources, licences, périmètre, statut
 data/         passages/*.jsonl, embeddings/ (cache), raw/ (archives) - seule la Constitution est commitée
-eval/         jeu d'évaluation (phase 4)
+eval/         jeu d'évaluation, exécution et rapports (voir eval/README.md)
 docs/         decisions.md
 tests/
 ```

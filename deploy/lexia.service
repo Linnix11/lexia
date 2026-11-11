@@ -1,0 +1,29 @@
+# Service systemd de Lexia (API + panel etudiant).
+# Installe par deploy/installer_serveur.sh dans /etc/systemd/system/lexia.service
+[Unit]
+Description=Lexia - assistant d'etude en droit (API + panel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=lexia
+Group=lexia
+WorkingDirectory=/opt/lexia
+EnvironmentFile=/opt/lexia/.env
+Environment=HF_HOME=/opt/lexia/.cache/huggingface
+Environment=TOKENIZERS_PARALLELISM=false
+# Un seul processus : les modeles (embeddings + reclassement, ~2 Go de RAM) ne sont charges qu'une fois.
+ExecStart=/opt/lexia/.venv/bin/uvicorn api.serveur:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+# Le premier demarrage telecharge les modeles (~1,6 Go) : laisser le temps
+TimeoutStartSec=600
+Restart=on-failure
+RestartSec=5
+# Durcissement
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/lexia/logs /opt/lexia/.cache
+
+[Install]
+WantedBy=multi-user.target

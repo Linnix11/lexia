@@ -65,6 +65,14 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D27 | Reclassement | Cross-encoder local `antoinelouis/crossencoder-camembert-base-mmarcoFR` (MIT, français) sur les 30 meilleurs candidats. Comparé à `mmarco-mMiniLMv2` (plus rapide, moins bon) et `bge-reranker-v2-m3` (meilleur sur certains cas mais ~4x plus lent). `RERANK_MODEL` vide = désactivé. |
 | D28 | Reformulation | `gemini-3.5-flash` reformule la question et propose au plus 4 articles ; seul leur texte officiel du corpus est utilisé. Une tentative, 8 s maximum, sinon recherche sans reformulation. Double l'usage du quota Gemini par question. `QUERY_EXPANSION_MODEL` vide = désactivé. |
 
+### Phase 4 - évaluation (2026-11-11)
+
+| # | Sujet | Décision |
+|---|---|---|
+| D29 | Modèles Gemini | Niveau gratuit de `gemini-3.5-flash` limité à 20 requêtes par jour (constaté) : génération et reformulation passées sur `gemini-3.5-flash-lite`, secours `gemini-flash-lite-latest` puis `gemini-3.8-flash`. Remplace D19. **Pour le pilote, passer au niveau payant** : le gratuit ne tient pas une journée de tests. |
+| D30 | Modes méthode | En cas pratique, commentaire et dissertation, la méthode peut être expliquée sans extrait ; le droit positif exige toujours une source et les numéros inventés restent bloqués. |
+| D31 | Jeu d'évaluation | 150 cas (`eval/cas.yaml`), brouillon à faire valider par l'enseignant référent (D11) avant toute conclusion. |
+
 ## Journal des changements
 
 - 2026-11-11 : création du document.
@@ -73,3 +81,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-11 : embeddings open source en local (D25, D26).
 - 2026-11-11 : D9 validé, front en Vite + React + TypeScript + Tailwind.
 - 2026-11-11 : reclassement et reformulation de la question (D27, D28).
+- 2026-11-11 : phase 4, évaluation (D29 à D31).

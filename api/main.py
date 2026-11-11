@@ -81,8 +81,10 @@ def _construire_expanseur(settings: Settings):
     from api.expansion import Expanseur
     from api.llm.gemini import GeminiLLM
 
-    # une seule tentative et un delai court : la reformulation ne doit jamais bloquer la reponse
-    return Expanseur(GeminiLLM(api_key=settings.gemini_api_key, models=(settings.expansion_model,),
+    # une tentative par modele (principal puis secours) et un delai court par modele :
+    # la reformulation ne doit jamais bloquer la reponse
+    modeles = (settings.expansion_model, *settings.expansion_fallback_models)
+    return Expanseur(GeminiLLM(api_key=settings.gemini_api_key, models=modeles,
                                thinking_level=settings.gemini_thinking_level,
                                timeout=settings.expansion_timeout, tentatives=1))
 
@@ -180,6 +182,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     def feedback(req: FeedbackRequest):
         journal.ecrire("feedback", reponse_id=req.reponse_id, utile=req.utile, motif=req.motif)
 
+    app.state.retriever = retriever  # utile aux outils d'evaluation
     return app
 
 

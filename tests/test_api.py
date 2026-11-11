@@ -374,3 +374,16 @@ def test_construire_groupe_reclasse_puis_place_les_suggestions():
                              question="q", reclasseur=rec, suggestions=[p(9)])
     assert [h.passage["id"] for h in hits] == ["p9", "p2", "p1", "p0"]
     assert rec.appels == 1 and "suggestion" in hits[0].via and "reclasse" in hits[1].via
+
+
+def test_mode_methode_accepte_une_explication_sans_source():
+    from api.citations import valider_reponse
+    table = {"S1": {"id": "code_civil:x", "numero": "1103", "texte": "", "entete": ""}}
+    brut = {"statut": "reponse", "titre": "Méthode", "droit_positif": [],
+            "explication": [{"texte": "1. Lire l'arrêt. 2. Dégager le problème de droit.", "sources": []}],
+            "points_incertains": [], "message": ""}
+    assert valider_reponse(brut, table, "commentaire")[0]["statut"] == "reponse"
+    assert valider_reponse(brut, table, "expliquer")[0]["statut"] == "abstention"
+    # une regle de droit inventee reste bloquee meme en mode methode
+    brut["explication"] = [{"texte": "Selon l'article 9999 du Code civil, tout est permis.", "sources": []}]
+    assert valider_reponse(brut, table, "commentaire")[0]["statut"] == "abstention"
