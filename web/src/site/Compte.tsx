@@ -74,7 +74,8 @@ export function Compte() {
               <h2 className="text-[14px] font-semibold">Session</h2>
               <p className="text-[12px] text-muted">Compte créé le {new Date(profil.cree_le).toLocaleDateString('fr-FR')}.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {profil.admin && <Lien href="/admin" className={boutonSecondaire}>Administration</Lien>}
               <Lien href="/app" className={bouton}>Ouvrir mon espace</Lien>
               <button type="button" onClick={sortir} className={boutonSecondaire}>Se déconnecter</button>
             </div>

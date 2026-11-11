@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
     formule      TEXT NOT NULL DEFAULT 'gratuit',
     formule_fin  TEXT,                         -- date ISO de fin d'une formule payante (NULL = sans fin)
     cree_le      TEXT NOT NULL,
-    cgu_le       TEXT NOT NULL                 -- acceptation des CGU
+    cgu_le       TEXT NOT NULL,                -- acceptation des CGU
+    admin        INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS sessions (
     jeton_hash   TEXT PRIMARY KEY,             -- sha256 du jeton : le jeton lui-meme n'est jamais stocke
@@ -56,6 +57,9 @@ class ErreurCompte(ValueError):
     """Erreur presentable a l'utilisateur (message en francais)."""
 
 
+COLONNES_U = "id, email, formule, formule_fin, cree_le, admin"
+
+
 @dataclass
 class Utilisateur:
     id: int
@@ -63,6 +67,7 @@ class Utilisateur:
     formule_id: str
     formule_fin: str | None
     cree_le: str
+    admin: bool = False
 
     @property
     def formule(self) -> Formule:
@@ -106,14 +111,20 @@ def normaliser_email(email: str) -> str:
 
 
 class Comptes:
-    def __init__(self, chemin: Path | str):
+    def __init__(self, chemin: Path | str, admins: tuple[str, ...] = ()):
         if str(chemin) != ":memory:":
             Path(chemin).parent.mkdir(parents=True, exist_ok=True)
         self._con = sqlite3.connect(str(chemin), check_same_thread=False)
         self._con.execute("PRAGMA foreign_keys = ON")
         self._con.execute("PRAGMA journal_mode = WAL")
         self._con.executescript(SCHEMA)
+        colonnes = {r[1] for r in self._con.execute("PRAGMA table_info(utilisateurs)")}
+        if "admin" not in colonnes:  # migration des bases creees avant le role admin
+            self._con.execute("ALTER TABLE utilisateurs ADD COLUMN admin INTEGER NOT NULL DEFAULT 0")
+            self._con.commit()
         self._lock = threading.Lock()
+        # adresses declarees administrateur dans la configuration (ADMIN_EMAILS)
+        self._admins = {a.strip().lower() for a in admins if a.strip()}
         # empreinte factice : meme duree de verification pour un e-mail inconnu (pas d'enumeration)
         self._mdp_factice = hacher_mdp(secrets.token_hex(8))
 
@@ -124,7 +135,11 @@ class Comptes:
     # --- utilisateurs ---------------------------------------------------------
 
     def _utilisateur(self, row) -> Utilisateur | None:
-        return Utilisateur(*row) if row else None
+        if not row:
+            return None
+        u = Utilisateur(*row[:5], admin=bool(row[5]))
+        u.admin = u.admin or u.email in self._admins
+        return u
 
     def creer(self, email: str, mdp: str) -> Utilisateur:
         email = normaliser_email(email)
@@ -141,12 +156,11 @@ class Comptes:
         return self.par_email(email)
 
     def par_email(self, email: str) -> Utilisateur | None:
-        rows = self._q("SELECT id, email, formule, formule_fin, cree_le FROM utilisateurs WHERE email = ?",
-                       (email.strip().lower(),))
+        rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs WHERE email = ?", (email.strip().lower(),))
         return self._utilisateur(rows[0] if rows else None)
 
     def par_id(self, uid: int) -> Utilisateur | None:
-        rows = self._q("SELECT id, email, formule, formule_fin, cree_le FROM utilisateurs WHERE id = ?", (uid,))
+        rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs WHERE id = ?", (uid,))
         return self._utilisateur(rows[0] if rows else None)
 
     def authentifier(self, email: str, mdp: str) -> Utilisateur | None:
@@ -171,8 +185,77 @@ class Comptes:
         self._q("DELETE FROM utilisateurs WHERE id = ?", (uid,))
 
     def lister(self) -> list[Utilisateur]:
-        rows = self._q("SELECT id, email, formule, formule_fin, cree_le FROM utilisateurs ORDER BY id")
-        return [Utilisateur(*r) for r in rows]
+        rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs ORDER BY id")
+        return [self._utilisateur(r) for r in rows]
+
+    def definir_admin(self, email: str, admin: bool) -> Utilisateur:
+        u = self.par_email(email)
+        if u is None:
+            raise ErreurCompte(f"Aucun compte pour {email}")
+        self._q("UPDATE utilisateurs SET admin = ? WHERE id = ?", (int(admin), u.id))
+        return self.par_id(u.id)
+
+    # --- statistiques (tableau de bord admin) ----------------------------------
+
+    def statistiques(self, jours: int = 30) -> dict:
+        aujourd_hui = datetime.now(FUSEAU).date()
+        debut = (aujourd_hui - timedelta(days=jours - 1)).isoformat()
+        par_formule = dict(self._q("SELECT formule, count(*) FROM utilisateurs GROUP BY formule"))
+        expirees = self._q("SELECT count(*) FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin < ?",
+                           (aujourd_hui.isoformat(),))[0][0]
+        total = self._q("SELECT count(*) FROM utilisateurs")[0][0]
+        nouveaux = lambda n: self._q("SELECT count(*) FROM utilisateurs WHERE cree_le >= ?",  # noqa: E731
+                                     ((datetime.now(timezone.utc) - timedelta(days=n)).isoformat(timespec="seconds"),))[0][0]
+        usage = {r[0]: r[1:] for r in self._q(
+            "SELECT jour, sum(questions), sum(quiz), count(*) FROM usage WHERE jour >= ? GROUP BY jour", (debut,))}
+        inscriptions: dict[str, int] = {}
+        for (cree,) in self._q("SELECT cree_le FROM utilisateurs WHERE cree_le >= ?", (debut,)):
+            j = datetime.fromisoformat(cree).astimezone(FUSEAU).date().isoformat()
+            inscriptions[j] = inscriptions.get(j, 0) + 1
+        serie = []
+        for i in range(jours):
+            j = (aujourd_hui - timedelta(days=jours - 1 - i)).isoformat()
+            q, z, actifs = usage.get(j, (0, 0, 0))
+            serie.append({"jour": j, "questions": q, "quiz": z, "actifs": actifs, "inscriptions": inscriptions.get(j, 0)})
+        payants = sum(n for f, n in par_formule.items() if f != "gratuit") - expirees
+        revenu = sum(FORMULES[f].prix_mensuel_euros * n for f, n in par_formule.items() if f in FORMULES) \
+            - sum(FORMULES[f].prix_mensuel_euros for (f,) in self._q(
+                "SELECT formule FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin < ?",
+                (aujourd_hui.isoformat(),)) if f in FORMULES)
+        return {
+            "comptes": {"total": total, "par_formule": {f: par_formule.get(f, 0) for f in FORMULES},
+                        "payants_actifs": payants, "formules_expirees": expirees,
+                        "nouveaux_7j": nouveaux(7), "nouveaux_30j": nouveaux(30)},
+            "revenu_mensuel_estime": round(revenu, 2),
+            "aujourd_hui": serie[-1],
+            "serie": serie,
+        }
+
+    def clients(self, recherche: str = "") -> list[dict]:
+        jour = _jour()
+        il_y_a_30j = (datetime.now(FUSEAU).date() - timedelta(days=29)).isoformat()
+        sql = (f"SELECT {COLONNES_U}, "
+               "(SELECT questions FROM usage WHERE utilisateur = u.id AND jour = ?), "
+               "(SELECT quiz FROM usage WHERE utilisateur = u.id AND jour = ?), "
+               "(SELECT sum(questions) FROM usage WHERE utilisateur = u.id AND jour >= ?), "
+               "(SELECT max(jour) FROM usage WHERE utilisateur = u.id AND (questions > 0 OR quiz > 0)) "
+               "FROM utilisateurs u")
+        params: tuple = (jour, jour, il_y_a_30j)
+        if recherche:
+            sql += " WHERE email LIKE ?"
+            params += (f"%{recherche.strip().lower()}%",)
+        out = []
+        for r in self._q(sql + " ORDER BY cree_le DESC", params):
+            u = self._utilisateur(r[:6])
+            f = u.formule
+            out.append({
+                "id": u.id, "email": u.email, "admin": u.admin, "formule": f.id, "formule_enregistree": u.formule_id,
+                "formule_fin": u.formule_fin, "cree_le": u.cree_le,
+                "questions_aujourdhui": r[6] or 0, "quiz_aujourdhui": r[7] or 0,
+                "questions_30j": r[8] or 0, "derniere_activite": r[9],
+                "limite_questions": f.questions_par_jour,
+            })
+        return out
 
     # --- sessions -------------------------------------------------------------
 

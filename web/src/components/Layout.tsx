@@ -95,6 +95,9 @@ export function Topbar() {
             <option key={n.id} value={n.id}>{n.label}</option>
           ))}
         </select>
+        {profil?.admin && (
+          <Lien href="/admin" className="hidden rounded-full border border-line px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:inline">Admin</Lien>
+        )}
         {profil && (
           <Lien href="/compte" title="Mon compte" className="hidden items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:flex">
             <span className="font-semibold">{restant}</span> question{(restant ?? 0) > 1 ? 's' : ''} restante{(restant ?? 0) > 1 ? 's' : ''} · {profil.formule.nom}

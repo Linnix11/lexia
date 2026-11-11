@@ -90,6 +90,17 @@ Puis ouvrir `https://lexia.mondomaine.fr` : le panel doit afficher « Mon espace
 
 Mettre à jour le corpus : sur le Mac, `python -m ingest.run --all`, `python -m ingest.embed --all`, `python -m ingest.build_index`, puis `deploy/publier.sh`.
 
+## Administration
+
+Le tableau de bord `https://<domaine>/admin` est réservé aux comptes administrateurs :
+
+- **Vue d'ensemble** : comptes, abonnés payants, revenu mensuel théorique, questions du jour, erreurs du modèle, satisfaction, graphique des questions par jour sur 30 jours, répartition par formule, activité des dernières 24 h ;
+- **Clients** : recherche, changement de formule (avec durée), rôle administrateur, suppression ;
+- **Activité** : dernières requêtes (sans le texte des questions) et erreurs du modèle ;
+- **Serveur** : version, durée de fonctionnement, mémoire, disque, charge, corpus, modèles.
+
+Devenir administrateur : ajouter son adresse dans `ADMIN_EMAILS` de `/opt/lexia/.env` (puis `systemctl restart lexia`), ou `sudo -u lexia .venv/bin/python -m api.admin admin <email>`. Les actions effectuées depuis le tableau de bord sont tracées dans `/opt/lexia/logs/admin.jsonl`.
+
 ## Comptes et formules
 
 Les comptes étudiants sont stockés dans `/opt/lexia/donnees/lexia.db` (SQLite). `publier.sh` n'envoie ni n'efface jamais ce dossier.

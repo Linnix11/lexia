@@ -38,3 +38,6 @@ donnees/
 
 # Configuration locale des apercus
 .claude/
+
+# Version ecrite par deploy/publier.sh
+VERSION

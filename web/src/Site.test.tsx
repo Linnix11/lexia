@@ -8,19 +8,40 @@ const FORMULES = [
   { id: 'intensif', nom: 'Intensif', prix_mensuel_euros: 9.99, questions_par_jour: 300, quiz_par_jour: 100, description: 'd', avantages: ['300 questions par jour'] },
 ]
 const PROFIL = { email: 'etu@exemple.fr', cree_le: '2026-11-11T10:00:00+00:00', formule_fin: null, formule: FORMULES[0],
-  usage: { jour: '2026-11-11', questions: 10, quiz: 0 } }
+  usage: { jour: '2026-11-11', questions: 10, quiz: 0 }, admin: false }
 
 const json = (corps: unknown, status = 200) =>
   Promise.resolve(new Response(status === 204 ? null : JSON.stringify(corps), { status, headers: { 'Content-Type': 'application/json' } }))
 
+const STATS = {
+  comptes: { total: 3, par_formule: { gratuit: 2, etudiant: 1, intensif: 0 }, payants_actifs: 1, formules_expirees: 0, nouveaux_7j: 2, nouveaux_30j: 3 },
+  revenu_mensuel_estime: 4.99,
+  aujourd_hui: { jour: '2026-11-11', questions: 7, quiz: 1, actifs: 2, inscriptions: 1 },
+  serie: Array.from({ length: 30 }, (_, i) => ({ jour: `2026-10-${String(13 + (i % 18)).padStart(2, '0')}`, questions: i, quiz: 0, actifs: 1, inscriptions: 0 })),
+  formules: FORMULES,
+  activite: { dernieres_24h: { questions: 7, quiz: 1, statuts: { reponse: 6, abstention: 1 }, duree_moyenne_ms: 9000, duree_p95_ms: 14000, erreurs_modele: 0, recherche_hybride: 7 },
+    questions_7j: 20, derniere_erreur: null, retours: { utiles: 3, pas_utiles: 1, motifs: {} } },
+}
+const CLIENTS = [{ id: 2, email: 'etu@exemple.fr', admin: false, formule: 'etudiant', formule_enregistree: 'etudiant', formule_fin: '2026-12-12',
+  cree_le: '2026-11-10T10:00:00+00:00', questions_aujourdhui: 4, quiz_aujourdhui: 0, questions_30j: 40, derniere_activite: '2026-11-11', limite_questions: 100 }]
+const SERVEUR = { version: 'abc1234', demarre_le: '2026-11-11T10:00:00+00:00', uptime_service_s: 3600, uptime_systeme_s: 86400, charge: [0.1, 0.2, 0.3],
+  processeurs: 2, memoire_service: 2e9, memoire_systeme: { total: 8e9, disponible: 6e9 }, disque: { total: 1e11, libre: 9e10 }, python: '3.12.3',
+  systeme: 'Linux 6.8', index: { moteur: 'local', passages: 45277, embeddings: 41779, couverture: 1 }, modeles: { generation: ['gemini'] }, etat_modele: 'ok' }
+
+let admin = false
 let connecte = false
 let fetchMock: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   connecte = false
+  admin = false
   localStorage.clear()
   fetchMock = vi.fn((url: string) => {
-    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return connecte ? json(PROFIL) : json(null)
+    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return connecte ? json({ ...PROFIL, admin }) : json(null)
+    if (url.includes('/admin/stats')) return json(STATS)
+    if (url.includes('/admin/clients')) return json(CLIENTS)
+    if (url.includes('/admin/activite')) return json({ requetes: [], erreurs: [] })
+    if (url.includes('/admin/serveur')) return json(SERVEUR)
     if (url.endsWith('/auth/inscription')) {
       connecte = true
       return json(PROFIL, 201)
@@ -86,6 +107,26 @@ describe('Site', () => {
     })
     expect(await screen.findByRole('alert')).toHaveTextContent('Limite du jour atteinte')
     expect(screen.getByRole('link', { name: 'Voir les formules' })).toHaveAttribute('href', '/tarifs')
+  })
+
+  it('administration reservee aux admins', async () => {
+    connecte = true
+    aller('/admin')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument()
+  })
+
+  it('tableau de bord admin : indicateurs et clients', async () => {
+    connecte = true
+    admin = true
+    aller('/admin')
+    render(<Site />)
+    expect(await screen.findByText('Revenu mensuel théorique')).toBeInTheDocument()
+    expect(screen.getAllByText(/^4,99\s€$/).length).toBeGreaterThan(0)
+    expect(screen.getByRole('img', { name: /Questions posées par jour/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Clients' }))
+    expect(await screen.findByText('etu@exemple.fr')).toBeInTheDocument()
+    expect(screen.getByLabelText('Formule de etu@exemple.fr')).toHaveValue('etudiant')
   })
 
   it('page inconnue', async () => {

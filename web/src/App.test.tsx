@@ -25,6 +25,7 @@ const PROFIL = {
   email: 'etu@exemple.fr', cree_le: '2026-11-11T10:00:00+00:00', formule_fin: null,
   formule: { id: 'gratuit', nom: 'Gratuit', prix_mensuel_euros: 0, questions_par_jour: 10, quiz_par_jour: 2, description: '', avantages: [] },
   usage: { jour: '2026-11-11', questions: 3, quiz: 0 },
+  admin: false,
 }
 
 function repondre(corps: unknown, status = 200) {

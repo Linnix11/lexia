@@ -38,6 +38,7 @@ class Settings:
     comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
     app_db: Path = ROOT / "donnees" / "lexia.db"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
+    admin_emails: tuple[str, ...] = ()         # comptes administrateurs (ADMIN_EMAILS, separes par des virgules)
 
 
 def get_settings() -> Settings:
@@ -64,4 +65,5 @@ def get_settings() -> Settings:
         comptes_actifs=os.environ.get("COMPTES_ACTIFS", "1") not in ("0", "false", "non"),
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
+        admin_emails=_list("ADMIN_EMAILS"),
     )

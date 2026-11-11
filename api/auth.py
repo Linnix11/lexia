@@ -86,6 +86,7 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
         "formule": f.as_dict(),
         "formule_fin": u.formule_fin if u.formule_id == f.id else None,
         "usage": comptes.usage(u.id),
+        "admin": u.admin,
     }
 
 

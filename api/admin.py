@@ -5,6 +5,7 @@ Sur le serveur :
     sudo -u lexia .venv/bin/python -m api.admin formule etudiant@exemple.fr etudiant --jours 31
     sudo -u lexia .venv/bin/python -m api.admin formule etudiant@exemple.fr gratuit
     sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
+    sudo -u lexia .venv/bin/python -m api.admin admin moi@exemple.fr        (--retirer pour l'enlever)
     sudo -u lexia .venv/bin/python -m api.admin supprimer etudiant@exemple.fr
 
 Formules : gratuit, etudiant, intensif (voir api/plans.py). --jours : duree d'une formule payante ;
@@ -31,23 +32,31 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--jours", type=int, help="Duree en jours (formule payante), sinon sans fin")
     p = sous.add_parser("infos", help="Formule et consommation du jour d'un compte")
     p.add_argument("email")
+    p = sous.add_parser("admin", help="Donner ou retirer le role administrateur")
+    p.add_argument("email")
+    p.add_argument("--retirer", action="store_true", help="Retirer le role au lieu de le donner")
     p = sous.add_parser("supprimer", help="Supprimer definitivement un compte")
     p.add_argument("email")
     p.add_argument("--oui", action="store_true", help="Ne pas demander de confirmation")
     args = parser.parse_args(argv)
 
-    comptes = Comptes(get_settings().app_db)
+    settings = get_settings()
+    comptes = Comptes(settings.app_db, admins=settings.admin_emails)
     try:
         if args.commande == "liste":
             utilisateurs = comptes.lister()
             for u in utilisateurs:
                 fin = f" jusqu'au {u.formule_fin}" if u.formule_fin else ""
-                print(f"{u.email:40s} {u.formule_id:9s}{fin:20s} cree le {u.cree_le[:10]}")
+                role = " [admin]" if u.admin else ""
+                print(f"{u.email:40s} {u.formule_id:9s}{fin:20s} cree le {u.cree_le[:10]}{role}")
             print(f"{len(utilisateurs)} compte(s)")
         elif args.commande == "formule":
             u = comptes.changer_formule(args.email, args.formule, args.jours)
             fin = f" jusqu'au {u.formule_fin}" if u.formule_fin else " (sans fin)"
             print(f"{u.email} : formule {u.formule_id}{fin}")
+        elif args.commande == "admin":
+            u = comptes.definir_admin(args.email, not args.retirer)
+            print(f"{u.email} : {'administrateur' if u.admin else 'utilisateur'}")
         elif args.commande == "infos":
             u = comptes.par_email(args.email)
             if u is None:

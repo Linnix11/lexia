@@ -16,6 +16,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.admin_routes import creer_routes_admin
 from api.auth import creer_routes, routes_formules
 from api.comptes import Comptes, Utilisateur
 from api.config import Settings, get_settings
@@ -123,11 +124,14 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     # --- comptes et quotas -------------------------------------------------------
     if settings.comptes_actifs and comptes is None:
-        comptes = Comptes(settings.app_db)
+        comptes = Comptes(settings.app_db, admins=settings.admin_emails)
     utilisateur_requis = None
     if comptes is not None:
         routes_auth, utilisateur_requis = creer_routes(comptes)
         app.include_router(routes_auth, prefix="/auth")
+        extras = {"embeddings": getattr(embedder, "model", None), "reclassement": getattr(reclasseur, "model", None)}
+        app.include_router(creer_routes_admin(comptes, utilisateur_requis, journal, settings, retriever, extras),
+                           prefix="/admin")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:
@@ -155,6 +159,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     @app.exception_handler(LLMError)
     async def _llm_indisponible(request: Request, exc: LLMError):
         log.warning("LLM indisponible : %s", exc)
+        journal.ecrire("erreurs", route=request.url.path, type="modele_indisponible", detail=str(exc)[:300])
         return JSONResponse(status_code=503, content={
             "detail": "Le modèle est momentanément indisponible. Réessayez dans quelques instants."})
 

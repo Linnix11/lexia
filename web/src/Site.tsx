@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import App from './App'
+import { Admin } from './site/Admin'
 import { Lien, RouteurProvider, useRouteur } from './lib/router'
 import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
@@ -60,6 +61,11 @@ function Routes() {
   if (INVITES[route]) {
     if (profil === undefined) return <Chargement />
     return profil ? <Redirection vers="/app" /> : <>{INVITES[route]()}</>
+  }
+  if (route === '/admin') {
+    if (profil === undefined) return <Chargement />
+    if (!profil) return <Redirection vers="/connexion" />
+    return profil.admin ? <Admin /> : <Introuvable />
   }
   if (MEMBRES[route]) {
     if (profil === undefined) return <Chargement />

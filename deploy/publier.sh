@@ -24,6 +24,9 @@ echo "== Compilation du front"
 echo "== Index de recherche"
 test -f data/index/lexia.sqlite || { echo "data/index absent : lancer python -m ingest.build_index" >&2; exit 1; }
 
+echo "== Version"
+git rev-parse --short HEAD > VERSION 2>/dev/null && echo "  $(cat VERSION)" || echo "inconnue" > VERSION
+
 echo "== Envoi du code, du front et de l'index (rsync)"
 rsync -az --delete \
   --exclude '.git' --exclude '.venv' --exclude '.cache' --exclude 'node_modules' --exclude '.env' \

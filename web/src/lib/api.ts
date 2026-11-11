@@ -122,6 +122,92 @@ export interface Profil {
   formule: Formule
   formule_fin: string | null
   usage: { jour: string; questions: number; quiz: number }
+  admin: boolean
+}
+
+export interface JourStats {
+  jour: string
+  questions: number
+  quiz: number
+  actifs: number
+  inscriptions: number
+}
+
+export interface StatsAdmin {
+  comptes: {
+    total: number
+    par_formule: Record<string, number>
+    payants_actifs: number
+    formules_expirees: number
+    nouveaux_7j: number
+    nouveaux_30j: number
+  }
+  revenu_mensuel_estime: number
+  aujourd_hui: JourStats
+  serie: JourStats[]
+  formules: Formule[]
+  activite: {
+    dernieres_24h: {
+      questions: number
+      quiz: number
+      statuts: Record<string, number>
+      duree_moyenne_ms: number | null
+      duree_p95_ms: number | null
+      erreurs_modele: number
+      recherche_hybride: number
+    }
+    questions_7j: number
+    derniere_erreur: { ts: string; route: string; detail: string } | null
+    retours: { utiles: number; pas_utiles: number; motifs: Record<string, number> }
+  }
+}
+
+export interface ClientAdmin {
+  id: number
+  email: string
+  admin: boolean
+  formule: string
+  formule_enregistree: string
+  formule_fin: string | null
+  cree_le: string
+  questions_aujourdhui: number
+  quiz_aujourdhui: number
+  questions_30j: number
+  derniere_activite: string | null
+  limite_questions: number
+}
+
+export interface ActiviteAdmin {
+  requetes: {
+    ts: string
+    route: string
+    mode?: string
+    matiere?: string | null
+    statut?: string
+    recherche?: string
+    modele?: string | null
+    duree_ms?: number
+    format?: string
+    obtenu?: number
+  }[]
+  erreurs: { ts: string; route: string; type: string; detail: string }[]
+}
+
+export interface ServeurAdmin {
+  version: string | null
+  demarre_le: string
+  uptime_service_s: number
+  uptime_systeme_s: number | null
+  charge: [number, number, number] | null
+  processeurs: number | null
+  memoire_service: number | null
+  memoire_systeme: { total: number; disponible: number } | null
+  disque: { total: number; libre: number }
+  python: string
+  systeme: string
+  index: { moteur: string; passages: number; embeddings: number; couverture?: number }
+  modeles: Record<string, string | string[] | null>
+  etat_modele: 'ok' | 'degrade' | 'inconnu'
 }
 
 export interface ConfigPublique {
@@ -190,6 +276,16 @@ export const api = {
   connexion: (email: string, mot_de_passe: string) => post<Profil>('/auth/connexion', { email, mot_de_passe }),
   deconnexion: () => post<void>('/auth/deconnexion', {}),
   supprimerCompte: (mot_de_passe: string) => post<void>('/auth/supprimer', { mot_de_passe }),
+  admin: {
+    stats: () => requete<StatsAdmin>('/admin/stats'),
+    clients: (q = '') => requete<ClientAdmin[]>(`/admin/clients?q=${encodeURIComponent(q)}`),
+    formule: (id: number, formule: string, jours: number | null) =>
+      post<ClientAdmin>(`/admin/clients/${id}/formule`, { formule, jours }),
+    role: (id: number, admin: boolean) => post<ClientAdmin>(`/admin/clients/${id}/admin`, { admin }),
+    supprimer: (id: number) => post<void>(`/admin/clients/${id}/supprimer`, {}),
+    activite: () => requete<ActiviteAdmin>('/admin/activite?limite=150'),
+    serveur: () => requete<ServeurAdmin>('/admin/serveur'),
+  },
   matieres: () => requete<Matiere[]>('/matieres'),
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau }),
