@@ -17,6 +17,8 @@ import re
 from api.textes import sans_accents
 
 CC, CONST = "code_civil", "constitution_1958"
+CP, CPP, CT = "code_penal", "code_procedure_penale", "code_travail"
+CJA, CRPA = "code_justice_administrative", "code_relations_public_administration"
 MAX_LEXIQUE = 4
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
@@ -35,7 +37,8 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"droit de propriete|\bla propriete\b", ((CC, "544"),)),
     (r"meubles?.{0,12}immeubles?|immeubles?.{0,12}meubles?", ((CC, "516"),)),
     (r"charge de la preuve", ((CC, "1353"),)),
-    (r"prescription extinctive|delai de prescription", ((CC, "2219"), (CC, "2224"))),
+    (r"prescription extinctive|delai de prescription(?!.{0,30}(?:delit|crime|contravention|penal|action publique))",
+     ((CC, "2219"), (CC, "2224"))),
     (r"pacte civil de solidarite|\bpacs\b", ((CC, "515-1"),)),
     # --- droit constitutionnel ---------------------------------------------------
     (r"revision (?:de la )?constitution|revision constitutionnelle|reviser la constitution|forme republicaine",
@@ -93,6 +96,58 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"gestion d.affaires", ((CC, "1301"),)),
     (r"paiement de l.indu|\bl.indu\b", ((CC, "1302"), (CC, "1302-1"))),
     (r"enrichissement injustifie|enrichissement sans cause", ((CC, "1303"),)),
+    # --- droit penal (Code penal, Code de procedure penale) -------------------------------
+    (r"legitime defense", ((CP, "122-5"), (CP, "122-6"))),
+    (r"etat de necessite", ((CP, "122-7"),)),
+    (r"contrainte (?:morale|physique)|force majeure.{0,40}penal|penal.{0,40}force majeure", ((CP, "122-2"),)),
+    (r"erreur (?:sur le|de) droit", ((CP, "122-3"),)),
+    (r"ordre de la loi|commandement de l.autorite legitime", ((CP, "122-4"),)),
+    (r"trouble psychique|abolition du discernement|alteration du discernement", ((CP, "122-1"),)),
+    (r"(?:mineurs?|minorite).{0,40}penal", ((CP, "122-8"),)),
+    (r"legalite des delits|legalite criminelle|legalite penale|nullum crimen", ((CP, "111-3"), (CP, "111-4"))),
+    (r"interpretation stricte", ((CP, "111-4"),)),
+    (r"in mitius|loi penale (?:plus douce|dans le temps)|application de la loi penale dans le temps", ((CP, "112-1"),)),
+    (r"\btentative\b", ((CP, "121-5"),)),
+    (r"\bcomplic", ((CP, "121-7"), (CP, "121-6"))),
+    (r"responsabilite penale des personnes morales|personnes? morales?.{0,30}penalement", ((CP, "121-2"),)),
+    (r"homicide involontaire", ((CP, "221-6"), (CP, "121-3"))),
+    (r"element (?:moral|intentionnel)|faute d.imprudence|delits? non intentionnels?|intention (?:coupable|de commettre)", ((CP, "121-3"),)),
+    (r"\bmeurtre", ((CP, "221-1"),)),
+    (r"\bassassinat", ((CP, "221-3"),)),
+    (r"\bvol\b", ((CP, "311-1"),)),
+    (r"escroquerie", ((CP, "313-1"),)),
+    (r"abus de confiance", ((CP, "314-1"),)),
+    (r"prescription de l.action publique|prescription.{0,30}(?:crimes?|delits?)\b", ((CPP, "7"), (CPP, "8"))),
+    (r"garde a vue", ((CPP, "62-2"),)),
+    # --- droit social (Code du travail) -----------------------------------------------------
+    (r"licenciement (?:pour motif |)economique|motif economique", ((CT, "L1233-3"),)),
+    (r"cause reelle et serieuse|licenciement pour motif personnel", ((CT, "L1232-1"),)),
+    (r"entretien prealable", ((CT, "L1232-2"),)),
+    (r"rupture conventionnelle", ((CT, "L1237-11"),)),
+    (r"(?:contrat (?:de travail )?a )?duree indeterminee|\bcdi\b", ((CT, "L1221-2"),)),
+    (r"(?:contrat (?:de travail )?a )?duree determinee|\bcdd\b", ((CT, "L1242-1"), (CT, "L1242-2"))),
+    (r"periode d.essai", ((CT, "L1221-19"),)),
+    (r"harcelement moral", ((CT, "L1152-1"),)),
+    (r"harcelement sexuel", ((CT, "L1153-1"),)),
+    (r"discrimination.{0,40}(?:travail|salari|embauche|emploi|recrutement)|(?:travail|salari|embauche|emploi|recrutement).{0,40}discrimination",
+     ((CT, "L1132-1"),)),
+    (r"duree legale du travail|35 heures|trente-cinq heures", ((CT, "L3121-27"),)),
+    (r"\bsmic\b|salaire minimum", ((CT, "L3231-2"),)),
+    (r"comite social et economique|\bcse\b", ((CT, "L2311-2"),)),
+    (r"\bgreve", ((CT, "L2511-1"),)),
+    (r"preavis.{0,30}licenciement|licenciement.{0,30}preavis|indemnite de licenciement", ((CT, "L1234-1"),)),
+    (r"rupture du contrat de travail", ((CT, "L1231-1"),)),
+    # --- droit administratif (Code de justice administrative, CRPA) ---------------------------
+    (r"exces de pouvoir|\brep\b|recours (?:en|pour) annulation", ((CJA, "R421-1"),)),
+    (r"refere.suspension", ((CJA, "L521-1"),)),
+    (r"refere.liberte|liberte fondamentale.{0,40}refere|refere.{0,40}liberte fondamentale", ((CJA, "L521-2"),)),
+    (r"refere.mesures? utiles|refere conservatoire", ((CJA, "L521-3"),)),
+    (r"pouvoir d.injonction|injonction.{0,40}(?:administration|juge administratif)", ((CJA, "L911-1"),)),
+    (r"silence (?:garde par |de )l.administration|silence vaut (?:acceptation|accord|rejet)|administration.{0,20}garde le silence",
+     ((CRPA, "L231-1"),)),
+    (r"motivation des (?:actes|decisions) administrati", ((CRPA, "L211-2"),)),
+    (r"(?:retrait|abrogation).{0,40}(?:acte|decision)s? administrati|decisions? creatrices? de droits", ((CRPA, "L242-1"), (CRPA, "L243-1"))),
+    (r"(?:acces|communication).{0,30}documents? administratifs?", ((CRPA, "L311-1"),)),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

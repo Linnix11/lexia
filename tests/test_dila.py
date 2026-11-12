@@ -150,3 +150,18 @@ def test_embed_selection(tmp_path):
     todo = list(embed.a_calculer(f, done={"a": "1", "d": "ancienne"}))
     assert [(i, t) for i, _, t in todo] == [("c", "E\n\nC"), ("d", "D")]
 
+
+
+def test_legi_abrogation_differee_reste_en_vigueur_jusqu_a_sa_date():
+    """ABROGE_DIFF : version applicable aujourd'hui, abrogation programmee (ex. refonte du CPP en 2029)."""
+    brut = lire("LEGIARTI000032041571.xml").decode("utf-8")
+    assert "<ETAT>VIGUEUR</ETAT>" in brut and "<DATE_FIN>2999-01-01</DATE_FIN>" in brut
+    future = brut.replace("<ETAT>VIGUEUR</ETAT>", "<ETAT>ABROGE_DIFF</ETAT>").replace(
+        "<DATE_FIN>2999-01-01</DATE_FIN>", "<DATE_FIN>2029-01-01</DATE_FIN>")
+    p = legi.parse_article(future.encode(), date_recuperation="d", version_archive="a")
+    assert p.meta["en_vigueur"] is True and p.meta["date_fin"] == "2029-01-01"
+    assert "(en vigueur, abrogation différée, du 1er octobre 2016 au 1er janvier 2029)" in p.entete
+    passee = future.replace("<DATE_FIN>2029-01-01</DATE_FIN>", "<DATE_FIN>2020-01-01</DATE_FIN>")
+    assert legi.parse_article(passee.encode(), date_recuperation="d", version_archive="a").meta["en_vigueur"] is False
+    differee = brut.replace("<ETAT>VIGUEUR</ETAT>", "<ETAT>VIGUEUR_DIFF</ETAT>")
+    assert legi.parse_article(differee.encode(), date_recuperation="d", version_archive="a").meta["en_vigueur"] is False

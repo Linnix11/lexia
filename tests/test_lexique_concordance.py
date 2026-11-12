@@ -178,3 +178,25 @@ def test_article_777_seulement_pour_les_successions(retriever_reel, question, pr
     passages, _ = Lexia(retriever_reel, llm=None).rechercher(question, None, K_CHAT)
     numeros = [p.get("numero") for p in passages if p["source_id"] == CC]
     assert present in numeros and (absent is None or absent not in numeros), numeros
+
+
+# --- droit penal, social, administratif (lexique etendu le 2026-11-12) ---------------------------
+
+@reel
+@pytest.mark.parametrize("question, matiere, attendu", [
+    ("Qu'est-ce que la légitime défense ?", "droit_penal", ("code_penal", "122-5")),
+    ("Qu'est-ce que le trouble psychique en droit pénal ?", "droit_penal", ("code_penal", "122-1")),
+    ("Quel est le délai de prescription d'un délit ?", "droit_penal", ("code_procedure_penale", "8")),
+    ("Qu'est-ce que la garde à vue ?", "droit_penal", ("code_procedure_penale", "62-2")),
+    ("Qu'est-ce qu'un licenciement pour motif économique ?", "droit_social", ("code_travail", "L1233-3")),
+    ("Qu'est-ce que la rupture conventionnelle ?", "droit_social", ("code_travail", "L1237-11")),
+    ("Qu'est-ce que le recours pour excès de pouvoir ?", "droit_administratif", ("code_justice_administrative", "R421-1")),
+    ("Qu'est-ce que le référé-liberté ?", "droit_administratif", ("code_justice_administrative", "L521-2")),
+    ("Que se passe-t-il si l'administration garde le silence ?", "droit_administratif",
+     ("code_relations_public_administration", "L231-1")),
+])
+def test_article_de_principe_retrouve(retriever_reel, question, matiere, attendu):
+    from api.rag import K_CHAT
+    passages, _ = Lexia(retriever_reel, llm=None).rechercher(question, matiere, K_CHAT)
+    trouves = [(p["source_id"], p.get("numero")) for p in passages]
+    assert attendu in trouves, trouves

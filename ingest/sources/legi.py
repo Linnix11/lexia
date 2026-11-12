@@ -14,6 +14,7 @@ import re
 import tarfile
 import xml.etree.ElementTree as ET
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 
 from ingest import dila
@@ -33,7 +34,7 @@ ETATS = {
     "TRANSFERE": "transféré",
     "MODIFIE_MORT_NE": "jamais entré en vigueur",
     "VIGUEUR_DIFF": "entrée en vigueur différée",
-    "ABROGE_DIFF": "abrogation différée",
+    "ABROGE_DIFF": "en vigueur, abrogation différée",
 }
 
 # Lien Legifrance vers une version d'article (format a confirmer en navigateur).
@@ -96,7 +97,10 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
     nota_el = root.find("NOTA/CONTENU")
     nota = " ".join(dila.contenu_lines(ET.tostring(nota_el, encoding="unicode"))) if nota_el is not None else ""
 
-    en_vigueur = etat == "VIGUEUR"
+    # ABROGE_DIFF : version applicable aujourd'hui dont l'abrogation est deja programmee (ex. refonte du Code de
+    # procedure penale au 1er janvier 2029). Elle est en vigueur jusqu'a cette date : la compter hors vigueur
+    # retirait 3 718 articles actuels de la recherche (constate le 2026-11-12). VIGUEUR_DIFF : pas encore en vigueur.
+    en_vigueur = etat == "VIGUEUR" or (etat == "ABROGE_DIFF" and bool(fin) and fin > date.today().isoformat())
     chemin = plan(root, debut)
     if nom is None:
         titre_txt = root.find("CONTEXTE/TEXTE/TITRE_TXT")
