@@ -39,6 +39,8 @@ class Settings:
     app_db: Path = ROOT / "donnees" / "lexia.db"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
     admin_emails: tuple[str, ...] = ()         # comptes administrateurs (ADMIN_EMAILS, separes par des virgules)
+    # Pages legales (mentions, CGU, confidentialite) : vide = affiche « a completer »
+    legal: dict = field(default_factory=dict)
 
 
 def get_settings() -> Settings:
@@ -66,4 +68,14 @@ def get_settings() -> Settings:
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
         admin_emails=_list("ADMIN_EMAILS"),
+        legal={
+            "editeur": os.environ.get("LEGAL_EDITEUR", ""),
+            "statut": os.environ.get("LEGAL_STATUT", ""),
+            "adresse": os.environ.get("LEGAL_ADRESSE", ""),
+            "siren": os.environ.get("LEGAL_SIREN", ""),
+            "directeur": os.environ.get("LEGAL_DIRECTEUR", ""),
+            "mediateur": os.environ.get("LEGAL_MEDIATEUR", ""),
+            # 1 seulement si la cle Gemini est au niveau payant (obligatoire pour des utilisateurs dans l'EEE)
+            "gemini_payant": os.environ.get("GEMINI_NIVEAU_PAYANT", "0") in ("1", "true", "oui"),
+        },
     )

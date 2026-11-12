@@ -7,7 +7,7 @@ une entree par decision). Schema : db/schema.sql. Active avec RETRIEVER=postgres
 from __future__ import annotations
 
 from api.references import extraire
-from api.textes import SOURCES_CASSATION, cibles_article
+from api.textes import SOURCES_CASSATION, cibles_article, meme_loi
 from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
                                 groupes, termes)
 
@@ -49,6 +49,16 @@ class PostgresRetriever:
         ok = lambda s: autorisees is None or s in autorisees  # noqa: E731
         out: list[dict] = []
         for num in refs.articles:
+            if refs.lois and ok("lois"):
+                rows = self._q(f"SELECT {COLONNES} FROM passages WHERE source_id = 'lois' AND numero = %s"
+                               " AND en_vigueur IS NOT FALSE", (num,))
+                trouves = [p for p in map(_ligne, rows)
+                           if any(meme_loi(c, (p.get("meta") or {}).get("code") or "") for c in refs.lois)]
+                if trouves:
+                    out.extend(trouves)
+                    continue
+                if not refs.codes:
+                    continue
             for src in cibles_article(num, refs.codes, refs.constitution):
                 if not ok(src):
                     continue

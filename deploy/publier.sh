@@ -53,6 +53,8 @@ test -d .venv || python3 -m venv .venv
 .venv/bin/pip install -q -r deploy/requirements-serveur.txt
 chown -R lexia:lexia $APP
 cp deploy/lexia.service /etc/systemd/system/lexia.service
+chmod 755 deploy/sauvegarder_comptes.sh
+install -m 644 deploy/lexia.cron /etc/cron.d/lexia
 if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then
   sed "s/lexia.exemple.fr/$DOMAINE/" deploy/nginx-lexia.conf > /etc/nginx/sites-available/lexia
   ln -sf /etc/nginx/sites-available/lexia /etc/nginx/sites-enabled/lexia

@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from api.textes import codes_cites, sans_accents
+from api.textes import codes_cites, lois_citees, sans_accents
 
 _NUM = r"(?:[LRDA]\.?\s?)?\d+(?:-\d+)*(?:\s(?:bis|ter|quater))?"
 _ARTICLES_RE = re.compile(
@@ -31,6 +31,7 @@ class References:
     pourvois: tuple[str, ...]       # "21-86.418"
     constitution: bool              # la question parle de la Constitution
     codes: tuple[str, ...] = ()     # codes nommes ("code_penal"...)
+    lois: tuple[frozenset[str], ...] = ()  # lois / ordonnances citees, sous forme de cles (voir api.textes)
 
     @property
     def vide(self) -> bool:
@@ -59,7 +60,7 @@ def extraire(texte: str) -> References:
         if p not in pourvois:
             pourvois.append(p)
     return References(tuple(articles), tuple(decisions), tuple(pourvois), "constitution" in sans_accents(texte),
-                      codes_cites(texte))
+                      codes_cites(texte), lois_citees(texte))
 
 
 def _motif(n: str) -> str:

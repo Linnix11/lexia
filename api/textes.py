@@ -99,3 +99,58 @@ def cibles_article(numero: str, codes: tuple[str, ...], constitution: bool) -> t
         # Article a prefixe sans code nomme : tous les codes, la matiere choisie filtre ensuite.
         return tuple(t.source_id for t in TEXTES if t.source_id.startswith("code_") and t.source_id != "code_civil")
     return ORDRE_PAR_DEFAUT
+
+
+# --- lois et ordonnances : reconnaitre un texte cite ------------------------------------
+
+_MOIS = {"janvier": 1, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6, "juillet": 7, "aout": 8,
+         "septembre": 9, "octobre": 10, "novembre": 11, "decembre": 12}
+# « n° » perd son « ° » une fois les accents retires : « n 90-14 », « no 92-254 », « n°90-14 ».
+_NUM_LOI = r"\bno?\.?\s*(\d{2,4}-\d{1,5})"
+_DATE_LOI = rf"(\d{{1,2}})(?:er)?\s+({'|'.join(_MOIS)})\s+(\d{{4}})"
+_LOI_CITEE_RE = re.compile(
+    rf"\b(?:loi|ordonnance)s?(?:\s+organique)?(?:\s+{_NUM_LOI})?(?:\s*,?\s*du\s+{_DATE_LOI})?")
+_NUM_SEUL_RE = re.compile(rf"(?:{_NUM_LOI}|\b(?:loi|ordonnance)\s+(\d{{4}}-\d{{1,5}})\b)")
+_DATE_RE = re.compile(rf"\bdu\s+{_DATE_LOI}")
+
+
+def _cle_date(j: str, mois: str, an: str) -> str:
+    return f"date:{an}-{_MOIS[mois]:02d}-{int(j):02d}"
+
+
+def cles_texte_loi(nom: str) -> frozenset[str]:
+    """Cles d'un nom de texte (« Loi n°90-14 du 2 janvier 1990 » -> numero et date)."""
+    t = sans_accents(nom)
+    cles = set()
+    m = _NUM_SEUL_RE.search(t)
+    if m:
+        cles.add("num:" + (m.group(1) or m.group(2)))
+    d = _DATE_RE.search(t)
+    if d:
+        cles.add(_cle_date(*d.groups()))
+    return frozenset(cles)
+
+
+def lois_citees(texte: str) -> tuple[frozenset[str], ...]:
+    """Lois ou ordonnances citees dans une question, chacune sous forme de cles (numero, date)."""
+    out: list[frozenset[str]] = []
+    for m in _LOI_CITEE_RE.finditer(sans_accents(texte)):
+        num, j, mois, an = m.groups()
+        cles = set()
+        if num:
+            cles.add("num:" + num)
+        if an:
+            cles.add(_cle_date(j, mois, an))
+        if cles and frozenset(cles) not in out:
+            out.append(frozenset(cles))
+    return tuple(out)
+
+
+def meme_loi(citee: frozenset[str], nom_texte: str) -> bool:
+    """Le texte nomme correspond-il a la loi citee ? Le numero prime sur la date quand les deux sont connus."""
+    cles = cles_texte_loi(nom_texte)
+    num_c = {c for c in citee if c.startswith("num:")}
+    num_t = {c for c in cles if c.startswith("num:")}
+    if num_c and num_t:
+        return bool(num_c & num_t)
+    return bool(citee & cles)

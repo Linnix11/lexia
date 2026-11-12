@@ -129,8 +129,13 @@ class Lexia:
             en_vigueur = bool(meta.get("en_vigueur"))
             actuelle = None
             if not en_vigueur:
+                texte = meta.get("id_texte")
                 for v in self.retriever.versions(p["source_id"], p.get("numero") or ""):
-                    if (v.get("meta") or {}).get("en_vigueur"):
+                    vm = v.get("meta") or {}
+                    # « article 14 » existe dans des centaines de lois : rester dans le meme texte.
+                    if texte and vm.get("id_texte") and vm["id_texte"] != texte:
+                        continue
+                    if vm.get("en_vigueur"):
                         actuelle = {"id": v["id"], "version": v["version"], "url": v["url"]}
                         break
             message = ("Cette version est en vigueur selon la dernière synchronisation."

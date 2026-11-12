@@ -88,6 +88,9 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D40 | Annales | Catalogue de liens vers les sujets publiés par les facultés (métadonnées seulement, aucun sujet copié ni hébergé), géré par les administrateurs, affiché dans la Bibliothèque. |
 | D41 | Index volumineux | Vecteurs chargés en mémoire mappée et construits par blocs float32 : environ 1,5 Go pour ~480 000 passages, compatible avec le VPS (7,8 Go). |
 | D42 | Filtre par source dans l'index plein texte | La table FTS porte une colonne « source » et ne contient que les passages en vigueur : le filtre par matière se fait dans l'index, sans relire chaque passage. Recherche plein texte passée de 8-13 s à 0,2-0,3 s sur 667 000 passages. |
+| D43 | Lois citées | « article 29 de la loi du 29 juillet 1881 » ou « loi n° 90-14 » : la loi est reconnue (numéro, date) et l'article cherché dans ce texte, jamais l'article homonyme d'un code. La recherche de version en vigueur reste dans le même texte (id_texte). |
+| D44 | Pages légales configurables | Éditeur, adresse, SIREN, directeur de publication, médiateur et contact viennent du .env (LEGAL_*, CONTACT_EMAIL) ; un encart « à compléter » s'affiche tant qu'une valeur manque. Hébergeur vérifié sur les conditions Hostinger. Les conditions Gemini n'autorisent que le niveau payant pour des utilisateurs de l'EEE : GEMINI_NIVEAU_PAYANT=1 une fois la clé passée en payant. |
+| D45 | Tâche quotidienne du serveur | /etc/cron.d/lexia (installé par publier.sh) : sauvegarde SQLite de la base des comptes (14 jours) et purge des journaux de plus de 12 mois. Sauvegardes sur le même disque : une copie hors serveur reste à prévoir. |
 
 ## Journal des changements
 
@@ -102,3 +105,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-11 : tableau de bord administrateur (D36).
 - 2026-11-11 : corpus élargi, références multi-codes, annales (D37 à D41).
 - 2026-11-12 : filtre par source dans l'index plein texte (D42).
+- 2026-11-12 : lois citées, pages légales configurables, tâche quotidienne (D43 à D45).

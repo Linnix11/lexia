@@ -1,11 +1,27 @@
-// Pages legales : modeles a completer par l'editeur (les mentions [A COMPLETER] doivent etre remplacees
-// avant l'ouverture au public). A faire relire par un juriste.
+// Pages legales. Les informations sur l'editeur viennent du .env du serveur (LEGAL_*, CONTACT_EMAIL) :
+// tant qu'une valeur manque, un encart « a completer » s'affiche. A faire relire par un juriste.
 import type { ReactNode } from 'react'
+import { useSession } from '../state/session'
 import { PublicLayout, Section, Surtitre } from './Public'
 
 const A = ({ children }: { children: ReactNode }) => (
   <mark className="rounded bg-[#fbf0d9] px-1 text-[#7a5a1e]">{children}</mark>
 )
+
+/** Valeur configuree, ou encart « a completer » tant qu'elle manque. */
+function V({ v, manque }: { v?: string | null; manque: string }) {
+  return v ? <>{v}</> : <A>[{manque} : à compléter]</A>
+}
+
+/** Adresse de contact cliquable, ou encart « a completer ». */
+function Contact({ adresse }: { adresse: string | null }) {
+  return adresse ? <a href={`mailto:${adresse}`} className="underline">{adresse}</a> : <V manque="Adresse e-mail de contact" />
+}
+
+function useLegal() {
+  const { config } = useSession()
+  return { l: config?.legal, contact: config?.contact_email ?? null }
+}
 
 function Page({ titre, maj, children }: { titre: string; maj: string; children: ReactNode }) {
   return (
@@ -23,23 +39,25 @@ function Page({ titre, maj, children }: { titre: string; maj: string; children: 
 }
 
 export function MentionsLegales() {
+  const { l, contact } = useLegal()
   return (
-    <Page titre="Mentions légales" maj="11 novembre 2026">
+    <Page titre="Mentions légales" maj="12 novembre 2026">
       <section>
         <h2>Éditeur du site</h2>
         <p>
-          <A>[Nom et prénom ou raison sociale]</A><br />
-          <A>[Statut : entreprise individuelle, société… et capital le cas échéant]</A><br />
-          <A>[Adresse]</A><br />
-          <A>[Numéro SIREN / SIRET et RCS le cas échéant]</A><br />
-          Contact : <A>[adresse e-mail de contact]</A><br />
-          Directeur de la publication : <A>[Nom]</A>
+          <V v={l?.editeur} manque="Nom et prénom ou raison sociale" /><br />
+          <V v={l?.statut} manque="Statut (entreprise individuelle, société, capital le cas échéant)" /><br />
+          <V v={l?.adresse} manque="Adresse" /><br />
+          <V v={l?.siren} manque="Numéro SIREN / SIRET et RCS le cas échéant" /><br />
+          Contact : <Contact adresse={contact} /><br />
+          Directeur de la publication : <V v={l?.directeur} manque="Nom" />
         </p>
       </section>
       <section>
         <h2>Hébergement</h2>
         <p>
-          Le site est hébergé par <A>[Hostinger : raison sociale et adresse exactes, disponibles dans votre espace client]</A>.
+          Le site est hébergé par HOSTINGER INTERNATIONAL LIMITED, société privée à responsabilité limitée de droit
+          chypriote, dont le siège social est situé au 61 Lordou Vironos str., 6023 Larnaca, Chypre.
         </p>
       </section>
       <section>
@@ -62,13 +80,14 @@ export function MentionsLegales() {
 }
 
 export function Cgu() {
+  const { l, contact } = useLegal()
   return (
-    <Page titre="Conditions générales d’utilisation" maj="11 novembre 2026">
+    <Page titre="Conditions générales d’utilisation" maj="12 novembre 2026">
       <section>
         <h2>1. Objet</h2>
         <p>
           Les présentes conditions encadrent l’utilisation de Lexia, service en ligne d’aide à l’étude du droit
-          français édité par <A>[éditeur]</A>. La création d’un compte vaut acceptation de ces conditions.
+          français édité par <V v={l?.editeur} manque="Éditeur" />. La création d’un compte vaut acceptation de ces conditions.
         </p>
       </section>
       <section>
@@ -91,8 +110,14 @@ export function Cgu() {
         <p>
           Le service est proposé en formule gratuite et en formules payantes, chacune avec un nombre maximal de
           questions et de questionnaires par jour, indiqué sur la page Tarifs. Les compteurs sont remis à zéro chaque
-          jour à minuit (heure de Paris). <A>[Conditions de paiement, de durée, de résiliation et droit de
-          rétractation : à compléter avant l’ouverture des formules payantes.]</A>
+          jour à minuit (heure de Paris).
+        </p>
+        <p>
+          Aucun paiement n’est encaissé sur le site. Une formule payante est attribuée par l’éditeur sur demande
+          (contact : <Contact adresse={contact} />), après accord sur ses conditions (prix, durée, résiliation),
+          communiquées par écrit avant toute souscription. Elle reste active jusqu’à la date de fin indiquée sur la
+          page « Mon compte ». <A>[Droit de rétractation et modalités de paiement : à compléter avant d’encaisser un
+          premier paiement.]</A>
         </p>
       </section>
       <section>
@@ -112,18 +137,25 @@ export function Cgu() {
       </section>
       <section>
         <h2>7. Droit applicable</h2>
-        <p>Les présentes conditions sont soumises au droit français. <A>[Juridiction compétente et médiation de la consommation, le cas échéant.]</A></p>
+        <p>
+          Les présentes conditions sont soumises au droit français. En cas de litige, l’utilisateur consommateur
+          peut recourir gratuitement à un médiateur de la consommation : <V v={l?.mediateur} manque="Nom et coordonnées du médiateur de la consommation" />.
+          À défaut d’accord amiable, les tribunaux français sont compétents.
+        </p>
       </section>
     </Page>
   )
 }
 
 export function Confidentialite() {
+  const { l, contact } = useLegal()
   return (
-    <Page titre="Politique de confidentialité" maj="11 novembre 2026">
+    <Page titre="Politique de confidentialité" maj="12 novembre 2026">
       <section>
         <h2>Responsable du traitement</h2>
-        <p><A>[Éditeur, adresse et contact]</A></p>
+        <p>
+          <V v={l?.editeur} manque="Éditeur" />, <V v={l?.adresse} manque="Adresse" />. Contact : <Contact adresse={contact} />
+        </p>
       </section>
       <section>
         <h2>Données collectées</h2>
@@ -139,8 +171,15 @@ export function Confidentialite() {
         <h2>Traitement de vos questions</h2>
         <p>
           Pour produire une réponse, le texte de votre question et les extraits juridiques retrouvés sont transmis à
-          l’API Gemini de Google. <A>[Préciser le niveau de service utilisé et ses conditions de traitement des
-          données : avec le niveau gratuit, Google indique pouvoir utiliser ces données pour améliorer ses produits.]</A>
+          l’API Gemini de Google, utilisée en niveau payant.{' '}
+          {l?.gemini_payant ? (
+            <>Selon les conditions de ce niveau, Google n’utilise ni les questions ni les réponses pour améliorer ses
+            produits ; il les conserve pendant une durée limitée, uniquement pour détecter les abus, assurer la
+            sécurité du service et respecter ses obligations légales.</>
+          ) : (
+            <A>[La clé Gemini doit passer au niveau payant avant l’ouverture : les conditions de Google n’autorisent que
+            ce niveau pour un service proposé à des utilisateurs de l’Espace économique européen.]</A>
+          )}{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
         </p>
       </section>
@@ -156,7 +195,8 @@ export function Confidentialite() {
         <ul>
           <li>Compte et compteurs : jusqu’à la suppression du compte.</li>
           <li>Session de connexion : 30 jours au plus.</li>
-          <li>Journaux techniques : <A>[durée, par exemple 12 mois]</A>.</li>
+          <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
+          <li>Sauvegardes de la base des comptes : 14 jours glissants.</li>
         </ul>
       </section>
       <section>
@@ -170,8 +210,8 @@ export function Confidentialite() {
         <h2>Vos droits</h2>
         <p>
           Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
-          portabilité. Vous pouvez supprimer votre compte vous-même depuis « Mon compte », ou écrire à
-          <A>[adresse e-mail de contact]</A>. Vous pouvez aussi saisir la CNIL (www.cnil.fr).
+          portabilité. Vous pouvez supprimer votre compte vous-même depuis « Mon compte », ou écrire à{' '}
+          <Contact adresse={contact} />. Vous pouvez aussi saisir la CNIL (www.cnil.fr).
         </p>
       </section>
     </Page>

@@ -193,7 +193,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.get("/config")
     def config_publique():
-        return {"comptes": comptes is not None, "contact_email": settings.contact_email or None}
+        legal = {k: (v or None) if isinstance(v, str) else v for k, v in settings.legal.items()}
+        return {"comptes": comptes is not None, "contact_email": settings.contact_email or None, "legal": legal}
 
     @app.get("/matieres")
     def matieres():

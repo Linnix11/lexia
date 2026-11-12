@@ -435,3 +435,20 @@ def test_annales_catalogue(tmp_path):
     assert c.post(f"/admin/annales/{rec.json()['id']}/supprimer").status_code == 204
     assert c.post(f"/admin/annales/{r.json()['id']}/supprimer").status_code == 204
     assert c.get("/annales").json()["annales"] == []
+
+
+def test_lois_citees_et_meme_texte():
+    from api.references import extraire
+    from api.textes import cles_texte_loi, lois_citees, meme_loi
+
+    r = extraire("Que dit l'article 29 de la loi du 29 juillet 1881 ?")
+    assert r.articles == ("29",) and r.lois == (frozenset({"date:1881-07-29"}),)
+    # « n° » perd son symbole sans accents ; numero et date sont reconnus
+    assert extraire("article 1er de la loi n° 90-14 du 2 janvier 1990").lois == (
+        frozenset({"num:90-14", "date:1990-01-02"}),)
+    assert extraire("la loi est dure mais c'est la loi").lois == ()
+    assert cles_texte_loi("Ordonnance no 92-1069 du 1er octobre 1992 portant") == {"num:92-1069", "date:1992-10-01"}
+    c = lois_citees("loi n°90-14")[0]
+    assert meme_loi(c, "Loi n°90-14 du 2 janvier 1990") and not meme_loi(c, "Loi n°90-140 du 2 janvier 1990")
+    d = lois_citees("loi du 29 juillet 1881")[0]
+    assert meme_loi(d, "LOI du 29 juillet 1881") and not meme_loi(d, "Loi du 30 juin 1881")

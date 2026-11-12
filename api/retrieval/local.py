@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from api.references import extraire
-from api.textes import SOURCES_CASSATION, cibles_article
+from api.textes import SOURCES_CASSATION, cibles_article, meme_loi
 from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
                                 groupes, jeton_source, paires, termes)
 
@@ -92,6 +92,17 @@ class LocalRetriever:
             return autorisees is None or src in autorisees
 
         for num in refs.articles:
+            # Loi ou ordonnance nommee : l'article est cherche dans ce texte, pas dans les codes.
+            if refs.lois and ok("lois"):
+                rows = self._q("SELECT data FROM passages WHERE source_id = 'lois' AND numero = ?"
+                               " AND (en_vigueur IS NULL OR en_vigueur = 1)", (num,))
+                trouves = [p for p in map(json.loads, (r[0] for r in rows))
+                           if any(meme_loi(c, (p.get("meta") or {}).get("code") or "") for c in refs.lois)]
+                if trouves:
+                    out.extend(trouves)
+                    continue
+                if not refs.codes:
+                    continue  # loi citee mais article absent : ne pas servir l'article homonyme d'un code
             for src in cibles_article(num, refs.codes, refs.constitution):
                 if not ok(src):
                     continue

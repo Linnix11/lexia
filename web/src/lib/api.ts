@@ -211,9 +211,20 @@ export interface ServeurAdmin {
   etat_modele: 'ok' | 'degrade' | 'inconnu'
 }
 
+export interface InfosLegales {
+  editeur: string | null
+  statut: string | null
+  adresse: string | null
+  siren: string | null
+  directeur: string | null
+  mediateur: string | null
+  gemini_payant: boolean
+}
+
 export interface ConfigPublique {
   comptes: boolean
   contact_email: string | null
+  legal?: InfosLegales
 }
 
 export class ApiError extends Error {
