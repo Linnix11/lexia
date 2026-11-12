@@ -14,7 +14,7 @@ MAX_PAR_DOCUMENT = 1  # evite qu'une seule decision occupe tous les resultats
 # En dessous de cette part de passages vectorises, la recherche vectorielle biaiserait les
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
 SEUIL_COUVERTURE = 0.9
-N_RECLASSEMENT = 30  # candidats relus par le modele de reclassement, par groupe de sources
+N_RECLASSEMENT = 10  # candidats relus par le modele de reclassement, par groupe de sources (D47)
 
 
 def jeton_source(source_id: str) -> str:

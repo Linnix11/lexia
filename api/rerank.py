@@ -2,7 +2,8 @@
 
 Par defaut : antoinelouis/crossencoder-camembert-base-mmarcoFR (licence MIT, entraine en francais).
 Retenu apres comparaison sur des questions de cours (voir docs/decisions.md, D27) : meilleur
-compromis gain / vitesse (~0,9 s pour 30 candidats sur Mac M3) face a mMiniLM et bge-reranker-v2-m3.
+compromis gain / vitesse face a mMiniLM et bge-reranker-v2-m3. Reglage (D47) : 10 candidats par groupe,
+256 jetons, soit ~4 s par question sur le VPS (2 processeurs) au lieu de ~21 s avec 30 candidats / 512 jetons.
 Configuration : RERANK_MODEL (vide = desactive).
 """
 
@@ -10,11 +11,11 @@ from __future__ import annotations
 
 from api.retrieval.base import Hit
 
-MAX_CHARS = 1500
+MAX_CHARS = 800  # avec max_length=256 : au-dela, le texte serait tronque par le modele (D47)
 
 
 class CrossEncoderReclasseur:
-    def __init__(self, model: str, max_length: int = 512):
+    def __init__(self, model: str, max_length: int = 256):
         from sentence_transformers import CrossEncoder  # import lourd : seulement si active
 
         self.model = model

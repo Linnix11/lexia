@@ -92,6 +92,7 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D44 | Pages légales configurables | Éditeur, adresse, SIREN, directeur de publication, médiateur et contact viennent du .env (LEGAL_*, CONTACT_EMAIL) ; un encart « à compléter » s'affiche tant qu'une valeur manque. Hébergeur vérifié sur les conditions Hostinger. Les conditions Gemini n'autorisent que le niveau payant pour des utilisateurs de l'EEE : GEMINI_NIVEAU_PAYANT=1 une fois la clé passée en payant. |
 | D45 | Tâche quotidienne du serveur | /etc/cron.d/lexia (installé par publier.sh) : sauvegarde SQLite de la base des comptes (14 jours) et purge des journaux de plus de 12 mois. Sauvegardes sur le même disque : une copie hors serveur reste à prévoir. |
 | D46 | Moteur de recherche | Index local SQLite FTS5 + numpy en développement comme en production. La variante PostgreSQL + pgvector (jamais utilisée ni testée) est supprimée. Remplace D8 et D18. |
+| D47 | Reglage du reclassement | 10 candidats par groupe de sources, 256 jetons (au lieu de 30 / 512). Mesure sur le VPS (2 processeurs, 8 questions de `eval/recherche.py`) : avec reformulation, 7/8 dans tous les cas (sans reclassement, 10/256 ou 30/512) ; sans reformulation (Gemini indisponible), 3/8 sans reclassement, 5/8 en 10/256, 6/8 en 30/512. Temps de recherche moyen 4,0 s au lieu de 20,8 s. Complete D27. |
 
 ## Journal des changements
 
@@ -108,3 +109,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-12 : filtre par source dans l'index plein texte (D42).
 - 2026-11-12 : lois citées, pages légales configurables, tâche quotidienne (D43 à D45).
 - 2026-11-12 : moteur PostgreSQL supprimé, index local seul (D46) ; quotas non décomptés sans appel au modèle.
+- 2026-11-12 : reclassement allege, 10 candidats / 256 jetons (D47).
