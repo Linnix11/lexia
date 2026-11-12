@@ -93,6 +93,8 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D45 | Tâche quotidienne du serveur | /etc/cron.d/lexia (installé par publier.sh) : sauvegarde SQLite de la base des comptes (14 jours) et purge des journaux de plus de 12 mois. Sauvegardes sur le même disque : une copie hors serveur reste à prévoir. |
 | D46 | Moteur de recherche | Index local SQLite FTS5 + numpy en développement comme en production. La variante PostgreSQL + pgvector (jamais utilisée ni testée) est supprimée. Remplace D8 et D18. |
 | D47 | Reglage du reclassement | 10 candidats par groupe de sources, 256 jetons (au lieu de 30 / 512). Mesure sur le VPS (2 processeurs, 8 questions de `eval/recherche.py`) : avec reformulation, 7/8 dans tous les cas (sans reclassement, 10/256 ou 30/512) ; sans reformulation (Gemini indisponible), 3/8 sans reclassement, 5/8 en 10/256, 6/8 en 30/512. Temps de recherche moyen 4,0 s au lieu de 20,8 s. Complete D27. |
+| D48 | Gemini sans clé payante | Un modèle en 503 / 429 n'est plus réessayé : bascule immédiate vers le suivant, puis un second tour. Reformulation lancée en parallèle de la vectorisation, plafonnée à `QUERY_EXPANSION_TIMEOUT` au total, et sautée quand la question cite un article, une décision ou un pourvoi. Réponses identiques (question normalisée, mode, matière, semestre) servies depuis un cache mémoire de 24 h (500 entrées), sans appel au modèle ; elles restent décomptées. |
+| D49 | Semestres | Choix parmi les 6 semestres de licence (L1 S1-S2, L2 S3-S4, L3 S5-S6), gardé dans le navigateur, envoyé à l'API (`niveau`, `semestre`). La consigne du modèle (réponses et questionnaires) adapte le niveau d'explication à l'année. Les matières ne sont pas filtrées par semestre : les programmes varient selon les facultés. |
 
 ## Journal des changements
 
@@ -110,3 +112,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-12 : lois citées, pages légales configurables, tâche quotidienne (D43 à D45).
 - 2026-11-12 : moteur PostgreSQL supprimé, index local seul (D46) ; quotas non décomptés sans appel au modèle.
 - 2026-11-12 : reclassement allege, 10 candidats / 256 jetons (D47).
+- 2026-11-12 : Gemini plus rapide sans clé payante, cache des réponses (D48) ; six semestres et consignes adaptées au niveau (D49).

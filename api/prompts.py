@@ -87,8 +87,27 @@ def format_extraits(passages: list[dict]) -> str:
     return "\n\n".join(blocs)
 
 
-def prompt_chat(question: str, mode: str, passages: list[dict]) -> str:
-    consigne = MODES[mode] + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else "")
+PUBLICS = {
+    "L1": ("étudiant de première année de licence : définis chaque notion technique, va du principe à ses "
+           "conditions, avec des exemples concrets et simples."),
+    "L2": ("étudiant de deuxième année de licence : il connaît les notions de base ; insiste sur les régimes, "
+           "les conditions d'application et l'articulation des textes."),
+    "L3": ("étudiant de troisième année de licence : sois précis et technique, mets en avant les nuances, les "
+           "exceptions et les apports de la jurisprudence présents dans les extraits."),
+}
+
+
+def public(niveau: str | None, semestre: int | None = None) -> str:
+    """Ligne de consigne sur le public vise (vide si le niveau est inconnu)."""
+    if niveau not in PUBLICS:
+        return ""
+    precision = f", semestre {semestre}" if semestre else ""
+    return f"Public{precision} : {PUBLICS[niveau]}\n"
+
+
+def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
+                semestre: int | None = None) -> str:
+    consigne = public(niveau, semestre) + MODES[mode] + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else "")
     return (
         f"{consigne}\n\n<extraits>\n{format_extraits(passages)}\n</extraits>\n\n"
         f"<question>\n{question}\n</question>"
@@ -162,9 +181,11 @@ CONSIGNES_FORMAT = {
 }
 
 
-def prompt_quiz(theme: str, fmt: str, nombre: int, passages: list[dict]) -> str:
+def prompt_quiz(theme: str, fmt: str, nombre: int, passages: list[dict], niveau: str | None = None,
+                semestre: int | None = None) -> str:
+    pub = public(niveau, semestre)
     return (
-        f"Crée {nombre} questions. {CONSIGNES_FORMAT[fmt]}\n\n"
+        f"{pub}Crée {nombre} questions{' adaptées à ce public' if pub else ''}. {CONSIGNES_FORMAT[fmt]}\n\n"
         f"<extraits>\n{format_extraits(passages)}\n</extraits>\n\n<theme>\n{theme}\n</theme>"
     )
 

@@ -1,6 +1,7 @@
 """Tests de l'API avec un index construit a partir des fixtures et un modele simule."""
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -317,10 +318,12 @@ from api.retrieval.base import Complement, Hit, construire_groupe  # noqa: E402
 
 
 class ExpanseurFixe:
-    def __init__(self, complement):
-        self.complement = complement
+    def __init__(self, complement, attente: float = 0.0):
+        self.complement, self.attente, self.appels = complement, attente, 0
 
     def etendre(self, question):
+        self.appels += 1
+        time.sleep(self.attente)
         return self.complement
 
 
@@ -370,8 +373,49 @@ def test_reformulation_en_echec_ne_bloque_pas(index_dir, tmp_path):
     client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, expanseur=ExpanseurFixe(None)))
     llm.reponses.append({"statut": "abstention", "titre": "", "droit_positif": [], "explication": [],
                          "points_incertains": [], "message": ""})
-    r = client.post("/chat", json={"question": "article 1240"})
+    r = client.post("/chat", json={"question": "responsabilité pour faute"})
     assert r.status_code == 200 and r.json()["controle"]["reformulation"] is False
+
+
+ABSTENTION = {"statut": "abstention", "titre": "", "droit_positif": [], "explication": [],
+              "points_incertains": [], "message": ""}
+
+
+def test_pas_de_reformulation_quand_la_question_cite_un_article(index_dir, tmp_path):
+    llm, exp = FakeLLM(), ExpanseurFixe(Complement(reformulation="x"))
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, expanseur=exp))
+    llm.reponses += [ABSTENTION, ABSTENTION]
+    client.post("/chat", json={"question": "Que dit l'article 1240 du code civil ?"})
+    assert exp.appels == 0                                   # la reference suffit : pas d'appel Gemini
+    client.post("/chat", json={"question": "responsabilité pour faute"})
+    assert exp.appels == 1
+
+
+def test_reformulation_trop_lente_abandonnee(index_dir, tmp_path):
+    llm, exp = FakeLLM(), ExpanseurFixe(Complement(reformulation="x"), attente=2.0)
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path, expansion_timeout=0.2)
+    client = TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=llm, expanseur=exp))
+    llm.reponses.append(ABSTENTION)
+    debut = time.monotonic()
+    r = client.post("/chat", json={"question": "responsabilité pour faute"}).json()
+    assert time.monotonic() - debut < 1.5 and r["controle"]["reformulation"] is False
+
+
+def test_reponse_identique_servie_depuis_le_cache_et_niveau_transmis(env):
+    client, llm, _ = env
+    llm.reponses.append({"statut": "reponse", "titre": "Faute", "droit_positif": [
+        {"texte": "Tout fait quelconque de l'homme oblige à réparer.", "sources": ["S1"]}],
+        "explication": [], "points_incertains": [], "message": ""})
+    q = {"question": "Que dit l'article 1240 ?", "niveau": "L2", "semestre": 4}
+    r1 = client.post("/chat", json=q).json()
+    assert "semestre 4" in llm.prompts[-1] and "deuxième année" in llm.prompts[-1]
+    r2 = client.post("/chat", json={**q, "question": "que dit  l'article 1240"}).json()
+    assert len(llm.prompts) == 1 and r2["controle"]["cache"] is True       # aucun nouvel appel au modele
+    assert r2["droit_positif"] == r1["droit_positif"] and r2["reponse_id"] != r1["reponse_id"]
+    llm.reponses.append(ABSTENTION)
+    client.post("/chat", json={**q, "niveau": "L3", "semestre": 5})       # autre niveau : autre reponse
+    assert len(llm.prompts) == 2
 
 
 def test_construire_groupe_reclasse_puis_place_les_suggestions():

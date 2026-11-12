@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { Matiere, Mode, Niveau, ReponseChat } from '../lib/api'
 import type { Favori } from '../lib/favoris'
+import type { Semestre } from '../lib/semestres'
 
 export type Vue = 'espace' | 'assistant' | 'matieres' | 'fiches' | 'bibliotheque'
 
@@ -17,8 +18,9 @@ export interface Message {
 export interface AppState {
   vue: Vue
   setVue: (v: Vue) => void
-  niveau: Niveau
-  setNiveau: (n: Niveau) => void
+  niveau: Niveau // deduit du semestre
+  semestre: Semestre
+  setSemestre: (s: Semestre) => void
   matiere: string | null
   setMatiere: (m: string | null) => void
   matieres: Matiere[]

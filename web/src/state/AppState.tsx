@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { api, ApiError, type Matiere, type Mode, type Niveau } from '../lib/api'
+import { api, ApiError, type Matiere, type Mode } from '../lib/api'
 import { ecrireFavoris, lireFavoris, type Favori } from '../lib/favoris'
+import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
 import { Ctx, type AppState, type Message, type Vue } from './contexte'
 import { useSession } from './session'
 
@@ -9,7 +10,12 @@ const nouvelId = () => `m${Date.now()}-${compteur++}`
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [vue, setVue] = useState<Vue>('espace')
-  const [niveau, setNiveau] = useState<Niveau>('L1')
+  const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre())
+  const niveau = niveauDe(semestre)
+  const setSemestre = useCallback((s: Semestre) => {
+    setSemestreEtat(s)
+    ecrireSemestre(s)
+  }, [])
   const [matiere, setMatiere] = useState<string | null>(null)
   const [matieres, setMatieres] = useState<Matiere[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -55,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const id = nouvelId()
       setMessages((ms) => [...ms, { id, question: q, mode, etat: 'en_cours' }])
       api
-        .chat(q, mode, matiere, niveau)
+        .chat(q, mode, matiere, niveau, semestre)
         .then((reponse) => setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'ok', reponse } : m))))
         .catch((e: unknown) => {
           const erreur = e instanceof ApiError ? e.message : 'Une erreur est survenue.'
@@ -64,7 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => void rafraichir())
     },
-    [matiere, niveau, occupe, rafraichir],
+    [matiere, niveau, semestre, occupe, rafraichir],
   )
 
   const basculerFavori = useCallback(
@@ -89,7 +95,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       vue,
       setVue,
       niveau,
-      setNiveau,
+      semestre,
+      setSemestre,
       matiere,
       setMatiere,
       matieres,
@@ -108,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
+    [vue, niveau, semestre, setSemestre, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

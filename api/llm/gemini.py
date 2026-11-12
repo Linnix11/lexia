@@ -59,20 +59,30 @@ class GeminiLLM:
         return texte
 
     def generate_json(self, *, system, prompt, schema, temperature=0.2):
+        """Essaie chaque modele une fois, puis refait un tour s'ils ont tous echoue.
+
+        Un modele surcharge (503) ou a court de quota (429) l'est souvent encore une seconde plus tard :
+        on passe tout de suite au modele suivant plutot que de le reessayer (niveau gratuit : 503 frequents).
+        """
         body = self._body(system, prompt, schema, temperature)
         erreurs: list[str] = []
-        for model in self._models:
-            for tentative in range(self._tentatives):
+        exclus: set[str] = set()  # delai depasse ou requete refusee (400, 404...) : pas de second tour
+        for tour in range(self._tentatives):
+            if tour:
+                time.sleep(1.0)
+            for model in self._models:
+                if model in exclus:
+                    continue
                 debut = time.monotonic()
                 try:
                     r = self._client.post(f"{BASE}/{model}:generateContent", json=body, timeout=self._timeout)
                 except httpx.TimeoutException:
                     erreurs.append(f"{model}: delai depasse")
-                    break  # inutile de reessayer le meme modele : on passe au suivant
+                    exclus.add(model)  # deja 30 s perdues : pas de second essai
+                    continue
                 except httpx.HTTPError as e:
                     erreurs.append(f"{model}: {type(e).__name__}")
-                    break
-                duree = time.monotonic() - debut
+                    continue
                 if r.status_code == 200:
                     try:
                         return json.loads(self._texte(r.json())), model
@@ -80,9 +90,7 @@ class GeminiLLM:
                         erreurs.append(f"{model}: {e}")
                         continue
                 erreurs.append(f"{model}: HTTP {r.status_code}")
-                log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, duree)
+                log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, time.monotonic() - debut)
                 if r.status_code not in RETRY_STATUS:
-                    break
-                if tentative + 1 < self._tentatives:
-                    time.sleep(1.5 * (tentative + 1))
+                    exclus.add(model)
         raise LLMError("; ".join(erreurs) or "aucun modele configure")

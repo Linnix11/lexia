@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
     mode: Mode = "expliquer"
     matiere: str | None = None
     niveau: Niveau = "L1"
+    semestre: int | None = Field(default=None, ge=1, le=6)
 
 
 class QuizRequest(BaseModel):
@@ -24,6 +25,7 @@ class QuizRequest(BaseModel):
     nombre: int = Field(default=5, ge=1, le=15)
     matiere: str | None = None
     niveau: Niveau = "L1"
+    semestre: int | None = Field(default=None, ge=1, le=6)
 
 
 class ReponseQuiz(BaseModel):

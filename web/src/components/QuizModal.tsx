@@ -34,7 +34,7 @@ export function QuizModal() {
 }
 
 function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; matiereInitiale: string | null }) {
-  const { fermerQuiz, matieres, niveau, ouvrirSource } = useApp()
+  const { fermerQuiz, matieres, niveau, semestre, ouvrirSource } = useApp()
   const { rafraichir } = useSession()
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
   const [theme, setTheme] = useState(themeInitial)
@@ -58,7 +58,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
     setCorrection(null)
     setReponses({})
     api
-      .quiz(theme.trim(), format, nombre, mat, niveau)
+      .quiz(theme.trim(), format, nombre, mat, niveau, semestre)
       .then((q) => {
         setQuiz(q)
         if (!q.quiz_id) setErreur(q.message)

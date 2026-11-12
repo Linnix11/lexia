@@ -70,7 +70,23 @@ describe('Assistant', () => {
     expect(screen.getByRole('button', { name: '[S1]' })).toBeInTheDocument()
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
-    expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1' })
+    expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
+  })
+
+  it('propose les six semestres et envoie le semestre choisi', async () => {
+    render(<Site />)
+    const choix = await screen.findByLabelText('Choisir le semestre')
+    expect(within(choix).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'L1 · Semestre 1', 'L1 · Semestre 2', 'L2 · Semestre 3', 'L2 · Semestre 4', 'L3 · Semestre 5', 'L3 · Semestre 6'])
+    fireEvent.change(choix, { target: { value: '4' } })
+    expect(localStorage.getItem('lexia.semestre.v1')).toBe('4')
+    fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'article 1240' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    await screen.findByText('La responsabilité pour faute')
+    const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
+    expect(corps).toMatchObject({ niveau: 'L2', semestre: 4 })
   })
 
   it('ouvre la source citee et verifie la version en vigueur', async () => {

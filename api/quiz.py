@@ -109,7 +109,8 @@ class QuizService:
         self.store = store or QuizStore()
         self.journal = journal or Journal(None)
 
-    def generer(self, theme: str, fmt: str, nombre: int, matiere: str | None) -> dict:
+    def generer(self, theme: str, fmt: str, nombre: int, matiere: str | None, niveau: str | None = None,
+                semestre: int | None = None) -> dict:
         debut = time.monotonic()
         passages, infos = self.lexia.rechercher(theme, matiere, K_QUIZ)
         recherche = infos["recherche"]
@@ -120,7 +121,7 @@ class QuizService:
         if passages:
             brut, modele = self.llm.generate_json(
                 system=prompts.SYSTEME_QUIZ,
-                prompt=prompts.prompt_quiz(theme, fmt, nombre, passages),
+                prompt=prompts.prompt_quiz(theme, fmt, nombre, passages, niveau, semestre),
                 schema=prompts.SCHEMAS_QUIZ[fmt],
                 temperature=0.5,
             )

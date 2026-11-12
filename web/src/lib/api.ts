@@ -319,10 +319,10 @@ export const api = {
   },
   matieres: () => requete<Matiere[]>('/matieres'),
   annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
-  chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau) =>
-    post<ReponseChat>('/chat', { question, mode, matiere, niveau }),
-  quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau) =>
-    post<Quiz>('/quiz', { theme, format, nombre, matiere, niveau }),
+  chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number) =>
+    post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre }),
+  quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau, semestre: number) =>
+    post<Quiz>('/quiz', { theme, format, nombre, matiere, niveau, semestre }),
   corriger: (quiz_id: string, reponses: { index: number; valeur: number | boolean | string | null }[]) =>
     post<Correction>('/quiz/correct', { quiz_id, reponses }),
   source: (id: string) => requete<SourceComplete>(`/sources/${encodeURIComponent(id)}`),

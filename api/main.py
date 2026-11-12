@@ -111,7 +111,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         expanseur = _construire_expanseur(settings)
     if reclasseur is None:
         reclasseur = _construire_reclasseur(settings)
-    lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur)
+    lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur, delai_reformulation=settings.expansion_timeout)
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
     # Les routes synchrones partagent 40 threads avec tout le site : quand Gemini est lent, chaque appel
@@ -218,7 +218,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         _taille(req.question)
         _matiere(req.matiere)
         return _place_libre(lambda: _avec_quota(u, "questions",
-                                                lambda: lexia.chat(req.question.strip(), req.mode, req.matiere)))
+                                                lambda: lexia.chat(req.question.strip(), req.mode, req.matiere,
+                                                                   req.niveau, req.semestre)))
 
     @app.post("/quiz", dependencies=[Depends(limite)])
     def creer_quiz(req: QuizRequest, request: Request):
@@ -226,7 +227,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         _taille(req.theme)
         _matiere(req.matiere)
         return _place_libre(lambda: _avec_quota(
-            u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere)))
+            u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere,
+                                      req.niveau, req.semestre)))
 
     @app.post("/quiz/correct", dependencies=[Depends(limite)])
     def corriger_quiz(req: CorrectionRequest, request: Request):

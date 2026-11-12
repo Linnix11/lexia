@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import copy
+import logging
+import re
+import threading
 import time
 import uuid
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as DelaiDepasse
 
 from api import prompts
 from api.citations import valider_reponse
 from api.journal import Journal
 from api.llm.base import LLM
-from api.matieres import sources_pour
-from api.matieres import sources_par_matiere
+from api.matieres import sources_par_matiere, sources_pour
+from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Retriever, groupes
 from api.textes import SOURCES_TEXTES
 
@@ -19,6 +26,41 @@ AVERTISSEMENT = (
     "en particulier la version en vigueur des textes."
 )
 K_CHAT = 8
+log = logging.getLogger("lexia.rag")
+# La reformulation (appel Gemini) tourne pendant la vectorisation de la question ; au-dela du delai,
+# la recherche part sans elle (le resultat tardif est abandonne).
+_REFORMULATIONS = ThreadPoolExecutor(max_workers=20, thread_name_prefix="reformulation")
+CACHE_REPONSES = 500           # reponses gardees en memoire (identiques pour une meme question)
+CACHE_DUREE_S = 24 * 3600      # l'index ne change qu'a la publication, qui redemarre le service
+
+
+def cle_question(question: str, *contexte) -> tuple:
+    """Question normalisee (casse, espaces, ponctuation finale) + mode, matiere, niveau..."""
+    q = re.sub(r"\s+", " ", question.lower()).strip().rstrip(" ?!.")
+    return (q, *contexte)
+
+
+class CacheReponses:
+    def __init__(self, maximum: int = CACHE_REPONSES, duree: float = CACHE_DUREE_S):
+        self._max, self._duree = maximum, duree
+        self._items: OrderedDict[tuple, tuple[float, dict]] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, cle: tuple) -> dict | None:
+        with self._lock:
+            v = self._items.get(cle)
+            if v is None or time.monotonic() - v[0] > self._duree:
+                self._items.pop(cle, None)
+                return None
+            self._items.move_to_end(cle)
+            return copy.deepcopy(v[1])
+
+    def mettre(self, cle: tuple, reponse: dict) -> None:
+        with self._lock:
+            self._items[cle] = (time.monotonic(), copy.deepcopy(reponse))
+            self._items.move_to_end(cle)
+            while len(self._items) > self._max:
+                self._items.popitem(last=False)
 
 
 def table_extraits(passages: list[dict]) -> dict[str, dict]:
@@ -57,7 +99,9 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
 
 class Lexia:
     def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
-                 expanseur=None, reclasseur=None):
+                 expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None):
+        self.delai_reformulation = delai_reformulation
+        self.cache = cache if cache is not None else CacheReponses()
         self.retriever = retriever
         self.llm = llm
         self.journal = journal or Journal(None)
@@ -72,8 +116,18 @@ class Lexia:
         textes, juris = groupes(sources, toutes)
         vectoriel = self.embedder is not None and any(
             g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris))
-        complement = self.expanseur.etendre(texte) if self.expanseur is not None else None
+        # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
+        # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
+        futur = None
+        if self.expanseur is not None and extraire(texte).vide:
+            futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
         vecteur = self.embedder.embed_query(texte) if vectoriel else None
+        complement = None
+        if futur is not None:
+            try:
+                complement = futur.result(timeout=self.delai_reformulation)
+            except DelaiDepasse:
+                log.info("reformulation trop lente (> %.0f s) : recherche sans elle", self.delai_reformulation)
         if complement and complement.reformulation and vectoriel:
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
@@ -86,9 +140,17 @@ class Lexia:
         }
         return [h.passage for h in hits], infos
 
-    def chat(self, question: str, mode: str, matiere: str | None) -> dict:
+    def chat(self, question: str, mode: str, matiere: str | None, niveau: str | None = None,
+             semestre: int | None = None) -> dict:
         debut = time.monotonic()
         reponse_id = str(uuid.uuid4())
+        cle = cle_question(question, mode, matiere, niveau, semestre)
+        deja = self.cache.get(cle)
+        if deja is not None:
+            self.journal.ecrire("requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,
+                                statut=deja["statut"], cache=True, duree_ms=int((time.monotonic() - debut) * 1000))
+            deja["controle"]["cache"] = True
+            return {**deja, "reponse_id": reponse_id}
         passages, infos = self.rechercher(question, matiere, K_CHAT)
         recherche = infos["recherche"]
         table = table_extraits(passages)
@@ -98,7 +160,7 @@ class Lexia:
         else:
             brut, modele = self.llm.generate_json(
                 system=prompts.SYSTEME,
-                prompt=prompts.prompt_chat(question, mode, passages),
+                prompt=prompts.prompt_chat(question, mode, passages, niveau, semestre),
                 schema=prompts.SCHEMA_REPONSE,
             )
             reponse, controle = valider_reponse(brut, table, mode)
@@ -109,7 +171,7 @@ class Lexia:
             passages_fournis=[p["id"] for p in passages], passages_cites=[s["id"] for s in sources],
             controle=controle.as_dict(), recherche_detail=infos, duree_ms=int((time.monotonic() - debut) * 1000),
         )
-        return {
+        res = {
             "reponse_id": reponse_id,
             **reponse,
             "sources": sources,
@@ -117,6 +179,9 @@ class Lexia:
             "controle": {**controle.as_dict(), **infos, "passages_consultes": len(passages),
                          "modele_appele": modele is not None},
         }
+        if reponse["statut"] == "reponse":
+            self.cache.mettre(cle, res)
+        return res
 
     # --- verification de vigueur ----------------------------------------------
 
