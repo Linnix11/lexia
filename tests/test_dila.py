@@ -8,7 +8,6 @@ import pytest
 
 from ingest import embed, jurisprudence
 from ingest.jurisprudence import date_fr, decouper
-from ingest.load_db import COLONNES, ligne
 from ingest.sources import cass, constit, legi
 
 FIX = Path(__file__).parent / "fixtures"
@@ -151,14 +150,3 @@ def test_embed_selection(tmp_path):
     todo = list(embed.a_calculer(f, done={"a": "1", "d": "ancienne"}))
     assert [(i, t) for i, _, t in todo] == [("c", "E\n\nC"), ("d", "D")]
 
-
-def test_load_db_ligne():
-    p = legi.parse_article(lire("LEGIARTI000006438819.xml"), date_recuperation="2026-11-11T00:00:00+00:00",
-                           version_archive="a").to_dict()
-    row = dict(zip(COLONNES, ligne(p)))
-    assert row["en_vigueur"] is False
-    assert row["date_debut"] == "1804-03-21" and row["date_fin"] == "2016-10-01"
-    assert row["date_decision"] is None
-    j = constit.parse_decision(lire("constit_2023-1075_QPC.xml"), date_recuperation="d", version="v")[0].to_dict()
-    row = dict(zip(COLONNES, ligne(j)))
-    assert row["en_vigueur"] is None and row["date_decision"] == "2024-01-18"

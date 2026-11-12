@@ -151,7 +151,7 @@ class QuizService:
                 "Impossible de créer des questions vérifiables sur ce thème avec les sources disponibles.",
             "sources": [fiche_source(p, labels[p["id"]]) for p in passages if p["id"] in utilises],
             "avertissement": AVERTISSEMENT,
-            "controle": {**controle.as_dict(), "recherche": recherche},
+            "controle": {**controle.as_dict(), "recherche": recherche, "modele_appele": modele is not None},
         }
 
     def corriger(self, quiz_id: str, reponses: list[dict]) -> dict | None:

@@ -1,7 +1,6 @@
 """Moteur de recherche local : SQLite FTS5 (BM25) + similarite cosinus numpy.
 
-Lit l'index produit par `python -m ingest.build_index`. Pour le developpement et les tests ;
-la production utilise PostgresRetriever.
+Lit l'index produit par `python -m ingest.build_index`. Utilise en developpement comme en production.
 """
 
 from __future__ import annotations

@@ -56,10 +56,6 @@ class LimiteRequetes:
 
 
 def _construire_retriever(settings: Settings) -> Retriever:
-    if settings.retriever == "postgres":
-        from api.retrieval.postgres import PostgresRetriever
-
-        return PostgresRetriever(settings.database_url)
     from api.retrieval.local import LocalRetriever
 
     return LocalRetriever(settings.index_dir, embed_model=settings.embed_model or None)
@@ -172,13 +168,17 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             appels_modele.release()
 
     def _avec_quota(u: Utilisateur | None, type_: str, action):
+        """Decompte avant l'appel (limite atomique), rembourse si le modele n'a pas repondu (D32)."""
         _consommer(u, type_)
         try:
-            return action()
+            res = action()
         except Exception:
             if u is not None:
                 comptes.rembourser(u, type_)  # le modele n'a pas repondu : pas decompte
             raise
+        if u is not None and not res["controle"]["modele_appele"]:
+            comptes.rembourser(u, type_)  # aucun extrait trouve : le modele n'a pas ete appele
+        return res
 
     @app.exception_handler(LLMError)
     async def _llm_indisponible(request: Request, exc: LLMError):

@@ -116,25 +116,7 @@ sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
 
 Formules : `gratuit`, `etudiant`, `intensif` (limites dans `api/plans.py`). À l'échéance de `--jours`, le compte repasse en gratuit. Renseigner `CONTACT_EMAIL` dans `/opt/lexia/.env` pour afficher « Demander cette formule » sur la page Tarifs.
 
-Sauvegarde quotidienne de la base des comptes (14 jours conservés) :
-
-```bash
-crontab -e
-# ajouter la ligne :
-15 3 * * * /opt/lexia/deploy/sauvegarder_comptes.sh
-```
-
-## Variante : base PostgreSQL
-
-Si une base PostgreSQL avec l'extension **pgvector** est disponible (sur le VPS ou ailleurs) :
-
-```bash
-# sur le Mac, avec DATABASE_URL pointant vers la base
-python -m ingest.load_db --schema
-python -m ingest.load_db --all
-```
-
-Puis dans `/opt/lexia/.env` : `RETRIEVER=postgres` et `DATABASE_URL=postgresql://...`. Cette variante n'a pas encore été testée sur une vraie base ; l'index SQLite local suffit pour le pilote.
+Sauvegarde quotidienne de la base des comptes (14 jours conservés) : `publier.sh` installe `/etc/cron.d/lexia`, qui lance `deploy/sauvegarder_comptes.sh` à 3 h 15 en tant que `lexia` (journal : `/opt/lexia/logs/sauvegarde.log`).
 
 ## Sécurité
 

@@ -20,8 +20,7 @@ Chaque passage garde : lien officiel, version / dates de vigueur, date de récup
 ```
 web/          panel étudiant : Vite + React + TypeScript + Tailwind (voir web/README.md)
 api/          backend FastAPI (phase 2) : llm/, retrieval/, schemas/
-ingest/       import (sources/), embeddings (embed.py), chargement en base (load_db.py)
-db/           schema.sql (PostgreSQL + pgvector)
+ingest/       import (sources/), embeddings (embed.py), index de recherche (build_index.py)
 registry/     sources.yaml : registre des sources, licences, périmètre, statut
 data/         passages/*.jsonl, embeddings/ (cache), raw/ (archives) - seule la Constitution est commitée
 eval/         jeu d'évaluation, exécution et rapports (voir eval/README.md)
@@ -62,20 +61,9 @@ Le script peut être interrompu puis relancé sans rien recalculer (cache par em
 
 `EMBED_PROVIDER=gemini` reste possible, mais le niveau gratuit est limité à 1 000 embeddings par jour.
 
-**En production** : calculer les embeddings sur une machine avec GPU (ou un Mac), puis les charger en base avec `ingest.load_db`. Le serveur n'a besoin du modèle que pour vectoriser les questions (rapide, même sur CPU).
+**En production** : calculer les embeddings sur une machine avec GPU (ou un Mac), puis construire l'index (`ingest.build_index`), que `deploy/publier.sh` envoie au serveur. Le serveur n'a besoin du modèle que pour vectoriser les questions (rapide, même sur CPU).
 
-## 4. Charger dans PostgreSQL
-
-Prérequis : PostgreSQL 15+ avec l'extension **pgvector**, `DATABASE_URL` dans `.env`.
-
-```bash
-python -m ingest.load_db --schema   # crée les tables
-python -m ingest.load_db --all      # insère / met à jour / supprime + applique les embeddings
-```
-
-Rejouable : seuls les passages modifiés sont réécrits (et leur embedding remis à zéro), chaque exécution est tracée dans la table `synchros`.
-
-## 5. Lancer l'API
+## 4. Lancer l'API
 
 ```bash
 python -m ingest.build_index          # index local (SQLite FTS5 + vecteurs), sans base de données
@@ -83,7 +71,7 @@ uvicorn api.main:app --port 8000      # documentation interactive : http://local
 python eval/essai_api.py http://localhost:8000   # essai rapide avec de vraies questions
 ```
 
-En production : `RETRIEVER=postgres` et `DATABASE_URL` (base chargée par `ingest.load_db`).
+En production, le même index local est utilisé (envoyé par `deploy/publier.sh`).
 
 | Route | Rôle |
 |---|---|
@@ -103,7 +91,7 @@ En production : `RETRIEVER=postgres` et `DATABASE_URL` (base chargée par `inges
 - **Modèle** : principal puis secours (`GEMINI_FALLBACK_MODELS`) en cas de 429 / 503 / délai dépassé ; réponse 503 claire si tous échouent.
 - **Données** : clé côté serveur uniquement ; journaux `logs/*.jsonl` sans le texte des questions ; limite de requêtes par IP et de taille des questions.
 
-## 6. Lancer le panel étudiant
+## 5. Lancer le panel étudiant
 
 ```bash
 cd web && npm install && npm run dev   # http://localhost:5173, /api relayé vers l'API sur le port 8000

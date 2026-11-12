@@ -114,7 +114,8 @@ class Lexia:
             **reponse,
             "sources": sources,
             "avertissement": AVERTISSEMENT,
-            "controle": {**controle.as_dict(), **infos, "passages_consultes": len(passages)},
+            "controle": {**controle.as_dict(), **infos, "passages_consultes": len(passages),
+                         "modele_appele": modele is not None},
         }
 
     # --- verification de vigueur ----------------------------------------------

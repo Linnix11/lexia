@@ -24,8 +24,6 @@ class Settings:
     embed_provider: str = ""                   # "local", "gemini" ou "" (pas de recherche vectorielle)
     embed_model: str = ""
     llm_timeout: float = 30.0
-    retriever: str = "local"                   # "local" (SQLite + numpy) ou "postgres"
-    database_url: str = ""
     index_dir: Path = ROOT / "data" / "index"
     logs_dir: Path = ROOT / "logs"
     max_question_chars: int = 2000
@@ -58,8 +56,6 @@ def get_settings() -> Settings:
         embed_provider=embed_provider,
         embed_model=embed_model,
         llm_timeout=float(os.environ.get("LLM_TIMEOUT_SECONDS", "30")),
-        retriever=os.environ.get("RETRIEVER", "local"),
-        database_url=os.environ.get("DATABASE_URL", ""),
         max_question_chars=int(os.environ.get("MAX_QUESTION_CHARS", "2000")),
         rate_limit_per_minute=int(os.environ.get("RATE_LIMIT_PER_MINUTE", "10")),
         cors_origins=_list("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"),

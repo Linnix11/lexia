@@ -1,4 +1,4 @@
-"""Construit l'index de recherche local (sans base de donnees) utilise par l'API en developpement.
+"""Construit l'index de recherche local (sans base de donnees) utilise par l'API.
 
 Usage :
     python -m ingest.build_index
@@ -8,8 +8,7 @@ Sorties (data/index/, non commite) :
     vectors.npy    embeddings float32 des passages dont l'empreinte correspond au cache
     vectors_ids.json
 
-A relancer apres ingest.run ou quand de nouveaux embeddings ont ete calcules.
-En production, l'API utilise PostgreSQL (db/schema.sql) a la place de cet index.
+A relancer apres ingest.run ou quand de nouveaux embeddings ont ete calcules ; publier.sh l'envoie au serveur.
 """
 
 from __future__ import annotations

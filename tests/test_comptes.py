@@ -131,6 +131,20 @@ def test_quota_gratuit_et_remboursement(env):
     assert client.get("/auth/moi").json()["usage"]["questions"] == 10
 
 
+def test_sans_extrait_ni_appel_au_modele_rien_n_est_decompte(tmp_path):
+    class RetrieverVide(Retriever):
+        def search(self, question, **kw):
+            return []
+
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+                     retriever=RetrieverVide(), llm=LLM(), comptes=Comptes(tmp_path / "comptes.db"))
+    client = TestClient(app)
+    inscrire(client)
+    assert client.post("/chat", json={"question": "question hors corpus"}).json()["statut"] == "abstention"
+    assert client.post("/quiz", json={"theme": "theme hors corpus"}).json()["obtenu"] == 0
+    assert client.get("/auth/moi").json()["usage"] | {"jour": None} == {"jour": None, "questions": 0, "quiz": 0}
+
+
 def test_plafond_d_appels_modele_simultanes(tmp_path):
     import threading
 

@@ -91,6 +91,7 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D43 | Lois citées | « article 29 de la loi du 29 juillet 1881 » ou « loi n° 90-14 » : la loi est reconnue (numéro, date) et l'article cherché dans ce texte, jamais l'article homonyme d'un code. La recherche de version en vigueur reste dans le même texte (id_texte). |
 | D44 | Pages légales configurables | Éditeur, adresse, SIREN, directeur de publication, médiateur et contact viennent du .env (LEGAL_*, CONTACT_EMAIL) ; un encart « à compléter » s'affiche tant qu'une valeur manque. Hébergeur vérifié sur les conditions Hostinger. Les conditions Gemini n'autorisent que le niveau payant pour des utilisateurs de l'EEE : GEMINI_NIVEAU_PAYANT=1 une fois la clé passée en payant. |
 | D45 | Tâche quotidienne du serveur | /etc/cron.d/lexia (installé par publier.sh) : sauvegarde SQLite de la base des comptes (14 jours) et purge des journaux de plus de 12 mois. Sauvegardes sur le même disque : une copie hors serveur reste à prévoir. |
+| D46 | Moteur de recherche | Index local SQLite FTS5 + numpy en développement comme en production. La variante PostgreSQL + pgvector (jamais utilisée ni testée) est supprimée. Remplace D8 et D18. |
 
 ## Journal des changements
 
@@ -106,3 +107,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-11 : corpus élargi, références multi-codes, annales (D37 à D41).
 - 2026-11-12 : filtre par source dans l'index plein texte (D42).
 - 2026-11-12 : lois citées, pages légales configurables, tâche quotidienne (D43 à D45).
+- 2026-11-12 : moteur PostgreSQL supprimé, index local seul (D46) ; quotas non décomptés sans appel au modèle.

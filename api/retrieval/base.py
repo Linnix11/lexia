@@ -77,21 +77,15 @@ def sans_accents(texte: str) -> str:
     return unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode("ascii")
 
 
-def termes(question: str, garder_accents: bool = False) -> list[str]:
-    """Mots significatifs de la question, en minuscules.
-
-    Par defaut : sans accents et sans pluriel simple (index SQLite, qui ignore les accents).
-    garder_accents=True : mots tels quels, pour le stemmer francais de PostgreSQL.
-    """
+def termes(question: str) -> list[str]:
+    """Mots significatifs de la question, en minuscules, sans accents et sans pluriel simple
+    (l'index SQLite ignore les accents)."""
     out: list[str] = []
     for brut in re.findall(r"[\w]+", question.lower()):
         m = sans_accents(brut)
         if len(m) < 3 or m in STOPWORDS or m.isdigit() or not m.isalnum():
             continue
-        if garder_accents:
-            mot = brut
-        else:
-            mot = m[:-1] if len(m) > 4 and m.endswith(("s", "x")) else m
+        mot = m[:-1] if len(m) > 4 and m.endswith(("s", "x")) else m
         if mot not in out:
             out.append(mot)
     return out[:24]
