@@ -1,6 +1,6 @@
 """Catalogue d'annales d'examens : metadonnees et liens uniquement.
 
-Les sujets restent sur le site de la faculte qui les publie : Lexia ne copie ni ne reheberge
+Les sujets restent sur le site qui les publie (faculte ou association etudiante) : Lexia ne copie ni ne reheberge
 aucun sujet ni corrige. Les administrateurs ajoutent et retirent les entrees depuis /admin.
 """
 
