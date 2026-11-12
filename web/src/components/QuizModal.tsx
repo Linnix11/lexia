@@ -3,6 +3,7 @@ import { api, ApiError, type Correction, type FormatQuiz, type Quiz, type Result
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
 import { useSession } from '../state/session'
+import { ChoixCours } from './ChoixCours'
 
 type Valeur = number | boolean | string | null
 
@@ -34,7 +35,7 @@ export function QuizModal() {
 }
 
 function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; matiereInitiale: string | null }) {
-  const { fermerQuiz, matieres, niveau, semestre, ouvrirSource } = useApp()
+  const { fermerQuiz, matieres, niveau, semestre, ouvrirSource, optionsCours } = useApp()
   const { rafraichir } = useSession()
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
   const [theme, setTheme] = useState(themeInitial)
@@ -58,7 +59,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
     setCorrection(null)
     setReponses({})
     api
-      .quiz(theme.trim(), format, nombre, mat, niveau, semestre)
+      .quiz(theme.trim(), format, nombre, mat, niveau, semestre, optionsCours)
       .then((q) => {
         setQuiz(q)
         if (!q.quiz_id) setErreur(q.message)
@@ -96,6 +97,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
               {quiz?.quiz_id ? `Questionnaire · ${quiz.theme}` : 'Créer un questionnaire'}
             </h2>
             <p className="text-[11px] text-muted">Questions générées par une intelligence artificielle à partir des textes et décisions du corpus, chacune reliée à ses sources.</p>
+            {!quiz?.quiz_id && <div className="mt-2"><ChoixCours /></div>}
           </div>
           <button type="button" onClick={fermerQuiz} aria-label="Fermer le questionnaire"
             className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">✕</button>

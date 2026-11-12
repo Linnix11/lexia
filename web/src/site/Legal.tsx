@@ -141,14 +141,24 @@ export function Cgu() {
         </p>
       </section>
       <section>
-        <h2>5. Usage acceptable</h2>
+        <h2>5. Cours déposés</h2>
+        <p>
+          Vous pouvez déposer vos propres cours (PDF, Word, texte) pour réviser avec Lexia. Vous garantissez avoir le
+          droit de les utiliser : un cours reçu de votre enseignant ou de votre faculté reste son œuvre, et vous ne le
+          déposez que pour votre usage personnel d’étude. Lexia n’acquiert aucun droit sur vos cours, ne les montre
+          à personne d’autre et ne les partage pas. Vous pouvez les retirer à tout moment ; ils sont aussi supprimés
+          avec votre compte. Le nombre de cours conservés dépend de votre formule (page Tarifs).
+        </p>
+      </section>
+      <section>
+        <h2>6. Usage acceptable</h2>
         <p>
           Sont interdits : l’utilisation automatisée massive, le contournement des limites, la revente du service, la
           réidentification des personnes citées dans les décisions de justice et toute utilisation contraire à la loi. L’éditeur peut suspendre un compte en cas de manquement.
         </p>
       </section>
       <section>
-        <h2>6. Disponibilité et responsabilité</h2>
+        <h2>7. Disponibilité et responsabilité</h2>
         <p>
           Le service est fourni en l’état, sans garantie de disponibilité continue. Il dépend de prestataires tiers,
           notamment le modèle de langage utilisé pour rédiger les réponses. La responsabilité de l’éditeur ne saurait
@@ -156,7 +166,7 @@ export function Cgu() {
         </p>
       </section>
       <section>
-        <h2>7. Droit applicable</h2>
+        <h2>8. Droit applicable</h2>
         <p>
           Les présentes conditions sont soumises au droit français. En cas de litige, l’utilisateur consommateur
           peut recourir gratuitement à un médiateur de la consommation : <V v={l?.mediateur} manque="Nom et coordonnées du médiateur de la consommation" />.
@@ -182,6 +192,7 @@ export function Confidentialite() {
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
+          <li><strong>Cours déposés</strong> : le texte extrait de vos cours (découpé en passages, avec le numéro de page), leur titre, leur matière et le nom du fichier. Le fichier d’origine n’est pas conservé. Vos cours ne sont visibles que par vous.</li>
           <li><strong>Journaux techniques</strong> : identifiants des sources utilisées, durée de traitement, statut des réponses. Le texte de vos questions n’y est pas enregistré.</li>
           <li><strong>Retours</strong> : avis « utile / pas utile » et motif choisi dans une liste.</li>
           <li><strong>Journaux du serveur web</strong> : adresse IP, date, page demandée et navigateur, conservés 14 jours pour la sécurité du service.</li>
@@ -196,7 +207,8 @@ export function Confidentialite() {
       <section>
         <h2>Traitement de vos questions</h2>
         <p>
-          Pour produire une réponse, le texte de votre question et les extraits juridiques retrouvés sont transmis à
+          Pour produire une réponse, le texte de votre question et les extraits retrouvés (textes officiels et, si vous
+          le choisissez, passages de votre cours) sont transmis à
           l’API Gemini de Google, qui peut les traiter hors de l’Union européenne.{' '}
           {l?.gemini_payant ? (
             <>Lexia utilise le niveau payant : selon les conditions de ce niveau, Google n’utilise ni les questions ni
@@ -239,6 +251,7 @@ export function Confidentialite() {
         <h2>Durées de conservation</h2>
         <ul>
           <li>Compte et compteurs : jusqu’à la suppression du compte.</li>
+          <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes (14 jours) peuvent en garder une copie jusqu’à leur effacement.</li>
           <li>Session de connexion : 30 jours au plus.</li>
           <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
           <li>Sauvegardes de la base des comptes : 14 jours glissants.</li>

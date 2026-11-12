@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { CarteBibliotheque, CarteOutils, CarteSources } from '../components/Cartes'
 import { CarteAnnales } from '../components/Annales'
 import { Chat } from '../components/Chat'
+import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { MODES } from '../lib/modes'
@@ -68,7 +69,8 @@ export function VueMatieres() {
   const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
   return (
     <>
-      <EnTete surtitre="Mes matières" titre="Matières suivies." texte="Chaque matière s’appuie sur un ensemble de sources officielles." />
+      <EnTete surtitre="Mes matières" titre="Matières suivies." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
+      <DepotCours />
       {matieres.length === 0 ? (
         <Card className="p-6 text-[12px] text-muted">Impossible de charger les matières : vérifiez que l’API Lexia est démarrée.</Card>
       ) : (
@@ -79,6 +81,7 @@ export function VueMatieres() {
               <ul className="mt-3 mb-4 grid gap-1.5 text-[11px] text-muted">
                 {m.sources.map((s) => <li key={s}>· {m.noms_sources?.[s] ?? s}</li>)}
               </ul>
+              <ListeCoursMatiere matiere={m.id} />
               <div className="mt-auto flex flex-wrap gap-2">
                 <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
                   className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>

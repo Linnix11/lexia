@@ -42,3 +42,36 @@ def test_second_tour_puis_echec(monkeypatch):
     with pytest.raises(LLMError, match="HTTP 503"):
         llm.generate_json(system="s", prompt="p", schema={})
     assert appels == ["a", "b", "c"]
+
+
+def test_releve_des_jetons_apres_une_reponse(tmp_path):
+    from api.journal import Journal
+    from api.main import releve_jetons
+    from eval.cout import calculer, lire
+
+    usage = {"promptTokenCount": 1200, "candidatesTokenCount": 300, "thoughtsTokenCount": 50}
+
+    def repondre(request):
+        return httpx.Response(200, json={**OK, "usageMetadata": usage})
+
+    journal = Journal(tmp_path)
+    llm = GeminiLLM(api_key="k", models=("m",), releve=releve_jetons(journal, "generation"))
+    llm._client = httpx.Client(transport=httpx.MockTransport(repondre))
+    llm.generate_json(system="s", prompt="p", schema={})
+    ligne = lire(tmp_path / "modele.jsonl")[0]
+    assert (ligne["modele"], ligne["role"], ligne["entree"], ligne["sortie"], ligne["reflexion"]) == \
+        ("m", "generation", 1200, 300, 50)
+    assert "p" not in ligne.values()                   # aucun texte de prompt journalise
+
+    r = calculer([ligne], [{"route": "chat", "modele": "m"}, {"route": "chat", "modele": "m", "cache": True}],
+                 {"m": (1.0, 2.0)})
+    assert r["questions"] == 1 and abs(r["cout_par_question"] - (1200 * 1 + 350 * 2) / 1e6) < 1e-12
+
+
+def test_releve_en_erreur_ne_bloque_pas_la_reponse():
+    def releve(modele, usage):
+        raise RuntimeError("disque plein")
+
+    llm = GeminiLLM(api_key="k", models=("m",), releve=releve)
+    llm._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=OK)))
+    assert llm.generate_json(system="s", prompt="p", schema={}) == ({"statut": "reponse"}, "m")

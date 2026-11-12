@@ -105,6 +105,15 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D52 | Lexique local | `api/lexique.py` : 69 notions du programme de licence reliées à leurs articles de principe (numérotation actuelle), ajoutées aux candidats comme les suggestions de la reformulation, sans appel au modèle. Au plus 4 articles ajoutés par question (lexique, concordance, reformulation confondus). Banc `eval/recherche.py` sans reformulation : 8/8 au lieu de 5/8 (une partie de ces questions relève directement du lexique). |
 | D53 | Anciens numéros du Code civil | `api/concordance.py` : table écrite à la main de 26 articles d'avant la réforme du 1er octobre 2016 (1134 → 1103, 1193, 1104 ; 1382 → 1240...), vérifiée texte contre texte sur l'archive LEGI ; le calcul automatique par similarité a été écarté (1384 donnait 1241). Une question qui cite un ancien numéro reçoit l'article actuel du même numéro, l'ancienne version et les articles actuels correspondants, et le modèle est prévenu. « Vérifier la version en vigueur » sur une ancienne version renvoie vers l'article actuel correspondant. |
 | D54 | Modes méthode | Cas pratique, commentaire, dissertation : le modèle est appelé même sans extrait, ne doit pas s'abstenir, et des faits présentés comme un exercice ne sont pas une situation personnelle (« hors champ » réservé à la propre situation de l'étudiant). Le droit positif exige toujours une source. |
+| D57 | Cours déposés | Dépôt par l'étudiant de ses cours (PDF, Word, texte ; OCR plus tard), rangés par matière dans son compte : 3 / 30 / 100 cours selon la formule, 20 Mo par fichier. Seul le texte est gardé (passages d'environ 1 500 caractères avec la page, base SQLite des comptes, index FTS5 nettoyé par déclencheur, embeddings calculés en arrière-plan sur un fil). Choix visible « Mon cours uniquement » (8 passages du cours) ou « Mon cours + textes officiels » (4 + 4 entrelacés). Passages de cours lisibles par leur seul propriétaire, jamais mis en cache. CGU (droits sur le cours, usage personnel) et confidentialité mises à jour. Conception : `docs/superpowers/specs/2026-11-12-cours-deposes-design.md`. |
+
+### Phase A du plan d'amélioration (2026-11-12)
+
+| # | Sujet | Décision |
+|---|---|---|
+| D55 | Mesure du coût | Chaque réponse Gemini écrit ses jetons (entrée, sortie, réflexion), le modèle et le rôle (génération ou reformulation) dans `logs/modele.jsonl`, sans aucun texte. `eval/cout.py` en tire le coût moyen par question, avec les prix fournis en argument (grille officielle, jamais en dur). |
+| D56 | Sauvegarde hors serveur | `deploy/rapatrier_sauvegardes.sh` copie les sauvegardes du serveur sur le Mac (60 conservées), teste la restauration de la plus récente et échoue sinon ; lancement quotidien par launchd (`deploy/fr.lexia.sauvegarde.plist`). Complète D45. |
+| D58 | Groq en production | Conservé en secours de Gemini (D51), avec l'option « Zero Data Retention » activée dans la console Groq (ouverte à tous les comptes) : plus de journaux de fiabilité ni d'abus. Données traitées aux États-Unis, contrat avec Groq UK pour les clients de l'EEE. À vérifier avant l'ouverture publique : la clause du contrat Groq « not for consumer use » face à un service destiné à des étudiants, et le contenu de l'accord de traitement des données (transferts hors UE). |
 
 ## Journal des changements
 
@@ -126,3 +135,5 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-12 : conformité du site (D50).
 - 2026-11-12 : Groq en secours de Gemini (D51).
 - 2026-11-12 : lexique local, anciens numéros du Code civil, modes méthode (D52 à D54).
+- 2026-11-12 : mesure du coût par question et sauvegarde hors serveur (D55, D56) ; Groq conservé avec ZDR (D58).
+- 2026-11-12 : cours déposés par les étudiants (D57).

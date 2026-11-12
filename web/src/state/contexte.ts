@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Matiere, Mode, Niveau, ReponseChat } from '../lib/api'
+import type { CoursDepose, Matiere, Mode, Niveau, OptionsCours, ReponseChat } from '../lib/api'
 import type { Favori } from '../lib/favoris'
 import type { Semestre } from '../lib/semestres'
 
@@ -25,6 +25,14 @@ export interface AppState {
   setMatiere: (m: string | null) => void
   mode: Mode // mode choisi dans l'assistant
   setMode: (m: Mode) => void
+  mesCours: CoursDepose[] // cours deposes par l'etudiant
+  coursMax: number // nombre maximal de cours pour sa formule
+  rafraichirCours: () => void
+  coursChoisi: number | null // cours utilise par l'assistant et les questionnaires (null : textes officiels seuls)
+  setCoursChoisi: (id: number | null) => void
+  avecOfficiel: boolean // false : « Mon cours uniquement »
+  setAvecOfficiel: (v: boolean) => void
+  optionsCours: OptionsCours | undefined
   matieres: Matiere[]
   messages: Message[]
   envoyer: (question: string, mode?: Mode) => void

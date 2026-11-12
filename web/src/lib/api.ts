@@ -113,6 +113,7 @@ export interface Formule {
   prix_mensuel_euros: number
   questions_par_jour: number
   quiz_par_jour: number
+  cours_max: number
   description: string
   avantages: string[]
 }
@@ -273,6 +274,26 @@ async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
   return r.json() as Promise<T>
 }
 
+export interface CoursDepose {
+  id: number
+  matiere: string
+  libelle_matiere: string
+  titre: string
+  fichier: string
+  pages: number | null
+  passages: number
+  statut: 'traitement' | 'pret' | 'erreur'
+  ajoute_le: string
+}
+
+/** Cours a utiliser pour une demande ; avec_officiel = false : « Mon cours uniquement ». */
+export interface OptionsCours {
+  cours: number[]
+  avec_officiel: boolean
+}
+
+const optionsCours = (o?: OptionsCours) => ({ cours: o?.cours ?? [], avec_officiel: o?.avec_officiel ?? true })
+
 const post = <T,>(chemin: string, corps: unknown) =>
   requete<T>(chemin, { method: 'POST', body: JSON.stringify(corps) })
 
@@ -322,10 +343,21 @@ export const api = {
   },
   matieres: () => requete<Matiere[]>('/matieres'),
   annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
-  chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number) =>
-    post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre }),
-  quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau, semestre: number) =>
-    post<Quiz>('/quiz', { theme, format, nombre, matiere, niveau, semestre }),
+  chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number, cours?: OptionsCours) =>
+    post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre, ...optionsCours(cours) }),
+  quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau, semestre: number,
+    cours?: OptionsCours) =>
+    post<Quiz>('/quiz', { theme, format, nombre, matiere, niveau, semestre, ...optionsCours(cours) }),
+  cours: {
+    lister: () => requete<{ cours: CoursDepose[]; maximum: number; formats: string[] }>('/cours'),
+    deposer: (fichier: File, matiere: string, titre: string) => {
+      const params = new URLSearchParams({ matiere, fichier: fichier.name, titre })
+      return requete<CoursDepose>(`/cours?${params}`, {
+        method: 'POST', body: fichier, headers: { 'Content-Type': 'application/octet-stream' },
+      })
+    },
+    supprimer: (id: number) => post<void>(`/cours/${id}/supprimer`, {}),
+  },
   corriger: (quiz_id: string, reponses: { index: number; valeur: number | boolean | string | null }[]) =>
     post<Correction>('/quiz/correct', { quiz_id, reponses }),
   source: (id: string) => requete<SourceComplete>(`/sources/${encodeURIComponent(id)}`),

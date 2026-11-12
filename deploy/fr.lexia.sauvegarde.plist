@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Rapatriement quotidien des sauvegardes de Lexia sur le Mac (voir deploy/DEPLOIEMENT.md, « Sauvegarde hors serveur »).
+  Remplacer CHEMIN_DU_DEPOT et IP_DU_VPS, copier dans ~/Library/LaunchAgents/, puis :
+    launchctl load ~/Library/LaunchAgents/fr.lexia.sauvegarde.plist
+  Si le Mac dort a 9 h 30, la tache est lancee au reveil.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>fr.lexia.sauvegarde</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>CHEMIN_DU_DEPOT/deploy/rapatrier_sauvegardes.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>LEXIA_SERVEUR</key>
+    <string>root@IP_DU_VPS</string>
+    <key>PATH</key>
+    <string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/lexia-sauvegarde.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/lexia-sauvegarde.log</string>
+</dict>
+</plist>

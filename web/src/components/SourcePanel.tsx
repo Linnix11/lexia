@@ -114,10 +114,12 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
               className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark disabled:opacity-60">
               {verification ? 'Vérification…' : 'Vérifier la version en vigueur'}
             </button>
-            <a href={source.url} target="_blank" rel="noreferrer"
-              className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">
-              Ouvrir la source officielle ↗
-            </a>
+            {source.url && (
+              <a href={source.url} target="_blank" rel="noreferrer"
+                className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">
+                Ouvrir la source officielle ↗
+              </a>
+            )}
           </div>
         )}
       </div>

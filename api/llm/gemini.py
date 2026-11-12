@@ -22,13 +22,14 @@ RETRY_STATUS = {429, 500, 503}
 
 class GeminiLLM:
     def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0,
-                 tentatives: int = 2):
+                 tentatives: int = 2, releve=None):
         if not api_key or not models:
             raise ValueError("GEMINI_API_KEY et GEMINI_MODEL sont requis")
         self._models = models
         self._thinking = thinking_level
         self._timeout = timeout
         self._tentatives = tentatives
+        self._releve = releve  # releve(modele, usageMetadata) apres chaque reponse : mesure du cout
         self._client = httpx.Client(headers={"x-goog-api-key": api_key})
 
     # --- generation ----------------------------------------------------------
@@ -85,10 +86,17 @@ class GeminiLLM:
                     continue
                 if r.status_code == 200:
                     try:
-                        return json.loads(self._texte(r.json())), model
+                        donnees = r.json()
+                        resultat = json.loads(self._texte(donnees))
                     except (json.JSONDecodeError, LLMError) as e:
                         erreurs.append(f"{model}: {e}")
                         continue
+                    if self._releve is not None:
+                        try:
+                            self._releve(model, donnees.get("usageMetadata") or {})
+                        except Exception:  # la mesure ne doit jamais faire echouer une reponse
+                            log.exception("releve des jetons impossible")
+                    return resultat, model
                 erreurs.append(f"{model}: HTTP {r.status_code}")
                 log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, time.monotonic() - debut)
                 if r.status_code not in RETRY_STATUS:

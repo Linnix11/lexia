@@ -110,9 +110,12 @@ class QuizService:
         self.journal = journal or Journal(None)
 
     def generer(self, theme: str, fmt: str, nombre: int, matiere: str | None, niveau: str | None = None,
-                semestre: int | None = None) -> dict:
+                semestre: int | None = None, cours_ids: list[int] | None = None, avec_officiel: bool = True,
+                uid: int | None = None) -> dict:
         debut = time.monotonic()
-        passages, infos = self.lexia.rechercher(theme, matiere, K_QUIZ)
+        avec_cours = bool(cours_ids) and self.lexia.cours is not None and uid is not None
+        option_cours = ("avec_officiel" if avec_officiel else "seul") if avec_cours else None
+        passages, infos = self.lexia.extraits(theme, matiere, K_QUIZ, cours_ids, avec_officiel, uid)
         recherche = infos["recherche"]
         table = table_extraits(passages)
         controle = Controle()
@@ -121,7 +124,7 @@ class QuizService:
         if passages:
             brut, modele, passages = self.lexia.generer(
                 system=prompts.SYSTEME_QUIZ,
-                construire=lambda ps: prompts.prompt_quiz(theme, fmt, nombre, ps, niveau, semestre),
+                construire=lambda ps: prompts.prompt_quiz(theme, fmt, nombre, ps, niveau, semestre, option_cours),
                 passages=passages,
                 schema=prompts.SCHEMAS_QUIZ[fmt],
                 temperature=0.5,

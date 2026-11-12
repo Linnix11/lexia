@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { api, ApiError, type Matiere, type Mode } from '../lib/api'
+import { api, ApiError, type CoursDepose, type Matiere, type Mode, type OptionsCours } from '../lib/api'
 import { ecrireFavoris, lireFavoris, type Favori } from '../lib/favoris'
 import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
 import { Ctx, type AppState, type Message, type Vue } from './contexte'
 import { useSession } from './session'
 
+const AUCUN_COURS: CoursDepose[] = []
 let compteur = 0
 const nouvelId = () => `m${Date.now()}-${compteur++}`
 
@@ -18,6 +19,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
   const [matiere, setMatiere] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('expliquer')
+  const [coursCharges, setMesCours] = useState<CoursDepose[]>([])
+  const [coursMax, setCoursMax] = useState(0)
+  const [coursChoisi, setCoursChoisi] = useState<number | null>(null)
+  const [avecOfficiel, setAvecOfficiel] = useState(true)
   const [matieres, setMatieres] = useState<Matiere[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris())
@@ -25,7 +30,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [quizOuvert, setQuizOuvert] = useState<{ theme?: string; id: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const minuteur = useRef<number | undefined>(undefined)
-  const { rafraichir } = useSession()
+  const { rafraichir, profil } = useSession()
+
+  const rafraichirCours = useCallback(() => {
+    api.cours.lister()
+      .then((r) => {
+        const liste = Array.isArray(r?.cours) ? r.cours : []
+        setMesCours(liste)
+        setCoursMax(r?.maximum ?? 0)
+        setCoursChoisi((c) => (c !== null && liste.some((x) => x.id === c) ? c : null))
+      })
+      .catch(() => setMesCours([]))
+  }, [])
+
+  const connecte = Boolean(profil)
+  useEffect(() => {
+    if (connecte) rafraichirCours()
+  }, [connecte, rafraichirCours])
+  const mesCours = connecte ? coursCharges : AUCUN_COURS // deconnecte : rien n'est affiche
+
+  // Un cours en cours de traitement (calcul des embeddings) : la liste se met a jour toute seule.
+  const enTraitement = mesCours.some((c) => c.statut === 'traitement')
+  useEffect(() => {
+    if (!enTraitement) return
+    const t = window.setInterval(rafraichirCours, 4000)
+    return () => window.clearInterval(t)
+  }, [enTraitement, rafraichirCours])
+
+  const optionsCours = useMemo<OptionsCours | undefined>(
+    () => (coursChoisi !== null ? { cours: [coursChoisi], avec_officiel: avecOfficiel } : undefined),
+    [coursChoisi, avecOfficiel],
+  )
 
   const notifier = useCallback((msg: string) => {
     setToast(msg)
@@ -78,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const id = nouvelId()
       setMessages((ms) => [...ms, { id, question: q, mode: m, etat: 'en_cours' }])
       api
-        .chat(q, m, matiere, niveau, semestre)
+        .chat(q, m, matiere, niveau, semestre, optionsCours)
         .then((reponse) => {
           setMessages((ms) => ms.map((x) => (x.id === id ? { ...x, etat: 'ok', reponse } : x)))
           // Une fiche de revision est enregistree d'office (sans attendre un clic sur « Enregistrer »).
@@ -91,7 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => void rafraichir())
     },
-    [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche],
+    [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche, optionsCours],
   )
 
   const basculerFavori = useCallback(
@@ -122,6 +157,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMatiere,
       mode,
       setMode,
+      mesCours,
+      coursMax,
+      rafraichirCours,
+      coursChoisi,
+      setCoursChoisi,
+      avecOfficiel,
+      setAvecOfficiel,
+      optionsCours,
       matieres,
       messages,
       envoyer,
@@ -138,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, mode, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
+    [vue, niveau, semestre, setSemestre, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

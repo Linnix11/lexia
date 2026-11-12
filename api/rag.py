@@ -112,6 +112,7 @@ class Lexia:
         self.embedder = embedder      # None : recherche lexicale seule
         self.expanseur = expanseur    # None : pas de reformulation de la question
         self.reclasseur = reclasseur  # None : pas de reclassement
+        self.cours = None             # api.cours.Cours : cours deposes par les etudiants (avec les comptes)
 
     def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], dict]:
         """Renvoie les passages et un resume de la recherche (pour le controle et les journaux)."""
@@ -167,6 +168,26 @@ class Lexia:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
         return passages, infos
 
+    def extraits(self, texte: str, matiere: str | None, k: int, cours_ids: list[int] | None = None,
+                 avec_officiel: bool = True, uid: int | None = None) -> tuple[list[dict], dict]:
+        """Passages pour une demande : corpus seul, cours de l'etudiant seul, ou les deux entrelaces.
+
+        Entrelacer garde un melange cours / officiel meme quand le modele de secours n'en recoit que 4.
+        """
+        if not cours_ids or self.cours is None or uid is None:
+            return self.rechercher(texte, matiere, k)
+        vecteur = self.embedder.embed_query(texte) if self.embedder is not None else None
+        if not avec_officiel:
+            du_cours = self.cours.rechercher(uid, cours_ids, texte, k, vecteur)
+            return du_cours, {"recherche": "cours", "reformulation": False, "reclassement": False,
+                              "suggestions_retenues": 0, "cours": len(du_cours)}
+        du_cours = self.cours.rechercher(uid, cours_ids, texte, (k + 1) // 2, vecteur)
+        officiels, infos = self.rechercher(texte, matiere, k - len(du_cours))
+        melange = [p for paire in zip(du_cours, officiels) for p in paire]
+        n = min(len(du_cours), len(officiels))
+        melange += du_cours[n:] + officiels[n:]
+        return melange, {**infos, "cours": len(du_cours)}
+
     def generer(self, *, system: str, construire, passages: list[dict], schema: dict,
                 temperature: float = 0.2) -> tuple[dict, str, list[dict]]:
         """Modele principal avec tous les extraits ; s'il echoue, modele de secours avec les K_SECOURS premiers.
@@ -191,17 +212,20 @@ class Lexia:
             return brut, modele, reduits
 
     def chat(self, question: str, mode: str, matiere: str | None, niveau: str | None = None,
-             semestre: int | None = None) -> dict:
+             semestre: int | None = None, cours_ids: list[int] | None = None, avec_officiel: bool = True,
+             uid: int | None = None) -> dict:
         debut = time.monotonic()
         reponse_id = str(uuid.uuid4())
+        avec_cours = bool(cours_ids) and self.cours is not None and uid is not None
+        option_cours = ("avec_officiel" if avec_officiel else "seul") if avec_cours else None
         cle = cle_question(question, mode, matiere, niveau, semestre)
-        deja = self.cache.get(cle)
+        deja = None if avec_cours else self.cache.get(cle)  # cours personnel : jamais de cache partage
         if deja is not None:
             self.journal.ecrire("requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,
                                 statut=deja["statut"], cache=True, duree_ms=int((time.monotonic() - debut) * 1000))
             deja["controle"]["cache"] = True
             return {**deja, "reponse_id": reponse_id}
-        passages, infos = self.rechercher(question, matiere, K_CHAT)
+        passages, infos = self.extraits(question, matiere, K_CHAT, cours_ids, avec_officiel, uid)
         recherche = infos["recherche"]
         table = table_extraits(passages)
         modele = None
@@ -212,7 +236,7 @@ class Lexia:
             brut, modele, passages = self.generer(
                 system=prompts.SYSTEME,
                 construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
-                                                          infos.get("concordance")),
+                                                          infos.get("concordance"), option_cours),
                 passages=passages,
                 schema=prompts.SCHEMA_REPONSE,
             )
@@ -233,7 +257,7 @@ class Lexia:
             "controle": {**controle.as_dict(), **infos, "passages_consultes": len(passages),
                          "modele_appele": modele is not None},
         }
-        if reponse["statut"] == "reponse":
+        if reponse["statut"] == "reponse" and not avec_cours:
             self.cache.mettre(cle, res)
         return res
 

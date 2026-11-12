@@ -27,6 +27,7 @@ export const infosMode = (id: Mode): InfosMode => MODES.find((m) => m.id === id)
 const SYMBOLES: Record<string, string> = {
   constitution_1958: '◈',
   code_civil: '§',
+  cours_perso: '✎',
   decisions_conseil_constitutionnel: '◈',
   judilibre: '⚖',
   cass_criminelle: '⚖',

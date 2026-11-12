@@ -84,7 +84,8 @@ def format_extraits(passages: list[dict]) -> str:
         texte = p["texte"]
         if len(texte) > MAX_CHARS_EXTRAIT:
             texte = texte[:MAX_CHARS_EXTRAIT] + " [...]"
-        nature = {"sommaire": "Sommaire officiel", "dispositif": "Dispositif", "motifs": "Motifs"}.get(p["type"], "")
+        nature = {"sommaire": "Sommaire officiel", "dispositif": "Dispositif", "motifs": "Motifs",
+                  "cours": "cours de l'étudiant, source non officielle"}.get(p["type"], "")
         entete = p.get("entete") or p.get("titre") or p["id"]
         blocs.append(f"[S{i}] {entete}" + (f" ({nature})" if nature else "") + f"\n{texte}")
     return "\n\n".join(blocs)
@@ -108,9 +109,26 @@ def public(niveau: str | None, semestre: int | None = None) -> str:
     return f"Public{precision} : {PUBLICS[niveau]}\n"
 
 
+# Cours depose par l'etudiant (api/cours.py) : « seul » ou « avec_officiel ».
+CONSIGNES_COURS = {
+    "seul": ("L'étudiant révise SON cours : les extraits « Mon cours » sont son cours personnel. Appuie-toi sur eux "
+             "et cite-les ; ils ne sont pas des sources officielles, ne présente donc pas leur contenu comme une "
+             "règle certaine s'il n'est pas clair, et signale-le dans 'points_incertains'."),
+    "avec_officiel": ("Les extraits « Mon cours » sont le cours personnel de l'étudiant, les autres sont des textes "
+                      "et décisions officiels. Pars du cours, complète-le avec les sources officielles, et signale "
+                      "dans 'points_incertains' tout écart entre le cours et un texte officiel fourni. Le droit "
+                      "positif s'appuie de préférence sur les sources officielles."),
+}
+
+
+def consigne_cours(cours: str | None) -> str:
+    return CONSIGNES_COURS[cours] + "\n" if cours in CONSIGNES_COURS else ""
+
+
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
-                semestre: int | None = None, anciens: dict | None = None) -> str:
-    consigne = public(niveau, semestre) + MODES[mode] + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else "")
+                semestre: int | None = None, anciens: dict | None = None, cours: str | None = None) -> str:
+    consigne = (public(niveau, semestre) + consigne_cours(cours) + MODES[mode]
+                + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else ""))
     if anciens:
         consigne += "\n" + note_concordance(anciens)
     return (
@@ -187,8 +205,8 @@ CONSIGNES_FORMAT = {
 
 
 def prompt_quiz(theme: str, fmt: str, nombre: int, passages: list[dict], niveau: str | None = None,
-                semestre: int | None = None) -> str:
-    pub = public(niveau, semestre)
+                semestre: int | None = None, cours: str | None = None) -> str:
+    pub = public(niveau, semestre) + consigne_cours(cours)
     return (
         f"{pub}Crée {nombre} questions{' adaptées à ce public' if pub else ''}. {CONSIGNES_FORMAT[fmt]}\n\n"
         f"<extraits>\n{format_extraits(passages)}\n</extraits>\n\n<theme>\n{theme}\n</theme>"

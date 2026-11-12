@@ -20,6 +20,7 @@ from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
 from api.auth import creer_routes, routes_formules
 from api.comptes import Comptes, Utilisateur
+from api.cours import Cours, creer_routes_cours
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
@@ -69,11 +70,23 @@ def _construire_embedder(settings: Settings):
     return embedders.creer(settings.embed_provider, settings.embed_model, settings.gemini_api_key)
 
 
-def _construire_llm(settings: Settings) -> LLM:
+def releve_jetons(journal: Journal | None, role: str):
+    """Jetons consommes par appel, dans logs/modele.jsonl (aucun texte) : base du calcul de cout (eval/cout.py)."""
+    if journal is None:
+        return None
+
+    def releve(modele: str, usage: dict) -> None:
+        journal.ecrire("modele", modele=modele, role=role, entree=usage.get("promptTokenCount", 0),
+                       sortie=usage.get("candidatesTokenCount", 0), reflexion=usage.get("thoughtsTokenCount", 0))
+    return releve
+
+
+def _construire_llm(settings: Settings, journal: Journal | None = None) -> LLM:
     from api.llm.gemini import GeminiLLM
 
     return GeminiLLM(api_key=settings.gemini_api_key, models=settings.gemini_models,
-                     thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout)
+                     thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout,
+                     releve=releve_jetons(journal, "generation"))
 
 
 def _construire_secours(settings: Settings):
@@ -84,7 +97,7 @@ def _construire_secours(settings: Settings):
     return GroqLLM(api_key=settings.groq_api_key, model=settings.groq_model, timeout=settings.llm_timeout)
 
 
-def _construire_expanseur(settings: Settings):
+def _construire_expanseur(settings: Settings, journal: Journal | None = None):
     if not settings.expansion_model:
         return None
     from api.expansion import Expanseur
@@ -95,7 +108,8 @@ def _construire_expanseur(settings: Settings):
     modeles = (settings.expansion_model, *settings.expansion_fallback_models)
     return Expanseur(GeminiLLM(api_key=settings.gemini_api_key, models=modeles,
                                thinking_level=settings.gemini_thinking_level,
-                               timeout=settings.expansion_timeout, tentatives=1))
+                               timeout=settings.expansion_timeout, tentatives=1,
+                               releve=releve_jetons(journal, "reformulation")))
 
 
 def _construire_reclasseur(settings: Settings):
@@ -111,12 +125,12 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                expanseur=None, reclasseur=None, comptes: Comptes | None = None, secours=None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
-    llm = llm or _construire_llm(settings)
     journal = journal if journal is not None else Journal(settings.logs_dir)
+    llm = llm or _construire_llm(settings, journal)
     if embedder is None:
         embedder = _construire_embedder(settings)  # charge le modele au demarrage (pas a la 1re question)
     if expanseur is None:
-        expanseur = _construire_expanseur(settings)
+        expanseur = _construire_expanseur(settings, journal)
     if reclasseur is None:
         reclasseur = _construire_reclasseur(settings)
     if secours is None:
@@ -138,6 +152,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     if settings.comptes_actifs and comptes is None:
         comptes = Comptes(settings.app_db, admins=settings.admin_emails)
     utilisateur_requis = None
+    cours = None
     if comptes is not None:
         routes_auth, utilisateur_requis = creer_routes(comptes, settings.inscriptions_par_ip_jour)
         app.include_router(routes_auth, prefix="/auth")
@@ -150,6 +165,10 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             if not u.admin:
                 raise HTTPException(403, "Accès réservé aux administrateurs.")
             return u
+
+        cours = Cours(comptes.chemin, embedder)
+        lexia.cours = cours
+        app.include_router(creer_routes_cours(cours, utilisateur_requis))
 
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)
@@ -231,7 +250,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         _matiere(req.matiere)
         return _place_libre(lambda: _avec_quota(u, "questions",
                                                 lambda: lexia.chat(req.question.strip(), req.mode, req.matiere,
-                                                                   req.niveau, req.semestre)))
+                                                                   req.niveau, req.semestre, req.cours,
+                                                                   req.avec_officiel, u.id if u else None)))
 
     @app.post("/quiz", dependencies=[Depends(limite)])
     def creer_quiz(req: QuizRequest, request: Request):
@@ -240,7 +260,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         _matiere(req.matiere)
         return _place_libre(lambda: _avec_quota(
             u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere,
-                                      req.niveau, req.semestre)))
+                                      req.niveau, req.semestre, req.cours, req.avec_officiel,
+                                      u.id if u else None)))
 
     @app.post("/quiz/correct", dependencies=[Depends(limite)])
     def corriger_quiz(req: CorrectionRequest, request: Request):
@@ -251,16 +272,30 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         return res
 
     # /vigueur doit etre declaree avant la route generique (les identifiants contiennent des ':')
+    def _passage_de_cours(passage_id: str, request: Request) -> dict:
+        """Passage d'un cours depose : visible par son seul proprietaire."""
+        u = _utilisateur(request)
+        p = cours.passage(u.id, passage_id) if (u is not None and cours is not None) else None
+        if p is None:
+            raise HTTPException(404, "Source introuvable.")
+        return p
+
     @app.get("/sources/{passage_id:path}/vigueur")
-    def vigueur(passage_id: str):
+    def vigueur(passage_id: str, request: Request):
+        if passage_id.startswith("cours:"):
+            p = _passage_de_cours(passage_id, request)
+            return {"id": p["id"], "source_id": p["source_id"], "version": p["version"], "url": "",
+                    "applicable": False, "en_vigueur": None, "version_en_vigueur": None,
+                    "message": "Passage de votre cours : il n'a pas de version officielle. Vérifiez les règles "
+                               "qu'il cite dans les textes officiels."}
         res = lexia.vigueur(passage_id)
         if res is None:
             raise HTTPException(404, "Source introuvable.")
         return res
 
     @app.get("/sources/{passage_id:path}")
-    def source(passage_id: str):
-        p = retriever.get(passage_id)
+    def source(passage_id: str, request: Request):
+        p = _passage_de_cours(passage_id, request) if passage_id.startswith("cours:") else retriever.get(passage_id)
         if p is None:
             raise HTTPException(404, "Source introuvable.")
         return {**fiche_source(p), "texte": p["texte"], "titre": p.get("titre"), "meta": p.get("meta") or {}}

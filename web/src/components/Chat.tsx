@@ -4,6 +4,7 @@ import { infosMode, MODES } from '../lib/modes'
 import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
 import { Reponse } from './Reponse'
+import { ChoixCours } from './ChoixCours'
 
 const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
   { label: 'Hiérarchie des normes', question: 'Explique-moi la hiérarchie des normes', mode: 'expliquer' },
@@ -78,6 +79,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
             </select>
           </label>
           <p className="w-full text-[11px] text-muted" aria-live="polite">{infos.description}</p>
+          <ChoixCours />
         </div>
       )}
 

@@ -116,7 +116,23 @@ sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
 
 Formules : `gratuit`, `etudiant`, `intensif` (limites dans `api/plans.py`). À l'échéance de `--jours`, le compte repasse en gratuit. Renseigner `CONTACT_EMAIL` dans `/opt/lexia/.env` pour afficher « Demander cette formule » sur la page Tarifs.
 
+Cours déposés par les étudiants : seul leur texte est gardé, dans la même base (`donnees/lexia.db`), donc dans les mêmes sauvegardes. nginx doit accepter 21 Mo sur `/api/cours` (bloc `location /api/cours` de `deploy/nginx-lexia.conf`) : `publier.sh` n'installe la configuration nginx que si elle manque, il faut donc ajouter ce bloc à la main sur un serveur déjà en place.
+
 Sauvegarde quotidienne de la base des comptes (14 jours conservés) : `publier.sh` installe `/etc/cron.d/lexia`, qui lance `deploy/sauvegarder_comptes.sh` à 3 h 15 en tant que `lexia` (journal : `/opt/lexia/logs/sauvegarde.log`).
+
+### Sauvegarde hors serveur
+
+Les sauvegardes du serveur sont sur le même disque que la base : elles ne protègent pas d'une perte du VPS. Le Mac en garde une copie :
+
+```bash
+LEXIA_SERVEUR=root@IP_DU_VPS deploy/rapatrier_sauvegardes.sh
+```
+
+Le script rapatrie les sauvegardes dans `~/Lexia-sauvegardes` (60 conservées), puis **teste la restauration** de la plus récente (intégrité SQLite, lecture de la table des comptes) et s'arrête en erreur sinon. Ces copies contiennent des e-mails et des empreintes de mots de passe : FileVault doit être activé.
+
+Lancement quotidien : renseigner `deploy/fr.lexia.sauvegarde.plist` (chemin du dépôt, IP), le copier dans `~/Library/LaunchAgents/`, puis `launchctl load ~/Library/LaunchAgents/fr.lexia.sauvegarde.plist`. La clé SSH doit fonctionner sans saisie (agent ou trousseau). Journal : `/tmp/lexia-sauvegarde.log`.
+
+Restaurer : arrêter le service, remplacer `/opt/lexia/donnees/lexia.db` par la copie (propriétaire `lexia`, droits 600), redémarrer.
 
 ## Sécurité
 

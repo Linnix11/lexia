@@ -17,6 +17,8 @@ class ChatRequest(BaseModel):
     matiere: str | None = None
     niveau: Niveau = "L1"
     semestre: int | None = Field(default=None, ge=1, le=6)
+    cours: list[int] = Field(default_factory=list, max_length=10)  # cours deposes a utiliser (api/cours.py)
+    avec_officiel: bool = True  # False : « Mon cours uniquement »
 
 
 class QuizRequest(BaseModel):
@@ -26,6 +28,8 @@ class QuizRequest(BaseModel):
     matiere: str | None = None
     niveau: Niveau = "L1"
     semestre: int | None = Field(default=None, ge=1, le=6)
+    cours: list[int] = Field(default_factory=list, max_length=10)  # cours deposes a utiliser (api/cours.py)
+    avec_officiel: bool = True  # False : « Mon cours uniquement »
 
 
 class ReponseQuiz(BaseModel):
