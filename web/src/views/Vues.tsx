@@ -123,7 +123,7 @@ export function VueFiches() {
       {favoris.length === 0 ? (
         <Card className="p-6 text-center">
           <p className="font-display text-[19px]">Aucune fiche enregistrée pour l’instant.</p>
-          <p className="mt-1.5 text-[12px] text-muted">Dans l’assistant, utilisez « Enregistrer en fiche » sous une réponse pour la retrouver ici.</p>
+          <p className="mt-1.5 text-[12px] text-muted">Les fiches créées ici ou avec le mode « Fiche » de l’assistant s’enregistrent automatiquement. Vous pouvez aussi enregistrer n’importe quelle réponse avec « Enregistrer en fiche ».</p>
           <button type="button" onClick={() => setVue('assistant')} className="mt-4 rounded-[7px] bg-forest px-3 py-2 text-[12px] text-white hover:bg-forest-dark">
             Ouvrir l’assistant
           </button>

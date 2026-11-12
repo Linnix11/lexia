@@ -17,6 +17,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ecrireSemestre(s)
   }, [])
   const [matiere, setMatiere] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>('expliquer')
   const [matieres, setMatieres] = useState<Matiere[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris())
@@ -54,23 +55,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const occupe = messages.some((m) => m.etat === 'en_cours')
 
+  const enregistrerFiche = useCallback(
+    (m: Message) => {
+      if (!m.reponse) return
+      const f: Favori = { id: m.reponse.reponse_id, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse }
+      setFavoris((liste) => {
+        if (liste.some((x) => x.id === f.id)) return liste
+        const suivante = [f, ...liste]
+        notifier(ecrireFavoris(suivante) ? 'Fiche enregistrée dans « Fiches & révisions »' : "Le navigateur n'a pas pu enregistrer cette fiche.")
+        return suivante
+      })
+    },
+    [notifier],
+  )
+
   const envoyer = useCallback(
-    (question: string, mode: Mode = 'expliquer') => {
+    (question: string, modeDemande?: Mode) => {
       const q = question.trim()
       if (!q || occupe) return
+      const m = modeDemande ?? mode
+      setMode(m) // le choix affiche en haut de l'assistant suit la derniere demande
       const id = nouvelId()
-      setMessages((ms) => [...ms, { id, question: q, mode, etat: 'en_cours' }])
+      setMessages((ms) => [...ms, { id, question: q, mode: m, etat: 'en_cours' }])
       api
-        .chat(q, mode, matiere, niveau, semestre)
-        .then((reponse) => setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'ok', reponse } : m))))
+        .chat(q, m, matiere, niveau, semestre)
+        .then((reponse) => {
+          setMessages((ms) => ms.map((x) => (x.id === id ? { ...x, etat: 'ok', reponse } : x)))
+          // Une fiche de revision est enregistree d'office (sans attendre un clic sur « Enregistrer »).
+          if (m === 'fiche' && reponse.statut === 'reponse') enregistrerFiche({ id, question: q, mode: m, etat: 'ok', reponse })
+        })
         .catch((e: unknown) => {
           const erreur = e instanceof ApiError ? e.message : 'Une erreur est survenue.'
           const statut = e instanceof ApiError ? e.status : undefined
-          setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, etat: 'erreur', erreur, statut } : m)))
+          setMessages((ms) => ms.map((x) => (x.id === id ? { ...x, etat: 'erreur', erreur, statut } : x)))
         })
         .finally(() => void rafraichir())
     },
-    [matiere, niveau, semestre, occupe, rafraichir],
+    [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche],
   )
 
   const basculerFavori = useCallback(
@@ -99,6 +120,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSemestre,
       matiere,
       setMatiere,
+      mode,
+      setMode,
       matieres,
       messages,
       envoyer,
@@ -115,7 +138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
+    [vue, niveau, semestre, setSemestre, mode, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
-import { symbole } from '../lib/modes'
+import { infosMode, symbole } from '../lib/modes'
 import { useApp, type Message } from '../state/contexte'
 
 function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) {
@@ -121,15 +121,16 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
 export function Reponse({ message, actions = true }: { message: Message; actions?: boolean }) {
   const { basculerFavori, estFavori } = useApp()
   const r = message.reponse!
+  const [titreDroit, titreExplication, titreAttention] = infosMode(message.mode).blocs
   const retires = r.controle.elements_retires + r.controle.citations_retirees
   return (
     <article className="min-w-0 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 break-words">
       {r.statut === 'reponse' ? (
         <>
           {r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
-          <Bloc titre="Droit positif" items={r.droit_positif} sources={r.sources} ton="droit" />
-          <Bloc titre="Explication" items={r.explication} sources={r.sources} ton="neutre" />
-          <Bloc titre="Points d’attention" items={r.points_incertains} sources={r.sources} ton="attention" />
+          <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
+          <Bloc titre={titreExplication} items={r.explication} sources={r.sources} ton="neutre" />
+          <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
           <ListeSources sources={r.sources} />
         </>
       ) : (

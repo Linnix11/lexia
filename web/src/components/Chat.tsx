@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Mode } from '../lib/api'
-import { MODES } from '../lib/modes'
+import { infosMode, MODES } from '../lib/modes'
 import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
 import { Reponse } from './Reponse'
@@ -25,9 +25,11 @@ function Attente() {
 }
 
 export function Chat({ complet = false }: { complet?: boolean }) {
-  const { messages, envoyer, occupe, matiere, setMatiere, matieres, effacer } = useApp()
+  const { messages, envoyer, occupe, matiere, setMatiere, matieres, effacer, mode: modeChoisi, setMode } = useApp()
   const [texte, setTexte] = useState('')
-  const [mode, setMode] = useState<Mode>('expliquer')
+  // L'assistant complet propose les modes ; la carte de « Mon espace » reste en mode explication.
+  const mode = complet ? modeChoisi : 'expliquer'
+  const infos = infosMode(mode)
   const fin = useRef<HTMLDivElement>(null)
 
   const derniereEtat = messages.at(-1)?.etat
@@ -75,6 +77,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
               ))}
             </select>
           </label>
+          <p className="w-full text-[11px] text-muted" aria-live="polite">{infos.description}</p>
         </div>
       )}
 
@@ -138,7 +141,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           id={complet ? 'question-complete' : 'question'}
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
-          placeholder="Écrivez votre question de droit…"
+          placeholder={complet ? infos.placeholder : 'Écrivez votre question de droit…'}
           autoComplete="off"
           maxLength={2000}
           className="min-w-0 flex-1 border-0 px-2 py-[7px] text-[12px] text-ink outline-none"

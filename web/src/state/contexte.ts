@@ -23,6 +23,8 @@ export interface AppState {
   setSemestre: (s: Semestre) => void
   matiere: string | null
   setMatiere: (m: string | null) => void
+  mode: Mode // mode choisi dans l'assistant
+  setMode: (m: Mode) => void
   matieres: Matiere[]
   messages: Message[]
   envoyer: (question: string, mode?: Mode) => void

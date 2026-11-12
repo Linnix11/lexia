@@ -108,6 +108,36 @@ describe('Assistant', () => {
     expect(await screen.findByText('La responsabilité pour faute')).toBeInTheDocument()
   })
 
+  it('le mode choisi change l invite, les titres de la reponse et enregistre la fiche', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Fiche' }))
+    expect(screen.getByRole('radio', { name: 'Fiche' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByText(/enregistrée automatiquement/)).toBeInTheDocument()
+    const champ = screen.getByPlaceholderText('Sur quelle notion voulez-vous une fiche ?')
+    fireEvent.change(champ, { target: { value: 'le dol' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    expect(await screen.findByText('Règles essentielles')).toBeInTheDocument()
+    expect(screen.queryByText('Droit positif')).not.toBeInTheDocument()
+    const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
+    expect(corps.mode).toBe('fiche')
+    await waitFor(() => expect(lireFavoris().map((f) => f.id)).toEqual(['r-123']))   // sans clic sur « Enregistrer »
+    expect(screen.getByRole('button', { name: /Enregistrée/ })).toBeInTheDocument()
+  })
+
+  it('creer une fiche depuis Fiches & revisions l enregistre et met l assistant en mode Fiche', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Fiches & révisions/ }))
+    fireEvent.change(screen.getByLabelText(/Nouvelle fiche sur/), { target: { value: 'le dol' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Créer la fiche' }))
+    })
+    await waitFor(() => expect(lireFavoris()).toHaveLength(1))
+    expect(screen.getByRole('radio', { name: 'Fiche' })).toHaveAttribute('aria-checked', 'true')
+  })
+
   it('affiche un message clair si le modele est indisponible', async () => {
     fetchMock.mockImplementation((url: string) =>
       url.endsWith('/chat') ? repondre({ detail: 'Le modèle est momentanément indisponible.' }, 503)
