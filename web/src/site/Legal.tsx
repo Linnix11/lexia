@@ -59,21 +59,29 @@ export function MentionsLegales() {
         <p>
           Le site est hébergé par HOSTINGER INTERNATIONAL LIMITED, société privée à responsabilité limitée de droit
           chypriote, dont le siège social est situé au 61 Lordou Vironos str., 6023 Larnaca, Chypre.
+          Téléphone : <V v={l?.hebergeur_telephone} manque="Numéro de téléphone de l’hébergeur" />.
         </p>
       </section>
       <section>
         <h2>Sources juridiques</h2>
         <p>
           Les textes et décisions affichés proviennent des données ouvertes publiées par la Direction de l’information
-          légale et administrative (DILA) et du site du Conseil constitutionnel. Chaque source est accompagnée de sa
-          date de récupération et d’un lien vers sa version officielle.
+          légale et administrative (DILA : bases LEGI, CONSTIT, CASS et JADE), réutilisées selon la Licence Ouverte /
+          Open Licence d’Etalab, et du site du Conseil constitutionnel pour la Constitution. Chaque source est
+          accompagnée de sa date de mise à jour et d’un lien vers sa version officielle. Seule la publication sur
+          Légifrance fait foi.
+        </p>
+        <p>
+          Les décisions de justice sont diffusées sous la forme pseudonymisée publiée par la DILA ; toute tentative de
+          réidentification des personnes est interdite.
         </p>
       </section>
       <section>
-        <h2>Avertissement</h2>
+        <h2>Intelligence artificielle</h2>
         <p>
-          Lexia est un outil d’étude. Les réponses sont générées automatiquement à partir des sources citées et
-          peuvent comporter des erreurs ; elles ne constituent pas un avis juridique.
+          Les réponses, fiches et questionnaires de Lexia sont générés par une intelligence artificielle (modèle Gemini
+          de Google), à partir des sources citées. Ils peuvent comporter des erreurs et ne constituent pas un avis
+          juridique ni une consultation juridique.
         </p>
       </section>
     </Page>
@@ -94,7 +102,7 @@ export function Cgu() {
       <section>
         <h2>2. Nature du service</h2>
         <ul>
-          <li>Lexia fournit des explications, fiches et questionnaires générés automatiquement à partir de sources juridiques officielles.</li>
+          <li>Lexia fournit des explications, fiches et questionnaires générés par une intelligence artificielle à partir de sources juridiques officielles.</li>
           <li>Les réponses peuvent être incomplètes ou erronées : l’utilisateur vérifie les sources citées, notamment la version en vigueur des textes.</li>
           <li>Lexia ne fournit aucun conseil juridique personnalisé et ne remplace ni l’enseignement reçu, ni un professionnel du droit.</li>
         </ul>
@@ -114,18 +122,29 @@ export function Cgu() {
           jour à minuit (heure de Paris).
         </p>
         <p>
-          Aucun paiement n’est encaissé sur le site. Une formule payante est attribuée par l’éditeur sur demande
-          (contact : <Contact adresse={contact} />), après accord sur ses conditions (prix, durée, résiliation),
-          communiquées par écrit avant toute souscription. Elle reste active jusqu’à la date de fin indiquée sur la
-          page « Mon compte ». <A>[Droit de rétractation et modalités de paiement : à compléter avant d’encaisser un
-          premier paiement.]</A>
+          <strong>Souscription.</strong> Aucun paiement n’est encaissé sur le site. Une formule payante se demande par
+          e-mail (<Contact adresse={contact} />). Avant toute souscription, l’éditeur confirme par écrit la formule,
+          son prix toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}), sa durée et le mode de
+          paiement. Le contrat est conclu à la réception du paiement ; la formule est alors activée pour la durée
+          achetée, indiquée sur la page « Mon compte ».
+        </p>
+        <p>
+          <strong>Durée, sans reconduction.</strong> Une formule payante dure le nombre de mois acheté et n’est jamais
+          renouvelée automatiquement : à son échéance, le compte repasse en formule gratuite, sans démarche ni frais.
+        </p>
+        <p>
+          <strong>Droit de rétractation.</strong> Vous disposez de quatorze jours à compter de la souscription pour
+          vous rétracter, sans motif, par simple e-mail à <Contact adresse={contact} /> (article L. 221-18 du Code de
+          la consommation). Si vous demandez expressément que la formule soit activée avant la fin de ce délai, vous
+          payez, en cas de rétractation, un montant proportionnel à la période déjà écoulée (article L. 221-25).
+          Le remboursement intervient dans les quatorze jours suivant votre demande, par le moyen de paiement utilisé.
         </p>
       </section>
       <section>
         <h2>5. Usage acceptable</h2>
         <p>
-          Sont interdits : l’utilisation automatisée massive, le contournement des limites, la revente du service et
-          toute utilisation contraire à la loi. L’éditeur peut suspendre un compte en cas de manquement.
+          Sont interdits : l’utilisation automatisée massive, le contournement des limites, la revente du service, la
+          réidentification des personnes citées dans les décisions de justice et toute utilisation contraire à la loi. L’éditeur peut suspendre un compte en cas de manquement.
         </p>
       </section>
       <section>
@@ -165,23 +184,41 @@ export function Confidentialite() {
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
           <li><strong>Journaux techniques</strong> : identifiants des sources utilisées, durée de traitement, statut des réponses. Le texte de vos questions n’y est pas enregistré.</li>
           <li><strong>Retours</strong> : avis « utile / pas utile » et motif choisi dans une liste.</li>
+          <li><strong>Journaux du serveur web</strong> : adresse IP, date, page demandée et navigateur, conservés 14 jours pour la sécurité du service.</li>
+          <li><strong>Réponses déjà calculées</strong> : le texte d’une question et sa réponse sont gardés en mémoire vive 24 heures au plus, pour répondre immédiatement à une question identique ; ils ne sont jamais écrits sur disque et ne sont reliés à aucun compte.</li>
         </ul>
-        <p>Vos fiches enregistrées restent dans votre navigateur et ne sont pas envoyées au serveur.</p>
+        <p>
+          L’adresse e-mail et le mot de passe sont nécessaires pour créer un compte ; sans eux, le service ne peut pas
+          être fourni. Vos fiches enregistrées et le semestre choisi restent dans votre navigateur (stockage local) et
+          ne sont pas envoyés au serveur.
+        </p>
       </section>
       <section>
         <h2>Traitement de vos questions</h2>
         <p>
           Pour produire une réponse, le texte de votre question et les extraits juridiques retrouvés sont transmis à
-          l’API Gemini de Google, utilisée en niveau payant.{' '}
+          l’API Gemini de Google, qui peut les traiter hors de l’Union européenne.{' '}
           {l?.gemini_payant ? (
-            <>Selon les conditions de ce niveau, Google n’utilise ni les questions ni les réponses pour améliorer ses
-            produits ; il les conserve pendant une durée limitée, uniquement pour détecter les abus, assurer la
-            sécurité du service et respecter ses obligations légales.</>
+            <>Lexia utilise le niveau payant : selon les conditions de ce niveau, Google n’utilise ni les questions ni
+            les réponses pour améliorer ses produits ; il les conserve pendant une durée limitée, uniquement pour
+            détecter les abus, assurer la sécurité du service et respecter ses obligations légales.</>
           ) : (
-            <A>[La clé Gemini doit passer au niveau payant avant l’ouverture : les conditions de Google n’autorisent que
-            ce niveau pour un service proposé à des utilisateurs de l’Espace économique européen.]</A>
+            <>
+              Lexia utilise actuellement le niveau gratuit : selon ses conditions, Google peut utiliser les questions
+              et les réponses pour améliorer ses produits, et des relecteurs humains peuvent les lire.{' '}
+              <A>[Les conditions de Google n’autorisent que le niveau payant pour un service proposé à des
+              utilisateurs de l’Espace économique européen : à régulariser avant toute ouverture.]</A>
+            </>
           )}{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
+        </p>
+      </section>
+      <section>
+        <h2>Destinataires</h2>
+        <p>
+          Les données ne sont ni vendues ni cédées. Elles sont traitées par l’éditeur et par ses sous-traitants :
+          Hostinger (hébergement du site et des données de compte) et Google (rédaction des réponses, voir
+          ci-dessus).
         </p>
       </section>
       <section>
@@ -211,8 +248,9 @@ export function Confidentialite() {
         <h2>Vos droits</h2>
         <p>
           Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
-          portabilité. Vous pouvez supprimer votre compte vous-même depuis « Mon compte », ou écrire à{' '}
-          <Contact adresse={contact} />. Vous pouvez aussi saisir la CNIL (www.cnil.fr).
+          portabilité, ainsi que le droit de définir des directives sur le sort de vos données après votre décès
+          (article 85 de la loi du 6 janvier 1978). Vous pouvez supprimer votre compte vous-même depuis « Mon
+          compte », ou écrire à <Contact adresse={contact} />. Vous pouvez aussi saisir la CNIL (www.cnil.fr).
         </p>
       </section>
     </Page>

@@ -79,6 +79,11 @@ export function Tarifs() {
         </p>
         <Formules />
         <p className="mt-6 text-[12px] text-muted">
+          Prix toutes taxes comprises, par mois.{' '}
+          {config?.legal?.tva ?? <mark className="rounded bg-[#fbf0d9] px-1 text-[#7a5a1e]">[Mention TVA : à compléter]</mark>}{' '}
+          Conditions de vente : <Lien href="/cgu" className="underline">conditions générales</Lien>, section 4.
+        </p>
+        <p className="mt-2 text-[12px] text-muted">
           {config?.contact_email
             ? 'Le paiement en ligne arrive bientôt : en attendant, les formules payantes sont activées sur demande.'
             : 'Le paiement en ligne arrive bientôt.'}{' '}

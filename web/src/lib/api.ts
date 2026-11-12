@@ -218,6 +218,8 @@ export interface InfosLegales {
   siren: string | null
   directeur: string | null
   telephone?: string | null
+  hebergeur_telephone?: string | null
+  tva?: string | null
   mediateur: string | null
   gemini_payant: boolean
 }

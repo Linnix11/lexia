@@ -29,7 +29,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070721
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI_*.tar.gz)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -46,7 +46,7 @@ sources:
   autorite: Conseil constitutionnel
   url: https://echanges.dila.gouv.fr/OPENDATA/CONSTIT/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   perimetre: decisions DC et QPC (contentieux electoral exclu)
   matieres:
@@ -62,7 +62,7 @@ sources:
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   perimetre: arrets publies depuis 2000 ; sommaires officiels indexes ; moyens annexes exclus
   matieres:
@@ -80,7 +80,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070719
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -99,7 +99,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006071154
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -118,7 +118,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000039086952
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -137,7 +137,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070716
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -156,7 +156,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006071164
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -176,7 +176,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000025024948
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -195,7 +195,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000005634379
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -214,7 +214,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006072026
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -233,7 +233,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006069565
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -253,7 +253,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006069414
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -272,7 +272,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006073984
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -292,7 +292,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006072050
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -311,7 +311,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006073189
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -330,7 +330,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070933
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -349,7 +349,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000031366350
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -368,7 +368,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070633
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -387,7 +387,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070299
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -406,7 +406,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000037701019
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -425,7 +425,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000044416551
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -444,7 +444,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006074075
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -463,7 +463,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006074220
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -482,7 +482,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006074096
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -501,7 +501,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070158
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -520,7 +520,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   identifiant: LEGITEXT000006070239
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne (archives incrementales LEGI)
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
@@ -538,7 +538,7 @@ sources:
   autorite: DILA / Legifrance
   url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: quotidienne
   perimetre: articles en vigueur des LOI, LOI_ORGANIQUE, ORDONNANCE, LOI_CONSTIT
   matieres:
@@ -563,7 +563,7 @@ sources:
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   matieres:
   - droit_penal
@@ -580,7 +580,7 @@ sources:
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   matieres:
   - droit_social
@@ -597,7 +597,7 @@ sources:
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   matieres:
   - droit_des_affaires
@@ -614,7 +614,7 @@ sources:
   autorite: Conseil d'Etat
   url: https://echanges.dila.gouv.fr/OPENDATA/JADE/
   acces: archive_dila
-  licence: a_verifier
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
   matieres:
   - droit_administratif

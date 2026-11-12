@@ -22,8 +22,8 @@ from api.retrieval.base import SEUIL_COUVERTURE, Retriever, groupes
 from api.textes import SOURCES_TEXTES
 
 AVERTISSEMENT = (
-    "Lexia est un outil d'étude, pas un avis juridique. Vérifiez toujours les sources citées, "
-    "en particulier la version en vigueur des textes."
+    "Réponse générée par une intelligence artificielle. Lexia est un outil d'étude, pas un avis juridique : "
+    "vérifiez toujours les sources citées, en particulier la version en vigueur des textes."
 )
 K_CHAT = 8
 log = logging.getLogger("lexia.rag")

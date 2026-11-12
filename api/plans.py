@@ -39,8 +39,7 @@ FORMULES: dict[str, Formule] = {
         questions_par_jour=100,
         quiz_par_jour=20,
         description="Pour réviser régulièrement pendant le semestre.",
-        avantages=("100 questions par jour", "20 questionnaires par jour", "Tous les modes et toutes les matières",
-                   "Correction des questions ouvertes"),
+        avantages=("100 questions par jour", "20 questionnaires par jour", "Tous les modes et toutes les matières"),
     ),
     "intensif": Formule(
         id="intensif",
@@ -50,7 +49,7 @@ FORMULES: dict[str, Formule] = {
         quiz_par_jour=100,
         description="Pour les périodes de partiels et de concours.",
         avantages=("300 questions par jour", "Questionnaires en usage intensif (100 par jour)",
-                   "Tous les modes et toutes les matières", "Correction des questions ouvertes"),
+                   "Tous les modes et toutes les matières"),
     ),
 }
 
