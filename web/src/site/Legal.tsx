@@ -49,6 +49,7 @@ export function MentionsLegales() {
           <V v={l?.statut} manque="Statut (entreprise individuelle, société, capital le cas échéant)" /><br />
           <V v={l?.adresse} manque="Adresse" /><br />
           <V v={l?.siren} manque="Numéro SIREN / SIRET et RCS le cas échéant" /><br />
+          Téléphone : <V v={l?.telephone} manque="Numéro de téléphone" /><br />
           Contact : <Contact adresse={contact} /><br />
           Directeur de la publication : <V v={l?.directeur} manque="Nom" />
         </p>

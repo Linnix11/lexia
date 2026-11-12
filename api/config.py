@@ -74,6 +74,7 @@ def get_settings() -> Settings:
             "adresse": os.environ.get("LEGAL_ADRESSE", ""),
             "siren": os.environ.get("LEGAL_SIREN", ""),
             "directeur": os.environ.get("LEGAL_DIRECTEUR", ""),
+            "telephone": os.environ.get("LEGAL_TELEPHONE", ""),
             "mediateur": os.environ.get("LEGAL_MEDIATEUR", ""),
             # 1 seulement si la cle Gemini est au niveau payant (obligatoire pour des utilisateurs dans l'EEE)
             "gemini_payant": os.environ.get("GEMINI_NIVEAU_PAYANT", "0") in ("1", "true", "oui"),

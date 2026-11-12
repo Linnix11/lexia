@@ -217,6 +217,7 @@ export interface InfosLegales {
   adresse: string | null
   siren: string | null
   directeur: string | null
+  telephone?: string | null
   mediateur: string | null
   gemini_payant: boolean
 }
