@@ -112,7 +112,7 @@ describe('Assistant', () => {
     const cours = { id: 7, matiere: 'droit_civil', libelle_matiere: 'Droit civil', titre: 'Chapitre 3', fichier: 'chapitre3.pdf',
       pages: 12, passages: 30, statut: 'pret', ajoute_le: '2026-11-12T10:00:00+00:00' }
     let liste: unknown[] = []
-    const base = fetchMock.getMockImplementation()!
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.includes('/cours?') && init?.method === 'POST') {
         liste = [cours]
