@@ -84,9 +84,12 @@ def releve_jetons(journal: Journal | None, role: str):
 def _construire_llm(settings: Settings, journal: Journal | None = None) -> LLM:
     from api.llm.gemini import GeminiLLM
 
+    # Groq configure : un seul tour de Gemini, borne dans le temps, puis le secours prend le relais.
+    avec_secours = bool(settings.groq_api_key)
     return GeminiLLM(api_key=settings.gemini_api_key, models=settings.gemini_models,
                      thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout,
-                     releve=releve_jetons(journal, "generation"))
+                     releve=releve_jetons(journal, "generation"), tentatives=1 if avec_secours else 2,
+                     budget=settings.budget_avant_secours if avec_secours else None)
 
 
 def _construire_secours(settings: Settings):

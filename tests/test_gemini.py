@@ -75,3 +75,22 @@ def test_releve_en_erreur_ne_bloque_pas_la_reponse():
     llm = GeminiLLM(api_key="k", models=("m",), releve=releve)
     llm._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=OK)))
     assert llm.generate_json(system="s", prompt="p", schema={}) == ({"statut": "reponse"}, "m")
+
+
+def test_budget_de_temps_avant_le_secours():
+    """Avec un budget, Gemini rend la main des que le temps est ecoule, sans finir le tour."""
+    import time as _time
+
+    appels: list[str] = []
+
+    def lent(request: httpx.Request) -> httpx.Response:
+        appels.append(request.url.path.rsplit("/", 1)[-1].split(":")[0])
+        _time.sleep(0.3)
+        return httpx.Response(503, json={})
+
+    llm = GeminiLLM(api_key="k", models=("a", "b", "c"), tentatives=1, budget=0.5)
+    llm._client = httpx.Client(transport=httpx.MockTransport(lent))
+    debut = _time.monotonic()
+    with pytest.raises(LLMError, match="ecoule"):
+        llm.generate_json(system="s", prompt="p", schema={})
+    assert appels == ["a", "b"] and _time.monotonic() - debut < 1.0      # « c » n'est pas tente

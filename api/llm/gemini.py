@@ -22,7 +22,7 @@ RETRY_STATUS = {429, 500, 503}
 
 class GeminiLLM:
     def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0,
-                 tentatives: int = 2, releve=None):
+                 tentatives: int = 2, releve=None, budget: float | None = None):
         if not api_key or not models:
             raise ValueError("GEMINI_API_KEY et GEMINI_MODEL sont requis")
         self._models = models
@@ -30,6 +30,9 @@ class GeminiLLM:
         self._timeout = timeout
         self._tentatives = tentatives
         self._releve = releve  # releve(modele, usageMetadata) apres chaque reponse : mesure du cout
+        # Temps total accorde a Gemini (tous modeles confondus) ; None = sans limite. Avec un modele de secours,
+        # mieux vaut lui passer la main vite que d'attendre une serie de 503 (jusqu'a 26 s chacun, constate).
+        self._budget = budget
         self._client = httpx.Client(headers={"x-goog-api-key": api_key})
 
     # --- generation ----------------------------------------------------------
@@ -68,15 +71,24 @@ class GeminiLLM:
         body = self._body(system, prompt, schema, temperature)
         erreurs: list[str] = []
         exclus: set[str] = set()  # delai depasse ou requete refusee (400, 404...) : pas de second tour
+        fin = time.monotonic() + self._budget if self._budget else None
         for tour in range(self._tentatives):
             if tour:
+                if fin is not None and time.monotonic() + 1.0 >= fin:
+                    break
                 time.sleep(1.0)
             for model in self._models:
                 if model in exclus:
                     continue
                 debut = time.monotonic()
+                delai = self._timeout
+                if fin is not None:
+                    if debut >= fin:
+                        erreurs.append(f"temps accorde a Gemini ({self._budget:.0f} s) ecoule")
+                        raise LLMError("; ".join(erreurs))
+                    delai = min(delai, fin - debut)
                 try:
-                    r = self._client.post(f"{BASE}/{model}:generateContent", json=body, timeout=self._timeout)
+                    r = self._client.post(f"{BASE}/{model}:generateContent", json=body, timeout=delai)
                 except httpx.TimeoutException:
                     erreurs.append(f"{model}: delai depasse")
                     exclus.add(model)  # deja 30 s perdues : pas de second essai

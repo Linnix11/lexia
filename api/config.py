@@ -36,6 +36,10 @@ class Settings:
     rerank_model: str = ""                     # vide = pas de reclassement
     groq_api_key: str = ""                     # vide = pas de modele de secours
     groq_model: str = "openai/gpt-oss-120b"
+    # Avec un secours : un seul tour de modeles Gemini et ce temps total au plus avant de passer a Groq.
+    # Assez long pour une reponse Gemini lente mais reussie (~25 s constatees), assez court pour ne pas
+    # attendre six 503 d'affilee (74 s constatees).
+    budget_avant_secours: float = 35.0
     comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
     app_db: Path = ROOT / "donnees" / "lexia.db"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
@@ -67,6 +71,7 @@ def get_settings() -> Settings:
         rerank_model=os.environ.get("RERANK_MODEL", ""),
         groq_api_key=os.environ.get("GROQ_API_KEY", ""),
         groq_model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+        budget_avant_secours=float(os.environ.get("BUDGET_AVANT_SECOURS_SECONDES", "35")),
         comptes_actifs=os.environ.get("COMPTES_ACTIFS", "1") not in ("0", "false", "non"),
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
