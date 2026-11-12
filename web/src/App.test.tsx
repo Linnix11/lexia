@@ -108,6 +108,45 @@ describe('Assistant', () => {
     expect(await screen.findByText('La responsabilité pour faute')).toBeInTheDocument()
   })
 
+  it('ajoute un cours depuis l assistant (trombone ou glisser-deposer) et le selectionne', async () => {
+    const cours = { id: 7, matiere: 'droit_civil', libelle_matiere: 'Droit civil', titre: 'Chapitre 3', fichier: 'chapitre3.pdf',
+      pages: 12, passages: 30, statut: 'pret', ajoute_le: '2026-11-12T10:00:00+00:00' }
+    let liste: unknown[] = []
+    const base = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/cours?') && init?.method === 'POST') {
+        liste = [cours]
+        return repondre(cours, 201)
+      }
+      if (url.endsWith('/cours')) return repondre({ cours: liste, maximum: 3, formats: ['.pdf'] })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))
+    const pdf = new File(['%PDF'], 'chapitre3.pdf', { type: 'application/pdf' })
+    fireEvent.change(screen.getByTestId('ajout-cours'), { target: { files: [pdf] } })
+    const panneau = await screen.findByRole('form', { name: 'Ajouter un cours' })
+    expect(within(panneau).getByText(/chapitre3\.pdf/)).toBeInTheDocument()
+    expect(within(panneau).getByLabelText('Titre')).toHaveValue('chapitre3')
+    fireEvent.change(within(panneau).getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await act(async () => {
+      fireEvent.click(within(panneau).getByRole('button', { name: 'Déposer' }))
+    })
+    const envoi = fetchMock.mock.calls.find(([u, i]) => String(u).includes('/cours?') && i?.method === 'POST')!
+    expect(String(envoi[0])).toContain('matiere=droit_civil')
+    expect(envoi[1].body).toBe(pdf)
+    await waitFor(() => expect(screen.getByLabelText('Mon cours')).toHaveValue('7'))   // devient le cours de travail
+    expect(screen.queryByRole('form', { name: 'Ajouter un cours' })).not.toBeInTheDocument()
+
+    // Glisser-deposer : le meme panneau s'ouvre ; un format non pris en charge est signale
+    const zone = screen.getByPlaceholderText(/Quelle notion/).closest('form')!.parentElement!
+    const exe = new File(['x'], 'virus.exe')
+    await act(async () => {
+      fireEvent.drop(zone, { dataTransfer: { types: ['Files'], files: [exe], items: [] } })
+    })
+    expect(await screen.findByText(/Aucun fichier pris en charge/)).toBeInTheDocument()
+  })
+
   it('le mode choisi change l invite, les titres de la reponse et enregistre la fiche', async () => {
     render(<Site />)
     fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))

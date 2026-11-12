@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
+import { formatAccepte, sansExtension } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 
 const FORMATS = '.pdf,.docx,.txt,.md'
@@ -109,5 +110,85 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
         ))}
       </ul>
     </div>
+  )
+}
+
+/** Depot rapide depuis l'assistant : choix de la matiere, envoi, puis le cours devient le cours de travail. */
+export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer: () => void }) {
+  const { matieres, matiere: matiereCourante, mesCours, coursMax, rafraichirCours, setCoursChoisi, notifier } = useApp()
+  const acceptes = fichiers.filter(formatAccepte)
+  const ignores = fichiers.length - acceptes.length
+  const [matiere, setMatiere] = useState(matiereCourante ?? '')
+  const [titre, setTitre] = useState(acceptes.length === 1 ? sansExtension(acceptes[0].name) : '')
+  const [envoi, setEnvoi] = useState<string | null>(null)
+  const [erreurs, setErreurs] = useState<string[]>([])
+  const place = coursMax > 0 ? Math.max(0, coursMax - mesCours.length) : acceptes.length
+
+  const deposer = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!matiere || acceptes.length === 0) return
+    const echecs: string[] = []
+    let dernier: number | null = null
+    for (const f of acceptes.slice(0, place)) {
+      setEnvoi(f.name)
+      if (f.size > TAILLE_MAX) {
+        echecs.push(`${f.name} : fichier trop volumineux (20 Mo au plus).`)
+        continue
+      }
+      try {
+        const titreFichier = acceptes.length === 1 ? titre.trim() : sansExtension(f.name)
+        dernier = (await api.cours.deposer(f, matiere, titreFichier)).id
+      } catch (err) {
+        echecs.push(`${f.name} : ${err instanceof ApiError ? err.message : 'le dépôt a échoué.'}`)
+      }
+    }
+    if (acceptes.length > place) echecs.push(`${acceptes.length - place} fichier(s) non déposé(s) : limite de ${coursMax} cours atteinte.`)
+    setEnvoi(null)
+    rafraichirCours()
+    if (dernier !== null) {
+      setCoursChoisi(dernier)
+      notifier('Cours ajouté : posez-lui vos questions.')
+    }
+    if (echecs.length) setErreurs(echecs)
+    else onFermer()
+  }
+
+  const champ = 'rounded-[7px] border border-line bg-white p-[7px] text-[12px] text-ink'
+  return (
+    <form onSubmit={deposer} aria-label="Ajouter un cours"
+      className="mb-2.5 grid gap-2 rounded-[10px] border border-[#cfd9d1] bg-[#f6f8f3] p-3 text-[12px]">
+      <p className="font-semibold">
+        {acceptes.length === 0 ? 'Aucun fichier pris en charge (PDF, Word ou texte).'
+          : acceptes.length === 1 ? `Ajouter « ${acceptes[0].name} » à mes cours`
+            : `Ajouter ${acceptes.length} fichiers à mes cours`}
+        {ignores > 0 && <span className="ml-1 font-normal text-muted">({ignores} fichier(s) d’un autre format ignoré(s))</span>}
+      </p>
+      {acceptes.length > 0 && (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="grid gap-1 text-[11px] text-muted">
+            Matière
+            <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ} required>
+              <option value="">Choisir…</option>
+              {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+            </select>
+          </label>
+          {acceptes.length === 1 && (
+            <label className="grid min-w-[180px] flex-1 gap-1 text-[11px] text-muted">
+              Titre
+              <input value={titre} onChange={(e) => setTitre(e.target.value)} maxLength={120} className={champ} />
+            </label>
+          )}
+          <button type="submit" disabled={!matiere || envoi !== null || place === 0}
+            className="rounded-[7px] bg-forest px-3 py-[8px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            {envoi ? `Envoi de ${envoi}…` : 'Déposer'}
+          </button>
+        </div>
+      )}
+      {place === 0 && acceptes.length > 0 && <p className="text-[11px] text-[#8c4a36]">Limite de {coursMax} cours atteinte pour votre formule.</p>}
+      {erreurs.map((m) => <p key={m} role="alert" className="text-[11px] text-[#8c4a36]">{m}</p>)}
+      <button type="button" onClick={onFermer} className="justify-self-start text-[11px] text-muted hover:text-forest">
+        {erreurs.length ? 'Fermer' : 'Annuler'}
+      </button>
+    </form>
   )
 }

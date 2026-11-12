@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import type { Mode } from '../lib/api'
 import { infosMode, MODES } from '../lib/modes'
 import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
 import { Reponse } from './Reponse'
 import { ChoixCours } from './ChoixCours'
+import { fichiersDeposes } from '../lib/fichiers'
+import { DepotRapide } from './MesCours'
 
 const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
   { label: 'Hiérarchie des normes', question: 'Explique-moi la hiérarchie des normes', mode: 'expliquer' },
@@ -32,6 +34,21 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   const mode = complet ? modeChoisi : 'expliquer'
   const infos = infosMode(mode)
   const fin = useRef<HTMLDivElement>(null)
+  // Depot de cours depuis l'assistant : glisser-deposer (fichiers ou dossier), trombone, ou Ctrl/Cmd + Maj + U.
+  const choixFichier = useRef<HTMLInputElement>(null)
+  const [aDeposer, setADeposer] = useState<File[] | null>(null)
+  const [survol, setSurvol] = useState(false)
+  useEffect(() => {
+    if (!complet) return
+    const raccourci = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'u') {
+        e.preventDefault()
+        choixFichier.current?.click()
+      }
+    }
+    window.addEventListener('keydown', raccourci)
+    return () => window.removeEventListener('keydown', raccourci)
+  }, [complet])
 
   const derniereEtat = messages.at(-1)?.etat
   useEffect(() => {
@@ -45,8 +62,32 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     setTexte('')
   }
 
+  const glisser = complet
+    ? {
+        onDragOver: (e: DragEvent) => {
+          if (![...e.dataTransfer.types].includes('Files')) return
+          e.preventDefault()
+          setSurvol(true)
+        },
+        onDragLeave: (e: DragEvent) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false)
+        },
+        onDrop: (e: DragEvent) => {
+          if (![...e.dataTransfer.types].includes('Files')) return
+          e.preventDefault()
+          setSurvol(false)
+          void fichiersDeposes(e.dataTransfer).then((f) => f.length && setADeposer(f))
+        },
+      }
+    : {}
+
   return (
-    <div className="flex min-h-[340px] min-w-0 flex-1 flex-col">
+    <div className="relative flex min-h-[340px] min-w-0 flex-1 flex-col" {...glisser}>
+      {survol && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-[10px] border-2 border-dashed border-forest bg-[#f6f8f3]/90 text-center">
+          <p className="font-display text-[19px] text-forest">Déposez votre cours ici<span className="mt-1 block font-sans text-[11px] text-muted">PDF, Word ou texte · un fichier, plusieurs, ou un dossier</span></p>
+        </div>
+      )}
       {complet && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <div role="radiogroup" aria-label="Type d’aide" className="flex flex-wrap gap-1.5">
@@ -134,10 +175,24 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         </div>
       )}
 
+      {aDeposer && <DepotRapide key={aDeposer.map((f) => f.name).join('|')} fichiers={aDeposer} onFermer={() => setADeposer(null)} />}
       <form
         onSubmit={soumettre}
         className="mt-auto flex gap-[9px] rounded-[10px] border border-[#d9ddd5] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
       >
+        {complet && (
+          <>
+            <button type="button" onClick={() => choixFichier.current?.click()}
+              title="Ajouter un cours (PDF, Word, texte) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
+              className="rounded-[7px] px-2 text-[16px] text-muted hover:bg-chip hover:text-forest">📎</button>
+            <input ref={choixFichier} type="file" multiple accept=".pdf,.docx,.txt,.md" hidden data-testid="ajout-cours"
+              onChange={(e) => {
+                const f = [...(e.target.files ?? [])]
+                if (f.length) setADeposer(f)
+                e.target.value = ''
+              }} />
+          </>
+        )}
         <label htmlFor={complet ? 'question-complete' : 'question'} className="sr-only">Votre question</label>
         <input
           id={complet ? 'question-complete' : 'question'}
