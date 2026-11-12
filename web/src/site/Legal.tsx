@@ -79,8 +79,8 @@ export function MentionsLegales() {
       <section>
         <h2>Intelligence artificielle</h2>
         <p>
-          Les réponses, fiches et questionnaires de Lexia sont générés par une intelligence artificielle (modèle Gemini
-          de Google), à partir des sources citées. Ils peuvent comporter des erreurs et ne constituent pas un avis
+          Les réponses, fiches et questionnaires de Lexia sont générés par une intelligence artificielle (modèles Gemini
+          de Google{l?.groq ? <>, ou en secours un modèle ouvert exécuté par Groq</> : null}), à partir des sources citées. Ils peuvent comporter des erreurs et ne constituent pas un avis
           juridique ni une consultation juridique.
         </p>
       </section>
@@ -210,6 +210,13 @@ export function Confidentialite() {
               utilisateurs de l’Espace économique européen : à régulariser avant toute ouverture.]</A>
             </>
           )}{' '}
+          {l?.groq && (
+            <>
+              {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
+              exécute un modèle ouvert ; selon ses conditions, Groq ne conserve pas ces données par défaut, sauf journaux
+              de sécurité limités à 30 jours.
+            </>
+          )}{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
         </p>
       </section>
@@ -217,8 +224,8 @@ export function Confidentialite() {
         <h2>Destinataires</h2>
         <p>
           Les données ne sont ni vendues ni cédées. Elles sont traitées par l’éditeur et par ses sous-traitants :
-          Hostinger (hébergement du site et des données de compte) et Google (rédaction des réponses, voir
-          ci-dessus).
+          Hostinger (hébergement du site et des données de compte), Google (rédaction des réponses, voir
+          ci-dessus){l?.groq ? <> et Groq (rédaction des réponses en secours)</> : null}.
         </p>
       </section>
       <section>

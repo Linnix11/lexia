@@ -155,7 +155,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         </button>
       </form>
       <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[10px] text-[#8a9089]">
-        <span>Réponses générées par une intelligence artificielle (modèle Gemini de Google) · vérifiez toujours la règle applicable et la version des textes.</span>
+        <span>Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.</span>
         {messages.length > 0 && !occupe && (
           <button type="button" onClick={effacer} className="shrink-0 hover:text-forest">Effacer la conversation</button>
         )}

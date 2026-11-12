@@ -34,6 +34,8 @@ class Settings:
     expansion_fallback_models: tuple[str, ...] = ()
     expansion_timeout: float = 8.0
     rerank_model: str = ""                     # vide = pas de reclassement
+    groq_api_key: str = ""                     # vide = pas de modele de secours
+    groq_model: str = "openai/gpt-oss-120b"
     comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
     app_db: Path = ROOT / "donnees" / "lexia.db"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
@@ -63,6 +65,8 @@ def get_settings() -> Settings:
         expansion_fallback_models=_list("QUERY_EXPANSION_FALLBACK_MODELS"),
         expansion_timeout=float(os.environ.get("QUERY_EXPANSION_TIMEOUT", "8")),
         rerank_model=os.environ.get("RERANK_MODEL", ""),
+        groq_api_key=os.environ.get("GROQ_API_KEY", ""),
+        groq_model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         comptes_actifs=os.environ.get("COMPTES_ACTIFS", "1") not in ("0", "false", "non"),
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
@@ -82,5 +86,7 @@ def get_settings() -> Settings:
             "mediateur": os.environ.get("LEGAL_MEDIATEUR", ""),
             # 1 seulement si la cle Gemini est au niveau payant (obligatoire pour des utilisateurs dans l'EEE)
             "gemini_payant": os.environ.get("GEMINI_NIVEAU_PAYANT", "0") in ("1", "true", "oui"),
+            # Groq en secours : la politique de confidentialite le mentionne comme destinataire
+            "groq": bool(os.environ.get("GROQ_API_KEY")),
         },
     )

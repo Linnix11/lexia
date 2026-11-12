@@ -222,6 +222,7 @@ export interface InfosLegales {
   tva?: string | null
   mediateur: string | null
   gemini_payant: boolean
+  groq?: boolean
 }
 
 export interface ConfigPublique {

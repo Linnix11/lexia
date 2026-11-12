@@ -76,6 +76,14 @@ def _construire_llm(settings: Settings) -> LLM:
                      thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout)
 
 
+def _construire_secours(settings: Settings):
+    if not settings.groq_api_key:
+        return None
+    from api.llm.groq import GroqLLM
+
+    return GroqLLM(api_key=settings.groq_api_key, model=settings.groq_model, timeout=settings.llm_timeout)
+
+
 def _construire_expanseur(settings: Settings):
     if not settings.expansion_model:
         return None
@@ -100,7 +108,7 @@ def _construire_reclasseur(settings: Settings):
 
 def create_app(settings: Settings | None = None, *, retriever: Retriever | None = None,
                llm: LLM | None = None, journal: Journal | None = None, embedder=None,
-               expanseur=None, reclasseur=None, comptes: Comptes | None = None) -> FastAPI:
+               expanseur=None, reclasseur=None, comptes: Comptes | None = None, secours=None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     llm = llm or _construire_llm(settings)
@@ -111,7 +119,10 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         expanseur = _construire_expanseur(settings)
     if reclasseur is None:
         reclasseur = _construire_reclasseur(settings)
-    lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur, delai_reformulation=settings.expansion_timeout)
+    if secours is None:
+        secours = _construire_secours(settings)
+    lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur, delai_reformulation=settings.expansion_timeout,
+                  secours=secours)
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
     # Les routes synchrones partagent 40 threads avec tout le site : quand Gemini est lent, chaque appel
@@ -198,6 +209,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     @app.get("/sante")
     def sante():
         return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
+                "secours": getattr(secours, "model", None),
                 "embeddings_modele": getattr(embedder, "model", None),
                 "reformulation_modele": settings.expansion_model or None,
                 "reclassement_modele": getattr(reclasseur, "model", None)}

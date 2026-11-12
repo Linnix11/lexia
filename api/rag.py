@@ -15,7 +15,7 @@ from concurrent.futures import TimeoutError as DelaiDepasse
 from api import prompts
 from api.citations import valider_reponse
 from api.journal import Journal
-from api.llm.base import LLM
+from api.llm.base import LLM, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Retriever, groupes
@@ -26,6 +26,7 @@ AVERTISSEMENT = (
     "vérifiez toujours les sources citées, en particulier la version en vigueur des textes."
 )
 K_CHAT = 8
+K_SECOURS = 4  # extraits envoyes au modele de secours (quota Groq gratuit : ~8 000 jetons par minute)
 log = logging.getLogger("lexia.rag")
 # La reformulation (appel Gemini) tourne pendant la vectorisation de la question ; au-dela du delai,
 # la recherche part sans elle (le resultat tardif est abandonne).
@@ -99,7 +100,9 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
 
 class Lexia:
     def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
-                 expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None):
+                 expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None,
+                 secours: LLM | None = None):
+        self.secours = secours        # None : pas de modele de secours (Groq)
         self.delai_reformulation = delai_reformulation
         self.cache = cache if cache is not None else CacheReponses()
         self.retriever = retriever
@@ -141,6 +144,29 @@ class Lexia:
         }
         return [h.passage for h in hits], infos
 
+    def generer(self, *, system: str, construire, passages: list[dict], schema: dict,
+                temperature: float = 0.2) -> tuple[dict, str, list[dict]]:
+        """Modele principal avec tous les extraits ; s'il echoue, modele de secours avec les K_SECOURS premiers.
+
+        construire(passages) -> prompt. Renvoie (JSON brut, modele utilise, passages reellement envoyes) :
+        les citations sont ensuite validees contre ces passages-la.
+        """
+        try:
+            brut, modele = self.llm.generate_json(system=system, prompt=construire(passages), schema=schema,
+                                                  temperature=temperature)
+            return brut, modele, passages
+        except LLMError as e:
+            if self.secours is None:
+                raise
+            log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
+            reduits = passages[:K_SECOURS]
+            try:
+                brut, modele = self.secours.generate_json(system=system, prompt=construire(reduits), schema=schema,
+                                                          temperature=temperature)
+            except LLMError as e2:
+                raise LLMError(f"{e}; {e2}") from None
+            return brut, modele, reduits
+
     def chat(self, question: str, mode: str, matiere: str | None, niveau: str | None = None,
              semestre: int | None = None) -> dict:
         debut = time.monotonic()
@@ -159,11 +185,13 @@ class Lexia:
         if not passages:
             reponse, controle = valider_reponse({"statut": "abstention"}, table)
         else:
-            brut, modele = self.llm.generate_json(
+            brut, modele, passages = self.generer(
                 system=prompts.SYSTEME,
-                prompt=prompts.prompt_chat(question, mode, passages, niveau, semestre),
+                construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre),
+                passages=passages,
                 schema=prompts.SCHEMA_REPONSE,
             )
+            table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode)
         sources = sources_citees(reponse, table)
         self.journal.ecrire(

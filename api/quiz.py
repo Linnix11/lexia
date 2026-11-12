@@ -119,12 +119,14 @@ class QuizService:
         questions: list[dict] = []
         modele = None
         if passages:
-            brut, modele = self.llm.generate_json(
+            brut, modele, passages = self.lexia.generer(
                 system=prompts.SYSTEME_QUIZ,
-                prompt=prompts.prompt_quiz(theme, fmt, nombre, passages, niveau, semestre),
+                construire=lambda ps: prompts.prompt_quiz(theme, fmt, nombre, ps, niveau, semestre),
+                passages=passages,
                 schema=prompts.SCHEMAS_QUIZ[fmt],
                 temperature=0.5,
             )
+            table = table_extraits(passages)
             for q in brut.get("questions") or []:
                 v = _valider_question(q, fmt, table, controle)
                 if v is None:
