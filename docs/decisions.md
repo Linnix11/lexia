@@ -98,6 +98,14 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D50 | Conformité du site | Mention claire de l'IA (AI Act, art. 50, applicable depuis le 2 août 2026) dans le chat et chaque réponse ; téléphone de l'hébergeur (LCEN art. 1-1 4°, `LEGAL_HEBERGEUR_TELEPHONE`) ; prix TTC et mention TVA (`LEGAL_TVA`) ; CGV des formules payantes (souscription par écrit, sans reconduction, rétractation 14 jours, L. 221-18 et L. 221-25) ; politique de confidentialité complétée (journaux nginx 14 jours, cache mémoire 24 h, stockage local, destinataires, directives post-mortem) ; licence Ouverte des données DILA vérifiée ; interdiction de réidentification. Restent bloquants hors code : clé Gemini payante (conditions du 23 mars 2026 : niveau gratuit interdit pour des utilisateurs de l'EEE), médiateur de la consommation, téléphone de l'hébergeur, mention TVA, relecture par un juriste. |
 | D51 | Modèle de secours | Groq (`openai/gpt-oss-120b`, API compatible OpenAI, sortie JSON par schéma) appelé seulement si tous les modèles Gemini échouent, avec 4 extraits au lieu de 8 (quota gratuit d'environ 8 000 jetons par minute). Groq ne conserve pas les données par défaut (journaux de sécurité 30 jours au plus), stockage aux États-Unis : mentionné dans la politique de confidentialité quand `GROQ_API_KEY` est renseignée. Conditions d'usage commercial de l'offre gratuite à vérifier. |
 
+### Qualité des réponses, phase B du plan d'amélioration (2026-11-12)
+
+| # | Sujet | Décision |
+|---|---|---|
+| D52 | Lexique local | `api/lexique.py` : 69 notions du programme de licence reliées à leurs articles de principe (numérotation actuelle), ajoutées aux candidats comme les suggestions de la reformulation, sans appel au modèle. Au plus 4 articles ajoutés par question (lexique, concordance, reformulation confondus). Banc `eval/recherche.py` sans reformulation : 8/8 au lieu de 5/8 (une partie de ces questions relève directement du lexique). |
+| D53 | Anciens numéros du Code civil | `api/concordance.py` : table écrite à la main de 26 articles d'avant la réforme du 1er octobre 2016 (1134 → 1103, 1193, 1104 ; 1382 → 1240...), vérifiée texte contre texte sur l'archive LEGI ; le calcul automatique par similarité a été écarté (1384 donnait 1241). Une question qui cite un ancien numéro reçoit l'article actuel du même numéro, l'ancienne version et les articles actuels correspondants, et le modèle est prévenu. « Vérifier la version en vigueur » sur une ancienne version renvoie vers l'article actuel correspondant. |
+| D54 | Modes méthode | Cas pratique, commentaire, dissertation : le modèle est appelé même sans extrait, ne doit pas s'abstenir, et des faits présentés comme un exercice ne sont pas une situation personnelle (« hors champ » réservé à la propre situation de l'étudiant). Le droit positif exige toujours une source. |
+
 ## Journal des changements
 
 - 2026-11-11 : création du document.
@@ -117,3 +125,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-12 : Gemini plus rapide sans clé payante, cache des réponses (D48) ; six semestres et consignes adaptées au niveau (D49).
 - 2026-11-12 : conformité du site (D50).
 - 2026-11-12 : Groq en secours de Gemini (D51).
+- 2026-11-12 : lexique local, anciens numéros du Code civil, modes méthode (D52 à D54).

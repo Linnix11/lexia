@@ -12,13 +12,13 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as DelaiDepasse
 
-from api import prompts
+from api import concordance, lexique, prompts
 from api.citations import valider_reponse
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
-from api.retrieval.base import SEUIL_COUVERTURE, Retriever, groupes
+from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, groupes
 from api.textes import SOURCES_TEXTES
 
 AVERTISSEMENT = (
@@ -26,6 +26,7 @@ AVERTISSEMENT = (
     "vérifiez toujours les sources citées, en particulier la version en vigueur des textes."
 )
 K_CHAT = 8
+MAX_SUGGESTIONS = 4  # articles ajoutes sans recherche (lexique, concordance, reformulation)
 K_SECOURS = 4  # extraits envoyes au modele de secours (quota Groq gratuit : ~8 000 jetons par minute)
 log = logging.getLogger("lexia.rag")
 # La reformulation (appel Gemini) tourne pendant la vectorisation de la question ; au-dela du delai,
@@ -119,10 +120,15 @@ class Lexia:
         textes, juris = groupes(sources, toutes)
         vectoriel = self.embedder is not None and any(
             g and self.retriever.couverture(g) >= SEUIL_COUVERTURE for g in (textes, juris))
+        refs = extraire(texte)
+        anciens = concordance.anciens_numeros(refs)
+        # Articles connus sans appel au modele : articles actuels d'un ancien numero cite, puis lexique.
+        locales = list(dict.fromkeys([("code_civil", n) for ns in anciens.values() for n in ns]
+                                     + lexique.suggestions(texte)))
         # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
         # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
         futur = None
-        if self.expanseur is not None and extraire(texte).vide:
+        if self.expanseur is not None and refs.vide:
             futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
         vecteur = self.embedder.embed_query(texte) if vectoriel else None
         complement = None
@@ -132,17 +138,34 @@ class Lexia:
             except DelaiDepasse:
                 futur.cancel()  # encore en file d'attente : n'appellera pas Gemini pour rien
                 log.info("reformulation trop lente (> %.0f s) : recherche sans elle", self.delai_reformulation)
+        reformule = complement is not None
+        if locales:
+            complement = complement or Complement()
+            complement.suggestions = list(dict.fromkeys(locales + complement.suggestions))[:MAX_SUGGESTIONS]
         if complement and complement.reformulation and vectoriel:
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
                                      complement=complement, reclasseur=self.reclasseur)
+        passages = [h.passage for h in hits]
+        if anciens and (sources is None or "code_civil" in sources):
+            # Texte d'avant la reforme, place juste apres les references citees : le modele peut le comparer.
+            rang = sum(1 for h in hits if "reference" in h.via)
+            vus = {p["id"] for p in passages}
+            for ancien in anciens:
+                v = concordance.ancienne_version(self.retriever.versions("code_civil", ancien))
+                if v is not None and v["id"] not in vus:
+                    passages.insert(rang, v)
+                    rang += 1
         infos = {
             "recherche": "hybride" if any("vecteur" in h.via for h in hits) else "lexicale",
-            "reformulation": complement is not None,
+            "reformulation": reformule,
             "reclassement": self.reclasseur is not None,
             "suggestions_retenues": sum(1 for h in hits if "suggestion" in h.via),
+            "lexique": len(locales),
         }
-        return [h.passage for h in hits], infos
+        if anciens:
+            infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
+        return passages, infos
 
     def generer(self, *, system: str, construire, passages: list[dict], schema: dict,
                 temperature: float = 0.2) -> tuple[dict, str, list[dict]]:
@@ -182,12 +205,14 @@ class Lexia:
         recherche = infos["recherche"]
         table = table_extraits(passages)
         modele = None
-        if not passages:
+        if not passages and mode not in prompts.MODES_METHODE:
+            # Rien trouve : abstention sans appeler le modele. Une demande de methode s'explique sans extrait.
             reponse, controle = valider_reponse({"statut": "abstention"}, table)
         else:
             brut, modele, passages = self.generer(
                 system=prompts.SYSTEME,
-                construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre),
+                construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
+                                                          infos.get("concordance")),
                 passages=passages,
                 schema=prompts.SCHEMA_REPONSE,
             )
@@ -223,6 +248,19 @@ class Lexia:
         if p["source_id"] in SOURCES_TEXTES and p["source_id"] != "constitution_1958":
             en_vigueur = bool(meta.get("en_vigueur"))
             actuelle = None
+            nouveaux = concordance.REFORME_2016.get(p.get("numero") or "") \
+                if p["source_id"] == "code_civil" and meta.get("date_fin") == concordance.DATE_REFORME else None
+            if nouveaux:
+                # Ancien numero : la version actuelle du meme numero aurait un autre objet.
+                for v in self.retriever.versions("code_civil", nouveaux[0]):
+                    if (v.get("meta") or {}).get("en_vigueur"):
+                        actuelle = {"id": v["id"], "version": v["version"], "url": v["url"]}
+                        break
+                art = "à l'article" if len(nouveaux) == 1 else "aux articles"
+                return {**base, "applicable": True, "en_vigueur": False, "version_en_vigueur": actuelle,
+                        "message": (f"Ancienne numérotation, en vigueur jusqu'au 1er octobre 2016. Son contenu se "
+                                    f"retrouve aujourd'hui {art} {', '.join(nouveaux)} du Code civil. "
+                                    "Confirmez sur Légifrance avant de vous y fier.")}
             if not en_vigueur:
                 texte = meta.get("id_texte")
                 for v in self.retriever.versions(p["source_id"], p.get("numero") or ""):
