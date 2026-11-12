@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Tache quotidienne du serveur (installee par publier.sh dans /etc/cron.d/lexia, lancee en tant que lexia a 3 h 15) :
 #   1. sauvegarde de la base des comptes et des annales ; garde les 14 dernieres dans /opt/lexia/sauvegardes ;
-#   2. purge des journaux techniques (/opt/lexia/logs) : lignes de plus de 12 mois supprimees
-#      (duree annoncee dans la politique de confidentialite).
+#   2. suppression des sessions expirees.
+# Les journaux techniques de plus de 12 mois sont purges par l'API elle-meme (api/journal.py),
+# sous le verrou d'ecriture : une purge ici pourrait perdre les lignes ecrites pendant qu'elle tourne.
 set -euo pipefail
 echo "$(date -Is) debut"
 SRC=/opt/lexia/donnees/lexia.db
@@ -24,33 +25,4 @@ PY
   echo "sauvegarde : $(ls -1t "$DEST"/lexia-*.db | head -1)"
 fi
 
-# Purge des journaux : reecriture atomique, proprietaire conserve (le service ecrit en tant que lexia).
-/opt/lexia/.venv/bin/python - /opt/lexia/logs <<'PY'
-import json, os, sys, tempfile
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-limite = datetime.now(timezone.utc) - timedelta(days=365)
-for f in Path(sys.argv[1]).glob("*.jsonl"):
-    garde, retire = [], 0
-    with f.open(encoding="utf-8") as h:
-        for ligne in h:
-            try:
-                ts = datetime.fromisoformat(json.loads(ligne)["ts"])
-            except (ValueError, KeyError, TypeError):
-                garde.append(ligne)
-                continue
-            if ts >= limite:
-                garde.append(ligne)
-            else:
-                retire += 1
-    if retire:
-        st = f.stat()
-        fd, tmp = tempfile.mkstemp(dir=f.parent)
-        with os.fdopen(fd, "w", encoding="utf-8") as h:
-            h.writelines(garde)
-        os.chown(tmp, st.st_uid, st.st_gid)
-        os.chmod(tmp, st.st_mode)
-        os.replace(tmp, f)
-    print(f"journal {f.name} : {retire} ligne(s) de plus de 12 mois retiree(s)")
-PY
 echo "$(date -Is) fin"
