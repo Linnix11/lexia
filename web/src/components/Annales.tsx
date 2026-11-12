@@ -4,6 +4,7 @@ import { Card, CardHead } from './Layout'
 
 /** Catalogue d'annales : liens vers les sujets publies par les facultes ou relayes par des associations (rien n'est copie). */
 const PAR_PAGE = 20
+const RECUEIL = 'recueil'
 
 export function CarteAnnales() {
   const [annales, setAnnales] = useState<Annale[] | null>(null)
@@ -22,11 +23,12 @@ export function CarteAnnales() {
 
   const matieres = useMemo(() => {
     const m = new Map<string, string>()
-    for (const a of annales ?? []) m.set(a.matiere, a.libelle_matiere)
+    for (const a of annales ?? []) if (a.matiere !== RECUEIL) m.set(a.matiere, a.libelle_matiere)
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1], 'fr'))
   }, [annales])
   const niveaux = useMemo(() => [...new Set((annales ?? []).map((a) => a.niveau))].sort(), [annales])
-  const visibles = (annales ?? []).filter((a) => (!matiere || a.matiere === matiere) && (!niveau || a.niveau === niveau))
+  // Un recueil couvre toutes les matieres de son semestre : il reste visible quel que soit le filtre.
+  const visibles = (annales ?? []).filter((a) => (!matiere || a.matiere === matiere || a.matiere === RECUEIL) && (!niveau || a.niveau === niveau))
 
   return (
     <Card className="p-[19px] tab:col-span-2">

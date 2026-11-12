@@ -315,6 +315,7 @@ function Annales() {
               <select required value={f.matiere} onChange={(e) => maj('matiere', e.target.value)} className={champ}>
                 <option value="" disabled>Choisir</option>
                 {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+                <option value="recueil">Recueil, toutes matières</option>
               </select>
             </label>
             <label className="grid gap-1 text-[12px] text-muted">Niveau

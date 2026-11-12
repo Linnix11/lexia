@@ -19,6 +19,9 @@ from api.auth import verifier_origine
 from api.matieres import LIBELLES
 
 NIVEAUX = ("L1", "L2", "L3", "M1", "M2")
+# Recueil couvrant toutes les matieres d'un semestre : affiche quel que soit le filtre de matiere.
+RECUEIL = "recueil"
+LIBELLE_RECUEIL = "Recueil, toutes matières"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS annales (
@@ -48,7 +51,7 @@ class Annale(BaseModel):
 
 
 def _valider(a: Annale) -> None:
-    if a.matiere not in LIBELLES:
+    if a.matiere not in LIBELLES and a.matiere != RECUEIL:
         raise HTTPException(422, "Matière inconnue.")
     if a.niveau not in NIVEAUX:
         raise HTTPException(422, "Niveau inconnu.")
@@ -74,15 +77,15 @@ class Annales:
         sql = "SELECT id, titre, matiere, niveau, annee, universite, session, url, corrige, ajoute_le FROM annales"
         params: tuple = ()
         if matiere:
-            sql += " WHERE matiere = ?"
-            params = (matiere,)
+            sql += " WHERE matiere IN (?, ?)"
+            params = (matiere, RECUEIL)
         sql += " ORDER BY annee DESC, niveau, titre"
         cles = ("id", "titre", "matiere", "niveau", "annee", "universite", "session", "url", "corrige", "ajoute_le")
         out = []
         for r in self._q(sql, params):
             d = dict(zip(cles, r))
             d["corrige"] = bool(d["corrige"])
-            d["libelle_matiere"] = LIBELLES.get(d["matiere"], d["matiere"])
+            d["libelle_matiere"] = LIBELLE_RECUEIL if d["matiere"] == RECUEIL else LIBELLES.get(d["matiere"], d["matiere"])
             out.append(d)
         return out
 
@@ -108,7 +111,7 @@ def creer_routes_annales(annales: Annales, admin_requis, journal) -> tuple[APIRo
 
     @public.get("/annales")
     def lister(matiere: str | None = None):
-        return {"niveaux": list(NIVEAUX), "annales": annales.lister(matiere)}
+        return {"niveaux": list(NIVEAUX), "recueil": {"id": RECUEIL, "libelle": LIBELLE_RECUEIL}, "annales": annales.lister(matiere)}
 
     @admin.post("/annales", dependencies=[Depends(verifier_origine)])
     def ajouter(a: Annale, moi=Depends(admin_requis)):

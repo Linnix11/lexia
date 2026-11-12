@@ -428,5 +428,10 @@ def test_annales_catalogue(tmp_path):
     assert r.status_code == 200 and r.json()["libelle_matiere"] == "Introduction au droit"
     assert len(c.get("/annales").json()["annales"]) == 1
     assert c.get("/annales", params={"matiere": "droit_civil"}).json()["annales"] == []
+    rec = c.post("/admin/annales", json={**base, "matiere": "recueil", "titre": "Recueil L1 S1"})
+    assert rec.status_code == 200 and rec.json()["libelle_matiere"] == "Recueil, toutes matières"
+    # un recueil apparait quel que soit le filtre de matiere
+    assert [a["titre"] for a in c.get("/annales", params={"matiere": "droit_civil"}).json()["annales"]] == ["Recueil L1 S1"]
+    assert c.post(f"/admin/annales/{rec.json()['id']}/supprimer").status_code == 204
     assert c.post(f"/admin/annales/{r.json()['id']}/supprimer").status_code == 204
     assert c.get("/annales").json()["annales"] == []
