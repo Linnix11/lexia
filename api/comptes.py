@@ -142,12 +142,16 @@ class Comptes:
         u.admin = u.admin or u.email in self._admins
         return u
 
-    def creer(self, email: str, mdp: str) -> Utilisateur:
-        email = normaliser_email(email)
+    @staticmethod
+    def _valider_mdp(mdp: str) -> None:
         if len(mdp or "") < MDP_MIN:
             raise ErreurCompte(f"Le mot de passe doit contenir au moins {MDP_MIN} caractères.")
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
+
+    def creer(self, email: str, mdp: str) -> Utilisateur:
+        email = normaliser_email(email)
+        self._valider_mdp(mdp)
         maintenant = _maintenant().isoformat(timespec="seconds")
         try:
             self._q("INSERT INTO utilisateurs (email, mdp, formule, cree_le, cgu_le) VALUES (?,?,?,?,?)",
@@ -181,6 +185,17 @@ class Comptes:
         fin = (datetime.now(FUSEAU).date() + timedelta(days=jours)).isoformat() if jours else None
         self._q("UPDATE utilisateurs SET formule = ?, formule_fin = ? WHERE id = ?", (id_formule, fin, u.id))
         return self.par_id(u.id)
+
+    def changer_mdp(self, email: str, mdp: str) -> Utilisateur:
+        """Nouveau mot de passe ; toutes les sessions ouvertes du compte sont fermees."""
+        self._valider_mdp(mdp)
+        u = self.par_email(email)
+        if u is None:
+            raise ErreurCompte(f"Aucun compte pour {email}")
+        with self._lock, self._con:
+            self._con.execute("UPDATE utilisateurs SET mdp = ? WHERE id = ?", (hacher_mdp(mdp), u.id))
+            self._con.execute("DELETE FROM sessions WHERE utilisateur = ?", (u.id,))
+        return u
 
     def supprimer(self, uid: int) -> None:
         self._q("DELETE FROM utilisateurs WHERE id = ?", (uid,))

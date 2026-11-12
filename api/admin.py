@@ -7,6 +7,7 @@ Sur le serveur :
     sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
     sudo -u lexia .venv/bin/python -m api.admin admin moi@exemple.fr        (--retirer pour l'enlever)
     sudo -u lexia .venv/bin/python -m api.admin supprimer etudiant@exemple.fr
+    sudo -u lexia .venv/bin/python -m api.admin motdepasse etudiant@exemple.fr   (saisie masquee ; ssh -t)
 
 Formules : gratuit, etudiant, intensif (voir api/plans.py). --jours : duree d'une formule payante ;
 a l'echeance, le compte repasse automatiquement en gratuit.
@@ -15,6 +16,7 @@ a l'echeance, le compte repasse automatiquement en gratuit.
 from __future__ import annotations
 
 import argparse
+import getpass
 import sys
 
 from api.comptes import Comptes, ErreurCompte
@@ -38,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sous.add_parser("supprimer", help="Supprimer definitivement un compte")
     p.add_argument("email")
     p.add_argument("--oui", action="store_true", help="Ne pas demander de confirmation")
+    p = sous.add_parser("motdepasse", help="Definir un nouveau mot de passe (saisie masquee) et fermer les sessions")
+    p.add_argument("email")
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -74,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             comptes.supprimer(u.id)
             print(f"{u.email} supprime.")
+        elif args.commande == "motdepasse":
+            mdp = getpass.getpass("Nouveau mot de passe : ")
+            if getpass.getpass("Confirmer : ") != mdp:
+                raise ErreurCompte("Les deux saisies ne correspondent pas.")
+            u = comptes.changer_mdp(args.email, mdp)
+            print(f"{u.email} : mot de passe change, sessions fermees.")
     except ErreurCompte as e:
         print(f"Erreur : {e}", file=sys.stderr)
         return 1

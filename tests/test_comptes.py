@@ -185,6 +185,21 @@ def test_formule_payante_par_l_admin(env, tmp_path, monkeypatch, capsys):
     assert admin(["liste"]) == 0 and "etu@exemple.fr" in capsys.readouterr().out
 
 
+def test_nouveau_mot_de_passe_par_l_admin(env, tmp_path, monkeypatch):
+    client, _, _ = env
+    inscrire(client)
+    monkeypatch.setenv("APP_DB", str(tmp_path / "comptes.db"))
+    saisies = iter(["nouveau-mot-de-passe", "nouveau-mot-de-passe"])
+    monkeypatch.setattr("getpass.getpass", lambda *_: next(saisies))
+    assert admin(["motdepasse", "etu@exemple.fr"]) == 0
+    assert client.get("/auth/moi").status_code == 401                     # sessions fermees
+    connexion = lambda mdp: client.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": mdp})  # noqa: E731
+    assert connexion("motdepasse-solide").status_code == 401
+    assert connexion("nouveau-mot-de-passe").status_code == 200
+    saisies = iter(["un-mot-de-passe", "different-du-premier"])
+    assert admin(["motdepasse", "etu@exemple.fr"]) == 1                   # confirmation differente
+
+
 def test_formule_expiree_repasse_en_gratuit(tmp_path):
     comptes = Comptes(tmp_path / "c.db")
     comptes.creer("a@b.fr", "motdepasse-solide")
