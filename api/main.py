@@ -118,6 +118,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur)
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
+    # Les routes synchrones partagent 40 threads avec tout le site : quand Gemini est lent, chaque appel
+    # en garde un jusqu'a ~100 s. Au-dela de ce plafond, reponse 503 immediate pour garder des threads libres.
+    appels_modele = threading.BoundedSemaphore(max(1, settings.appels_modele_simultanes))
 
     app = FastAPI(title="Lexia API", version="0.2.0",
                   description="Assistant d'étude en droit français : réponses fondées sur des sources officielles citées.")
@@ -129,7 +132,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         comptes = Comptes(settings.app_db, admins=settings.admin_emails)
     utilisateur_requis = None
     if comptes is not None:
-        routes_auth, utilisateur_requis = creer_routes(comptes)
+        routes_auth, utilisateur_requis = creer_routes(comptes, settings.inscriptions_par_ip_jour)
         app.include_router(routes_auth, prefix="/auth")
         extras = {"embeddings": getattr(embedder, "model", None), "reclassement": getattr(reclasseur, "model", None)}
         app.include_router(creer_routes_admin(comptes, utilisateur_requis, journal, settings, retriever, extras),
@@ -159,6 +162,14 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             quoi = "questions" if type_ == "questions" else "questionnaires"
             raise HTTPException(402, f"Limite du jour atteinte : {limite} {quoi} avec la formule {f.nom}. "
                                      "Elle se renouvelle à minuit, ou passez à une formule supérieure.")
+
+    def _place_libre(action):
+        if not appels_modele.acquire(blocking=False):
+            raise HTTPException(503, "Lexia est très sollicité : réessayez dans quelques instants.")
+        try:
+            return action()
+        finally:
+            appels_modele.release()
 
     def _avec_quota(u: Utilisateur | None, type_: str, action):
         _consommer(u, type_)
@@ -206,19 +217,21 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         u = _utilisateur(request)
         _taille(req.question)
         _matiere(req.matiere)
-        return _avec_quota(u, "questions", lambda: lexia.chat(req.question.strip(), req.mode, req.matiere))
+        return _place_libre(lambda: _avec_quota(u, "questions",
+                                                lambda: lexia.chat(req.question.strip(), req.mode, req.matiere)))
 
     @app.post("/quiz", dependencies=[Depends(limite)])
     def creer_quiz(req: QuizRequest, request: Request):
         u = _utilisateur(request)
         _taille(req.theme)
         _matiere(req.matiere)
-        return _avec_quota(u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere))
+        return _place_libre(lambda: _avec_quota(
+            u, "quiz", lambda: quiz.generer(req.theme.strip(), req.format, req.nombre, req.matiere)))
 
     @app.post("/quiz/correct", dependencies=[Depends(limite)])
     def corriger_quiz(req: CorrectionRequest, request: Request):
         _utilisateur(request)
-        res = quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses])
+        res = _place_libre(lambda: quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses]))
         if res is None:
             raise HTTPException(404, "Questionnaire introuvable ou expiré : générez-en un nouveau.")
         return res

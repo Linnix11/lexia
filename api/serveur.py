@@ -33,7 +33,7 @@ def creer_serveur(dist: Path = DIST, api: FastAPI | None = None) -> FastAPI:
     racine.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
     @racine.get("/{chemin:path}", include_in_schema=False)
-    def front(chemin: str):
+    async def front(chemin: str):  # async : ne prend pas de thread, le site reste servi si Gemini est lent
         # fichiers publics (favicon...) sinon index.html : l'application gere elle-meme ses ecrans
         fichier = (dist / chemin).resolve()
         if chemin and fichier.is_file() and dist.resolve() in fichier.parents:

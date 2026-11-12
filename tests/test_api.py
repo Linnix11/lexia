@@ -265,6 +265,12 @@ def test_quiz_ouvertes_correction_par_le_modele(env):
     assert c["resultats"][0]["statut"] == "partiel" and c["score"] == 0.5
     assert "<reponse_etudiant>" in llm.prompts[-1]
 
+    # Une nouvelle correction du meme questionnaire ne rappelle pas le modele (appel payant).
+    appels = len(llm.prompts)
+    c2 = client.post("/quiz/correct", json={"quiz_id": data["quiz_id"],
+                                            "reponses": [{"index": 0, "valeur": "Autre réponse."}]}).json()
+    assert len(llm.prompts) == appels and c2 == c
+
 
 # --- Sources, vigueur, retours -----------------------------------------------
 

@@ -48,10 +48,11 @@ set -euo pipefail
 cd $APP
 chmod 600 .env
 mkdir -p donnees sauvegardes && chmod 700 donnees sauvegardes
-test -d .venv || python3 -m venv .venv
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -r deploy/requirements-serveur.txt
 chown -R lexia:lexia $APP
+# Python et pip tournent en tant que lexia : root n'execute jamais du code modifiable par le service.
+runuser -u lexia -- bash -c 'test -d .venv || python3 -m venv .venv'
+runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --upgrade pip
+runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir -r deploy/requirements-serveur.txt
 cp deploy/lexia.service /etc/systemd/system/lexia.service
 chmod 755 deploy/sauvegarder_comptes.sh
 install -m 644 deploy/lexia.cron /etc/cron.d/lexia

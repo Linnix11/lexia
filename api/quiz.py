@@ -30,6 +30,9 @@ class Quiz:
     questions: list[dict]
     table: dict[str, dict]
     cree: float = field(default_factory=time.time)
+    # Correction des questions ouvertes deja faite par le modele : renvoyee telle quelle ensuite,
+    # pour qu'un meme questionnaire ne declenche qu'un seul appel payant.
+    correction: dict | None = None
 
 
 class QuizStore:
@@ -155,6 +158,8 @@ class QuizService:
         quiz = self.store.get(quiz_id)
         if quiz is None:
             return None
+        if quiz.correction is not None:
+            return quiz.correction
         donnees = {r["index"]: r.get("valeur") for r in reponses}
         resultats: list[dict] = []
         a_corriger: list[tuple[int, dict, str]] = []
@@ -177,8 +182,7 @@ class QuizService:
                     a_corriger.append((i, q, texte))
             resultats.append(res)
 
-        if a_corriger:
-            self._corriger_ouvertes(quiz, a_corriger, resultats)
+        modele_appele = bool(a_corriger) and self._corriger_ouvertes(quiz, a_corriger, resultats)
 
         notes = [r for r in resultats if r["statut"] in ("correct", "incorrect", "partiel")]
         score = sum(1 if r["statut"] == "correct" else 0.5 if r["statut"] == "partiel" else 0 for r in notes)
@@ -186,15 +190,19 @@ class QuizService:
         utilises = {pid for q in quiz.questions for pid in q["sources"]}
         self.journal.ecrire("requetes", route="quiz_correct", quiz_id=quiz.id, format=quiz.format,
                             score=score, total=len(quiz.questions))
-        return {
+        res = {
             "quiz_id": quiz.id,
             "score": score,
             "total": len(quiz.questions),
             "resultats": resultats,
             "sources": [fiche_source(p, labels[p["id"]]) for p in quiz.table.values() if p["id"] in utilises],
         }
+        if modele_appele:
+            quiz.correction = res
+        return res
 
-    def _corriger_ouvertes(self, quiz: Quiz, a_corriger, resultats) -> None:
+    def _corriger_ouvertes(self, quiz: Quiz, a_corriger, resultats) -> bool:
+        """Corrige par le modele ; renvoie False si le modele n'a pas repondu (nouvel essai permis)."""
         blocs = []
         for i, q, texte in a_corriger:
             labels = [lab for lab, p in quiz.table.items() if p["id"] in q["sources"]]
@@ -213,8 +221,9 @@ class QuizService:
                 temperature=0.1,
             )
             corrections = {c.get("index"): c for c in brut.get("corrections") or []}
+            appele = True
         except LLMError:
-            corrections = {}
+            corrections, appele = {}, False
         controle = Controle()
         for i, _, _ in a_corriger:
             c = corrections.get(i)
@@ -228,3 +237,4 @@ class QuizService:
                 commentaire = "Comparez votre réponse aux éléments attendus et aux sources citées."
             res.update(statut=c["evaluation"], commentaire=commentaire,
                        elements_manquants=[str(e) for e in c.get("elements_manquants") or []])
+        return appele

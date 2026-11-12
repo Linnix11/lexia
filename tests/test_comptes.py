@@ -91,6 +91,18 @@ def test_inscription_refusee(env):
     assert "existe déjà" in inscrire(client).json()["detail"]
 
 
+def test_plafond_d_inscriptions_par_ip(tmp_path):
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              inscriptions_par_ip_jour=2),
+                     retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "comptes.db"))
+    client = TestClient(app)
+    assert inscrire(client, email="pris@exemple.fr").status_code == 201
+    assert inscrire(client, email="pris@exemple.fr").status_code == 422   # echec : non compte
+    assert inscrire(client, email="b@exemple.fr").status_code == 201
+    r = inscrire(client, email="c@exemple.fr")
+    assert r.status_code == 429 and "demain" in r.json()["detail"]
+
+
 def test_origine_etrangere_refusee(env):
     client, _, _ = env
     r = client.post("/auth/inscription", headers={"Origin": "https://pirate.exemple"},
@@ -117,6 +129,34 @@ def test_quota_gratuit_et_remboursement(env):
     r = client.post("/chat", json={"question": "article 1240"})
     assert r.status_code == 402 and "Limite du jour" in r.json()["detail"]
     assert client.get("/auth/moi").json()["usage"]["questions"] == 10
+
+
+def test_plafond_d_appels_modele_simultanes(tmp_path):
+    import threading
+
+    entre, libere = threading.Event(), threading.Event()
+
+    class LLMLent(LLM):
+        def generate_json(self, **kw):
+            entre.set()
+            libere.wait(5)
+            return super().generate_json(**kw)
+
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              appels_modele_simultanes=1),
+                     retriever=Retriever(), llm=LLMLent(), comptes=Comptes(tmp_path / "comptes.db"))
+    client = TestClient(app)
+    inscrire(client)
+    premier = {}
+    t = threading.Thread(target=lambda: premier.setdefault("r", client.post("/chat", json={"question": "article 1240"})))
+    t.start()
+    assert entre.wait(5)
+    r = client.post("/chat", json={"question": "article 1240"})
+    assert r.status_code == 503                                            # plafond atteint : refus immediat
+    assert client.get("/auth/moi").json()["usage"]["questions"] == 1       # le refus n'est pas decompte
+    libere.set()
+    t.join(5)
+    assert premier["r"].status_code == 200
 
 
 def test_formule_payante_par_l_admin(env, tmp_path, monkeypatch, capsys):

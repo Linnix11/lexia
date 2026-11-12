@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tache quotidienne du serveur (installee par publier.sh dans /etc/cron.d/lexia, lancee en root a 3 h 15) :
+# Tache quotidienne du serveur (installee par publier.sh dans /etc/cron.d/lexia, lancee en tant que lexia a 3 h 15) :
 #   1. sauvegarde de la base des comptes et des annales ; garde les 14 dernieres dans /opt/lexia/sauvegardes ;
 #   2. purge des journaux techniques (/opt/lexia/logs) : lignes de plus de 12 mois supprimees
 #      (duree annoncee dans la politique de confidentialite).

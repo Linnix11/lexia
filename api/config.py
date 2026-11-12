@@ -30,6 +30,7 @@ class Settings:
     logs_dir: Path = ROOT / "logs"
     max_question_chars: int = 2000
     rate_limit_per_minute: int = 10
+    appels_modele_simultanes: int = 20         # questions / questionnaires traites en meme temps (sur 40 threads)
     cors_origins: tuple[str, ...] = field(default_factory=tuple)
     expansion_model: str = ""                  # vide = pas de reformulation de la question
     expansion_fallback_models: tuple[str, ...] = ()
@@ -39,6 +40,8 @@ class Settings:
     app_db: Path = ROOT / "donnees" / "lexia.db"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
     admin_emails: tuple[str, ...] = ()         # comptes administrateurs (ADMIN_EMAILS, separes par des virgules)
+    # comptes crees par adresse IP sur 24 h (0 = sans limite) ; un campus derriere une seule IP compte pour une
+    inscriptions_par_ip_jour: int = 20
     # Pages legales (mentions, CGU, confidentialite) : vide = affiche « a completer »
     legal: dict = field(default_factory=dict)
 
@@ -68,6 +71,7 @@ def get_settings() -> Settings:
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
         admin_emails=_list("ADMIN_EMAILS"),
+        inscriptions_par_ip_jour=int(os.environ.get("INSCRIPTIONS_PAR_IP_JOUR", "20")),
         legal={
             "editeur": os.environ.get("LEGAL_EDITEUR", ""),
             "statut": os.environ.get("LEGAL_STATUT", ""),

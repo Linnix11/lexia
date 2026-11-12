@@ -37,12 +37,15 @@ class Suppression(BaseModel):
 
 
 class Freins:
-    """Limite les essais de connexion : par IP (par minute) et par e-mail (echecs sur 15 min)."""
+    """Limite les essais de connexion : par IP (par minute) et par e-mail (echecs sur 15 min),
+    et les comptes crees par IP sur 24 h (sans plafond, le quota gratuit se contourne en creant des comptes)."""
 
-    def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5):
+    def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5, inscriptions_ip_jour: int = 20):
         self.par_ip, self.max_echecs = par_ip_minute, echecs_email
+        self.max_inscriptions = inscriptions_ip_jour
         self._ip: dict[str, deque] = defaultdict(deque)
         self._echecs: dict[str, deque] = defaultdict(deque)
+        self._inscriptions: dict[str, deque] = defaultdict(deque)
         self._lock = threading.Lock()
 
     @staticmethod
@@ -62,6 +65,19 @@ class Freins:
             self._purger(e, 900, now)
             if len(e) >= self.max_echecs:
                 raise HTTPException(429, "Trop d'échecs de connexion pour ce compte : réessayez dans 15 minutes.")
+
+    def verifier_inscription(self, ip: str) -> None:
+        if self.max_inscriptions <= 0:
+            return
+        with self._lock:
+            q = self._inscriptions[ip]
+            self._purger(q, 86400, time.monotonic())
+            if len(q) >= self.max_inscriptions:
+                raise HTTPException(429, "Trop de comptes créés depuis cette connexion aujourd'hui : réessayez demain.")
+
+    def inscrit(self, ip: str) -> None:
+        with self._lock:
+            self._inscriptions[ip].append(time.monotonic())
 
     def echec(self, email: str) -> None:
         with self._lock:
@@ -90,10 +106,10 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
     }
 
 
-def creer_routes(comptes: Comptes) -> tuple[APIRouter, callable]:
+def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIRouter, callable]:
     """Renvoie (routes /auth, dependance utilisateur_requis)."""
     router = APIRouter()
-    freins = Freins()
+    freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour)
 
     def utilisateur_requis(request: Request) -> Utilisateur:
         u = comptes.session(request.cookies.get(COOKIE))
@@ -113,10 +129,12 @@ def creer_routes(comptes: Comptes) -> tuple[APIRouter, callable]:
         if not req.accepte_cgu:
             raise HTTPException(422, "Vous devez accepter les conditions générales d'utilisation.")
         freins.verifier(_ip(request), "inscription")
+        freins.verifier_inscription(_ip(request))
         try:
             u = comptes.creer(req.email, req.mot_de_passe)
         except ErreurCompte as e:
             raise HTTPException(422, str(e)) from None
+        freins.inscrit(_ip(request))
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
         return profil(comptes, u)
 
