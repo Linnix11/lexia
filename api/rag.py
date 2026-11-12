@@ -100,11 +100,41 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
     return [fiche_source(par_id[pid][1], par_id[pid][0]) for pid in ordre if pid in par_id]
 
 
+class Disjoncteur:
+    """Apres `seuil` echecs d'affilee du modele principal, on passe directement au secours pendant `pause` secondes.
+
+    Gemini gratuit renvoie souvent des 503 en serie : sans disjoncteur, chaque question attendait le budget complet
+    (35 s) avant le secours. A la fin de la pause, un essai est refait ; s'il echoue, le disjoncteur se rouvre aussitot.
+    """
+
+    def __init__(self, seuil: int = 3, pause: float = 300.0, horloge=time.monotonic):
+        self.seuil, self.pause, self._horloge = seuil, pause, horloge
+        self._echecs, self._jusqua = 0, 0.0
+        self._lock = threading.Lock()
+
+    def ouvert(self) -> bool:
+        with self._lock:
+            return self._horloge() < self._jusqua
+
+    def echec(self) -> None:
+        with self._lock:
+            essai_apres_pause = self._jusqua > 0
+            self._echecs += 1
+            if essai_apres_pause or self._echecs >= self.seuil:
+                self._jusqua = self._horloge() + self.pause
+                log.warning("disjoncteur ouvert : modele de secours seul pendant %.0f s", self.pause)
+
+    def succes(self) -> None:
+        with self._lock:
+            self._echecs, self._jusqua = 0, 0.0
+
+
 class Lexia:
     def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
                  expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None,
-                 secours: LLM | None = None):
+                 secours: LLM | None = None, disjoncteur: Disjoncteur | None = None):
         self.secours = secours        # None : pas de modele de secours (Groq)
+        self.disjoncteur = disjoncteur if disjoncteur is not None else Disjoncteur()
         self.delai_reformulation = delai_reformulation
         self.cache = cache if cache is not None else CacheReponses()
         self.retriever = retriever
@@ -130,7 +160,9 @@ class Lexia:
         # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
         # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
         futur = None
-        if self.expanseur is not None and refs.vide:
+        # Disjoncteur ouvert : Gemini est en panne, la reformulation ferait attendre pour rien.
+        en_panne = self.secours is not None and self.disjoncteur.ouvert()
+        if self.expanseur is not None and refs.vide and not en_panne:
             futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
         vecteur = self.embedder.embed_query(texte) if vectoriel else None
         complement = None
@@ -198,21 +230,27 @@ class Lexia:
         construire(passages) -> prompt. Renvoie (JSON brut, modele utilise, passages reellement envoyes) :
         les citations sont ensuite validees contre ces passages-la.
         """
-        try:
-            brut, modele = self.llm.generate_json(system=system, prompt=construire(passages), schema=schema,
-                                                  temperature=temperature)
-            return brut, modele, passages
-        except LLMError as e:
-            if self.secours is None:
-                raise
-            log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
-            reduits = passages[:K_SECOURS]
+        if self.secours is not None and self.disjoncteur.ouvert():
+            erreur_principal = LLMError("disjoncteur ouvert : modele principal en panne recente")
+        else:
             try:
-                brut, modele = self.secours.generate_json(system=system, prompt=construire(reduits), schema=schema,
-                                                          temperature=temperature)
-            except LLMError as e2:
-                raise LLMError(f"{e}; {e2}") from None
-            return brut, modele, reduits
+                brut, modele = self.llm.generate_json(system=system, prompt=construire(passages), schema=schema,
+                                                      temperature=temperature)
+                self.disjoncteur.succes()
+                return brut, modele, passages
+            except LLMError as e:
+                if self.secours is None:
+                    raise
+                self.disjoncteur.echec()
+                log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
+                erreur_principal = e
+        reduits = passages[:K_SECOURS]
+        try:
+            brut, modele = self.secours.generate_json(system=system, prompt=construire(reduits), schema=schema,
+                                                      temperature=temperature)
+        except LLMError as e2:
+            raise LLMError(f"{erreur_principal}; {e2}") from None
+        return brut, modele, reduits
 
     def chat(self, question: str, mode: str, matiere: str | None, niveau: str | None = None,
              semestre: int | None = None, cours_ids: list[int] | None = None, avec_officiel: bool = True,

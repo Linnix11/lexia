@@ -86,3 +86,34 @@ def test_client_groq(monkeypatch):
     llm._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(429, json={})))
     with pytest.raises(LLMError, match="HTTP 429"):
         llm.generate_json(system="s", prompt="p", schema={})
+
+
+def test_disjoncteur():
+    from api.rag import Disjoncteur
+    t = [0.0]
+    d = Disjoncteur(seuil=3, pause=300, horloge=lambda: t[0])
+    d.echec(), d.echec()
+    assert not d.ouvert()
+    d.succes()                                   # un succes remet le compteur a zero
+    d.echec(), d.echec()
+    assert not d.ouvert()
+    d.echec()
+    assert d.ouvert()                            # 3 echecs d'affilee
+    t[0] = 301
+    assert not d.ouvert()                        # fin de la pause : on reessaie
+    d.echec()
+    assert d.ouvert()                            # nouvel echec : rouvert aussitot
+    t[0] = 700
+    d.succes()
+    assert not d.ouvert()
+
+
+def test_disjoncteur_ouvert_le_principal_n_est_plus_appele():
+    principal, secours = LLM(echec=True), LLM(echec=False)
+    settings = Settings(gemini_models=("fake",), logs_dir=None, rate_limit_per_minute=0, disjoncteur_seuil=2)
+    app = create_app(settings, retriever=Retriever(), llm=principal, secours=secours, journal=None)
+    client = TestClient(app)
+    for i in range(4):
+        assert client.post("/chat", json={"question": f"responsabilité {i}"}).json()["statut"] == "reponse"
+    assert len(principal.prompts) == 2 and len(secours.prompts) == 4       # 2 echecs, puis Groq directement
+    assert client.get("/sante").json()["disjoncteur"] == "ouvert"

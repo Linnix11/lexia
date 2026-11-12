@@ -27,7 +27,7 @@ from api.llm.base import LLM, LLMError
 from api.matieres import LIBELLES, sources_par_matiere
 from api.textes import NOMS
 from api.quiz import QuizService
-from api.rag import Lexia, fiche_source
+from api.rag import Disjoncteur, Lexia, fiche_source
 from api.retrieval.base import Retriever
 from api.schemas.models import ChatRequest, CorrectionRequest, FeedbackRequest, QuizRequest
 
@@ -139,7 +139,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     if secours is None:
         secours = _construire_secours(settings)
     lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur, delai_reformulation=settings.expansion_timeout,
-                  secours=secours)
+                  secours=secours, disjoncteur=Disjoncteur(settings.disjoncteur_seuil, settings.disjoncteur_pause))
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
     # Les routes synchrones partagent 40 threads avec tout le site : quand Gemini est lent, chaque appel
@@ -232,6 +232,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     def sante():
         return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
                 "secours": getattr(secours, "model", None),
+                "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.ouvert() else "ferme",
                 "embeddings_modele": getattr(embedder, "model", None),
                 "reformulation_modele": settings.expansion_model or None,
                 "reclassement_modele": getattr(reclasseur, "model", None)}
