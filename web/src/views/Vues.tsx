@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { CarteBibliotheque, CarteOutils, CarteSources } from '../components/Cartes'
+import { CarteAnnales } from '../components/Annales'
 import { Chat } from '../components/Chat'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
@@ -65,12 +66,6 @@ export function VueAssistant() {
 
 export function VueMatieres() {
   const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
-  const LIBELLES_SOURCES: Record<string, string> = {
-    constitution_1958: 'Constitution de 1958',
-    code_civil: 'Code civil',
-    decisions_conseil_constitutionnel: 'Décisions du Conseil constitutionnel',
-    judilibre: 'Arrêts de la Cour de cassation',
-  }
   return (
     <>
       <EnTete surtitre="Mes matières" titre="Matières suivies." texte="Chaque matière s’appuie sur un ensemble de sources officielles." />
@@ -82,7 +77,7 @@ export function VueMatieres() {
             <Card key={m.id} className="flex flex-col p-[19px]">
               <h2 className="font-display text-[21px]">{m.libelle}</h2>
               <ul className="mt-3 mb-4 grid gap-1.5 text-[11px] text-muted">
-                {m.sources.map((s) => <li key={s}>· {LIBELLES_SOURCES[s] ?? s}</li>)}
+                {m.sources.map((s) => <li key={s}>· {m.noms_sources?.[s] ?? s}</li>)}
               </ul>
               <div className="mt-auto flex flex-wrap gap-2">
                 <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
@@ -166,10 +161,11 @@ export function VueFiches() {
 export function VueBibliotheque() {
   return (
     <>
-      <EnTete surtitre="Bibliothèque" titre="Ressources et manuels." texte="Sources officielles du corpus et références à consulter en bibliothèque." />
+      <EnTete surtitre="Bibliothèque" titre="Ressources et manuels." texte="Sources officielles du corpus, annales d’examens et références à consulter en bibliothèque." />
       <div className="grid items-start gap-[18px] tab:grid-cols-2">
         <CarteSources />
         <CarteBibliotheque complete />
+        <CarteAnnales />
       </div>
       <p className="mt-4 text-[11px] text-muted">
         Les bibliographies recommandées par les facultés partenaires seront ajoutées ici (métadonnées et liens uniquement).

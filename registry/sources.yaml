@@ -5,94 +5,657 @@
 # statut : actif | a_verifier | en_attente_acces | exclu
 
 sources:
-  - id: constitution_1958
-    nom: Constitution du 4 octobre 1958 (texte integral en vigueur)
-    type: texte_officiel
-    autorite: Conseil constitutionnel
-    url: https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur
-    acces: page_html
-    licence: a_verifier  # texte officiel ; verifier les mentions legales du site
-    frequence_maj: a_chaque_revision_constitutionnelle
-    matieres: [droit_constitutionnel, introduction_au_droit]
-    niveaux: [L1]
-    ingestion: ingest/sources/constitution.py
-    statut: actif
-    derniere_synchro: null
-
-  - id: code_civil
-    nom: Code civil
-    type: texte_officiel
-    autorite: DILA / Legifrance
-    url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
-    identifiant: LEGITEXT000006070721
-    acces: archive_dila  # Freemium_legi_global_*.tar.gz ; API PISTE possible plus tard
-    licence: a_verifier  # conditions de reutilisation des donnees DILA a confirmer
-    frequence_maj: quotidienne (archives incrementales LEGI_*.tar.gz)
-    perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
-    matieres: [droit_civil, introduction_au_droit]
-    niveaux: [L1]
-    ingestion: ingest/sources/legi.py
-    statut: actif
-    derniere_synchro: null
-
-  - id: decisions_conseil_constitutionnel
-    nom: Decisions du Conseil constitutionnel (DC, QPC)
-    type: jurisprudence
-    autorite: Conseil constitutionnel
-    url: https://echanges.dila.gouv.fr/OPENDATA/CONSTIT/
-    acces: archive_dila  # Freemium_constit_global_*.tar.gz
-    licence: a_verifier  # conditions de reutilisation des donnees DILA a confirmer
-    frequence_maj: hebdomadaire
-    perimetre: decisions DC et QPC (contentieux electoral exclu)
-    matieres: [droit_constitutionnel]
-    niveaux: [L1]
-    ingestion: ingest/sources/constit.py
-    statut: actif
-    derniere_synchro: null
-
-  - id: judilibre
-    nom: Decisions de la Cour de cassation (Judilibre)
-    type: jurisprudence
-    autorite: Cour de cassation
-    url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
-    acces: archive_dila  # Freemium_cass_global_*.tar.gz ; API Judilibre (PISTE) possible plus tard
-    licence: a_verifier  # conditions de reutilisation des donnees DILA a confirmer
-    frequence_maj: hebdomadaire
-    perimetre: >-
-      arrets publies depuis 2016 ; 1re et 3e chambres civiles, Assemblee pleniere,
-      chambre mixte ; 2e chambre civile limitee a responsabilite, accidents, assurance,
-      indemnisation. Sommaires officiels indexes ; moyens annexes exclus.
-    matieres: [droit_civil]
-    niveaux: [L1]
-    ingestion: ingest/sources/cass.py
-    statut: actif
-    derniere_synchro: null
-
-  # Bibliographies : metadonnees uniquement (auteur, titre, edition, etablissement, lien).
-  - id: bibliographie_faculte_1
-    nom: Bibliographie publique - faculte a choisir
-    type: bibliographie
-    autorite: a_choisir
-    url: null
-    acces: saisie_manuelle
-    licence: metadonnees_uniquement
-    frequence_maj: annuelle
-    matieres: [introduction_au_droit, droit_constitutionnel, droit_civil]
-    niveaux: [L1]
-    ingestion: null
-    statut: a_verifier
-    derniere_synchro: null
-
-  - id: bibliographie_faculte_2
-    nom: Bibliographie publique - faculte a choisir
-    type: bibliographie
-    autorite: a_choisir
-    url: null
-    acces: saisie_manuelle
-    licence: metadonnees_uniquement
-    frequence_maj: annuelle
-    matieres: [introduction_au_droit, droit_constitutionnel, droit_civil]
-    niveaux: [L1]
-    ingestion: null
-    statut: a_verifier
-    derniere_synchro: null
+- id: constitution_1958
+  nom: Constitution du 4 octobre 1958 (texte integral en vigueur)
+  type: texte_officiel
+  autorite: Conseil constitutionnel
+  url: https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur
+  acces: page_html
+  licence: a_verifier
+  frequence_maj: a_chaque_revision_constitutionnelle
+  matieres:
+  - droit_constitutionnel
+  - introduction_au_droit
+  - droit_administratif
+  niveaux:
+  - L1
+  ingestion: ingest/sources/constitution.py
+  statut: actif
+  derniere_synchro: null
+- id: code_civil
+  nom: Code civil
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070721
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI_*.tar.gz)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_civil
+  - introduction_au_droit
+  niveaux:
+  - L1
+  ingestion: ingest/sources/legi.py
+  statut: actif
+  derniere_synchro: null
+- id: decisions_conseil_constitutionnel
+  nom: Decisions du Conseil constitutionnel (DC, QPC)
+  type: jurisprudence
+  autorite: Conseil constitutionnel
+  url: https://echanges.dila.gouv.fr/OPENDATA/CONSTIT/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  perimetre: decisions DC et QPC (contentieux electoral exclu)
+  matieres:
+  - droit_constitutionnel
+  niveaux:
+  - L1
+  ingestion: ingest/sources/constit.py
+  statut: actif
+  derniere_synchro: null
+- id: judilibre
+  nom: Cour de cassation, chambres civiles, Assemblee pleniere et chambre mixte (arrets publies depuis 2000)
+  type: jurisprudence
+  autorite: Cour de cassation
+  url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  perimetre: arrets publies depuis 2000 ; sommaires officiels indexes ; moyens annexes exclus
+  matieres:
+  - droit_civil
+  - procedure_civile
+  niveaux:
+  - L1
+  ingestion: ingest/sources/cass.py
+  statut: actif
+  derniere_synchro: null
+- id: code_penal
+  nom: Code pénal
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070719
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_procedure_penale
+  nom: Code de procédure pénale
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006071154
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_justice_penale_mineurs
+  nom: Code de la justice pénale des mineurs
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000039086952
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_procedure_civile
+  nom: Code de procédure civile
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070716
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - procedure_civile
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_organisation_judiciaire
+  nom: Code de l'organisation judiciaire
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006071164
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - procedure_civile
+  - introduction_au_droit
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_procedures_civiles_execution
+  nom: Code des procédures civiles d'exécution
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000025024948
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - procedure_civile
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_commerce
+  nom: Code de commerce
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000005634379
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_affaires
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_monetaire_financier
+  nom: Code monétaire et financier
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006072026
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_affaires
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_consommation
+  nom: Code de la consommation
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006069565
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_affaires
+  - droit_civil
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_propriete_intellectuelle
+  nom: Code de la propriété intellectuelle
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006069414
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_affaires
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_assurances
+  nom: Code des assurances
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006073984
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_affaires
+  - droit_civil
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_travail
+  nom: Code du travail
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006072050
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_social
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_securite_sociale
+  nom: Code de la sécurité sociale
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006073189
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_social
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_justice_administrative
+  nom: Code de justice administrative
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070933
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_relations_public_administration
+  nom: Code des relations entre le public et l'administration
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000031366350
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_collectivites_territoriales
+  nom: Code général des collectivités territoriales
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070633
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_propriete_personnes_publiques
+  nom: Code général de la propriété des personnes publiques
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070299
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_commande_publique
+  nom: Code de la commande publique
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000037701019
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_fonction_publique
+  nom: Code général de la fonction publique
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000044416551
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_urbanisme
+  nom: Code de l'urbanisme
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074075
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_environnement
+  nom: Code de l'environnement
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074220
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_construction_habitation
+  nom: Code de la construction et de l'habitation
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074096
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_civil
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_entree_sejour_etrangers
+  nom: Code de l'entrée et du séjour des étrangers et du droit d'asile
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070158
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_electoral
+  nom: Code électoral
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070239
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_constitutionnel
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: lois
+  nom: Lois, lois organiques et ordonnances en vigueur (textes non codifies)
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: quotidienne
+  perimetre: articles en vigueur des LOI, LOI_ORGANIQUE, ORDONNANCE, LOI_CONSTIT
+  matieres:
+  - introduction_au_droit
+  - droit_constitutionnel
+  - droit_civil
+  - droit_penal
+  - procedure_civile
+  - droit_des_affaires
+  - droit_social
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: cass_criminelle
+  nom: Cour de cassation, chambre criminelle (arrets publies depuis 2000)
+  type: jurisprudence
+  autorite: Cour de cassation
+  url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/cass.py
+  statut: actif
+  derniere_synchro: null
+- id: cass_sociale
+  nom: Cour de cassation, chambre sociale (arrets publies depuis 2000)
+  type: jurisprudence
+  autorite: Cour de cassation
+  url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  matieres:
+  - droit_social
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/cass.py
+  statut: actif
+  derniere_synchro: null
+- id: cass_commerciale
+  nom: Cour de cassation, chambre commerciale (arrets publies depuis 2000)
+  type: jurisprudence
+  autorite: Cour de cassation
+  url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  matieres:
+  - droit_des_affaires
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/cass.py
+  statut: actif
+  derniere_synchro: null
+- id: conseil_etat
+  nom: Conseil d'Etat et Tribunal des conflits (recueil Lebon ; tables depuis 2010)
+  type: jurisprudence
+  autorite: Conseil d'Etat
+  url: https://echanges.dila.gouv.fr/OPENDATA/JADE/
+  acces: archive_dila
+  licence: a_verifier
+  frequence_maj: hebdomadaire
+  matieres:
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/jade.py
+  statut: actif
+  derniere_synchro: null
+- id: bibliographie_faculte_1
+  nom: Bibliographie publique - faculte a choisir
+  type: bibliographie
+  autorite: a_choisir
+  url: null
+  acces: saisie_manuelle
+  licence: metadonnees_uniquement
+  frequence_maj: annuelle
+  matieres:
+  - introduction_au_droit
+  - droit_constitutionnel
+  - droit_civil
+  niveaux:
+  - L1
+  ingestion: null
+  statut: a_verifier
+  derniere_synchro: null
+- id: bibliographie_faculte_2
+  nom: Bibliographie publique - faculte a choisir
+  type: bibliographie
+  autorite: a_choisir
+  url: null
+  acces: saisie_manuelle
+  licence: metadonnees_uniquement
+  frequence_maj: annuelle
+  matieres:
+  - introduction_au_droit
+  - droit_constitutionnel
+  - droit_civil
+  niveaux:
+  - L1
+  ingestion: null
+  statut: a_verifier
+  derniere_synchro: null

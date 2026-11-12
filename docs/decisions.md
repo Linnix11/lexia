@@ -82,6 +82,12 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 | D34 | Comptes | E-mail + mot de passe (scrypt), cookie de session HttpOnly / SameSite=Lax / Secure, contrôle de l'en-tête Origin, freins aux tentatives, suppression du compte en libre-service. Base SQLite `donnees/lexia.db`, jamais versionnée ni écrasée au déploiement. |
 | D36 | Administration | Rôle admin (colonne `admin` ou `ADMIN_EMAILS`) et tableau de bord `/admin` : indicateurs, clients et formules, activité, état du serveur. Actions tracées dans `logs/admin.jsonl` ; aucun texte de question exposé. |
 | D35 | Pages légales | Mentions légales, CGU, confidentialité : modèles à compléter ([À COMPLÉTER]) et à faire relire avant l'ouverture publique. |
+| D37 | Corpus élargi | 24 codes (pénal, procédures, commerce, travail, sécurité sociale, justice administrative, CGCT, urbanisme...) depuis LEGI, une source par code ; lois, lois organiques et ordonnances en vigueur (source `lois`, versions en vigueur seulement). Identifiants LEGITEXT vérifiés dans l'archive. |
+| D38 | Jurisprudence élargie | Cour de cassation : toutes les chambres, arrêts publiés depuis 2000, une source par chambre criminelle / sociale / commerciale (civiles, Assemblée plénière et chambre mixte restent `judilibre`). Conseil d'État et Tribunal des conflits (JADE) : recueil Lebon toutes années, tables depuis 2010. Sommaires découpés en blocs. Cours administratives d'appel et décisions non publiées exclues. |
+| D39 | Références multi-codes | « article X du code Y » et abréviations usuelles (C. civ., C. pén., CPC, CGCT...) reconnus dans la question ; sans code nommé, ordre code civil, Constitution, code pénal, procédures ; filtrage par matière inchangé. Liste dans `api/textes.py`. |
+| D40 | Annales | Catalogue de liens vers les sujets publiés par les facultés (métadonnées seulement, aucun sujet copié ni hébergé), géré par les administrateurs, affiché dans la Bibliothèque. |
+| D41 | Index volumineux | Vecteurs chargés en mémoire mappée et construits par blocs float32 : environ 1,5 Go pour ~480 000 passages, compatible avec le VPS (7,8 Go). |
+| D42 | Filtre par source dans l'index plein texte | La table FTS porte une colonne « source » et ne contient que les passages en vigueur : le filtre par matière se fait dans l'index, sans relire chaque passage. Recherche plein texte passée de 8-13 s à 0,2-0,3 s sur 667 000 passages. |
 
 ## Journal des changements
 
@@ -94,3 +100,5 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-11 : phase 4, évaluation (D29 à D31).
 - 2026-11-11 : site complet, comptes et formules (D32 à D35).
 - 2026-11-11 : tableau de bord administrateur (D36).
+- 2026-11-11 : corpus élargi, références multi-codes, annales (D37 à D41).
+- 2026-11-12 : filtre par source dans l'index plein texte (D42).

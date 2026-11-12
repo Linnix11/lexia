@@ -12,6 +12,7 @@ from api.llm.base import LLM
 from api.matieres import sources_pour
 from api.matieres import sources_par_matiere
 from api.retrieval.base import SEUIL_COUVERTURE, Retriever, groupes
+from api.textes import SOURCES_TEXTES
 
 AVERTISSEMENT = (
     "Lexia est un outil d'étude, pas un avis juridique. Vérifiez toujours les sources citées, "
@@ -124,11 +125,11 @@ class Lexia:
             return None
         meta = p.get("meta") or {}
         base = {"id": p["id"], "source_id": p["source_id"], "version": p.get("version", ""), "url": p["url"]}
-        if p["source_id"] == "code_civil":
+        if p["source_id"] in SOURCES_TEXTES and p["source_id"] != "constitution_1958":
             en_vigueur = bool(meta.get("en_vigueur"))
             actuelle = None
             if not en_vigueur:
-                for v in self.retriever.versions("code_civil", p.get("numero") or ""):
+                for v in self.retriever.versions(p["source_id"], p.get("numero") or ""):
                     if (v.get("meta") or {}).get("en_vigueur"):
                         actuelle = {"id": v["id"], "version": v["version"], "url": v["url"]}
                         break

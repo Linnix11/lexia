@@ -15,8 +15,9 @@ from pathlib import Path
 import numpy as np
 
 from api.references import extraire
+from api.textes import SOURCES_CASSATION, cibles_article
 from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
-                                groupes, paires, termes)
+                                groupes, jeton_source, paires, termes)
 
 N_CANDIDATS = 50
 log = logging.getLogger("lexia.recherche")
@@ -41,7 +42,8 @@ class LocalRetriever:
                 log.warning("Index vectorise avec %s mais EMBED_MODEL=%s : recherche vectorielle desactivee "
                             "(relancer ingest.build_index)", modele_index, embed_model)
             else:
-                self._vecs = np.load(vec_file)
+                # memoire mappee : le systeme ne garde en RAM que les pages lues
+                self._vecs = np.load(vec_file, mmap_mode="r")
                 self._ids = json.loads(ids_file.read_text())
         # metadonnees minimales des passages vectorises (filtrage sans relire le JSON)
         self._meta_vec: dict[str, tuple[str, int | None]] = {}
@@ -50,6 +52,8 @@ class LocalRetriever:
                 rows = self._con.execute("SELECT id, source_id, en_vigueur FROM passages").fetchall()
             known = set(self._ids)
             self._meta_vec = {r[0]: (r[1], r[2]) for r in rows if r[0] in known}
+        # index anterieur sans colonne source : ancienne requete (filtre apres jointure)
+        self._fts_source = any(r[1] == "source" for r in self._q("PRAGMA table_info(passages_fts)"))
         # nombre de passages indexables (en vigueur) par source, pour mesurer la couverture
         self._totaux = dict(self._q(
             "SELECT source_id, count(*) FROM passages WHERE en_vigueur IS NULL OR en_vigueur = 1 GROUP BY source_id"))
@@ -88,8 +92,7 @@ class LocalRetriever:
             return autorisees is None or src in autorisees
 
         for num in refs.articles:
-            cibles = ["constitution_1958"] if refs.constitution else ["code_civil", "constitution_1958"]
-            for src in cibles:
+            for src in cibles_article(num, refs.codes, refs.constitution):
                 if not ok(src):
                     continue
                 rows = self._q(
@@ -111,15 +114,30 @@ class LocalRetriever:
                 )
                 out.extend(json.loads(r[0]) for r in rows)
         for pv in refs.pourvois:
-            if ok("judilibre"):
+            for src in SOURCES_CASSATION:
+                if not ok(src):
+                    continue
                 rows = self._q(
-                    "SELECT data FROM passages WHERE source_id = 'judilibre' AND data LIKE ? ORDER BY rowid LIMIT 3",
-                    (f'%"{pv.replace(".", "")}"%',),
+                    "SELECT data FROM passages WHERE source_id = ? AND data LIKE ? ORDER BY rowid LIMIT 3",
+                    (src, f'%"{pv.replace(".", "")}"%'),
                 )
                 out.extend(json.loads(r[0]) for r in rows)
         return out
 
     def _fts(self, requete: str, sources: tuple[str, ...]) -> list[tuple[str, dict]]:
+        if self._fts_source:
+            # Filtre et classement dans l'index plein texte, lecture des seules lignes retenues.
+            filtre = " OR ".join(jeton_source(s) for s in sources)
+            try:
+                rows = self._q(
+                    "SELECT p.id, p.data FROM (SELECT rowid, rank FROM passages_fts"
+                    " WHERE passages_fts MATCH ? AND rank MATCH 'bm25(3.0, 1.0, 0.0)' ORDER BY rank LIMIT ?) f"
+                    " JOIN passages p ON p.rowid = f.rowid ORDER BY f.rank",
+                    (f"source : ({filtre}) AND ({requete})", N_CANDIDATS),
+                )
+            except sqlite3.OperationalError:
+                return []
+            return [(r[0], json.loads(r[1])) for r in rows]
         clause, params = self._filtre_sql(sources)
         try:
             rows = self._q(

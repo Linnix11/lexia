@@ -168,3 +168,23 @@ def decouper(lines: list[str], est_dispositif, chunk_chars: int = CHUNK_CHARS,
         for q in _scinder(Paragraphe(numero=0, lignes=dispositif), PARA_MAX_CHARS):
             morceaux.append(Morceau("dispositif", [q]))
     return morceaux
+
+
+def decouper_sommaire(alineas: list[str], max_chars: int = PARA_MAX_CHARS) -> list[list[str]]:
+    """Un sommaire tres long (analyses multiples) est reparti en plusieurs passages."""
+    morceaux: list[list[str]] = []
+    courant: list[str] = []
+    for a in alineas:
+        while len(a) > max_chars:
+            if courant:
+                morceaux.append(courant)
+                courant = []
+            morceaux.append([a[:max_chars]])
+            a = a[max_chars:]
+        if courant and sum(len(x) for x in courant) + len(a) > max_chars:
+            morceaux.append(courant)
+            courant = []
+        courant.append(a)
+    if courant:
+        morceaux.append(courant)
+    return morceaux

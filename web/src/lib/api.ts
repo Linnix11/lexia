@@ -66,6 +66,7 @@ export interface Matiere {
   id: string
   libelle: string
   sources: string[]
+  noms_sources?: Record<string, string>
 }
 
 export interface QuestionQuiz {
@@ -266,6 +267,22 @@ export function quandSessionExpiree(fn: (() => void) | null) {
   surSessionExpiree = fn
 }
 
+export interface Annale {
+  id: number
+  titre: string
+  matiere: string
+  libelle_matiere: string
+  niveau: string
+  annee: number
+  universite: string
+  session: string
+  url: string
+  corrige: boolean
+  ajoute_le: string
+}
+
+export type NouvelleAnnale = Omit<Annale, 'id' | 'libelle_matiere' | 'ajoute_le'>
+
 export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
@@ -285,8 +302,11 @@ export const api = {
     supprimer: (id: number) => post<void>(`/admin/clients/${id}/supprimer`, {}),
     activite: () => requete<ActiviteAdmin>('/admin/activite?limite=150'),
     serveur: () => requete<ServeurAdmin>('/admin/serveur'),
+    ajouterAnnale: (a: NouvelleAnnale) => post<Annale>('/admin/annales', a),
+    supprimerAnnale: (id: number) => post<void>(`/admin/annales/${id}/supprimer`, {}),
   },
   matieres: () => requete<Matiere[]>('/matieres'),
+  annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau }),
   quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau) =>

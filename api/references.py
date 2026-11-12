@@ -9,8 +9,9 @@ Sert a deux choses :
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import dataclass
+
+from api.textes import codes_cites, sans_accents
 
 _NUM = r"(?:[LRDA]\.?\s?)?\d+(?:-\d+)*(?:\s(?:bis|ter|quater))?"
 _ARTICLES_RE = re.compile(
@@ -29,6 +30,7 @@ class References:
     decisions_cc: tuple[str, ...]   # "2023-1075 QPC"
     pourvois: tuple[str, ...]       # "21-86.418"
     constitution: bool              # la question parle de la Constitution
+    codes: tuple[str, ...] = ()     # codes nommes ("code_penal"...)
 
     @property
     def vide(self) -> bool:
@@ -56,8 +58,8 @@ def extraire(texte: str) -> References:
         p = f"{m.group(1)}-{m.group(2)}.{m.group(3)}"
         if p not in pourvois:
             pourvois.append(p)
-    sans_accents = unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode().lower()
-    return References(tuple(articles), tuple(decisions), tuple(pourvois), "constitution" in sans_accents)
+    return References(tuple(articles), tuple(decisions), tuple(pourvois), "constitution" in sans_accents(texte),
+                      codes_cites(texte))
 
 
 def _motif(n: str) -> str:

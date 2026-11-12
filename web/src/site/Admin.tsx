@@ -1,14 +1,15 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, ApiError, type ActiviteAdmin, type ClientAdmin, type ServeurAdmin, type StatsAdmin } from '../lib/api'
+import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { api, ApiError, type ActiviteAdmin, type Annale, type ClientAdmin, type NouvelleAnnale, type ServeurAdmin, type StatsAdmin } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Histogramme } from './Graphique'
 import { boutonSecondaire } from './Public'
 
-type Onglet = 'apercu' | 'clients' | 'activite' | 'serveur'
+type Onglet = 'apercu' | 'clients' | 'annales' | 'activite' | 'serveur'
 const ONGLETS: { id: Onglet; label: string }[] = [
   { id: 'apercu', label: 'Vue d’ensemble' },
   { id: 'clients', label: 'Clients' },
+  { id: 'annales', label: 'Annales' },
   { id: 'activite', label: 'Activité' },
   { id: 'serveur', label: 'Serveur' },
 ]
@@ -252,6 +253,129 @@ function Clients({ moi }: { moi: string }) {
   )
 }
 
+// --- Annales -------------------------------------------------------------------------
+
+const VIDE: NouvelleAnnale = { titre: '', matiere: '', niveau: 'L1', annee: new Date().getFullYear(), universite: '', session: '', url: '', corrige: false }
+const champ = 'w-full min-w-0 rounded-lg border border-line bg-white px-3 py-2 text-[13px] text-ink'
+
+function Annales() {
+  const [liste, setListe] = useState<Annale[] | null>(null)
+  const [niveaux, setNiveaux] = useState<string[]>([])
+  const [matieres, setMatieres] = useState<{ id: string; libelle: string }[]>([])
+  const [f, setF] = useState<NouvelleAnnale>(VIDE)
+  const [erreur, setErreur] = useState<string | null>(null)
+  const [envoi, setEnvoi] = useState(false)
+  const [aSupprimer, setASupprimer] = useState<number | null>(null)
+
+  useEffect(() => {
+    let actif = true
+    api.annales().then((r) => { if (actif) { setListe(r.annales); setNiveaux(r.niveaux) } }).catch(() => actif && setListe([]))
+    api.matieres().then((m) => actif && setMatieres(m.map(({ id, libelle }) => ({ id, libelle })))).catch(() => undefined)
+    return () => { actif = false }
+  }, [])
+
+  const maj = <K extends keyof NouvelleAnnale>(k: K, v: NouvelleAnnale[K]) => setF((x) => ({ ...x, [k]: v }))
+  const ajouter = async (e: FormEvent) => {
+    e.preventDefault()
+    setErreur(null)
+    setEnvoi(true)
+    try {
+      const a = await api.admin.ajouterAnnale(f)
+      setListe((l) => [a, ...(l ?? [])])
+      setF({ ...VIDE, matiere: f.matiere, niveau: f.niveau, universite: f.universite, annee: f.annee })
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Ajout impossible.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
+  const supprimer = async (id: number) => {
+    try {
+      await api.admin.supprimerAnnale(id)
+      setListe((l) => l?.filter((a) => a.id !== id) ?? l)
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Suppression impossible.')
+    } finally {
+      setASupprimer(null)
+    }
+  }
+
+  return (
+    <div className="grid items-start gap-4 desk:grid-cols-[380px_1fr] [&>*]:min-w-0">
+      <Carte titre="Référencer une annale">
+        <p className="mb-3 text-[12px] leading-[1.6] text-muted">
+          Lien vers un sujet publié par une faculté. Lexia n’héberge pas les sujets : vérifiez que la page est publique.
+        </p>
+        <form onSubmit={ajouter} className="grid gap-2.5">
+          <label className="grid gap-1 text-[12px] text-muted">Titre
+            <input required minLength={3} value={f.titre} onChange={(e) => maj('titre', e.target.value)} placeholder="Droit des obligations, examen terminal" className={champ} />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="grid gap-1 text-[12px] text-muted">Matière
+              <select required value={f.matiere} onChange={(e) => maj('matiere', e.target.value)} className={champ}>
+                <option value="" disabled>Choisir</option>
+                {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-[12px] text-muted">Niveau
+              <select value={f.niveau} onChange={(e) => maj('niveau', e.target.value)} className={champ}>
+                {(niveaux.length ? niveaux : ['L1', 'L2', 'L3', 'M1', 'M2']).map((n) => <option key={n}>{n}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-[1fr_96px] gap-2">
+            <label className="grid gap-1 text-[12px] text-muted">Université
+              <input required minLength={2} value={f.universite} onChange={(e) => maj('universite', e.target.value)} className={champ} />
+            </label>
+            <label className="grid gap-1 text-[12px] text-muted">Année
+              <input required type="number" min={1990} max={2100} value={f.annee} onChange={(e) => maj('annee', Number(e.target.value))} className={champ} />
+            </label>
+          </div>
+          <label className="grid gap-1 text-[12px] text-muted">Session (facultatif)
+            <input value={f.session} onChange={(e) => maj('session', e.target.value)} placeholder="1re session, semestre 1" className={champ} />
+          </label>
+          <label className="grid gap-1 text-[12px] text-muted">Lien du sujet
+            <input required type="url" pattern="https://.*" value={f.url} onChange={(e) => maj('url', e.target.value)} placeholder="https://" className={champ} />
+          </label>
+          <label className="flex items-center gap-2 text-[12px] text-muted">
+            <input type="checkbox" checked={f.corrige} onChange={(e) => maj('corrige', e.target.checked)} /> Un corrigé est publié avec le sujet
+          </label>
+          {erreur && <p role="alert" className="text-[12px] text-[#8c4a36]">{erreur}</p>}
+          <button type="submit" disabled={envoi} className="rounded-lg bg-forest px-3 py-2 text-[13px] text-white hover:bg-forest-dark disabled:opacity-60">
+            {envoi ? 'Ajout…' : 'Ajouter l’annale'}
+          </button>
+        </form>
+      </Carte>
+      <Carte titre={`Catalogue (${liste?.length ?? 0})`}>
+        {liste === null ? (
+          <div className="grid animate-pulse gap-2">{[0, 1, 2].map((i) => <div key={i} className="h-10 rounded bg-[#ece9e0]" />)}</div>
+        ) : liste.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-muted">Aucune annale référencée. Ajoutez la première avec le formulaire.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {liste.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div className="min-w-0">
+                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-forest underline-offset-2 hover:underline">{a.titre}</a>
+                  <p className="text-[12px] text-muted">{a.libelle_matiere} · {a.niveau} · {a.universite} · {a.annee}{a.session ? ` · ${a.session}` : ''}{a.corrige ? ' · corrigé' : ''}</p>
+                </div>
+                {aSupprimer === a.id ? (
+                  <span className="flex gap-1">
+                    <button type="button" onClick={() => supprimer(a.id)} className="rounded-md bg-[#8c4a36] px-2 py-1 text-[12px] text-white">Retirer « {a.titre.slice(0, 30)}{a.titre.length > 30 ? '…' : ''} »</button>
+                    <button type="button" onClick={() => setASupprimer(null)} className="px-2 py-1 text-[12px] text-muted">Annuler</button>
+                  </span>
+                ) : (
+                  <button type="button" onClick={() => setASupprimer(a.id)} className="rounded-md border border-line px-2 py-1 text-[12px] text-[#8c4a36] hover:bg-[#f6e9e4]">Retirer</button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Carte>
+    </div>
+  )
+}
+
 // --- Activite ------------------------------------------------------------------------
 
 function Activite({ a }: { a: ActiviteAdmin }) {
@@ -392,6 +516,7 @@ export function Admin() {
         </div>
         {erreur && <p role="alert" className="mb-4 rounded-lg bg-[#f6e9e4] px-3 py-2 text-[13px] text-[#8c4a36]">{erreur}</p>}
         {onglet === 'clients' ? <Clients moi={profil.email} />
+          : onglet === 'annales' ? <Annales />
           : !stats || !activite || !serveur ? (
             <div className="grid animate-pulse gap-3 desk:grid-cols-3" aria-label="Chargement">{[0, 1, 2].map((i) => <div key={i} className="h-28 rounded-xl bg-[#ece9e0]" />)}</div>
           ) : onglet === 'apercu' ? <Apercu s={stats} />

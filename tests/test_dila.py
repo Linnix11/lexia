@@ -78,13 +78,15 @@ def test_cass_arret_ancien_sans_numeros_inventes():
     assert all("MOYEN ANNEX" not in p.texte.upper() for p in ps)
 
 
-def test_cass_perimetre():
-    # 2e chambre civile : seulement les themes responsabilite / assurance / accidents
-    raw = lire("cass_civ2_secu.xml")
-    titrage = re.search(r'<SCT ID="1" TYPE="PRINCIPAL">([^<]*)', raw.decode()).group(1).strip().upper()
-    attendu = titrage.startswith(cass.THEMES_CIV2)
-    assert bool(cass.parse_arret(raw, date_recuperation="d", version="v")) is attendu
-    # arrets anterieurs a DATE_MIN exclus
+def test_cass_perimetre(monkeypatch):
+    # toutes les chambres depuis 2000 : la 2e chambre civile n'est plus filtree par theme
+    ps = cass.parse_arret(lire("cass_civ2_secu.xml"), date_recuperation="d", version="v")
+    assert ps and {p.source_id for p in ps} == {"judilibre"}
+    # filtre par source : un arret civil n'appartient pas a la chambre sociale
+    assert cass.parse_arret(lire("cass_civ2_secu.xml"), date_recuperation="d", version="v", seulement="cass_sociale") == []
+    # arret de 2009 : dans le perimetre (>= 2000), exclu si la date minimale est plus recente
+    assert cass.parse_arret(lire("cass_civ1_avant_2016.xml"), date_recuperation="d", version="v")
+    monkeypatch.setattr(cass, "DATE_MIN", "2010-01-01")
     assert cass.parse_arret(lire("cass_civ1_avant_2016.xml"), date_recuperation="d", version="v") == []
 
 

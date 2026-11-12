@@ -77,7 +77,9 @@ def plan(root: ET.Element, date: str) -> list[str]:
     return chemin
 
 
-def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str) -> Passage | None:
+def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
+                  source_id: str = SOURCE_ID, nom: str | None = CODE_NOM) -> Passage | None:
+    """nom=None : nom du texte lu dans l'article (lois et ordonnances)."""
     root = ET.fromstring(raw)
     if root.tag != "ARTICLE":
         return None
@@ -96,11 +98,17 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str) -
 
     en_vigueur = etat == "VIGUEUR"
     chemin = plan(root, debut)
+    if nom is None:
+        titre_txt = root.find("CONTEXTE/TEXTE/TITRE_TXT")
+        nom = (titre_txt.get("c_titre_court") or dila.clean("".join(titre_txt.itertext()))) if titre_txt is not None else "Texte"
+        texte_id = titre_txt.get("id_txt") if titre_txt is not None else None
+    else:
+        texte_id = None
     fin_txt = "" if fin == DATE_INFINIE else f" au {date_fr(fin)}"
     periode = f"depuis le {date_fr(debut)}" if not fin_txt else f"du {date_fr(debut)}{fin_txt}"
     statut = ETATS.get(etat, etat.lower())
     meta = {
-        "code": CODE_NOM,
+        "code": nom,
         "id_legi": art_id,
         "etat": etat,
         "en_vigueur": en_vigueur,
@@ -110,9 +118,11 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str) -
     }
     if nota:
         meta["nota"] = nota
+    if texte_id:
+        meta["id_texte"] = texte_id
     return Passage(
-        id=f"{SOURCE_ID}:{art_id}",
-        source_id=SOURCE_ID,
+        id=f"{source_id}:{art_id}",
+        source_id=source_id,
         type="article",
         numero=num,
         titre=" > ".join(chemin) or None,
@@ -121,7 +131,7 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str) -
         version=f"Version {periode}, article {statut} ({version_archive})",
         date_recuperation=date_recuperation,
         meta=meta,
-        entete=f"{CODE_NOM}, article {num} ({statut}, {periode})" + (f" - {chemin[-1]}" if chemin else ""),
+        entete=f"{nom}, article {num} ({statut}, {periode})" + (f" - {chemin[-1]}" if chemin else ""),
     )
 
 

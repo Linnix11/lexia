@@ -17,12 +17,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api.admin_routes import creer_routes_admin
+from api.annales import Annales, creer_routes_annales
 from api.auth import creer_routes, routes_formules
 from api.comptes import Comptes, Utilisateur
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.matieres import LIBELLES, sources_par_matiere
+from api.textes import NOMS
 from api.quiz import QuizService
 from api.rag import Lexia, fiche_source
 from api.retrieval.base import Retriever
@@ -132,6 +134,17 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         extras = {"embeddings": getattr(embedder, "model", None), "reclassement": getattr(reclasseur, "model", None)}
         app.include_router(creer_routes_admin(comptes, utilisateur_requis, journal, settings, retriever, extras),
                            prefix="/admin")
+
+        def admin_requis(request: Request) -> Utilisateur:
+            u = utilisateur_requis(request)
+            if not u.admin:
+                raise HTTPException(403, "Accès réservé aux administrateurs.")
+            return u
+
+        annales = Annales(comptes.chemin)
+        routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)
+        app.include_router(routes_annales)
+        app.include_router(admin_annales, prefix="/admin")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:
@@ -184,7 +197,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.get("/matieres")
     def matieres():
-        return [{"id": m, "libelle": LIBELLES.get(m, m), "sources": list(s)} for m, s in sources_par_matiere().items()]
+        return [{"id": m, "libelle": LIBELLES.get(m, m), "sources": list(s),
+                 "noms_sources": {i: NOMS.get(i, i) for i in s}} for m, s in sources_par_matiere().items()]
 
     @app.post("/chat", dependencies=[Depends(limite)])
     def chat(req: ChatRequest, request: Request):

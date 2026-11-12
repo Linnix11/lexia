@@ -7,13 +7,19 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from api.textes import SOURCES_TEXTES  # sources primaires, servies en premier  # noqa: F401
+
 RRF_K = 60
 MAX_PAR_DOCUMENT = 1  # evite qu'une seule decision occupe tous les resultats
-SOURCES_TEXTES = ("constitution_1958", "code_civil")  # sources primaires, servies en premier
 # En dessous de cette part de passages vectorises, la recherche vectorielle biaiserait les
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
 SEUIL_COUVERTURE = 0.9
 N_RECLASSEMENT = 30  # candidats relus par le modele de reclassement, par groupe de sources
+
+
+def jeton_source(source_id: str) -> str:
+    """Mot unique representant une source dans l'index plein texte (colonne « source »)."""
+    return "src" + re.sub(r"[^a-z0-9]", "", source_id.lower())
 
 
 @dataclass

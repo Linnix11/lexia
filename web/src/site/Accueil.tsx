@@ -4,7 +4,7 @@ import { Formules } from './Tarifs'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 const PILIERS = [
-  { titre: 'Des sources officielles', texte: 'Constitution, Code civil, décisions du Conseil constitutionnel et arrêts publiés de la Cour de cassation, issus des données ouvertes de l’État.' },
+  { titre: 'Des sources officielles', texte: 'Constitution, 25 codes, lois en vigueur, Conseil constitutionnel, Cour de cassation et Conseil d’État, issus des données ouvertes de l’État.' },
   { titre: 'Chaque affirmation est citée', texte: 'Les règles de droit renvoient à l’article ou à la décision qui les fonde. Une référence introuvable est retirée avant de vous être montrée.' },
   { titre: 'La bonne version du texte', texte: 'Les articles sont datés. Un clic suffit pour vérifier qu’une version est toujours en vigueur.' },
 ]

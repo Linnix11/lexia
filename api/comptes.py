@@ -112,6 +112,7 @@ def normaliser_email(email: str) -> str:
 
 class Comptes:
     def __init__(self, chemin: Path | str, admins: tuple[str, ...] = ()):
+        self.chemin = str(chemin)
         if str(chemin) != ":memory:":
             Path(chemin).parent.mkdir(parents=True, exist_ok=True)
         self._con = sqlite3.connect(str(chemin), check_same_thread=False)

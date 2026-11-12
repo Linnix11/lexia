@@ -14,6 +14,7 @@ En production, l'API utilise PostgreSQL (db/schema.sql) a la place de cet index.
 
 from __future__ import annotations
 
+import base64
 import json
 import sqlite3
 import sys
@@ -21,8 +22,9 @@ from pathlib import Path
 
 import numpy as np
 
+from api.retrieval.base import jeton_source
 from ingest import embedders
-from ingest.embed import CACHE_DIR, decode, iter_cache
+from ingest.embed import CACHE_DIR, iter_cache
 from ingest.env import load_env
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,8 +45,10 @@ CREATE TABLE passages (
 );
 CREATE INDEX passages_num ON passages (source_id, numero);
 CREATE INDEX passages_doc ON passages (doc_id);
+-- Seuls les passages en vigueur y figurent ; la colonne source porte jeton_source(source_id)
+-- pour filtrer dans l'index lui-meme, sans relire chaque ligne de passages.
 CREATE VIRTUAL TABLE passages_fts USING fts5(
-    entete, texte, content='', tokenize='unicode61 remove_diacritics 2'
+    entete, texte, source, content='', tokenize='unicode61 remove_diacritics 2'
 );
 """
 
@@ -86,21 +90,25 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
                     (n, p["id"], p["source_id"], p["type"], p.get("numero"), doc_id(p), en_vigueur(p),
                      p["empreinte"], json.dumps(p, ensure_ascii=False)),
                 )
-                con.execute("INSERT INTO passages_fts (rowid, entete, texte) VALUES (?,?,?)",
-                            (n, p.get("entete", ""), p["texte"]))
+                if en_vigueur(p) != 0:
+                    con.execute("INSERT INTO passages_fts (rowid, entete, texte, source) VALUES (?,?,?,?)",
+                                (n, p.get("entete", ""), p["texte"], jeton_source(p["source_id"])))
                 empreintes[p["id"]] = p["empreinte"]
     con.commit()
     con.close()
     tmp.replace(index_dir / "lexia.sqlite")
 
+    # Vecteurs decodes directement en float32 par blocs (une liste Python de 500 000 vecteurs
+    # occuperait plus de 10 Go).
     ids: list[str] = []
-    vecs: list[list[float]] = []
+    blocs: list[np.ndarray] = []
     for f in sorted(cache_dir.glob("*.jsonl")) if cache_dir.exists() else []:
         for r in iter_cache(f, model):
             if empreintes.get(r["id"]) == r["empreinte"]:
                 ids.append(r["id"])
-                vecs.append(decode(r["b64"]))
-    arr = np.asarray(vecs, dtype=np.float32).reshape(len(vecs), -1 if vecs else 0)
+                blocs.append(np.frombuffer(base64.b64decode(r["b64"]), dtype="<f4"))
+    arr = np.vstack(blocs).astype(np.float32, copy=False) if blocs else np.zeros((0, 0), dtype=np.float32)
+    del blocs
     if len(arr):
         arr /= np.linalg.norm(arr, axis=1, keepdims=True)
     np.save(index_dir / "vectors.npy", arr)

@@ -12,6 +12,11 @@ LIBELLES = {
     "introduction_au_droit": "Introduction au droit",
     "droit_constitutionnel": "Droit constitutionnel",
     "droit_civil": "Droit civil",
+    "droit_penal": "Droit pénal",
+    "procedure_civile": "Procédure civile",
+    "droit_des_affaires": "Droit des affaires",
+    "droit_social": "Droit social",
+    "droit_administratif": "Droit administratif",
 }
 
 

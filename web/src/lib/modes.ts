@@ -13,6 +13,10 @@ const SYMBOLES: Record<string, string> = {
   code_civil: '§',
   decisions_conseil_constitutionnel: '◈',
   judilibre: '⚖',
+  cass_criminelle: '⚖',
+  cass_sociale: '⚖',
+  cass_commerciale: '⚖',
+  conseil_etat: '⚖',
 }
 
 export function symbole(s: FicheSource) {

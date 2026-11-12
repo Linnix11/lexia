@@ -1,7 +1,6 @@
 """Arrets publies de la Cour de cassation depuis l'archive DILA CASS.
 
-Perimetre V1 (matieres pilotes : contrats, responsabilite civile) : chambres civiles,
-Assemblee pleniere et chambre mixte, arrets publies depuis DATE_MIN.
+Perimetre : toutes les chambres, arrets publies depuis DATE_MIN (2000).
 Passages produits par arret :
   - "sommaire" : titrage + analyse officiels (resume redige par la Cour)
   - "motifs"   : paragraphes de motivation regroupes
@@ -17,7 +16,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from ingest import dila
-from ingest.jurisprudence import compact, decouper
+from ingest.jurisprudence import compact, decouper, decouper_sommaire
 from ingest.models import Passage
 
 SOURCE_ID = "judilibre"  # meme id que le registre : jurisprudence de la Cour de cassation
@@ -26,13 +25,22 @@ FORMATIONS = {
     "CHAMBRE_CIVILE_1": "Première chambre civile",
     "CHAMBRE_CIVILE_2": "Deuxième chambre civile",
     "CHAMBRE_CIVILE_3": "Troisième chambre civile",
+    "CHAMBRE_CIVILE": "Chambre civile",
     "ASSEMBLEE_PLENIERE": "Assemblée plénière",
     "CHAMBRE_MIXTE": "Chambre mixte",
+    "CHAMBRES_REUNIES": "Chambres réunies",
+    "CHAMBRE_CRIMINELLE": "Chambre criminelle",
+    "CHAMBRE_SOCIALE": "Chambre sociale",
+    "CHAMBRE_COMMERCIALE": "Chambre commerciale",
 }
-DATE_MIN = "2016-01-01"
-# La 2e chambre civile traite surtout de securite sociale et de procedure : on ne garde
-# que les arrets dont le titrage du sommaire releve des matieres pilotes.
-THEMES_CIV2 = ("RESPONSABILITE", "ACCIDENT DE LA CIRCULATION", "ASSURANCE", "INDEMNISATION", "FONDS DE GARANTIE")
+# Une source par grande famille de chambres (filtrage par matiere) ; les chambres civiles,
+# l'Assemblee pleniere et la chambre mixte gardent l'identifiant historique "judilibre".
+SOURCE_PAR_FORMATION = {
+    "CHAMBRE_CRIMINELLE": "cass_criminelle",
+    "CHAMBRE_SOCIALE": "cass_sociale",
+    "CHAMBRE_COMMERCIALE": "cass_commerciale",
+}
+DATE_MIN = "2000-01-01"
 
 # Lien Legifrance construit a partir de l'identifiant DILA (format a confirmer en navigateur).
 URL_LEGIFRANCE = "https://www.legifrance.gouv.fr/juri/id/{id}"
@@ -80,11 +88,15 @@ def _sommaire(root: ET.Element) -> list[str]:
     return out
 
 
-def parse_arret(raw: bytes, *, date_recuperation: str, version: str) -> list[Passage]:
+def parse_arret(raw: bytes, *, date_recuperation: str, version: str, seulement: str | None = None) -> list[Passage]:
+    """seulement : ne garder que les arrets d'une source (ex. "cass_sociale")."""
     root = ET.fromstring(raw)
     formation = dila.text_of(root, "META/META_SPEC/META_JURI_JUDI/FORMATION")
     date = dila.text_of(root, "META/META_SPEC/META_JURI/DATE_DEC")
     if formation not in FORMATIONS or date < DATE_MIN:
+        return []
+    source_id = SOURCE_PAR_FORMATION.get(formation, SOURCE_ID)
+    if seulement is not None and source_id != seulement:
         return []
     doc_id = dila.text_of(root, "META/META_COMMUN/ID")
     titre = dila.text_of(root, "META/META_SPEC/META_JURI/TITRE")
@@ -100,7 +112,7 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str) -> list[Pas
         "id_dila": doc_id,
     }
     common = dict(
-        source_id=SOURCE_ID,
+        source_id=source_id,
         titre=titre,
         url=URL_LEGIFRANCE.format(id=doc_id),
         version=version,
@@ -111,21 +123,34 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str) -> list[Pas
 
     passages = []
     som = _sommaire(root)
-    if formation == "CHAMBRE_CIVILE_2" and not (som and som[0].upper().startswith(THEMES_CIV2)):
-        return []
     if som:
-        passages.append(Passage(id=f"{SOURCE_ID}:{doc_id}:sommaire", type="sommaire", numero=None, alineas=som, **common))
+        for k, bloc in enumerate(decouper_sommaire(som)):
+            suffixe = "sommaire" if k == 0 else f"sommaire-{k + 1}"
+            passages.append(Passage(id=f"{source_id}:{doc_id}:{suffixe}", type="sommaire", numero=None, alineas=bloc, **common))
 
     lines = lignes_utiles(dila.contenu_lines(raw.decode("utf-8")))
     for i, m in enumerate(decouper(lines, est_dispositif, ignorer=est_formule), start=1):
         passages.append(
-            Passage(id=f"{SOURCE_ID}:{doc_id}:{i}", type=m.type, numero=m.plage or None, alineas=m.alineas, **common)
+            Passage(id=f"{source_id}:{doc_id}:{i}", type=m.type, numero=m.plage or None, alineas=m.alineas, **common)
         )
     return passages
 
 
-def collect(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
+def collect(raw_dir: Path, *, date_recuperation: str, seulement: str = SOURCE_ID) -> Iterator[Passage]:
     archive = dila.latest_archive(raw_dir, FONDS)
     version = f"Archive DILA CASS du {dila.archive_date(archive)}"
     for _, raw in dila.iter_xml(archive):
-        yield from parse_arret(raw, date_recuperation=date_recuperation, version=version)
+        yield from parse_arret(raw, date_recuperation=date_recuperation, version=version, seulement=seulement)
+
+
+class SourceChambre:
+    """Chambres criminelle, sociale et commerciale : une source chacune (interface de ingest.run)."""
+
+    def __init__(self, source_id: str):
+        self.SOURCE_ID = source_id
+
+    def collect(self, raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
+        return collect(raw_dir, date_recuperation=date_recuperation, seulement=self.SOURCE_ID)
+
+
+SOURCES = [SourceChambre(s) for s in sorted(set(SOURCE_PAR_FORMATION.values()))]

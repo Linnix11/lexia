@@ -7,6 +7,7 @@ une entree par decision). Schema : db/schema.sql. Active avec RETRIEVER=postgres
 from __future__ import annotations
 
 from api.references import extraire
+from api.textes import SOURCES_CASSATION, cibles_article
 from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
                                 groupes, termes)
 
@@ -48,7 +49,7 @@ class PostgresRetriever:
         ok = lambda s: autorisees is None or s in autorisees  # noqa: E731
         out: list[dict] = []
         for num in refs.articles:
-            for src in (["constitution_1958"] if refs.constitution else ["code_civil", "constitution_1958"]):
+            for src in cibles_article(num, refs.codes, refs.constitution):
                 if not ok(src):
                     continue
                 rows = self._q(f"SELECT {COLONNES} FROM passages WHERE source_id = %s AND numero = %s"
@@ -63,10 +64,11 @@ class PostgresRetriever:
                                " AND meta->>'numero' = %s AND meta->>'nature' = %s ORDER BY id LIMIT 3", (num, nature))
                 out.extend(_ligne(r) for r in rows)
         for pv in refs.pourvois:
-            if ok("judilibre"):
-                rows = self._q(f"SELECT {COLONNES} FROM passages WHERE source_id = 'judilibre'"
-                               " AND meta->'numeros_pourvoi' ? %s ORDER BY id LIMIT 3", (pv.replace(".", ""),))
-                out.extend(_ligne(r) for r in rows)
+            for src in SOURCES_CASSATION:
+                if ok(src):
+                    rows = self._q(f"SELECT {COLONNES} FROM passages WHERE source_id = %s"
+                                   " AND meta->'numeros_pourvoi' ? %s ORDER BY id LIMIT 3", (src, pv.replace(".", "")))
+                    out.extend(_ligne(r) for r in rows)
         return out
 
     def _lexical(self, texte: str, sources: tuple[str, ...]) -> list[tuple[str, dict]]:

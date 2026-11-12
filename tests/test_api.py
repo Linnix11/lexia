@@ -335,11 +335,12 @@ def test_expanseur_filtre_les_suggestions():
         {"code": "code_civil", "numero": "1240"},
         {"code": "code_civil", "numero": "1240"},            # doublon
         {"code": "constitution", "numero": "61-1"},
-        {"code": "code_penal", "numero": "121-3"},           # code hors corpus
+        {"code": "code_penal", "numero": "121-3"},
+        {"code": "code_minier", "numero": "1"},              # code hors corpus
         {"code": "code_civil", "numero": "art. 1241 ; DROP"},  # numero invalide
     ], "reformulation": "Responsabilité civile extracontractuelle pour faute"})
     c = Expanseur(llm).etendre("conditions de la responsabilité pour faute")
-    assert c.suggestions == [("code_civil", "1240"), ("constitution_1958", "61-1")]
+    assert c.suggestions == [("code_civil", "1240"), ("constitution_1958", "61-1"), ("code_penal", "121-3")]
     assert c.reformulation.startswith("Responsabilité")
     llm.reponses.append(LLMError("503"))
     assert Expanseur(llm).etendre("question") is None
@@ -387,3 +388,45 @@ def test_mode_methode_accepte_une_explication_sans_source():
     # une regle de droit inventee reste bloquee meme en mode methode
     brut["explication"] = [{"texte": "Selon l'article 9999 du Code civil, tout est permis.", "sources": []}]
     assert valider_reponse(brut, table, "commentaire")[0]["statut"] == "abstention"
+
+
+def test_references_reconnaissent_les_codes():
+    from api.references import extraire
+    from api.textes import cibles_article
+
+    r = extraire("Que prévoit l'article 121-3 du code pénal ?")
+    assert r.articles == ("121-3",) and r.codes == ("code_penal",)
+    r = extraire("article L. 1232-1 du Code du travail")
+    assert r.articles == ("L1232-1",) and r.codes == ("code_travail",)
+    assert extraire("art. 1240 C. civ.").codes == ("code_civil",)
+    assert cibles_article("34", (), True) == ("constitution_1958",)
+    assert cibles_article("1240", (), False)[0] == "code_civil"
+    assert "code_civil" not in cibles_article("L121-1", (), False)
+
+
+def test_annales_catalogue(tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from api.annales import Annales, creer_routes_annales
+    from api.journal import Journal
+
+    class Admin:
+        id = 1
+
+    annales = Annales(tmp_path / "a.db")
+    public, admin = creer_routes_annales(annales, lambda: Admin(), Journal(tmp_path / "logs"))
+    app = FastAPI()
+    app.include_router(public)
+    app.include_router(admin, prefix="/admin")
+    c = TestClient(app)
+    base = {"titre": "Introduction au droit, partiel", "matiere": "introduction_au_droit", "niveau": "L1",
+            "annee": 2025, "universite": "Université X", "url": "https://exemple.fr/sujet.pdf"}
+    assert c.post("/admin/annales", json={**base, "url": "http://exemple.fr"}).status_code == 422
+    assert c.post("/admin/annales", json={**base, "matiere": "inconnue"}).status_code == 422
+    r = c.post("/admin/annales", json=base)
+    assert r.status_code == 200 and r.json()["libelle_matiere"] == "Introduction au droit"
+    assert len(c.get("/annales").json()["annales"]) == 1
+    assert c.get("/annales", params={"matiere": "droit_civil"}).json()["annales"] == []
+    assert c.post(f"/admin/annales/{r.json()['id']}/supprimer").status_code == 204
+    assert c.get("/annales").json()["annales"] == []
