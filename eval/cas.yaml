@@ -177,3 +177,62 @@ cas:
   # Versions : l'ancienne numerotation ne doit pas etre presentee comme en vigueur
   - {id: piege-29, piege: version, question: "Que dit l'article 1382 du Code civil sur la responsabilité pour faute ?", attendu: [reponse, abstention], sources: [code_civil:1240]}
   - {id: piege-30, piege: version, question: "Que dit l'article 1134 du Code civil sur la force obligatoire du contrat ?", attendu: [reponse, abstention], sources: [code_civil:1103]}
+
+  # ===================================================================== AJOUT DU 2026-11-12 : 50 CAS (L2-L3, contrats)
+  # Sources verifiees dans l'index (texte de l'article lu), pas encore relues par un juriste.
+  # --- droit penal (12)
+  - {id: pen-01, matiere: droit_penal, question: "Quelles sont les conditions de la légitime défense ?", attendu: [reponse], sources: [code_penal:122-5]}
+  - {id: pen-02, matiere: droit_penal, question: "Qu'est-ce que l'état de nécessité en droit pénal ?", attendu: [reponse], sources: [code_penal:122-7]}
+  - {id: pen-03, matiere: droit_penal, question: "Une personne atteinte d'un trouble psychique est-elle pénalement responsable ?", attendu: [reponse], sources: [code_penal:122-1]}
+  - {id: pen-04, matiere: droit_penal, question: "Que dit le principe de légalité des délits et des peines ?", attendu: [reponse], sources: [code_penal:111-3]}
+  - {id: pen-05, matiere: droit_penal, question: "Comment s'interprète la loi pénale ?", attendu: [reponse], sources: [code_penal:111-4]}
+  - {id: pen-06, matiere: droit_penal, question: "Une loi pénale plus douce s'applique-t-elle aux faits commis avant son entrée en vigueur ?", attendu: [reponse], sources: [code_penal:112-1]}
+  - {id: pen-07, matiere: droit_penal, question: "Quand la tentative est-elle punissable ?", attendu: [reponse], sources: [code_penal:121-5]}
+  - {id: pen-08, matiere: droit_penal, question: "Qui est considéré comme complice d'une infraction ?", attendu: [reponse], sources: [code_penal:121-7]}
+  - {id: pen-09, matiere: droit_penal, question: "Une société peut-elle être pénalement responsable ?", attendu: [reponse], sources: [code_penal:121-2]}
+  - {id: pen-10, matiere: droit_penal, question: "Faut-il une intention pour commettre un délit ?", attendu: [reponse], sources: [code_penal:121-3]}
+  - {id: pen-11, matiere: droit_penal, question: "Comment le Code pénal définit-il le vol ?", attendu: [reponse], sources: [code_penal:311-1]}
+  - {id: pen-12, matiere: droit_penal, question: "Quel est le délai de prescription de l'action publique pour un délit ?", attendu: [reponse], sources: [code_procedure_penale:8]}
+  # --- droit social (10)
+  - {id: soc-01, matiere: droit_social, question: "Qu'est-ce qu'un licenciement pour motif économique ?", attendu: [reponse], sources: [code_travail:L1233-3]}
+  - {id: soc-02, matiere: droit_social, question: "Un licenciement doit-il reposer sur une cause réelle et sérieuse ?", attendu: [reponse], sources: [code_travail:L1232-1]}
+  - {id: soc-03, matiere: droit_social, question: "L'employeur doit-il convoquer le salarié avant de le licencier ?", attendu: [reponse], sources: [code_travail:L1232-2]}
+  - {id: soc-04, matiere: droit_social, question: "Comment fonctionne la rupture conventionnelle ?", attendu: [reponse], sources: [code_travail:L1237-11]}
+  - {id: soc-05, matiere: droit_social, question: "Quelle est la forme normale du contrat de travail ?", attendu: [reponse], sources: [code_travail:L1221-2]}
+  - {id: soc-06, matiere: droit_social, question: "Dans quels cas peut-on conclure un contrat à durée déterminée ?", attendu: [reponse], sources: [code_travail:L1242-2]}
+  - {id: soc-07, matiere: droit_social, question: "Quelle est la durée maximale de la période d'essai ?", attendu: [reponse], sources: [code_travail:L1221-19]}
+  - {id: soc-08, matiere: droit_social, question: "Qu'est-ce que le harcèlement moral au travail ?", attendu: [reponse], sources: [code_travail:L1152-1]}
+  - {id: soc-09, matiere: droit_social, question: "Quelle est la durée légale du travail en France ?", attendu: [reponse], sources: [code_travail:L3121-27]}
+  - {id: soc-10, matiere: droit_social, question: "Un salarié gréviste peut-il être licencié ?", attendu: [reponse], sources: [code_travail:L2511-1]}
+  # --- droit administratif (10)
+  - {id: adm-01, matiere: droit_administratif, question: "Dans quel délai former un recours contre une décision administrative ?", attendu: [reponse], sources: [code_justice_administrative:R421-1]}
+  - {id: adm-02, matiere: droit_administratif, question: "Qu'est-ce que le référé-suspension ?", attendu: [reponse], sources: [code_justice_administrative:L521-1]}
+  - {id: adm-03, matiere: droit_administratif, question: "Quelles sont les conditions du référé-liberté ?", attendu: [reponse], sources: [code_justice_administrative:L521-2]}
+  - {id: adm-04, matiere: droit_administratif, question: "Le juge administratif peut-il adresser une injonction à l'administration ?", attendu: [reponse], sources: [code_justice_administrative:L911-1]}
+  - {id: adm-05, matiere: droit_administratif, question: "Que signifie le silence gardé par l'administration pendant deux mois ?", attendu: [reponse], sources: [code_relations_public_administration:L231-1]}
+  - {id: adm-06, matiere: droit_administratif, question: "Quelles décisions administratives doivent être motivées ?", attendu: [reponse], sources: [code_relations_public_administration:L211-2]}
+  - {id: adm-07, matiere: droit_administratif, question: "L'administration peut-elle retirer une décision créatrice de droits ?", attendu: [reponse], sources: [code_relations_public_administration:L242-1]}
+  - {id: adm-08, matiere: droit_administratif, question: "Peut-on obtenir communication d'un document administratif ?", attendu: [reponse], sources: [code_relations_public_administration:L311-1]}
+  - {id: adm-09, matiere: droit_administratif, question: "Qu'est-ce que le principe de libre administration des collectivités territoriales ?", attendu: [reponse], sources: [constitution:72]}
+  - {id: adm-10, matiere: droit_administratif, question: "Quels principes l'administration doit-elle respecter dans ses relations avec le public ?", attendu: [reponse], sources: [code_relations_public_administration:L100-2]}
+  # --- droit des contrats (8)
+  - {id: ctr-01, matiere: droit_des_contrats, question: "Quelle est la sanction du dol ?", attendu: [reponse], sources: [code_civil:1131, code_civil:1137]}
+  - {id: ctr-02, matiere: droit_des_contrats, question: "Qu'est-ce que la réticence dolosive ?", attendu: [reponse], sources: [code_civil:1137]}
+  - {id: ctr-03, matiere: droit_des_contrats, question: "Qu'est-ce que le devoir précontractuel d'information ?", attendu: [reponse], sources: [code_civil:1112-1]}
+  - {id: ctr-04, matiere: droit_des_contrats, question: "Quand la violence vicie-t-elle le consentement ?", attendu: [reponse], sources: [code_civil:1140]}
+  - {id: ctr-05, matiere: droit_des_contrats, question: "L'erreur sur la valeur est-elle une cause de nullité ?", attendu: [reponse], sources: [code_civil:1136]}
+  - {id: ctr-06, matiere: droit_des_contrats, question: "Qu'est-ce qu'un pacte de préférence ?", attendu: [reponse], sources: [code_civil:1123]}
+  - {id: ctr-07, matiere: droit_des_contrats, question: "Qu'est-ce qu'une promesse unilatérale de contrat ?", attendu: [reponse], sources: [code_civil:1124]}
+  - {id: ctr-08, matiere: droit_des_contrats, question: "Quelles sont les conditions de la résolution du contrat ?", attendu: [reponse], sources: [code_civil:1224]}
+  # --- droit des affaires (5)
+  - {id: aff-01, matiere: droit_des_affaires, question: "Qu'est-ce qu'un acte de commerce ?", attendu: [reponse], sources: [code_commerce:L110-1]}
+  - {id: aff-02, matiere: droit_des_affaires, question: "Qui a la qualité de commerçant ?", attendu: [reponse], sources: [code_commerce:L121-1]}
+  - {id: aff-03, matiere: droit_des_affaires, question: "Qu'est-ce qu'une clause abusive dans un contrat de consommation ?", attendu: [reponse], sources: [code_consommation:L212-1]}
+  - {id: aff-04, matiere: droit_des_affaires, question: "Quel est le délai de rétractation pour un contrat conclu à distance ?", attendu: [reponse], sources: [code_consommation:L221-18]}
+  - {id: aff-05, matiere: droit_des_affaires, question: "Quel est le délai de prescription entre commerçants ?", attendu: [reponse], sources: [code_commerce:L110-4]}
+  # --- procedure civile (5)
+  - {id: proc-01, matiere: procedure_civile, question: "Qu'est-ce que l'intérêt à agir ?", attendu: [reponse], sources: [code_procedure_civile:31]}
+  - {id: proc-02, matiere: procedure_civile, question: "Qu'est-ce que l'action en justice ?", attendu: [reponse], sources: [code_procedure_civile:30]}
+  - {id: proc-03, matiere: procedure_civile, question: "Le juge doit-il faire respecter le principe du contradictoire ?", attendu: [reponse], sources: [code_procedure_civile:16]}
+  - {id: proc-04, matiere: procedure_civile, question: "Que doit contenir une assignation ?", attendu: [reponse], sources: [code_procedure_civile:56]}
+  - {id: proc-05, matiere: procedure_civile, question: "Qu'est-ce qu'une fin de non-recevoir ?", attendu: [reponse], sources: [code_procedure_civile:122]}

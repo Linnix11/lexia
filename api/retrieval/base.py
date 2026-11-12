@@ -10,6 +10,7 @@ from typing import Protocol
 from api.textes import SOURCES_TEXTES  # sources primaires, servies en premier  # noqa: F401
 
 RRF_K = 60
+SOURCE_LOIS = "lois"
 MAX_PAR_DOCUMENT = 1  # evite qu'une seule decision occupe tous les resultats
 # En dessous de cette part de passages vectorises, la recherche vectorielle biaiserait les
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
@@ -141,6 +142,11 @@ def construire_groupe(classements: dict[str, list[tuple[str, dict]]], k: int, *,
     hits = [Hit(par_id[pid], sc, via[pid]) for pid, sc in sorted(scores.items(), key=lambda x: -x[1])]
     if reclasseur is not None and hits:
         hits = reclasseur.reordonner(question, hits[:N_RECLASSEMENT]) + hits[N_RECLASSEMENT:]
+    # Lois et ordonnances non codifiees apres les codes et la Constitution : des milliers d'« article 5 » ou
+    # « article 11 » de lois diverses evincaient les articles de principe (backtest du 2026-11-12). Une loi
+    # citee dans la question passe toujours en tete (recherche par reference, hors de ce groupe).
+    hits = [h for h in hits if h.passage.get("source_id") != SOURCE_LOIS] + \
+        [h for h in hits if h.passage.get("source_id") == SOURCE_LOIS]
     if suggestions:
         ids = {p["id"] for p in suggestions}
         hits = [Hit(p, float("inf"), {"suggestion"}) for p in suggestions] + [h for h in hits if h.passage["id"] not in ids]

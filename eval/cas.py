@@ -50,6 +50,8 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
         sql, params = ("SELECT data FROM passages WHERE source_id = 'decisions_conseil_constitutionnel'"
                        " AND json_extract(data, '$.meta.numero') = ? AND json_extract(data, '$.meta.nature') = ?",
                        (num, nature))
+    elif genre.startswith("code_"):  # tout autre code : code_penal:122-5, code_travail:L1233-3...
+        sql, params = ("SELECT data FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1", (genre, valeur))
     else:
         raise ValueError(f"Type de source inconnu : {ref}")
     return [json.loads(r[0]) for r in con.execute(sql, params).fetchall()]
@@ -58,8 +60,8 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
 def correspond(ref: str, passage: dict) -> bool:
     """Le passage (fourni ou cite) correspond-il a la source attendue ?"""
     genre, _, valeur = ref.partition(":")
-    if genre == "code_civil":
-        return passage["source_id"] == "code_civil" and passage.get("numero") == valeur
+    if genre.startswith("code_"):
+        return passage["source_id"] == genre and passage.get("numero") == valeur
     if genre == "constitution":
         return passage["source_id"] == "constitution_1958" and passage.get("numero") == valeur
     if genre == "cc":

@@ -5,14 +5,15 @@ from eval.cas import charger, correspond
 
 def test_jeu_bien_forme():
     cas = charger()
-    assert len(cas) == 150
+    assert len(cas) == 200
     assert sum(1 for c in cas if c.piege) == 30
     for c in cas:
         assert c.attendu and c.question.strip()
         if not c.piege:
             assert c.sources, f"{c.id} sans source attendue"
         for ref in c.sources:
-            assert ref.split(":")[0] in ("code_civil", "constitution", "cc"), ref
+            genre = ref.split(":")[0]
+            assert genre.startswith("code_") or genre in ("constitution", "cc"), ref
 
 
 def test_correspondance_des_sources():
@@ -22,5 +23,7 @@ def test_correspondance_des_sources():
     assert correspond("code_civil:1240", article)
     assert not correspond("code_civil:1241", article)
     assert not correspond("constitution:1240", article)
+    assert correspond("code_penal:122-5", {"source_id": "code_penal", "numero": "122-5", "meta": {}})
+    assert not correspond("code_penal:122-5", {"source_id": "code_civil", "numero": "122-5", "meta": {}})
     assert correspond("cc:71-44 DC", decision)
     assert not correspond("cc:71-44 QPC", decision)

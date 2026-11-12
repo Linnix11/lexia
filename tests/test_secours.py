@@ -117,3 +117,11 @@ def test_disjoncteur_ouvert_le_principal_n_est_plus_appele():
         assert client.post("/chat", json={"question": f"responsabilité {i}"}).json()["statut"] == "reponse"
     assert len(principal.prompts) == 2 and len(secours.prompts) == 4       # 2 echecs, puis Groq directement
     assert client.get("/sante").json()["disjoncteur"] == "ouvert"
+
+
+def test_le_secours_recoit_aussi_une_decision():
+    from api.rag import pour_secours
+    p = lambda s, i: {"id": f"{s}{i}", "source_id": s, "type": "article"}  # noqa: E731
+    extraits = [p("code_civil", 1), p("code_civil", 2), p("code_civil", 3), p("code_civil", 4), p("judilibre", 5), p("judilibre", 6)]
+    assert [x["id"] for x in pour_secours(extraits)] == ["code_civil1", "code_civil2", "code_civil3", "judilibre5"]
+    assert [x["id"] for x in pour_secours(extraits[:4])] == ["code_civil1", "code_civil2", "code_civil3", "code_civil4"]

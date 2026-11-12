@@ -19,6 +19,7 @@ from api.textes import sans_accents
 CC, CONST = "code_civil", "constitution_1958"
 CP, CPP, CT = "code_penal", "code_procedure_penale", "code_travail"
 CJA, CRPA = "code_justice_administrative", "code_relations_public_administration"
+CPC = "code_procedure_civile"
 MAX_LEXIQUE = 4
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
@@ -51,13 +52,19 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"domaine de la loi", ((CONST, "34"), (CONST, "37"))),
     (r"destitu", ((CONST, "68"),)),
     (r"libre administration", ((CONST, "72"),)),
+    (r"contreseing", ((CONST, "19"),)),
+    (r"incompatib\w*.{0,40}(?:ministre|gouvernement|parlement)|(?:ministre|membres? du gouvernement).{0,40}(?:depute|senateur|parlementaire)",
+     ((CONST, "23"),)),
+    (r"composition du parlement|parlement (?:comprend|se compose)", ((CONST, "24"),)),
+    (r"lois? organiques?", ((CONST, "46"),)),
+    (r"(?:composition|membres) du conseil constitutionnel", ((CONST, "56"),)),
     (r"hierarchie des normes|autorite des traites|traites? (?:internationaux|et (?:les )?lois)", ((CONST, "55"),)),
     # --- droit des contrats ------------------------------------------------------
     (r"force obligatoire", ((CC, "1103"), (CC, "1193"))),
     (r"liberte contractuelle", ((CC, "1102"),)),
     (r"bonne foi.{0,40}contrat|contrat.{0,40}bonne foi", ((CC, "1104"),)),
     (r"pourparlers|negociations? precontractuel", ((CC, "1112"),)),
-    (r"devoir d.information", ((CC, "1112-1"),)),
+    (r"devoir (?:precontractuel )?d.information|obligation (?:precontractuelle )?d.information", ((CC, "1112-1"),)),
     (r"formation du contrat|comment se forme", ((CC, "1113"),)),
     (r"\boffre de contracter|\bl.offre\b", ((CC, "1114"), (CC, "1115"), (CC, "1116"))),
     (r"\bacceptation", ((CC, "1118"),)),
@@ -134,11 +141,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"duree legale du travail|35 heures|trente-cinq heures", ((CT, "L3121-27"),)),
     (r"\bsmic\b|salaire minimum", ((CT, "L3231-2"),)),
     (r"comite social et economique|\bcse\b", ((CT, "L2311-2"),)),
-    (r"\bgreve", ((CT, "L2511-1"),)),
+    (r"\bgrev(?:e|iste)", ((CT, "L2511-1"),)),
     (r"preavis.{0,30}licenciement|licenciement.{0,30}preavis|indemnite de licenciement", ((CT, "L1234-1"),)),
     (r"rupture du contrat de travail", ((CT, "L1231-1"),)),
     # --- droit administratif (Code de justice administrative, CRPA) ---------------------------
-    (r"exces de pouvoir|\brep\b|recours (?:en|pour) annulation", ((CJA, "R421-1"),)),
+    (r"exces de pouvoir|\brep\b|recours (?:en|pour) annulation|delai.{0,30}recours.{0,40}(?:decision|administrati)",
+     ((CJA, "R421-1"),)),
     (r"refere.suspension", ((CJA, "L521-1"),)),
     (r"refere.liberte|liberte fondamentale.{0,40}refere|refere.{0,40}liberte fondamentale", ((CJA, "L521-2"),)),
     (r"refere.mesures? utiles|refere conservatoire", ((CJA, "L521-3"),)),
@@ -148,6 +156,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"motivation des (?:actes|decisions) administrati", ((CRPA, "L211-2"),)),
     (r"(?:retrait|abrogation).{0,40}(?:acte|decision)s? administrati|decisions? creatrices? de droits", ((CRPA, "L242-1"), (CRPA, "L243-1"))),
     (r"(?:acces|communication).{0,30}documents? administratifs?", ((CRPA, "L311-1"),)),
+    # --- procedure civile (Code de procedure civile) --------------------------------------------
+    (r"interet a agir", ((CPC, "31"),)),
+    (r"action en justice|droit d.agir en justice", ((CPC, "30"), (CPC, "31"))),
+    (r"\bassignation", ((CPC, "56"),)),
+    (r"principe (?:du )?contradictoire|principe de la contradiction", ((CPC, "16"),)),
+    (r"fins? de non.recevoir", ((CPC, "122"),)),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

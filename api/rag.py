@@ -100,6 +100,23 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
     return [fiche_source(par_id[pid][1], par_id[pid][0]) for pid in ordre if pid in par_id]
 
 
+def pour_secours(passages: list[dict], k: int = K_SECOURS) -> list[dict]:
+    """Les k extraits envoyes au modele de secours : k - 1 textes (ou cours) et la meilleure decision.
+
+    Les extraits arrivent textes d'abord : en prendre les k premiers privait le secours de toute decision
+    (les questions sur une decision du Conseil constitutionnel echouaient toutes, backtest du 2026-11-12).
+    """
+    juris = [i for i, p in enumerate(passages) if p["source_id"] not in SOURCES_TEXTES and p.get("type") != "cours"]
+    autres = [i for i in range(len(passages)) if i not in set(juris)]
+    garde = autres[:k - 1] + juris[:1]
+    for i in range(len(passages)):
+        if len(garde) >= k:
+            break
+        if i not in garde:
+            garde.append(i)
+    return [passages[i] for i in sorted(garde)]
+
+
 class Disjoncteur:
     """Apres `seuil` echecs d'affilee du modele principal, on passe directement au secours pendant `pause` secondes.
 
@@ -244,7 +261,7 @@ class Lexia:
                 self.disjoncteur.echec()
                 log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
                 erreur_principal = e
-        reduits = passages[:K_SECOURS]
+        reduits = pour_secours(passages)
         try:
             brut, modele = self.secours.generate_json(system=system, prompt=construire(reduits), schema=schema,
                                                       temperature=temperature)
