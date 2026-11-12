@@ -82,7 +82,8 @@ def fiche_source(p: dict, label: str | None = None) -> dict:
         "url": p["url"],
         "version": p.get("version", ""),
         "en_vigueur": en_vigueur,
-        "date": meta.get("date") or meta.get("date_debut"),
+        # « 2999-01-01 » : date de remplacement de quelques decisions dans les archives DILA, jamais affichee
+        "date": None if str(meta.get("date") or "").startswith("2999") else (meta.get("date") or meta.get("date_debut")),
         "extrait": p["texte"][:400] + ("…" if len(p["texte"]) > 400 else ""),
     }
 

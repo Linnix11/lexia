@@ -35,6 +35,7 @@ sources:
   matieres:
   - droit_civil
   - introduction_au_droit
+  - droit_des_contrats
   niveaux:
   - L1
   ingestion: ingest/sources/legi.py
@@ -68,6 +69,7 @@ sources:
   matieres:
   - droit_civil
   - procedure_civile
+  - droit_des_contrats
   niveaux:
   - L1
   ingestion: ingest/sources/cass.py
@@ -239,6 +241,7 @@ sources:
   matieres:
   - droit_des_affaires
   - droit_civil
+  - droit_des_contrats
   niveaux:
   - L1
   - L2
@@ -550,6 +553,7 @@ sources:
   - droit_des_affaires
   - droit_social
   - droit_administratif
+  - droit_des_contrats
   niveaux:
   - L1
   - L2
@@ -601,6 +605,7 @@ sources:
   frequence_maj: hebdomadaire
   matieres:
   - droit_des_affaires
+  - droit_des_contrats
   niveaux:
   - L1
   - L2

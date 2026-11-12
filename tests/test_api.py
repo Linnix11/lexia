@@ -502,3 +502,16 @@ def test_lois_citees_et_meme_texte():
     assert meme_loi(c, "Loi n°90-14 du 2 janvier 1990") and not meme_loi(c, "Loi n°90-140 du 2 janvier 1990")
     d = lois_citees("loi du 29 juillet 1881")[0]
     assert meme_loi(d, "LOI du 29 juillet 1881") and not meme_loi(d, "Loi du 30 juin 1881")
+
+
+def test_matiere_droit_des_contrats(env):
+    client, _, _ = env
+    contrats = next(m for m in client.get("/matieres").json() if m["id"] == "droit_des_contrats")
+    assert contrats["libelle"] == "Droit des contrats"
+    assert {"code_civil", "code_consommation", "judilibre", "cass_commerciale", "lois"} == set(contrats["sources"])
+
+
+def test_date_de_remplacement_dila_jamais_affichee():
+    from api.rag import fiche_source
+    p = {"id": "x", "source_id": "conseil_etat", "type": "sommaire", "url": "u", "texte": "t", "meta": {"date": "2999-01-01"}}
+    assert fiche_source(p)["date"] is None
