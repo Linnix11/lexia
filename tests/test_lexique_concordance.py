@@ -145,3 +145,36 @@ def test_source_attendue_retrouvee_sans_gemini(retriever_reel, cas_id):
     passages, _ = Lexia(retriever_reel, llm=None).rechercher(cas.question, cas.matiere, K_CHAT)
     assert any(correspond(ref, p) for ref in cas.sources for p in passages), \
         [f"{p['source_id']}:{p.get('numero')}" for p in passages]
+
+
+# --- matieres speciales : l'article 777 (successions) ne doit plus servir pour le dol en matiere de contrats ---
+
+def test_lexique_dol_complet_et_notions_generales_en_dernier():
+    assert lexique.suggestions("Quelle est la sanction du dol ?") == [(CC, "1137"), (CC, "1131"), (CC, "1138"), (CC, "1139")]
+    # « droit des contrats » ne prend plus la place des articles de la notion precise
+    assert lexique.suggestions("Qu'est-ce que le dol en droit des contrats ?")[0] == (CC, "1137")
+    assert lexique.suggestions("Le dol peut-il annuler l'option successorale d'un héritier ?")[0] == (CC, "777")
+
+
+def test_hors_matiere():
+    art_777 = {"source_id": CC, "meta": {"plan": ["Livre III", "Titre Ier : Des successions", "Section 1 : Dispositions générales."]}}
+    art_1137 = {"source_id": CC, "meta": {"plan": ["Livre III", "Titre III : Des sources d'obligations"]}}
+    assert lexique.hors_matiere(art_777, "Quelle est la sanction du dol ?")
+    assert not lexique.hors_matiere(art_777, "Le dol de l'héritier dans la succession")
+    assert not lexique.hors_matiere(art_1137, "Quelle est la sanction du dol ?")
+    regime = {"source_id": CC, "meta": {"plan": ["Titre V : Du contrat de mariage et des régimes matrimoniaux"]}}
+    assert lexique.hors_matiere(regime, "dol") and not lexique.hors_matiere(regime, "dol entre époux")
+
+
+@reel
+@pytest.mark.parametrize("question, present, absent", [
+    ("Qu'est-ce que le dol et la réticence dolosive ?", "1137", "777"),
+    ("Quelle est la sanction du dol ?", "1131", "777"),
+    ("Le dol peut-il annuler l'option successorale d'un héritier ?", "777", None),
+    ("Que dit l'article 777 du code civil ?", "777", None),          # cite : jamais ecarte
+])
+def test_article_777_seulement_pour_les_successions(retriever_reel, question, present, absent):
+    from api.rag import K_CHAT
+    passages, _ = Lexia(retriever_reel, llm=None).rechercher(question, None, K_CHAT)
+    numeros = [p.get("numero") for p in passages if p["source_id"] == CC]
+    assert present in numeros and (absent is None or absent not in numeros), numeros

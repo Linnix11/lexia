@@ -147,6 +147,8 @@ class Lexia:
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
                                      complement=complement, reclasseur=self.reclasseur)
+        # Article d'une matiere speciale (successions...) dont la question ne parle pas : ecarte, sauf s'il est cite.
+        hits = [h for h in hits if "reference" in h.via or not lexique.hors_matiere(h.passage, texte)]
         passages = [h.passage for h in hits]
         if anciens and (sources is None or "code_civil" in sources):
             # Texte d'avant la reforme, place juste apres les references citees : le modele peut le comparer.

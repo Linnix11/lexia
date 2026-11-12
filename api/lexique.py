@@ -50,7 +50,6 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"libre administration", ((CONST, "72"),)),
     (r"hierarchie des normes|autorite des traites|traites? (?:internationaux|et (?:les )?lois)", ((CONST, "55"),)),
     # --- droit des contrats ------------------------------------------------------
-    (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
     (r"force obligatoire", ((CC, "1103"), (CC, "1193"))),
     (r"liberte contractuelle", ((CC, "1102"),)),
     (r"bonne foi.{0,40}contrat|contrat.{0,40}bonne foi", ((CC, "1104"),)),
@@ -65,7 +64,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"vices? du consentement", ((CC, "1130"),)),
     (r"violence economique|etat de dependance", ((CC, "1143"),)),
     (r"\bviolence", ((CC, "1140"),)),
-    (r"\bdol\b", ((CC, "1137"),)),
+    # Vice du consentement dans une succession : regle propre (art. 777), avant celles des contrats.
+    (r"option successorale|(?:heriti|success)\w*.{0,60}(?:\bdol\b|erreur|violence)|(?:\bdol\b|erreur|violence).{0,60}(?:heriti|success)",
+     ((CC, "777"),)),
+    # Dol : definition, sanction (nullite relative), dol d'un tiers, erreur provoquee par dol.
+    (r"reticence dolosive", ((CC, "1137"), (CC, "1112-1"))),
+    (r"\bdol\b|\bdolosi", ((CC, "1137"), (CC, "1131"), (CC, "1138"), (CC, "1139"))),
     (r"\berreur.{0,30}(?:nullite|contrat)", ((CC, "1132"),)),
     (r"\blesion", ((CC, "1168"),)),
     (r"obligation essentielle|prive de (?:sa )?substance", ((CC, "1170"),)),
@@ -89,9 +93,30 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"gestion d.affaires", ((CC, "1301"),)),
     (r"paiement de l.indu|\bl.indu\b", ((CC, "1302"), (CC, "1302-1"))),
     (r"enrichissement injustifie|enrichissement sans cause", ((CC, "1303"),)),
+    # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
+    (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )
 
 _COMPILES = tuple((re.compile(motif), arts) for motif, arts in NOTIONS)
+
+
+# Parties du Code civil propres a une matiere : un article qui en vient (ex. art. 777, nullite de l'option
+# successorale pour dol) n'est garde que si la question parle de cette matiere. Sans ce filtre, toute question
+# sur le dol, l'erreur ou la violence ramenait l'article 777, et le modele en tirait une regle des contrats.
+MATIERES_SPECIALES: tuple[tuple[str, re.Pattern], ...] = (
+    ("Des successions", re.compile(r"success|heriti|herit|\blegs\b|legataire|testament|defunt|indivision|option successorale")),
+    ("Des libéralités", re.compile(r"liberalit|donation|testament|\blegs\b|legataire|reserve hereditaire|quotite disponible")),
+    ("régimes matrimoniaux", re.compile(r"regimes? matrimoni|contrat de mariage|epoux|conjoint|communaute")),
+)
+
+
+def hors_matiere(passage: dict, question: str) -> bool:
+    """Article du Code civil d'une matiere speciale dont la question ne parle pas."""
+    if passage.get("source_id") != CC:
+        return False
+    plan = " ".join((passage.get("meta") or {}).get("plan") or [])
+    q = normaliser(question)
+    return any(titre in plan and not mots.search(q) for titre, mots in MATIERES_SPECIALES)
 
 
 def normaliser(question: str) -> str:
