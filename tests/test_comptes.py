@@ -110,6 +110,14 @@ def test_origine_etrangere_refusee(env):
     assert r.status_code == 403
 
 
+def test_retour_exige_un_compte(env):
+    client, _, _ = env
+    retour = {"reponse_id": "12345678-aaaa", "utile": True}
+    assert client.post("/feedback", json=retour).status_code == 401
+    inscrire(client)
+    assert client.post("/feedback", json=retour).status_code == 204
+
+
 def test_chat_exige_un_compte(env):
     client, _, _ = env
     assert client.post("/chat", json={"question": "article 1240"}).status_code == 401

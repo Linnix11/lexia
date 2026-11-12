@@ -254,7 +254,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         return {**fiche_source(p), "texte": p["texte"], "titre": p.get("titre"), "meta": p.get("meta") or {}}
 
     @app.post("/feedback", status_code=204)
-    def feedback(req: FeedbackRequest):
+    def feedback(req: FeedbackRequest, request: Request):
+        _utilisateur(request)  # compte requis : evite qu'un anonyme fausse les statistiques ou remplisse le disque
         journal.ecrire("feedback", reponse_id=req.reponse_id, utile=req.utile, motif=req.motif)
 
     app.state.retriever = retriever  # utile aux outils d'evaluation

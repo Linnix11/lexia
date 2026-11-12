@@ -95,7 +95,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
             <h2 id="quiz-titre" className="mb-1.5 font-display text-[25px] font-normal">
               {quiz?.quiz_id ? `Questionnaire · ${quiz.theme}` : 'Créer un questionnaire'}
             </h2>
-            <p className="text-[11px] text-muted">Questions générées à partir des textes et décisions du corpus, chacune reliée à ses sources.</p>
+            <p className="text-[11px] text-muted">Questions générées par une intelligence artificielle à partir des textes et décisions du corpus, chacune reliée à ses sources.</p>
           </div>
           <button type="button" onClick={fermerQuiz} aria-label="Fermer le questionnaire"
             className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">✕</button>

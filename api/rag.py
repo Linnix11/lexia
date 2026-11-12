@@ -127,6 +127,7 @@ class Lexia:
             try:
                 complement = futur.result(timeout=self.delai_reformulation)
             except DelaiDepasse:
+                futur.cancel()  # encore en file d'attente : n'appellera pas Gemini pour rien
                 log.info("reformulation trop lente (> %.0f s) : recherche sans elle", self.delai_reformulation)
         if complement and complement.reformulation and vectoriel:
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)

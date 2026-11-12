@@ -17,6 +17,9 @@ with sqlite3.connect(src) as a, sqlite3.connect(dst) as b:
     a.backup(b)
 PY
   chmod 600 "$DEST"/lexia-*.db
+  # sessions expirees : supprimees (duree annoncee dans la politique de confidentialite : 30 jours au plus)
+  (cd /opt/lexia && /opt/lexia/.venv/bin/python -c "from api.comptes import Comptes; Comptes('$SRC').purger_sessions()")
+  echo "sessions expirees supprimees"
   ls -1t "$DEST"/lexia-*.db | tail -n +15 | xargs -r rm -f
   echo "sauvegarde : $(ls -1t "$DEST"/lexia-*.db | head -1)"
 fi
