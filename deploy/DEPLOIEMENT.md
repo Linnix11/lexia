@@ -140,3 +140,26 @@ Restaurer : arrêter le service, remplacer `/opt/lexia/donnees/lexia.db` par la 
 - Limite de requêtes par IP côté nginx (20 par minute) et côté application (`RATE_LIMIT_PER_MINUTE`).
 - Le service tourne sous un utilisateur système sans shell, avec un durcissement systemd minimal.
 - Aucune donnée personnelle collectée : pas de compte, journaux sans le texte des questions, favoris stockés dans le navigateur.
+
+## Sécurité du serveur (audit du 2026-11-13)
+
+- SSH par clé seulement (`/etc/ssh/sshd_config.d/00-lexia-securite.conf`), pare-feu `ufw` (22, 80, 443), fail2ban.
+- n8n publié sur `127.0.0.1:32768` seulement, accessible en HTTPS via nginx.
+- nginx : HSTS, CSP stricte (`script-src 'self'`), X-Frame-Options, Permissions-Policy, `server_tokens off` ;
+  120 requêtes par minute sur l'API, 5 par minute sur la connexion, l'inscription et la suppression de compte.
+
+## Passer derrière Cloudflare
+
+Cloudflare protège le site des attaques par saturation, filtre les robots et met en cache les fichiers du front.
+
+1. Créer un compte Cloudflare (offre gratuite) et y ajouter le domaine.
+2. Chez le registraire du domaine, remplacer les serveurs DNS par ceux indiqués par Cloudflare.
+3. Dans Cloudflare : enregistrement `A` vers l'IP du serveur, nuage orange (« proxied ») ;
+   SSL/TLS en **Full (strict)** (le certificat Let's Encrypt du serveur reste valable) ;
+   activer « Always Use HTTPS », le pare-feu géré gratuit et le mode « Bot Fight ».
+4. Vérifier que le site répond, puis, sur le serveur : `bash /opt/lexia/deploy/restreindre_a_cloudflare.sh`
+   (les ports 80 et 443 n'acceptent plus que Cloudflare ; `--annuler` pour revenir en arrière).
+
+L'adresse réelle des visiteurs (limites par adresse, journaux) est déjà lue dans l'en-tête de Cloudflare :
+`/etc/nginx/snippets/lexia-cloudflare.conf` (copie de `deploy/nginx-cloudflare.conf`).
+

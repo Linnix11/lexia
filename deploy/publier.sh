@@ -56,6 +56,8 @@ runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir -r deploy/requiremen
 cp deploy/lexia.service /etc/systemd/system/lexia.service
 chmod 755 deploy/sauvegarder_comptes.sh
 install -m 644 deploy/lexia.cron /etc/cron.d/lexia
+# Adresse reelle des visiteurs derriere Cloudflare (inclus par la configuration nginx)
+install -m 644 deploy/nginx-cloudflare.conf /etc/nginx/snippets/lexia-cloudflare.conf
 if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then
   sed "s/lexia.exemple.fr/$DOMAINE/" deploy/nginx-lexia.conf > /etc/nginx/sites-available/lexia
   ln -sf /etc/nginx/sites-available/lexia /etc/nginx/sites-enabled/lexia
