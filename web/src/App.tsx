@@ -17,7 +17,7 @@ function Contenu() {
         {vue === 'fiches' && <VueFiches />}
         {vue === 'bibliotheque' && <VueBibliotheque />}
         <footer className="pt-5 text-[10px] leading-[1.6] text-[#8a9089] tab:flex tab:justify-between tab:gap-3.5">
-          <span className="block">Lexia · Prototype V1 — droit français</span>
+          <span className="block">Lexia · étude du droit français</span>
           <span className="mt-1 block tab:mt-0">Les citations ouvrent la source, la date et la version utilisées.</span>
         </footer>
       </div>

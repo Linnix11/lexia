@@ -167,6 +167,13 @@ describe('Assistant', () => {
     expect(screen.getByRole('button', { name: /Enregistrée/ })).toBeInTheDocument()
   })
 
+  it('la boite a outils ouvre l assistant dans le bon mode sans envoyer de question', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Raisonner avec méthode/ }))
+    expect(await screen.findByRole('radio', { name: 'Cas pratique' })).toHaveAttribute('aria-checked', 'true')
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)   // rien n'est decompte
+  })
+
   it('creer une fiche depuis Fiches & revisions l enregistre et met l assistant en mode Fiche', async () => {
     render(<Site />)
     fireEvent.click(await screen.findByRole('button', { name: /Fiches & révisions/ }))

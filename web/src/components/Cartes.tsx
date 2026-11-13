@@ -1,3 +1,4 @@
+import type { Mode } from '../lib/api'
 import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
@@ -33,9 +34,9 @@ export function CarteSources() {
 }
 
 const OUVRAGES = [
-  { couv: 'C°', classe: 'bg-[#d9e2d9] text-forest', titre: 'Manuels de droit constitutionnel', note: 'Repères bibliographiques · à confirmer selon votre cours' },
-  { couv: 'D°', classe: 'bg-[#e7dfd1] text-[#795932]', titre: 'Introduction générale au droit', note: 'Références sélectionnées par les bibliothèques' },
-  { couv: 'O°', classe: 'bg-[#e4e1ed] text-[#5b5777]', titre: 'Droit des obligations', note: 'Contrats et responsabilité civile' },
+  { couv: 'C°', classe: 'bg-[#d9e2d9] text-forest', titre: 'Manuels de droit constitutionnel', recherche: 'droit constitutionnel manuel', note: 'Repères bibliographiques · à confirmer selon votre cours' },
+  { couv: 'D°', classe: 'bg-[#e7dfd1] text-[#795932]', titre: 'Introduction générale au droit', recherche: 'introduction au droit', note: 'Références sélectionnées par les bibliothèques' },
+  { couv: 'O°', classe: 'bg-[#e4e1ed] text-[#5b5777]', titre: 'Droit des obligations', recherche: 'droit des obligations', note: 'Contrats et responsabilité civile' },
 ]
 
 export function CarteBibliotheque({ complete = false }: { complete?: boolean }) {
@@ -50,7 +51,8 @@ export function CarteBibliotheque({ complete = false }: { complete?: boolean }) 
           <div className="min-w-0">
             <strong className="block text-[11px] leading-[1.35]">{o.titre}</strong>
             <small className="mt-1 block text-[10px] leading-[1.35] text-muted">{o.note}</small>
-            <a href="https://www.sudoc.abes.fr/" target="_blank" rel="noreferrer" className="mt-[5px] inline-block text-[10px] text-forest hover:underline">
+            <a href={`https://www.sudoc.abes.fr/cbs/xslt//DB=2.1/CMD?ACT=SRCHA&IKT=1016&SRT=RLV&TRM=${encodeURIComponent(o.recherche)}`}
+              target="_blank" rel="noreferrer" className="mt-[5px] inline-block text-[10px] text-forest hover:underline">
               Rechercher au catalogue universitaire ↗
             </a>
           </div>
@@ -65,15 +67,19 @@ export function CarteBibliotheque({ complete = false }: { complete?: boolean }) 
 }
 
 export function CarteOutils() {
-  const { envoyer, ouvrirQuiz, setVue } = useApp()
+  const { ouvrirQuiz, setVue, setMode } = useApp()
+  // Ouvre l'assistant dans le bon mode, curseur dans la question : l'etudiant choisit son sujet
+  // (aucune question toute faite n'est envoyee, rien n'est decompte de son quota).
+  const ouvrir = (mode: Mode) => {
+    setMode(mode)
+    setVue('assistant')
+    window.setTimeout(() => document.getElementById('question-complete')?.focus(), 50)
+  }
   const outils = [
     { ico: '◉', titre: 'Questionnaire', desc: 'Créer un quiz personnalisé', action: () => ouvrirQuiz() },
-    { ico: '▤', titre: 'Fiche de révision', desc: 'Synthétiser un cours',
-      action: () => envoyer('Prépare une fiche de révision sur les sources du droit', 'fiche') },
-    { ico: '⌕', titre: 'Méthodologie', desc: 'Suivre les étapes clés',
-      action: () => envoyer('Explique la méthode du commentaire d’arrêt en étapes', 'commentaire') },
-    { ico: '✎', titre: 'Cas pratique', desc: 'Raisonner avec méthode',
-      action: () => { setVue('assistant'); envoyer('Aide-moi à résoudre un cas pratique de responsabilité civile, étape par étape', 'cas_pratique') } },
+    { ico: '▤', titre: 'Fiche de révision', desc: 'Synthétiser une notion', action: () => ouvrir('fiche') },
+    { ico: '⌕', titre: 'Commentaire d’arrêt', desc: 'Suivre la méthode', action: () => ouvrir('commentaire') },
+    { ico: '✎', titre: 'Cas pratique', desc: 'Raisonner avec méthode', action: () => ouvrir('cas_pratique') },
   ]
   return (
     <Card className="p-4 tab:px-[19px] tab:py-[18px]">

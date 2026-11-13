@@ -25,7 +25,7 @@ function Erreur({ message }: { message: string | null }) {
 }
 
 export function Connexion() {
-  const { connexion, terminerConnexion } = useSession()
+  const { connexion, terminerConnexion, config } = useSession()
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
   const [mdp, setMdp] = useState('')
@@ -99,6 +99,14 @@ export function Connexion() {
         <Erreur message={erreur} />
         <button type="submit" disabled={envoi || !email || !mdp} className={bouton}>{envoi ? 'Connexion…' : 'Se connecter'}</button>
       </form>
+      {config?.contact_email && (
+        <p className="mt-3 text-center text-[12px] text-muted">
+          Mot de passe oublié ?{' '}
+          <a href={`mailto:${config.contact_email}?subject=${encodeURIComponent('Lexia : mot de passe oublié')}`} className="text-forest hover:underline">
+            Écrivez-nous depuis l’adresse de votre compte
+          </a>
+        </p>
+      )}
       <p className="mt-5 text-center text-[13px] text-muted">
         Pas encore de compte ? <Lien href="/inscription" className="font-semibold text-forest hover:underline">Créer un compte gratuit</Lien>
       </p>

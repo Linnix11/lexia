@@ -104,6 +104,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [notifier],
   )
 
+  // Changer de matiere deselectionne un cours depose dans une autre matiere (sinon la question sur le droit
+  // penal partirait avec un cours de contrats).
+  const choisirMatiere = useCallback(
+    (id: string | null) => {
+      setMatiere(id)
+      if (id) setCoursChoisi((c) => (c !== null && mesCours.find((x) => x.id === c)?.matiere !== id ? null : c))
+    },
+    [mesCours],
+  )
+
   const envoyer = useCallback(
     (question: string, modeDemande?: Mode) => {
       const q = question.trim()
@@ -154,7 +164,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       semestre,
       setSemestre,
       matiere,
-      setMatiere,
+      setMatiere: choisirMatiere,
       mode,
       setMode,
       mesCours,
@@ -181,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
+    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>
