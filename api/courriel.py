@@ -20,7 +20,7 @@ log = logging.getLogger("lexia")
 API = "https://api.resend.com/emails"
 DELAI = 10.0
 # L'adresse d'expedition doit appartenir a un domaine verifie dans Resend (enregistrements DNS).
-EXPEDITEUR_DEFAUT = "Lexia <verification@lexia-axionstudio.cloud>"
+EXPEDITEUR_DEFAUT = "Lexia <verification@axionstudio.fr>"
 
 
 class ErreurCourriel(RuntimeError):
