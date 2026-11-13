@@ -113,6 +113,11 @@ export function Cgu() {
           Le compte est personnel. L’utilisateur choisit un mot de passe robuste et le garde confidentiel. Il peut
           supprimer son compte à tout moment depuis la page « Mon compte ».
         </p>
+        <p>
+          La création d’un compte est réservée aux personnes âgées de 15 ans ou plus. En dessous de cet âge, le
+          consentement d’un titulaire de l’autorité parentale est nécessaire (article 45 de la loi Informatique
+          et Libertés).
+        </p>
       </section>
       <section>
         <h2>4. Formules et limites</h2>
