@@ -109,6 +109,53 @@ def test_recherche_textes_avant_jurisprudence(index_dir):
     assert hits[0].passage["source_id"] in ("code_civil", "constitution_1958")
 
 
+def _hit(i, source):
+    from api.retrieval.base import Hit
+    return Hit({"id": f"{source}:{i}", "source_id": source}, 1.0, {"test"})
+
+
+def test_assemblage_garde_une_place_a_la_jurisprudence():
+    """Une question citant plusieurs articles doit quand meme recevoir une decision : sans cela le
+    mode commentaire d'arret n'avait aucun arret a commenter (D71)."""
+    from api.retrieval.base import assembler
+    refs = [_hit(i, "code_civil") for i in range(4)]
+    textes = [_hit(i, "code_penal") for i in range(100, 110)]
+    juris = [_hit(i, "cass") for i in range(200, 210)]
+    out = assembler(refs, textes, juris, 8)
+    assert len(out) == 8
+    assert sum(1 for h in out if h.passage["source_id"] == "cass") >= 1
+    assert [h.passage["id"] for h in out[:4]] == [h.passage["id"] for h in refs]   # les articles cites d'abord
+
+
+def test_assemblage_plafonne_les_references_citees():
+    """Sans plafond, une question citant 159 articles envoyait 159 extraits au modele (D71)."""
+    from api.retrieval.base import assembler
+    refs = [_hit(i, "code_civil") for i in range(159)]
+    juris = [_hit(i, "cass") for i in range(200, 210)]
+    out = assembler(refs, [], juris, 8)
+    assert len(out) == 8
+    assert sum(1 for h in out if h.passage["source_id"] == "cass") >= 1
+    # Sans jurisprudence disponible, les articles cites occupent toute la place.
+    assert len(assembler(refs, [], [], 8)) == 8
+
+
+def test_article_abroge_depuis_l_import_n_est_plus_en_vigueur():
+    """L'etat est fige a l'import : un article dont l'abrogation etait programmee doit basculer
+    a sa date de fin, sans attendre une reconstruction de l'index (D71)."""
+    from datetime import date, timedelta
+
+    from api.textes import en_vigueur_aujourdhui
+    hier = (date.today() - timedelta(days=1)).isoformat()
+    demain = (date.today() + timedelta(days=1)).isoformat()
+    assert en_vigueur_aujourdhui({"en_vigueur": True, "date_fin": hier}, "code_civil") is False
+    assert en_vigueur_aujourdhui({"en_vigueur": True, "date_fin": demain}, "code_civil") is True
+    assert en_vigueur_aujourdhui({"en_vigueur": True, "date_fin": None}, "code_civil") is True
+    assert en_vigueur_aujourdhui({"en_vigueur": True, "date_fin": ""}, "code_civil") is True   # date absente
+    assert en_vigueur_aujourdhui({"en_vigueur": False, "date_fin": demain}, "code_civil") is False
+    assert en_vigueur_aujourdhui({}, "constitution_1958") is True
+    assert en_vigueur_aujourdhui({}, "cass") is None   # la jurisprudence n'a pas d'etat de vigueur
+
+
 def test_recherche_hybride(index_vectorise, tmp_path):
     llm, emb = FakeLLM(), FakeEmbedder()
     settings = Settings(gemini_models=("fake",), index_dir=index_vectorise, logs_dir=tmp_path)

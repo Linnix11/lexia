@@ -19,7 +19,7 @@ from api.llm.base import LLM, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, groupes
-from api.textes import SOURCES_TEXTES
+from api.textes import SOURCES_TEXTES, en_vigueur_aujourdhui
 
 AVERTISSEMENT = (
     "Réponse générée par une intelligence artificielle. Lexia est un outil d'étude, pas un avis juridique : "
@@ -71,7 +71,7 @@ def table_extraits(passages: list[dict]) -> dict[str, dict]:
 
 def fiche_source(p: dict, label: str | None = None) -> dict:
     meta = p.get("meta") or {}
-    en_vigueur = meta.get("en_vigueur", True if p["source_id"] == "constitution_1958" else None)
+    en_vigueur = en_vigueur_aujourdhui(meta, p["source_id"])
     return {
         "id": p["id"],
         "label": label,
@@ -328,14 +328,14 @@ class Lexia:
         meta = p.get("meta") or {}
         base = {"id": p["id"], "source_id": p["source_id"], "version": p.get("version", ""), "url": p["url"]}
         if p["source_id"] in SOURCES_TEXTES and p["source_id"] != "constitution_1958":
-            en_vigueur = bool(meta.get("en_vigueur"))
+            en_vigueur = bool(en_vigueur_aujourdhui(meta, p["source_id"]))
             actuelle = None
             nouveaux = concordance.REFORME_2016.get(p.get("numero") or "") \
                 if p["source_id"] == "code_civil" and meta.get("date_fin") == concordance.DATE_REFORME else None
             if nouveaux:
                 # Ancien numero : la version actuelle du meme numero aurait un autre objet.
                 for v in self.retriever.versions("code_civil", nouveaux[0]):
-                    if (v.get("meta") or {}).get("en_vigueur"):
+                    if en_vigueur_aujourdhui(v.get("meta") or {}, "code_civil"):
                         actuelle = {"id": v["id"], "version": v["version"], "url": v["url"]}
                         break
                 art = "à l'article" if len(nouveaux) == 1 else "aux articles"

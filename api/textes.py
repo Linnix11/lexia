@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from datetime import date
 
 
 @dataclass(frozen=True)
@@ -163,3 +164,17 @@ def meme_loi(citee: frozenset[str], nom_texte: str) -> bool:
     if num_c and num_t:
         return bool(num_c & num_t)
     return bool(citee & cles)
+
+
+def en_vigueur_aujourdhui(meta: dict, source_id: str) -> bool | None:
+    """Etat « en vigueur » d'un passage, recalcule a la date du jour.
+
+    L'etat stocke a ete fige au moment de l'import : un article dont l'abrogation etait deja
+    programmee (etat DILA ABROGE_DIFF) resterait marque « en vigueur » apres sa date de fin.
+    Le corpus en compte 4 789, dont 182 s'abrogent d'ici fin 2026 et 696 en 2027 (D71).
+    """
+    valeur = meta.get("en_vigueur", True if source_id == "constitution_1958" else None)
+    fin = str(meta.get("date_fin") or "")
+    if valeur and fin and fin <= date.today().isoformat():
+        return False
+    return valeur

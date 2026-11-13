@@ -106,8 +106,15 @@ def groupes(sources: tuple[str, ...] | None, toutes: tuple[str, ...]) -> tuple[t
 
 
 def assembler(refs: list["Hit"], textes: list["Hit"], juris: list["Hit"], k: int) -> list["Hit"]:
-    """References citees d'abord, puis textes (au moins la moitie si disponibles), puis jurisprudence."""
-    out = list(refs)
+    """References citees d'abord, puis textes (environ la moitie), puis jurisprudence.
+
+    Une place au moins reste a la jurisprudence quand il y en a : une question qui cite plusieurs
+    articles (« commentez l'arret au regard des articles 1240 et suivants ») recevait sinon des
+    textes seulement, et le commentaire d'arret n'avait aucun arret a commenter. Le total est
+    plafonne a k : sans cela, une question citant 159 articles envoyait 159 extraits au modele (D71).
+    """
+    place_textes = k - 1 if juris else k
+    out = list(refs[:place_textes])
     vus = {h.passage["id"] for h in out}
 
     def ajouter(liste: list["Hit"], limite: int) -> None:
@@ -118,10 +125,10 @@ def assembler(refs: list["Hit"], textes: list["Hit"], juris: list["Hit"], k: int
                 vus.add(h.passage["id"])
                 out.append(h)
 
-    ajouter(textes, max(len(out), 0) + (k + 1) // 2)
+    ajouter(textes, min(len(out) + (k + 1) // 2, place_textes))
     ajouter(juris, k)
     ajouter(textes, k)
-    return out[:max(k, len(refs))]
+    return out[:k]
 
 
 def construire_groupe(classements: dict[str, list[tuple[str, dict]]], k: int, *,

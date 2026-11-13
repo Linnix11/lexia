@@ -19,6 +19,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from api import textes
+
 import numpy as np
 
 from api.retrieval.base import jeton_source
@@ -58,10 +60,10 @@ def doc_id(p: dict) -> str:
 
 
 def en_vigueur(p: dict):
-    meta = p.get("meta") or {}
-    if "en_vigueur" in meta:
-        return int(bool(meta["en_vigueur"]))
-    return 1 if p["source_id"] == "constitution_1958" else None
+    """Colonne servant a ecarter de la recherche les textes qui ne s'appliquent plus.
+    La date de fin est relue ici : l'etat stocke a ete fige le jour de l'import (D71)."""
+    valeur = textes.en_vigueur_aujourdhui(p.get("meta") or {}, p["source_id"])
+    return None if valeur is None else int(bool(valeur))
 
 
 def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_dir: Path = CACHE_DIR,
