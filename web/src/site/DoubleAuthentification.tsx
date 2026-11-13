@@ -1,6 +1,6 @@
 // « Mon compte » : activer ou desactiver la double authentification par application (codes TOTP).
 import QRCode from 'qrcode'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useSession } from '../state/session'
 import { bouton, boutonSecondaire } from './Public'
@@ -16,6 +16,11 @@ export function DoubleAuthentification() {
   const [mdp, setMdp] = useState('')
   const [secours, setSecours] = useState<string[]>([])
   const [erreur, setErreur] = useState<string | null>(null)
+  const ancre = useRef<HTMLElement>(null)
+  // Lien direct (/compte?2fa, depuis l'administration ou le panel) : on amene la section a l'ecran.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('2fa')) ancre.current?.scrollIntoView?.({ block: 'center' })
+  }, [])
   if (!profil) return null
   const active = Boolean(profil.double_authentification)
   const message = (err: unknown) => setErreur(err instanceof ApiError ? err.message : 'Opération impossible pour le moment.')
@@ -59,7 +64,7 @@ export function DoubleAuthentification() {
   }
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-5" aria-labelledby="titre-2fa">
+    <section ref={ancre} id="double-authentification" className={`rounded-xl border bg-surface p-5 ${active ? 'border-line' : 'border-forest/40'}`} aria-labelledby="titre-2fa">
       <h2 id="titre-2fa" className="text-[15px] font-semibold">Double authentification</h2>
       <p className="mt-1 text-[13px] text-muted">
         {active

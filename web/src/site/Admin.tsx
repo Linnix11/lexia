@@ -3,7 +3,7 @@ import { api, ApiError, type ActiviteAdmin, type Annale, type ClientAdmin, type 
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Histogramme } from './Graphique'
-import { boutonSecondaire } from './Public'
+import { bouton, boutonSecondaire } from './Public'
 
 type Onglet = 'apercu' | 'clients' | 'annales' | 'activite' | 'serveur'
 const ONGLETS: { id: Onglet; label: string }[] = [
@@ -479,13 +479,32 @@ export function Admin() {
       .catch((e) => setErreur(e instanceof ApiError ? e.message : 'Chargement impossible.'))
   }, [])
 
+  const sans2fa = Boolean(profil && !profil.double_authentification)
   useEffect(() => {
+    if (sans2fa) return // le serveur refuserait toutes les requetes : on affiche directement le bouton d'activation
     charger()
     const t = window.setInterval(charger, 30000)
     return () => window.clearInterval(t)
-  }, [charger])
+  }, [charger, sans2fa])
 
   if (!profil) return null
+  if (sans2fa) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4">
+        <section className="max-w-[460px] rounded-xl border border-line bg-surface p-6 text-center">
+          <h1 className="font-display text-[24px]">Double authentification requise</h1>
+          <p className="mt-2 text-[14px] text-muted">
+            L’administration n’est accessible qu’aux comptes protégés par un code d’application
+            (Google Authenticator, Microsoft Authenticator, 2FAS…). L’activation prend une minute.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Lien href="/compte?2fa" className={bouton}>Activer la double authentification</Lien>
+            <Lien href="/app" className={boutonSecondaire}>Retour au panel</Lien>
+          </div>
+        </section>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen">
       <header className="border-b border-line bg-surface/70">

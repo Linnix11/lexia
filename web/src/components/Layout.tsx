@@ -96,7 +96,11 @@ export function Topbar() {
           ))}
         </select>
         {profil?.admin && (
-          <Lien href="/admin" className="hidden rounded-full border border-line px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:inline">Admin</Lien>
+          <Lien href={profil.double_authentification ? '/admin' : '/compte?2fa'}
+            title={profil.double_authentification ? undefined : 'Activez la double authentification pour accéder à l’administration'}
+            className="hidden rounded-full border border-line px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:inline">
+            {profil.double_authentification ? 'Admin' : 'Admin · activer la 2FA'}
+          </Lien>
         )}
         {profil && (
           <Lien href="/compte" title="Mon compte" className="hidden items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:flex">

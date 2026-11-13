@@ -29,15 +29,17 @@ const SERVEUR = { version: 'abc1234', demarre_le: '2026-11-11T10:00:00+00:00', u
   systeme: 'Linux 6.8', index: { moteur: 'local', passages: 45277, embeddings: 41779, couverture: 1 }, modeles: { generation: ['gemini'] }, etat_modele: 'ok' }
 
 let admin = false
+let deuxFacteurs = true
 let connecte = false
 let fetchMock: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   connecte = false
   admin = false
+  deuxFacteurs = true
   localStorage.clear()
   fetchMock = vi.fn((url: string) => {
-    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return connecte ? json({ ...PROFIL, admin }) : json(null)
+    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return connecte ? json({ ...PROFIL, admin, double_authentification: admin && deuxFacteurs }) : json(null)
     if (url.includes('/admin/stats')) return json(STATS)
     if (url.includes('/admin/clients')) return json(CLIENTS)
     if (url.includes('/admin/activite')) return json({ requetes: [], erreurs: [] })
@@ -151,6 +153,17 @@ describe('Site', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clients' }))
     expect(await screen.findByText('etu@exemple.fr')).toBeInTheDocument()
     expect(screen.getByLabelText('Formule de etu@exemple.fr')).toHaveValue('etudiant')
+  })
+
+  it('admin sans double authentification : bouton d’activation, aucune requete admin', async () => {
+    connecte = true
+    admin = true
+    deuxFacteurs = false
+    aller('/admin')
+    render(<Site />)
+    const lien = await screen.findByRole('link', { name: 'Activer la double authentification' })
+    expect(lien.getAttribute('href')).toBe('/compte?2fa')
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/admin/'))).toBe(false)
   })
 
   it('page inconnue', async () => {
