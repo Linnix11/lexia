@@ -42,6 +42,7 @@ export function VueEspace() {
             <Chat />
           </Card>
           <CarteOutils />
+          <DepotCours />
         </div>
         <div className="grid min-w-0 gap-[18px]">
           <CarteSources />
