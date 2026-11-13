@@ -9,6 +9,7 @@ import { Cgu, Confidentialite, MentionsLegales } from './site/Legal'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
 import { SessionProvider, useSession } from './state/session'
+import { Signet } from './components/Logo'
 
 const PUBLIQUES: Record<string, () => ReactNode> = {
   '/': () => <Accueil />,
@@ -29,7 +30,7 @@ const MEMBRES: Record<string, () => ReactNode> = {
 function Chargement() {
   return (
     <div className="grid min-h-screen place-items-center" aria-label="Chargement">
-      <div className="grid size-10 animate-pulse place-items-center rounded-[11px] bg-forest font-display text-[22px] text-white">L</div>
+      <Signet hauteur={44} className="animate-pulse" />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Lien } from '../lib/router'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
 import { useApp, type Vue } from '../state/contexte'
 import { useSession } from '../state/session'
+import { Signet } from './Logo'
 
 const VUES: { id: Vue; label: string; ico: string }[] = [
   { id: 'espace', label: 'Mon espace', ico: '⌂' },
@@ -23,7 +24,7 @@ export function Sidebar() {
                  desk:items-stretch desk:px-[17px] desk:py-[26px]"
     >
       <div className="hidden items-center gap-2.5 tab:flex desk:px-2">
-        <div className="grid size-[31px] place-items-center rounded-[9px] bg-forest font-display text-[19px] text-white">L</div>
+        <Signet hauteur={34} />
         <div className="hidden desk:block">
           <div className="font-display text-[21px] tracking-[-.4px]">lexia</div>
           <div className="mt-0.5 text-[10px] text-muted">L’espace d’étude juridique</div>

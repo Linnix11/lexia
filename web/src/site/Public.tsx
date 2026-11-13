@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
+import { Signet } from '../components/Logo'
 
 export const bouton = 'inline-flex items-center justify-center rounded-[8px] bg-forest px-4 py-2.5 text-[13px] font-medium text-white hover:bg-forest-dark disabled:opacity-60'
 export const boutonSecondaire = 'inline-flex items-center justify-center rounded-[8px] border border-line bg-surface px-4 py-2.5 text-[13px] text-forest hover:border-[#9eafa3]'
@@ -8,7 +9,7 @@ export const boutonSecondaire = 'inline-flex items-center justify-center rounded
 function Logo() {
   return (
     <Lien href="/" className="flex items-center gap-2.5" aria-label="Lexia, accueil">
-      <span aria-hidden className="grid size-[31px] place-items-center rounded-[9px] bg-forest font-display text-[19px] text-white">L</span>
+      <Signet hauteur={34} />
       <span className="hidden font-display text-[21px] tracking-[-.4px] min-[400px]:inline">lexia</span>
     </Lien>
   )

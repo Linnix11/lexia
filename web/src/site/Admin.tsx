@@ -4,6 +4,7 @@ import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Histogramme } from './Graphique'
 import { bouton, boutonSecondaire } from './Public'
+import { Signet } from '../components/Logo'
 
 type Onglet = 'apercu' | 'clients' | 'annales' | 'activite' | 'serveur'
 const ONGLETS: { id: Onglet; label: string }[] = [
@@ -510,7 +511,7 @@ export function Admin() {
       <header className="border-b border-line bg-surface/70">
         <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-3 px-4 tab:px-6">
           <div className="flex items-center gap-2.5">
-            <Lien href="/" aria-label="Accueil" className="grid size-[31px] place-items-center rounded-[9px] bg-forest font-display text-[19px] text-white">L</Lien>
+            <Lien href="/" aria-label="Accueil" className="grid place-items-center"><Signet hauteur={34} /></Lien>
             <span className="font-display text-[18px] tab:text-[20px]">Administration</span>
           </div>
           <div className="flex items-center gap-2">
