@@ -18,8 +18,15 @@ const ETAPES = [
 export function Accueil() {
   const { profil } = useSession()
   const cible = profil ? '/app' : '/inscription'
+  // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
+  const supprime = new URLSearchParams(window.location.search).has('compte-supprime')
   return (
     <PublicLayout>
+      {supprime && (
+        <p role="status" className="border-b border-line bg-mint px-4 py-3 text-center text-[13px] text-forest">
+          Votre compte et ses données ont été supprimés définitivement.
+        </p>
+      )}
       <Section className="grid items-center gap-10 py-14 desk:grid-cols-[1.1fr_.9fr] desk:py-20">
         <div>
           <Surtitre>Droit français · Licence</Surtitre>

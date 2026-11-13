@@ -9,6 +9,9 @@ echo "$(date -Is) debut"
 SRC=/opt/lexia/donnees/lexia.db
 DEST=/opt/lexia/sauvegardes
 mkdir -p "$DEST" && chmod 700 "$DEST"
+# Base absente (deplacee, renommee) : echec visible. Avant, le script ecrivait « fin » et sortait
+# en succes chaque nuit, sans plus rien sauvegarder.
+[ -f "$SRC" ] || { echo "$(date -Is) ERREUR : $SRC absente, aucune sauvegarde" >&2; exit 1; }
 # copie coherente meme pendant l'ecriture (API de sauvegarde de SQLite)
 if [ -f "$SRC" ]; then
   /opt/lexia/.venv/bin/python - "$SRC" "$DEST/lexia-$(date +%Y%m%d).db" <<'PY'

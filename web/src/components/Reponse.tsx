@@ -147,7 +147,7 @@ export function Reponse({ message, actions = true }: { message: Message; actions
       )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-2.5">
-        <p className="text-[10px] leading-[1.45] text-[#8a9089]">
+        <p className="text-[10px] leading-[1.45] text-[#5f6762]">
           {r.avertissement}
           {retires > 0 && ` ${retires} élément(s) non vérifiable(s) retiré(s) automatiquement.`}
           {r.controle.recherche === 'lexicale' && ' Recherche par mots-clés.'}

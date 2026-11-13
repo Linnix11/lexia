@@ -32,7 +32,7 @@ export function Sidebar() {
       </div>
 
       <nav aria-label="Navigation principale" className="h-full tab:h-auto tab:w-full">
-        <div className="mb-2 hidden px-2.5 text-[10px] tracking-[1.25px] text-[#8c928c] uppercase desk:block">Espace étudiant</div>
+        <div className="mb-2 hidden px-2.5 text-[10px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
         <ul className="flex h-full items-center justify-around tab:grid tab:h-auto tab:gap-1">
           {VUES.map((v) => {
             const actif = vue === v.id
@@ -57,7 +57,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto hidden desk:block">
-        <div className="mb-2 px-2.5 text-[10px] tracking-[1.25px] text-[#8c928c] uppercase">Mon semestre</div>
+        <div className="mb-2 px-2.5 text-[10px] tracking-[1.25px] text-[#5f6762] uppercase">Mon semestre</div>
         <div className="rounded-[10px] border border-[#dfdfd5] bg-chip p-3">
           <small className="text-[11px] text-muted">Semestre {semestre} · {niveau}</small>
           <strong className="my-1.5 block text-[13px]">Parcours droit général</strong>

@@ -108,7 +108,9 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
         texte_id = titre_txt.get("id_txt") if titre_txt is not None else None
     else:
         texte_id = None
-    fin_txt = "" if fin == DATE_INFINIE else f" au {date_fr(fin)}"
+    # DATE_FIN absente : traitee comme « sans date de fin » (sinon l'entete affichait « du ... au »).
+    sans_fin = not fin or fin == DATE_INFINIE
+    fin_txt = "" if sans_fin else f" au {date_fr(fin)}"
     periode = f"depuis le {date_fr(debut)}" if not fin_txt else f"du {date_fr(debut)}{fin_txt}"
     statut = ETATS.get(etat, etat.lower())
     meta = {
@@ -117,7 +119,7 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
         "etat": etat,
         "en_vigueur": en_vigueur,
         "date_debut": debut,
-        "date_fin": None if fin == DATE_INFINIE else fin,
+        "date_fin": None if sans_fin else fin,
         "plan": chemin,
     }
     if nota:

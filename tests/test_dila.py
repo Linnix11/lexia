@@ -165,3 +165,12 @@ def test_legi_abrogation_differee_reste_en_vigueur_jusqu_a_sa_date():
     assert legi.parse_article(passee.encode(), date_recuperation="d", version_archive="a").meta["en_vigueur"] is False
     differee = brut.replace("<ETAT>VIGUEUR</ETAT>", "<ETAT>VIGUEUR_DIFF</ETAT>")
     assert legi.parse_article(differee.encode(), date_recuperation="d", version_archive="a").meta["en_vigueur"] is False
+
+
+def test_legi_article_sans_date_de_fin():
+    """DATE_FIN absente : l'article est « depuis le ... », pas « du ... au » (entete tronque avant)."""
+    brut = lire("LEGIARTI000032041571.xml").decode("utf-8")
+    sans_fin = brut.replace("<DATE_FIN>2999-01-01</DATE_FIN>", "")
+    p = legi.parse_article(sans_fin.encode(), date_recuperation="d", version_archive="a")
+    assert p.meta["date_fin"] is None
+    assert " au )" not in p.entete and "depuis le 1er octobre 2016" in p.entete

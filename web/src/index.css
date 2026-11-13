@@ -3,7 +3,7 @@
 /* Palette et typographie de la maquette Lexia (vert foret, papier, Georgia + Inter). */
 @theme {
   --color-ink: #202724;
-  --color-muted: #707873;
+  --color-muted: #666e69;  /* 4,5:1 au moins sur paper, surface, side et chip */
   --color-paper: #f5f4ef;
   --color-surface: #fffefa;
   --color-line: #e4e4dc;

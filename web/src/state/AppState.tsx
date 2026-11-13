@@ -25,12 +25,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [avecOfficiel, setAvecOfficiel] = useState(true)
   const [matieres, setMatieres] = useState<Matiere[]>([])
   const [messages, setMessages] = useState<Message[]>([])
-  const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris())
+  const { rafraichir, profil } = useSession()
+  const compte = profil?.email ?? ''
+  const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris(compte))
   const [sourceOuverte, setSourceOuverte] = useState<string | null>(null)
   const [quizOuvert, setQuizOuvert] = useState<{ theme?: string; id: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const minuteur = useRef<number | undefined>(undefined)
-  const { rafraichir, profil } = useSession()
 
   const rafraichirCours = useCallback(() => {
     api.cours.lister()
@@ -97,11 +98,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setFavoris((liste) => {
         if (liste.some((x) => x.id === f.id)) return liste
         const suivante = [f, ...liste]
-        notifier(ecrireFavoris(suivante) ? 'Fiche enregistrée dans « Fiches & révisions »' : "Le navigateur n'a pas pu enregistrer cette fiche.")
+        notifier(ecrireFavoris(suivante, compte) ? 'Fiche enregistrée dans « Fiches & révisions »' : "Le navigateur n'a pas pu enregistrer cette fiche.")
         return suivante
       })
     },
-    [notifier],
+    [notifier, compte],
   )
 
   // Changer de matiere deselectionne un cours depose dans une autre matiere (sinon la question sur le droit
@@ -148,12 +149,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const suivante = existe
           ? liste.filter((f) => f.id !== rid)
           : [{ id: rid, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse! }, ...liste]
-        if (!ecrireFavoris(suivante)) notifier("Le navigateur n'a pas pu enregistrer ce favori.")
+        if (!ecrireFavoris(suivante, compte)) notifier("Le navigateur n'a pas pu enregistrer ce favori.")
         else notifier(existe ? 'Retiré des fiches' : 'Ajouté à « Fiches & révisions »')
         return suivante
       })
     },
-    [notifier],
+    [notifier, compte],
   )
 
   const valeur = useMemo<AppState>(

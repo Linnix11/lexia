@@ -44,6 +44,12 @@ class LocalRetriever:
                 # memoire mappee : le systeme ne garde en RAM que les pages lues
                 self._vecs = np.load(vec_file, mmap_mode="r")
                 self._ids = json.loads(ids_file.read_text())
+                # Fichiers de deux constructions differentes (construction interrompue entre deux
+                # ecritures) : un indice de vecteur designerait le mauvais passage, donc la mauvaise source.
+                if len(self._ids) != self._vecs.shape[0]:
+                    log.warning("Index vectoriel incoherent (%d identifiants, %d vecteurs) : recherche vectorielle "
+                                "desactivee (relancer ingest.build_index)", len(self._ids), self._vecs.shape[0])
+                    self._ids, self._vecs = [], np.zeros((0, 0), dtype=np.float32)
         # metadonnees minimales des passages vectorises (filtrage sans relire le JSON)
         self._meta_vec: dict[str, tuple[str, int | None]] = {}
         if self._ids:
@@ -145,7 +151,9 @@ class LocalRetriever:
                     " JOIN passages p ON p.rowid = f.rowid ORDER BY f.rank",
                     (f"source : ({filtre}) AND ({requete})", N_CANDIDATS),
                 )
-            except sqlite3.OperationalError:
+            except sqlite3.OperationalError as e:
+                # Sans journal, un index casse se lisait comme « aucune source ».
+                log.warning("recherche plein texte indisponible : %s", e)
                 return []
             return [(r[0], json.loads(r[1])) for r in rows]
         clause, params = self._filtre_sql(sources)
@@ -155,7 +163,9 @@ class LocalRetriever:
                 f" WHERE passages_fts MATCH ? {clause} ORDER BY bm25(passages_fts, 3.0, 1.0) LIMIT ?",
                 (requete, *params, N_CANDIDATS),
             )
-        except sqlite3.OperationalError:
+        except sqlite3.OperationalError as e:
+            # Sans journal, un index casse se lisait comme « aucune source ».
+            log.warning("recherche plein texte indisponible : %s", e)
             return []
         return [(r[0], json.loads(r[1])) for r in rows]
 
@@ -174,6 +184,12 @@ class LocalRetriever:
         if not len(self._ids) or vecteur is None:
             return []
         q = np.asarray(vecteur, dtype=np.float32)
+        if self._vecs.shape[1] != q.shape[0]:
+            # EMBED_MODEL change sans reconstruire l'index : la recherche par sens est sautee
+            # (le plein texte continue) au lieu de faire echouer chaque question.
+            log.warning("vecteur de la question en dimension %d, index en %d : recherche vectorielle sautee",
+                        q.shape[0], self._vecs.shape[1])
+            return []
         q /= np.linalg.norm(q) or 1.0
         sims = self._vecs @ q
         autorisees = set(sources) if sources else None

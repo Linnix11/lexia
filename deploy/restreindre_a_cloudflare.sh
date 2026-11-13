@@ -19,14 +19,18 @@ SAUVEGARDE="/root/nginx-lexia.avant-cloudflare-seul.$(date +%Y%m%d-%H%M%S).conf"
 recharger() {
   if ! nginx -t 2>/dev/null; then
     cp "$SAUVEGARDE" "$SITE"
+    # Le fichier geo est dans le contexte http global : invalide, il casse nginx pour tous les sites.
+    if [ -f "$GEO.avant" ]; then mv "$GEO.avant" "$GEO"; else rm -f "$GEO"; fi
     nginx -t
     echo "Configuration nginx invalide : sauvegarde restauree, rien n'est change." >&2
     exit 1
   fi
+  rm -f "$GEO.avant"
   systemctl reload nginx
 }
 
 cp "$SITE" "$SAUVEGARDE"
+[ -f "$GEO" ] && cp "$GEO" "$GEO.avant" || rm -f "$GEO.avant"
 if [[ "${1:-}" == "--annuler" ]]; then
   sed -i "\#include $FILTRE;#d" "$SITE"
   recharger

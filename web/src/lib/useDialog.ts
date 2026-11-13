@@ -19,6 +19,9 @@ export function useDialog<T extends HTMLElement>(ouvert: boolean, fermer: () => 
 
     const auClavier = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Deux fenetres ouvertes (une source par-dessus un questionnaire) : seule celle du dessus se ferme.
+        const fenetres = document.querySelectorAll('[role="dialog"]')
+        if (racine && fenetres[fenetres.length - 1] !== racine) return
         e.preventDefault()
         fermerRef.current()
         return

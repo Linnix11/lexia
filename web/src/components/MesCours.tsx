@@ -2,10 +2,9 @@
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
-import { formatAccepte, sansExtension } from '../lib/fichiers'
+import { ACCEPT, formatAccepte, sansExtension } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 
-const FORMATS = '.pdf,.docx,.txt,.md'
 const TAILLE_MAX = 20 * 1024 * 1024
 
 export function DepotCours() {
@@ -49,7 +48,7 @@ export function DepotCours() {
       <form onSubmit={deposer} className="mt-3.5 flex flex-wrap items-end gap-2">
         <label className="grid min-w-[200px] flex-1 gap-1.5 text-[11px] text-muted">
           Fichier
-          <input type="file" accept={FORMATS} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} className={champ} />
+          <input type="file" accept={ACCEPT} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} className={champ} />
         </label>
         <label className="grid gap-1.5 text-[11px] text-muted">
           Matière

@@ -187,10 +187,12 @@ class Cours:
             raise ErreurCours("Le fichier est vide.")
         maintenant_s = time.monotonic()
         with self._lock:
+            # Seul un depot reussi est compte (plus bas) : sinon une suite de refus (limite de la
+            # formule atteinte, mauvais format) epuiserait le quota du jour sans rien deposer.
             recents = [t for t in self._depots.get(uid, []) if maintenant_s - t < 86400]
             if len(recents) >= DEPOTS_PAR_JOUR:
                 raise ErreurCours(f"Trop de dépôts aujourd'hui ({DEPOTS_PAR_JOUR} au plus sur 24 h) : réessayez demain.")
-            self._depots[uid] = recents + [maintenant_s]
+            self._depots[uid] = recents
         if self.nombre(uid) >= maximum:
             raise ErreurCours(f"Limite atteinte : {maximum} cours avec votre formule. Retirez un cours ou "
                               "passez à une formule supérieure.")
@@ -212,6 +214,8 @@ class Cours:
                 pid = self._con.execute("INSERT INTO cours_passages (cours, rang, page, texte) VALUES (?,?,?,?)",
                                         (cid, rang, page, texte)).lastrowid
                 self._con.execute("INSERT INTO cours_fts (rowid, texte) VALUES (?,?)", (pid, texte))
+        with self._lock:
+            self._depots.setdefault(uid, []).append(time.monotonic())
         if self.embedder is not None:
             self._fil.submit(self._vectoriser, cid)
         return self.fiche(uid, cid)
@@ -285,8 +289,8 @@ class Cours:
                     f"SELECT f.rowid FROM cours_fts f JOIN cours_passages p ON p.id = f.rowid"
                     f" WHERE cours_fts MATCH ? AND p.cours IN ({marques}) ORDER BY bm25(cours_fts) LIMIT 40",
                     (" OR ".join(f'"{m}"*' for m in mots), *ids))])
-            except sqlite3.OperationalError:
-                pass
+            except sqlite3.OperationalError as e:
+                log.warning("recherche plein texte des cours indisponible : %s", e)
         if vecteur is not None:
             rows = self._q(f"SELECT id, vecteur FROM cours_passages WHERE cours IN ({marques}) AND vecteur IS NOT NULL", tuple(ids))
             if rows:

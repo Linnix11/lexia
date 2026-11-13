@@ -30,6 +30,15 @@ if [ -z "$DERNIERE" ]; then
   exit 1
 fi
 
+# Fraicheur : si le serveur ne sauvegarde plus, rsync ne ramene rien et la plus recente copie locale
+# vieillit sans que rien ne le signale. Plus de 2 jours : echec.
+JOUR_COPIE="$(basename "$DERNIERE" .db | sed 's/^lexia-//')"
+AGE_JOURS=$(( ( $(date +%s) - $(date -j -f %Y%m%d "$JOUR_COPIE" +%s 2>/dev/null || date -d "$JOUR_COPIE" +%s) ) / 86400 ))
+if [ "$AGE_JOURS" -gt 2 ]; then
+  echo "ERREUR : la plus recente sauvegarde ($JOUR_COPIE) a $AGE_JOURS jours : le serveur ne sauvegarde plus" >&2
+  exit 1
+fi
+
 # Restauration testee sur une copie temporaire : la sauvegarde s'ouvre, est integre et contient les comptes.
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

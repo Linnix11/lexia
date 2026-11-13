@@ -1,6 +1,8 @@
 // Fichiers de cours : formats acceptes et lecture d'un glisser-deposer (fichiers ou dossier).
 
 const EXTENSIONS = ['.pdf', '.docx', '.txt', '.md']
+/** Valeur de l'attribut accept des champs de fichier : une seule liste pour tout le site. */
+export const ACCEPT = EXTENSIONS.join(',')
 export const formatAccepte = (f: File) => EXTENSIONS.some((e) => f.name.toLowerCase().endsWith(e))
 export const sansExtension = (nom: string) => nom.replace(/\.[^.]+$/, '')
 

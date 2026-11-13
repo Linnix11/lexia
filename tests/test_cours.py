@@ -167,3 +167,22 @@ def test_depots_limites_par_jour(env, monkeypatch):
         assert client.post(f"/cours/{cid}/supprimer").status_code == 204    # deposer / retirer en boucle...
     r = deposer(client)
     assert r.status_code == 422 and "Trop de dépôts" in r.json()["detail"]   # ...est plafonne
+
+
+def test_un_depot_refuse_ne_consomme_pas_d_essai(tmp_path, monkeypatch):
+    """Une suite de refus (limite de la formule atteinte) ne doit pas epuiser le quota du jour."""
+    import api.cours as cours_mod
+    from api.comptes import Comptes
+    from api.cours import Cours, ErreurCours
+
+    monkeypatch.setattr(cours_mod, "DEPOTS_PAR_JOUR", 4)
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    for i in range(3):
+        c.ajouter(u.id, "droit_civil", f"Cours {i}", f"c{i}.txt", b"Le dol est une manoeuvre.", 3)
+    for _ in range(5):  # cinq refus : la formule n'autorise que trois cours
+        with pytest.raises(ErreurCours, match="Limite atteinte"):
+            c.ajouter(u.id, "droit_civil", "Refuse", "x.txt", b"texte", 3)
+    c.supprimer(u.id, c.lister(u.id)[0]["id"])
+    c.ajouter(u.id, "droit_civil", "Nouveau", "n.txt", b"La bonne foi.", 3)  # 4e depot reussi : accepte

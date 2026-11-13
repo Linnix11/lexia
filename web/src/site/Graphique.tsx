@@ -60,7 +60,7 @@ export function Histogramme({ serie, titre }: { serie: JourStats[]; titre: strin
           {graduations.map((g) => (
             <g key={g}>
               <line x1={MARGE.gauche} x2={largeur - MARGE.droite} y1={y(g)} y2={y(g)} stroke="#e6e4dc" strokeWidth={1} />
-              <text x={MARGE.gauche - 6} y={y(g)} textAnchor="end" dominantBaseline="middle" className="fill-[#8a9089] text-[10px]">
+              <text x={MARGE.gauche - 6} y={y(g)} textAnchor="end" dominantBaseline="middle" className="fill-[#5f6762] text-[10px]">
                 {g.toLocaleString('fr-FR')}
               </text>
             </g>
@@ -72,7 +72,7 @@ export function Histogramme({ serie, titre }: { serie: JourStats[]; titre: strin
               <g key={p.jour}>
                 <path d={barrePath(xb, p.questions)} fill={COULEUR} opacity={survol === null || survol === i ? 1 : 0.45} />
                 {(i % pasEtiquette === 0 || i === serie.length - 1) && (
-                  <text x={x0 + colonne / 2} y={HAUTEUR - 6} textAnchor="middle" className="fill-[#8a9089] text-[10px]">{jourCourt(p.jour)}</text>
+                  <text x={x0 + colonne / 2} y={HAUTEUR - 6} textAnchor="middle" className="fill-[#5f6762] text-[10px]">{jourCourt(p.jour)}</text>
                 )}
                 {/* zone de survol : toute la colonne, plus grande que la barre */}
                 <rect x={x0} y={MARGE.haut} width={colonne} height={hauteurUtile} fill="transparent" onMouseEnter={() => setSurvol(i)} />

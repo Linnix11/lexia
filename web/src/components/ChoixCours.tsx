@@ -32,7 +32,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
           {matieres.map((m) => (
             <optgroup key={m} label={m}>
               {prets.filter((c) => c.libelle_matiere === m).map((c) => (
-                <option key={c.id} value={c.id}>{c.titre}</option>
+                <option key={c.id} value={c.id}>{c.titre}{c.statut === 'traitement' ? ' (en préparation…)' : ''}</option>
               ))}
             </optgroup>
           ))}

@@ -5,7 +5,7 @@ import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
 import { Reponse } from './Reponse'
 import { ChoixCours } from './ChoixCours'
-import { fichiersDeposes } from '../lib/fichiers'
+import { ACCEPT, fichiersDeposes } from '../lib/fichiers'
 import { DepotRapide } from './MesCours'
 
 const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
@@ -56,7 +56,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
 
   const soumettre = (e: FormEvent) => {
     e.preventDefault()
-    if (!texte.trim() || occupe) return
+    if (texte.trim().length < 3 || occupe) return  // l'API exige 3 caracteres (ChatRequest)
     envoyer(texte, mode)
     setTexte('')
   }
@@ -184,7 +184,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         <button type="button" onClick={() => choixFichier.current?.click()}
               title="Ajouter un cours (PDF, Word, texte) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
           className="rounded-[7px] px-2 text-[16px] text-muted hover:bg-chip hover:text-forest">📎</button>
-        <input ref={choixFichier} type="file" multiple accept=".pdf,.docx,.txt,.md" hidden data-testid="ajout-cours"
+        <input ref={choixFichier} type="file" multiple accept={ACCEPT} hidden data-testid="ajout-cours"
           onChange={(e) => {
             const f = [...(e.target.files ?? [])]
             if (f.length) setADeposer(f)
@@ -202,13 +202,13 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         />
         <button
           type="submit"
-          disabled={occupe || !texte.trim()}
+          disabled={occupe || texte.trim().length < 3}
           className="rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
         >
           {occupe ? 'Recherche…' : 'Envoyer ↗'}
         </button>
       </form>
-      <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[10px] text-[#8a9089]">
+      <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[10px] text-[#5f6762]">
         <span>Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.</span>
         {messages.length > 0 && !occupe && (
           <button type="button" onClick={effacer} className="shrink-0 hover:text-forest">Effacer la conversation</button>

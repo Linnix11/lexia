@@ -102,15 +102,27 @@ class Freins:
         self._echecs: dict[str, deque] = defaultdict(deque)
         self._inscriptions: dict[str, deque] = defaultdict(deque)
         self._lock = threading.Lock()
+        self._derniere_purge = 0.0
 
     @staticmethod
     def _purger(q: deque, fenetre: float, now: float) -> None:
         while q and now - q[0] > fenetre:
             q.popleft()
 
+    def _oublier(self, now: float) -> None:
+        """Retire les adresses et e-mails dont la fenetre est passee, au plus une fois par minute.
+        Sans cela, chaque adresse essayee restait en memoire jusqu'au redemarrage du service."""
+        if now - self._derniere_purge < 60:
+            return
+        self._derniere_purge = now
+        for d, fenetre in ((self._ip, 60), (self._echecs, 900), (self._inscriptions, 86400)):
+            for k in [k for k, q in d.items() if not q or now - q[-1] > fenetre]:
+                del d[k]
+
     def verifier(self, ip: str, email: str) -> None:
         now = time.monotonic()
         with self._lock:
+            self._oublier(now)
             q = self._ip[ip]
             self._purger(q, 60, now)
             if len(q) >= self.par_ip:

@@ -75,9 +75,6 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
     return out
 
 
-MODES_METHODE = {"cas_pratique", "commentaire", "dissertation"}
-
-
 def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer") -> tuple[dict, Controle]:
     """mode : dans les modes methode, une explication de methode sans source est acceptee
     (la methode n'est pas une regle de droit) ; le droit positif exige toujours une source."""
@@ -86,6 +83,10 @@ def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer")
     message = str(brut.get("message") or "").strip()
     titre = str(brut.get("titre") or "").strip()
     passages = list(table.values())
+    # Le titre est affiche en gros au-dessus de la reponse : un numero d'article invente y restait,
+    # alors qu'il etait retire partout ailleurs.
+    if not verifier_texte(titre, passages, controle):
+        titre = ""
 
     if statut != "reponse":
         if not verifier_texte(message, passages, controle):
@@ -94,7 +95,7 @@ def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer")
                 "points_incertains": [], "message": message or _message_defaut(statut)}, controle
 
     droit = nettoyer_elements(brut.get("droit_positif"), table, controle, exiger_source=True)
-    from api.prompts import RUBRIQUES  # import local : prompts importe deja ce module indirectement
+    from api.prompts import MODES_METHODE, RUBRIQUES  # import local : prompts importe deja ce module indirectement
     expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False,
                              rubriques=RUBRIQUES.get(mode, RUBRIQUES["expliquer"]))
     incert = nettoyer_elements(brut.get("points_incertains"), table, controle, exiger_source=False)

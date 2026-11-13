@@ -256,6 +256,7 @@ const MESSAGES: Record<number, string> = {
   402: 'Limite du jour atteinte pour votre formule.',
   404: 'Élément introuvable.',
   413: 'Votre texte est trop long.',
+  422: 'Votre saisie est incomplète ou trop courte : vérifiez-la et réessayez.',
   429: 'Trop de requêtes : patientez une minute avant de réessayer.',
   503: 'Le modèle est momentanément indisponible. Réessayez dans quelques instants.',
 }
@@ -333,7 +334,6 @@ export type NouvelleAnnale = Omit<Annale, 'id' | 'libelle_matiere' | 'ajoute_le'
 export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
-  moi: () => requete<Profil>('/auth/moi'),
   session: () => requete<Profil | null>('/auth/session'),
   inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean) =>
     post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu }),

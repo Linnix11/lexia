@@ -97,12 +97,12 @@ export function VueMatieres() {
 }
 
 export function VueFiches() {
-  const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz } = useApp()
+  const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz, occupe } = useApp()
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [theme, setTheme] = useState('')
   const creer = (e: FormEvent) => {
     e.preventDefault()
-    if (theme.trim().length < 3) return
+    if (theme.trim().length < 3 || occupe) return
     setVue('assistant')
     envoyer(`Fais-moi une fiche de révision sur ${theme.trim()}`, 'fiche')
     setTheme('')
@@ -117,7 +117,9 @@ export function VueFiches() {
             <input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Ex. la force obligatoire du contrat"
               className="rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink" />
           </label>
-          <button type="submit" className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark">Créer la fiche</button>
+          <button type="submit" disabled={occupe || theme.trim().length < 3}
+            title={occupe ? 'Une réponse est en cours : patientez quelques secondes.' : undefined}
+            className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">Créer la fiche</button>
           <button type="button" onClick={() => ouvrirQuiz(theme)} className="rounded-[7px] border border-line px-3 py-[9px] text-[12px] text-forest hover:border-[#9eafa3]">
             Quiz sur ce thème
           </button>

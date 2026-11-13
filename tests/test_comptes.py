@@ -234,3 +234,20 @@ def test_freins_aux_tentatives(env):
     codes = [client.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "faux"}).status_code
              for _ in range(6)]
     assert codes[:5] == [401] * 5 and codes[5] == 429
+
+
+def test_freins_oublient_les_adresses_expirees():
+    """Chaque adresse essayee etait gardee en memoire jusqu'au redemarrage : un balayage d'e-mails
+    faisait grossir le service sans fin."""
+    import time
+
+    from api.auth import Freins
+
+    f = Freins()
+    for i in range(300):
+        f.verifier(f"10.0.{i // 100}.{i % 100}", f"inconnu{i}@exemple.fr")
+        f.echec(f"inconnu{i}@exemple.fr")
+    assert len(f._echecs) == 300
+    f._derniere_purge = 0
+    f._oublier(time.monotonic() + 16 * 60)  # la fenetre de 15 minutes est passee
+    assert not f._echecs and not f._ip

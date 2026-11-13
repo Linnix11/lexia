@@ -108,7 +108,7 @@ describe('Assistant', () => {
   it('enregistre une reponse en fiche dans le navigateur', async () => {
     await poser('article 1240')
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
-    expect(lireFavoris().map((f) => f.id)).toEqual(['r-123'])
+    expect(lireFavoris('etu@exemple.fr').map((f) => f.id)).toEqual(['r-123'])
     fireEvent.click(screen.getByRole('button', { name: /Fiches & révisions/ }))
     expect(await screen.findByText('La responsabilité pour faute')).toBeInTheDocument()
   })
@@ -167,7 +167,7 @@ describe('Assistant', () => {
     expect(screen.queryByText('Droit positif')).not.toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
     expect(corps.mode).toBe('fiche')
-    await waitFor(() => expect(lireFavoris().map((f) => f.id)).toEqual(['r-123']))   // sans clic sur « Enregistrer »
+    await waitFor(() => expect(lireFavoris('etu@exemple.fr').map((f) => f.id)).toEqual(['r-123']))   // sans clic sur « Enregistrer »
     expect(screen.getByRole('button', { name: /Enregistrée/ })).toBeInTheDocument()
   })
 
@@ -196,7 +196,7 @@ describe('Assistant', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Créer la fiche' }))
     })
-    await waitFor(() => expect(lireFavoris()).toHaveLength(1))
+    await waitFor(() => expect(lireFavoris('etu@exemple.fr')).toHaveLength(1))
     expect(screen.getByRole('radio', { name: 'Fiche' })).toHaveAttribute('aria-checked', 'true')
   })
 
@@ -216,9 +216,23 @@ describe('Assistant', () => {
 })
 
 describe('Favoris', () => {
+  it('les fiches d un compte ne sont pas visibles depuis un autre compte du meme navigateur', () => {
+    const fiche = { id: 'r-a', question: 'le dol', mode: 'fiche' as const, enregistre_le: '2026-11-13', reponse: REPONSE }
+    expect(ecrireFavoris([fiche], 'a@exemple.fr')).toBe(true)
+    expect(lireFavoris('a@exemple.fr').map((f) => f.id)).toEqual(['r-a'])
+    expect(lireFavoris('b@exemple.fr')).toEqual([])
+  })
+
+  it('reprend une seule fois les fiches enregistrees avant la separation par compte', () => {
+    localStorage.setItem('lexia.favoris.v1', JSON.stringify([{ id: 'ancienne', question: 'q', mode: 'fiche', enregistre_le: 'x', reponse: REPONSE }]))
+    expect(lireFavoris('a@exemple.fr').map((f) => f.id)).toEqual(['ancienne'])
+    expect(localStorage.getItem('lexia.favoris.v1')).toBeNull()
+    expect(lireFavoris('b@exemple.fr')).toEqual([])
+  })
+
   it('resiste a un stockage corrompu', () => {
     localStorage.setItem('lexia.favoris.v1', '{pas du json')
-    expect(lireFavoris()).toEqual([])
-    expect(ecrireFavoris([])).toBe(true)
+    expect(lireFavoris('etu@exemple.fr')).toEqual([])
+    expect(ecrireFavoris([], 'etu@exemple.fr')).toBe(true)
   })
 })
