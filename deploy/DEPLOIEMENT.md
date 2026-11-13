@@ -158,7 +158,8 @@ Cloudflare protège le site des attaques par saturation, filtre les robots et me
    SSL/TLS en **Full (strict)** (le certificat Let's Encrypt du serveur reste valable) ;
    activer « Always Use HTTPS », le pare-feu géré gratuit et le mode « Bot Fight ».
 4. Vérifier que le site répond, puis, sur le serveur : `bash /opt/lexia/deploy/restreindre_a_cloudflare.sh`
-   (les ports 80 et 443 n'acceptent plus que Cloudflare ; `--annuler` pour revenir en arrière).
+   (nginx ne sert plus Lexia qu'aux connexions venant de Cloudflare, les autres sites du serveur comme n8n
+   ne sont pas touchés ; `--annuler` pour revenir en arrière ; relancer le script pour mettre à jour les plages).
 
 L'adresse réelle des visiteurs (limites par adresse, journaux) est déjà lue dans l'en-tête de Cloudflare :
 `/etc/nginx/snippets/lexia-cloudflare.conf` (copie de `deploy/nginx-cloudflare.conf`).
