@@ -59,7 +59,7 @@ install -m 644 deploy/lexia.cron /etc/cron.d/lexia
 # Adresse reelle des visiteurs derriere Cloudflare (inclus par la configuration nginx)
 install -m 644 deploy/nginx-cloudflare.conf /etc/nginx/snippets/lexia-cloudflare.conf
 if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then
-  sed "s/lexia.exemple.fr/$DOMAINE/" deploy/nginx-lexia.conf > /etc/nginx/sites-available/lexia
+  sed "s/lexia.exemple.fr/$DOMAINE/g" deploy/nginx-lexia.conf > /etc/nginx/sites-available/lexia
   ln -sf /etc/nginx/sites-available/lexia /etc/nginx/sites-enabled/lexia
   rm -f /etc/nginx/sites-enabled/default
   nginx -t && systemctl reload nginx

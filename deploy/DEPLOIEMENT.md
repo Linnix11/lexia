@@ -65,7 +65,7 @@ systemctl restart lexia
 ## 5. Activer le HTTPS
 
 ```bash
-certbot --nginx -d lexia.mondomaine.fr
+certbot --nginx -d lexia.mondomaine.fr -d www.lexia.mondomaine.fr
 ```
 
 Certbot modifie la configuration nginx et renouvelle le certificat automatiquement.
