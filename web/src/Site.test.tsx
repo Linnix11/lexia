@@ -49,6 +49,11 @@ beforeEach(() => {
       return json(PROFIL, 201)
     }
     if (url.endsWith('/auth/connexion')) return json({ double_authentification_requise: true, jeton: 'j1' })
+    if (url.endsWith('/auth/email/verifier')) {
+      connecte = true
+      return json({ ...PROFIL, email_verifie: true })
+    }
+    if (url.endsWith('/auth/email/renvoyer')) return json({ envoye: true }, 202)
     if (url.endsWith('/auth/connexion/code')) {
       connecte = true
       return json({ ...PROFIL, double_authentification: true })
@@ -164,6 +169,21 @@ describe('Site', () => {
     const lien = await screen.findByRole('link', { name: 'Activer la double authentification' })
     expect(lien.getAttribute('href')).toBe('/compte?2fa')
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/admin/'))).toBe(false)
+  })
+
+  it('le lien de l’e-mail confirme l’adresse', async () => {
+    aller('/verifier-email?jeton=j-abc')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Adresse confirmée' })).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/email/verifier'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j-abc' })
+  })
+
+  it('lien sans jeton : message et aucun appel', async () => {
+    aller('/verifier-email')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Lien non valable' })).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/auth/email/'))).toBe(false)
   })
 
   it('page inconnue', async () => {

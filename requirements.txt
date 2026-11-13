@@ -7,3 +7,5 @@ uvicorn==0.54.0
 numpy==2.5.4
 sentence-transformers==6.2.0
 pypdf==7.0.1
+# Chiffrement des secrets gardes en base (api/coffre.py)
+cryptography==50.0.2

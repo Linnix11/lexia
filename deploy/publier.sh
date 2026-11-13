@@ -42,6 +42,18 @@ if ! ssh "$SERVEUR" "test -f $APP/.env"; then
   echo "  ATTENTION : /opt/lexia/.env cree depuis le modele. Renseignez GEMINI_API_KEY sur le serveur puis relancez."
 fi
 
+# Cle de chiffrement des secrets en base : generee une seule fois, puis conservee telle quelle.
+ssh "$SERVEUR" bash -s <<'EOF'
+set -euo pipefail
+if ! grep -q '^CLE_SECRETS=.\+' /opt/lexia/.env 2>/dev/null; then
+  CLE=$(python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')
+  sed -i '/^CLE_SECRETS=/d' /opt/lexia/.env
+  printf 'CLE_SECRETS=%s\n' "$CLE" >> /opt/lexia/.env
+  chmod 600 /opt/lexia/.env
+  echo "  CLE_SECRETS generee dans /opt/lexia/.env (a sauvegarder avec la configuration)."
+fi
+EOF
+
 echo "== Dependances Python et service"
 ssh "$SERVEUR" bash -s <<EOF
 set -euo pipefail

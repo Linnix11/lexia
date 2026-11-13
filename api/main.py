@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
 from api.auth import creer_routes, exiger_admin, routes_formules
+from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
 from api.config import Settings, get_settings
@@ -156,6 +157,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     # --- comptes et quotas -------------------------------------------------------
     if settings.comptes_actifs and comptes is None:
+        if not coffre.cle_configuree():
+            log.warning("CLE_SECRETS absente : les secrets de double authentification restent en clair "
+                        "dans la base. Ajoutez CLE_SECRETS au fichier .env (python -m api.admin cle).")
         comptes = Comptes(settings.app_db, admins=settings.admin_emails)
     utilisateur_requis = None
     cours = None
@@ -202,6 +206,11 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     def _avec_quota(u: Utilisateur | None, type_: str, action):
         """Decompte avant l'appel (limite atomique), rembourse si le modele n'a pas repondu (D32)."""
+        if u is not None and not u.email_verifie:
+            # Sans cette barriere, le quota gratuit se contourne en creant des comptes avec des
+            # adresses inventees : seul l'envoi d'un e-mail prouve qu'une adresse existe.
+            raise HTTPException(403, "Confirmez votre adresse e-mail pour poser des questions : "
+                                     "le lien vous a été envoyé à l'inscription.")
         _consommer(u, type_)
         try:
             res = action()

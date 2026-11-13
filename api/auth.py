@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
-from api import totp
+from api import courriel, totp
 from api.comptes import DUREE_SESSION, Comptes, ErreurCompte, Utilisateur
 from api.plans import FORMULES
 
@@ -42,6 +42,10 @@ class Suppression(BaseModel):
 class CodeConnexion(BaseModel):
     jeton: str = Field(max_length=100)
     code: str = Field(max_length=20)
+
+
+class JetonEmail(BaseModel):
+    jeton: str
 
 
 class Code2FA(BaseModel):
@@ -155,6 +159,7 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
         "usage": comptes.usage(u.id),
         "admin": u.admin,
         "double_authentification": u.double_authentification,
+        "email_verifie": u.email_verifie,
         "codes_secours_restants": comptes.codes_secours_restants(u.id) if u.double_authentification else 0,
     }
 
@@ -201,8 +206,9 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         except ErreurCompte as e:
             raise HTTPException(422, str(e)) from None
         freins.inscrit(_ip(request))
+        _envoyer_verification(request, u)  # l'echec d'envoi n'empeche pas la creation du compte
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
-        return profil(comptes, u)
+        return profil(comptes, comptes.par_id(u.id))
 
     @router.post("/connexion", dependencies=[Depends(verifier_origine)])
     def connexion(req: Connexion, request: Request, response: Response):
@@ -260,6 +266,42 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         comptes.desactiver_2fa(u.id)  # ferme toutes les sessions ; celle-ci est rouverte ci-dessous
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
         return profil(comptes, comptes.par_id(u.id))
+
+    def _envoyer_verification(request: Request, u: Utilisateur, force: bool = False) -> bool:
+        """Envoie le lien de confirmation. Faux si rien n'est parti (envoi non configure, trop recent,
+        adresse deja confirmee, ou service indisponible)."""
+        if not courriel.configure():
+            return False
+        jeton = comptes.jeton_verification(u.id, force=force)
+        if jeton is None:
+            return False
+        origine = request.headers.get("origin") or f"{request.url.scheme}://{request.headers.get('host', '')}"
+        try:
+            courriel.envoyer_verification(u.email, f"{origine}/verifier-email?jeton={jeton}")
+        except courriel.ErreurCourriel:
+            return False
+        return True
+
+    @router.post("/email/verifier", dependencies=[Depends(verifier_origine)])
+    def verifier_email(req: JetonEmail, request: Request, response: Response):
+        freins.verifier(_ip(request), "verification")
+        try:
+            u = comptes.verifier_email(req.jeton)
+        except ErreurCompte as e:
+            freins.echec("verification")
+            raise HTTPException(422, str(e)) from None
+        # Confirmer depuis le lien reconnecte l'etudiant : il arrive souvent depuis un autre appareil.
+        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
+        return profil(comptes, u)
+
+    @router.post("/email/renvoyer", status_code=202, dependencies=[Depends(verifier_origine)])
+    def renvoyer_verification(request: Request, u: Utilisateur = Depends(utilisateur_requis)):
+        if u.email_verifie:
+            raise HTTPException(422, "Votre adresse est déjà confirmée.")
+        if not _envoyer_verification(request, u, force=False):
+            raise HTTPException(429, "Un e-mail vient d'être envoyé : vérifiez vos courriers indésirables, "
+                                     "puis réessayez dans deux minutes.")
+        return {"envoye": True}
 
     @router.post("/deconnexion", status_code=204, dependencies=[Depends(verifier_origine)])
     def deconnexion(request: Request, response: Response):

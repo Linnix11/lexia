@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from api import totp
+from api import coffre, courriel, totp
 from api.plans import FORMULE_PAR_DEFAUT, FORMULES, Formule, formule
 
 FUSEAU = ZoneInfo("Europe/Paris")
@@ -59,7 +59,7 @@ class ErreurCompte(ValueError):
     """Erreur presentable a l'utilisateur (message en francais)."""
 
 
-COLONNES_U = "id, email, formule, formule_fin, cree_le, admin, totp_secret IS NOT NULL"
+COLONNES_U = "id, email, formule, formule_fin, cree_le, admin, totp_secret IS NOT NULL, email_verifie_le"
 # Double authentification par application (api/totp.py) : colonnes ajoutees aux bases existantes.
 COLONNES_2FA = {
     "totp_secret": "TEXT",        # secret actif (NULL = double authentification desactivee)
@@ -67,6 +67,14 @@ COLONNES_2FA = {
     "totp_etape": "INTEGER",      # derniere etape acceptee : un code ne sert qu'une fois
     "totp_secours": "TEXT",       # empreintes JSON des codes de secours restants
 }
+# Verification de l'adresse e-mail (api/courriel.py) : colonnes ajoutees aux bases existantes.
+COLONNES_EMAIL = {
+    "email_verifie_le": "TEXT",   # date de confirmation (NULL = adresse non confirmee)
+    "verif_jeton": "TEXT",        # empreinte du jeton du dernier lien envoye
+    "verif_envoye_le": "TEXT",    # date d'envoi : limite les renvois et fixe l'expiration
+}
+DUREE_VERIFICATION = timedelta(hours=24)
+DELAI_ENTRE_ENVOIS = timedelta(minutes=2)
 
 
 @dataclass
@@ -78,6 +86,7 @@ class Utilisateur:
     cree_le: str
     admin: bool = False
     double_authentification: bool = False
+    email_verifie: bool = True   # vrai aussi quand la verification est desactivee (pas d'envoi configure)
 
     @property
     def formule(self) -> Formule:
@@ -88,6 +97,12 @@ class Utilisateur:
 
 def _maintenant() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _lire_date(valeur: str) -> datetime:
+    """Date ISO de la base, toujours rendue avec un fuseau (les plus anciennes n'en ont pas)."""
+    d = datetime.fromisoformat(valeur)
+    return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
 
 
 def _jour() -> str:
@@ -136,7 +151,13 @@ class Comptes:
         for nom, genre in COLONNES_2FA.items():  # migration : double authentification
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+        for nom, genre in COLONNES_EMAIL.items():  # migration : verification de l'adresse e-mail
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+                if nom == "email_verifie_le":  # les comptes anterieurs restent utilisables
+                    self._con.execute("UPDATE utilisateurs SET email_verifie_le = cree_le")
         self._con.commit()
+        self._chiffrer_secrets_en_clair()
         self._lock = threading.Lock()
         # adresses declarees administrateur dans la configuration (ADMIN_EMAILS)
         self._admins = {a.strip().lower() for a in admins if a.strip()}
@@ -152,7 +173,8 @@ class Comptes:
     def _utilisateur(self, row) -> Utilisateur | None:
         if not row:
             return None
-        u = Utilisateur(*row[:5], admin=bool(row[5]), double_authentification=bool(row[6]))
+        u = Utilisateur(*row[:5], admin=bool(row[5]), double_authentification=bool(row[6]),
+                        email_verifie=bool(row[7]) or not courriel.configure())
         u.admin = u.admin or u.email in self._admins
         return u
 
@@ -213,15 +235,57 @@ class Comptes:
 
     # --- double authentification ---------------------------------------------
 
+    # --- verification de l'adresse e-mail ---------------------------------------------------
+
+    def jeton_verification(self, uid: int, force: bool = False) -> str | None:
+        """Nouveau jeton a mettre dans le lien envoye par e-mail. None si un envoi est trop recent
+        (DELAI_ENTRE_ENVOIS) : evite qu'un clic repete serve a inonder une adresse."""
+        rows = self._q("SELECT email_verifie_le, verif_envoye_le FROM utilisateurs WHERE id = ?", (uid,))
+        if not rows or rows[0][0]:
+            return None
+        if not force and rows[0][1] and _maintenant() - _lire_date(rows[0][1]) < DELAI_ENTRE_ENVOIS:
+            return None
+        jeton = secrets.token_urlsafe(32)
+        self._q("UPDATE utilisateurs SET verif_jeton = ?, verif_envoye_le = ? WHERE id = ?",
+                (_hash_jeton(jeton), _maintenant().isoformat(timespec="seconds"), uid))
+        return jeton
+
+    def verifier_email(self, jeton: str) -> Utilisateur:
+        """Confirme l'adresse. Le jeton ne sert qu'une fois et expire au bout de DUREE_VERIFICATION."""
+        rows = self._q("SELECT id, verif_envoye_le FROM utilisateurs WHERE verif_jeton = ?",
+                       (_hash_jeton(jeton),))
+        if not rows:
+            raise ErreurCompte("Ce lien n'est plus valable : demandez un nouvel e-mail de confirmation.")
+        uid, envoye = rows[0]
+        if not envoye or _maintenant() - _lire_date(envoye) > DUREE_VERIFICATION:
+            raise ErreurCompte("Ce lien a expiré : demandez un nouvel e-mail de confirmation.")
+        self._q("UPDATE utilisateurs SET email_verifie_le = ?, verif_jeton = NULL WHERE id = ?",
+                (_maintenant().isoformat(timespec="seconds"), uid))
+        return self.par_id(uid)
+
+    def _chiffrer_secrets_en_clair(self) -> None:
+        """Secrets ecrits avant la mise en place du chiffrement : reecrits chiffres au demarrage,
+        pour qu'aucune valeur lisible ne subsiste dans la base ni dans les sauvegardes suivantes."""
+        if not coffre.cle_configuree():
+            return
+        champs = ("totp_secret", "totp_attente", "totp_secours")
+        lignes = self._con.execute(f"SELECT id, {', '.join(champs)} FROM utilisateurs").fetchall()
+        for ligne in lignes:
+            clairs = {c: v for c, v in zip(champs, ligne[1:]) if v and not v.startswith(coffre.PREFIXE)}
+            if clairs:
+                self._con.execute(f"UPDATE utilisateurs SET {', '.join(f'{c} = ?' for c in clairs)} WHERE id = ?",
+                                  (*(coffre.chiffrer(v) for v in clairs.values()), ligne[0]))
+        self._con.commit()
+
     def preparer_2fa(self, uid: int) -> str:
         """Nouveau secret en attente : il ne devient actif qu'apres un premier code correct (activer_2fa)."""
         secret = totp.nouveau_secret()
-        self._q("UPDATE utilisateurs SET totp_attente = ? WHERE id = ?", (secret, uid))
+        self._q("UPDATE utilisateurs SET totp_attente = ? WHERE id = ?", (coffre.chiffrer(secret), uid))
         return secret
 
     def activer_2fa(self, uid: int, code: str) -> list[str]:
         rows = self._q("SELECT totp_attente FROM utilisateurs WHERE id = ?", (uid,))
-        attente = rows[0][0] if rows else None
+        attente = coffre.dechiffrer(rows[0][0]) if rows else None
         if not attente:
             raise ErreurCompte("Commencez par afficher le QR code.")
         etape = totp.verifier(attente, code)
@@ -229,7 +293,8 @@ class Comptes:
             raise ErreurCompte("Code incorrect : vérifiez l'heure de votre téléphone et réessayez.")
         secours = totp.codes_de_secours()
         self._q("UPDATE utilisateurs SET totp_secret = ?, totp_attente = NULL, totp_etape = ?, totp_secours = ? "
-                "WHERE id = ?", (attente, etape, json.dumps([totp.empreinte_secours(c) for c in secours]), uid))
+                "WHERE id = ?", (coffre.chiffrer(attente), etape,
+                                 coffre.chiffrer(json.dumps([totp.empreinte_secours(c) for c in secours])), uid))
         return secours
 
     def desactiver_2fa(self, uid: int) -> None:
@@ -244,7 +309,7 @@ class Comptes:
                                     (uid,)).fetchone()
             if not row or not row[0]:
                 return False
-            secret, derniere, secours = row
+            secret, derniere, secours = coffre.dechiffrer(row[0]), row[1], coffre.dechiffrer(row[2])
             etape = totp.verifier(secret, code, derniere)
             if etape is not None:
                 self._con.execute("UPDATE utilisateurs SET totp_etape = ? WHERE id = ?", (etape, uid))
@@ -253,13 +318,14 @@ class Comptes:
             emp = totp.empreinte_secours(code)
             if emp in restants:
                 restants.remove(emp)
-                self._con.execute("UPDATE utilisateurs SET totp_secours = ? WHERE id = ?", (json.dumps(restants), uid))
+                self._con.execute("UPDATE utilisateurs SET totp_secours = ? WHERE id = ?",
+                                  (coffre.chiffrer(json.dumps(restants)), uid))
                 return True
             return False
 
     def codes_secours_restants(self, uid: int) -> int:
         rows = self._q("SELECT totp_secours FROM utilisateurs WHERE id = ?", (uid,))
-        return len(json.loads(rows[0][0] or "[]")) if rows else 0
+        return len(json.loads(coffre.dechiffrer(rows[0][0]) or "[]")) if rows else 0
 
     def supprimer(self, uid: int) -> None:
         self._q("DELETE FROM utilisateurs WHERE id = ?", (uid,))
@@ -325,14 +391,17 @@ class Comptes:
             sql += " WHERE email LIKE ?"
             params += (f"%{recherche.strip().lower()}%",)
         out = []
+        n = len(COLONNES_U.split(","))  # les colonnes du compte, puis les quatre agregats ci-dessus
         for r in self._q(sql + " ORDER BY cree_le DESC", params):
-            u = self._utilisateur(r[:7])
+            u = self._utilisateur(r[:n])
             f = u.formule
             out.append({
-                "id": u.id, "email": u.email, "admin": u.admin, "double_authentification": u.double_authentification, "formule": f.id, "formule_enregistree": u.formule_id,
+                "id": u.id, "email": u.email, "admin": u.admin,
+                "double_authentification": u.double_authentification, "email_verifie": u.email_verifie,
+                "formule": f.id, "formule_enregistree": u.formule_id,
                 "formule_fin": u.formule_fin, "cree_le": u.cree_le,
-                "questions_aujourdhui": r[7] or 0, "quiz_aujourdhui": r[8] or 0,
-                "questions_30j": r[9] or 0, "derniere_activite": r[10],
+                "questions_aujourdhui": r[n] or 0, "quiz_aujourdhui": r[n + 1] or 0,
+                "questions_30j": r[n + 2] or 0, "derniere_activite": r[n + 3],
                 "limite_questions": f.questions_par_jour,
             })
         return out

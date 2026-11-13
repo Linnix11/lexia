@@ -34,11 +34,15 @@ function repondre(corps: unknown, status = 200) {
 
 let fetchMock: ReturnType<typeof vi.fn>
 
+let emailVerifie = true
+
 beforeEach(() => {
+  emailVerifie = true
   localStorage.clear()
   window.history.pushState({}, '', '/app')
   fetchMock = vi.fn((url: string) => {
-    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre(PROFIL)
+    if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre({ ...PROFIL, email_verifie: emailVerifie })
+    if (url.endsWith('/auth/email/renvoyer')) return repondre({ envoye: true }, 202)
     if (url.endsWith('/config')) return repondre({ comptes: true, contact_email: null })
     if (url.endsWith('/matieres')) return repondre([{ id: 'droit_civil', libelle: 'Droit civil', sources: ['code_civil'] }])
     if (url.endsWith('/chat')) return repondre(REPONSE)
@@ -165,6 +169,17 @@ describe('Assistant', () => {
     expect(corps.mode).toBe('fiche')
     await waitFor(() => expect(lireFavoris().map((f) => f.id)).toEqual(['r-123']))   // sans clic sur « Enregistrer »
     expect(screen.getByRole('button', { name: /Enregistrée/ })).toBeInTheDocument()
+  })
+
+  it('adresse non confirmee : bandeau et renvoi de l e-mail', async () => {
+    emailVerifie = false
+    render(<Site />)
+    expect(await screen.findByText(/Confirmez votre adresse e-mail/)).toBeInTheDocument()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Renvoyer/ }))
+    })
+    expect(await screen.findByText(/Nouvel e-mail envoyé/)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/auth/email/renvoyer'))).toBe(true)
   })
 
   it('la boite a outils ouvre l assistant dans le bon mode sans envoyer de question', async () => {

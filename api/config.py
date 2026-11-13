@@ -95,6 +95,7 @@ def get_settings() -> Settings:
             "hebergeur_telephone": os.environ.get("LEGAL_HEBERGEUR_TELEPHONE", ""),
             # ex. « TVA non applicable, art. 293 B du CGI » (micro-entreprise) ou « TVA incluse »
             "tva": os.environ.get("LEGAL_TVA", ""),
+            "courriel": bool(os.environ.get("RESEND_API_KEY", "").strip()),
             "mediateur": os.environ.get("LEGAL_MEDIATEUR", ""),
             # 1 seulement si la cle Gemini est au niveau payant (obligatoire pour des utilisateurs dans l'EEE)
             "gemini_payant": os.environ.get("GEMINI_NIVEAU_PAYANT", "0") in ("1", "true", "oui"),

@@ -4,6 +4,7 @@ import { SourcePanel } from './components/SourcePanel'
 import { AppProvider } from './state/AppState'
 import { useApp } from './state/contexte'
 import { VueAssistant, VueBibliotheque, VueEspace, VueFiches, VueMatieres } from './views/Vues'
+import { BandeauEmail } from './site/VerifierEmail'
 
 function Contenu() {
   const { vue } = useApp()
@@ -28,6 +29,7 @@ function Contenu() {
 export default function App() {
   return (
     <AppProvider>
+      <BandeauEmail />
       <div className="min-h-screen pb-[61px] tab:grid tab:grid-cols-[68px_minmax(0,1fr)] tab:pb-0 desk:grid-cols-[232px_minmax(0,1fr)]">
         <Sidebar />
         <Contenu />

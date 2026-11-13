@@ -8,6 +8,7 @@ import { Compte } from './site/Compte'
 import { Cgu, Confidentialite, MentionsLegales } from './site/Legal'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
+import { VerifierEmail } from './site/VerifierEmail'
 import { SessionProvider, useSession } from './state/session'
 import { Signet } from './components/Logo'
 
@@ -17,6 +18,7 @@ const PUBLIQUES: Record<string, () => ReactNode> = {
   '/mentions-legales': () => <MentionsLegales />,
   '/cgu': () => <Cgu />,
   '/confidentialite': () => <Confidentialite />,
+  '/verifier-email': () => <VerifierEmail />,
 }
 const INVITES: Record<string, () => ReactNode> = {
   '/connexion': () => <Connexion />,

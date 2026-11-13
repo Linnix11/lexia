@@ -9,6 +9,7 @@ Sur le serveur :
     sudo -u lexia .venv/bin/python -m api.admin supprimer etudiant@exemple.fr
     sudo -u lexia .venv/bin/python -m api.admin motdepasse etudiant@exemple.fr   (saisie masquee ; ssh -t)
     sudo -u lexia .venv/bin/python -m api.admin desactiver2fa etudiant@exemple.fr (telephone et codes de secours perdus)
+    sudo -u lexia .venv/bin/python -m api.admin cle                        (cle CLE_SECRETS pour .env)
 
 Formules : gratuit, etudiant, intensif (voir api/plans.py). --jours : duree d'une formule payante ;
 a l'echeance, le compte repasse automatiquement en gratuit.
@@ -20,6 +21,7 @@ import argparse
 import getpass
 import sys
 
+from api import coffre
 from api.comptes import Comptes, ErreurCompte
 from api.config import get_settings
 from api.plans import FORMULES
@@ -45,6 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("email")
     p = sous.add_parser("motdepasse", help="Definir un nouveau mot de passe (saisie masquee) et fermer les sessions")
     p.add_argument("email")
+    sous.add_parser("cle", help="Generer une cle CLE_SECRETS (chiffrement des secrets en base)")
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -87,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
                 raise ErreurCompte(f"Aucun compte pour {args.email}")
             comptes.desactiver_2fa(u.id)
             print(f"{u.email} : double authentification desactivee, sessions fermees.")
+        elif args.commande == "cle":
+            print(coffre.nouvelle_cle())
         elif args.commande == "motdepasse":
             mdp = getpass.getpass("Nouveau mot de passe : ")
             if getpass.getpass("Confirmer : ") != mdp:

@@ -7,7 +7,7 @@ import { PublicLayout, bouton } from './Public'
 const champ = 'w-full rounded-[8px] border border-line bg-white px-3 py-2.5 text-[14px] text-ink aria-[invalid=true]:border-[#c2765f]'
 const MDP_MIN = 10
 
-function Carte({ titre, sousTitre, children }: { titre: string; sousTitre: string; children: ReactNode }) {
+export function Carte({ titre, sousTitre, children }: { titre: string; sousTitre: string; children: ReactNode }) {
   return (
     <PublicLayout>
       <div className="mx-auto max-w-[420px] px-4 py-14">

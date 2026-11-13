@@ -128,6 +128,7 @@ export interface Profil {
   admin: boolean
   double_authentification?: boolean
   codes_secours_restants?: number
+  email_verifie?: boolean
 }
 
 /** Reponse de /auth/connexion quand le compte a la double authentification : le code reste a saisir. */
@@ -233,6 +234,7 @@ export interface InfosLegales {
   mediateur: string | null
   gemini_payant: boolean
   groq?: boolean
+  courriel?: boolean
 }
 
 export interface ConfigPublique {
@@ -337,6 +339,8 @@ export const api = {
     post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu }),
   connexion: (email: string, mot_de_passe: string) => post<Profil | DeuxiemeEtape>('/auth/connexion', { email, mot_de_passe }),
   connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
+  verifierEmail: (jeton: string) => post<Profil>('/auth/email/verifier', { jeton }),
+  renvoyerVerification: () => post<{ envoye: boolean }>('/auth/email/renvoyer', {}),
   deuxFacteurs: {
     preparer: () => post<{ secret: string; uri: string }>('/auth/2fa/preparer', {}),
     activer: (code: string) => post<{ codes_secours: string[] }>('/auth/2fa/activer', { code }),

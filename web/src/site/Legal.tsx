@@ -225,7 +225,8 @@ export function Confidentialite() {
           )}{' '}
           {l?.groq && (
             <>
-              {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
+              {l?.courriel ? <>{' '}Votre adresse e-mail est transmise à Resend (États-Unis) pour l’unique envoi
+              du message de confirmation d’adresse ; ni votre mot de passe ni vos questions ne lui sont communiqués.</> : null}              {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
               exécute un modèle ouvert ; selon ses conditions, Groq ne conserve pas ces données par défaut, sauf journaux
               de sécurité limités à 30 jours.
             </>
@@ -238,7 +239,8 @@ export function Confidentialite() {
         <p>
           Les données ne sont ni vendues ni cédées. Elles sont traitées par l’éditeur et par ses sous-traitants :
           Hostinger (hébergement du site et des données de compte), Google (rédaction des réponses, voir
-          ci-dessus){l?.groq ? <> et Groq (rédaction des réponses en secours)</> : null}.
+          ci-dessus){l?.groq ? <>, Groq (rédaction des réponses en secours)</> : null}
+          {l?.courriel ? <> et Resend (envoi de l’e-mail de confirmation d’adresse)</> : null}.
         </p>
       </section>
       <section>

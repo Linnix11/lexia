@@ -11,3 +11,5 @@ PyYAML==6.0.2
 sentence-transformers==6.2.0
 # Cours deposes : lecture des PDF (api/cours.py)
 pypdf==7.0.1
+# Chiffrement des secrets gardes en base (api/coffre.py)
+cryptography==50.0.2
