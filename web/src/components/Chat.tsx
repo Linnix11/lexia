@@ -39,7 +39,6 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   const [aDeposer, setADeposer] = useState<File[] | null>(null)
   const [survol, setSurvol] = useState(false)
   useEffect(() => {
-    if (!complet) return
     const raccourci = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'u') {
         e.preventDefault()
@@ -48,7 +47,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     }
     window.addEventListener('keydown', raccourci)
     return () => window.removeEventListener('keydown', raccourci)
-  }, [complet])
+  }, [])
 
   const derniereEtat = messages.at(-1)?.etat
   useEffect(() => {
@@ -62,24 +61,22 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     setTexte('')
   }
 
-  const glisser = complet
-    ? {
-        onDragOver: (e: DragEvent) => {
-          if (![...e.dataTransfer.types].includes('Files')) return
-          e.preventDefault()
-          setSurvol(true)
-        },
-        onDragLeave: (e: DragEvent) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false)
-        },
-        onDrop: (e: DragEvent) => {
-          if (![...e.dataTransfer.types].includes('Files')) return
-          e.preventDefault()
-          setSurvol(false)
-          void fichiersDeposes(e.dataTransfer).then((f) => f.length && setADeposer(f))
-        },
-      }
-    : {}
+  const glisser = {
+    onDragOver: (e: DragEvent) => {
+      if (![...e.dataTransfer.types].includes('Files')) return
+      e.preventDefault()
+      setSurvol(true)
+    },
+    onDragLeave: (e: DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false)
+    },
+    onDrop: (e: DragEvent) => {
+      if (![...e.dataTransfer.types].includes('Files')) return
+      e.preventDefault()
+      setSurvol(false)
+      void fichiersDeposes(e.dataTransfer).then((f) => f.length && setADeposer(f))
+    },
+  }
 
   return (
     <div className="relative flex min-h-[340px] min-w-0 flex-1 flex-col" {...glisser}>
@@ -120,9 +117,13 @@ export function Chat({ complet = false }: { complet?: boolean }) {
             </select>
           </label>
           <p className="w-full text-[11px] text-muted" aria-live="polite">{infos.description}</p>
-          <ChoixCours />
         </div>
       )}
+
+      {/* Cours depose : disponible depuis « Mon espace » comme depuis l'assistant complet. */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <ChoixCours surDepot={() => choixFichier.current?.click()} />
+      </div>
 
       {messages.length === 0 ? (
         <div className="pt-6 pb-5">
@@ -180,19 +181,15 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         onSubmit={soumettre}
         className="mt-auto flex gap-[9px] rounded-[10px] border border-[#d9ddd5] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
       >
-        {complet && (
-          <>
-            <button type="button" onClick={() => choixFichier.current?.click()}
+        <button type="button" onClick={() => choixFichier.current?.click()}
               title="Ajouter un cours (PDF, Word, texte) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
-              className="rounded-[7px] px-2 text-[16px] text-muted hover:bg-chip hover:text-forest">📎</button>
-            <input ref={choixFichier} type="file" multiple accept=".pdf,.docx,.txt,.md" hidden data-testid="ajout-cours"
-              onChange={(e) => {
-                const f = [...(e.target.files ?? [])]
-                if (f.length) setADeposer(f)
-                e.target.value = ''
-              }} />
-          </>
-        )}
+          className="rounded-[7px] px-2 text-[16px] text-muted hover:bg-chip hover:text-forest">📎</button>
+        <input ref={choixFichier} type="file" multiple accept=".pdf,.docx,.txt,.md" hidden data-testid="ajout-cours"
+          onChange={(e) => {
+            const f = [...(e.target.files ?? [])]
+            if (f.length) setADeposer(f)
+            e.target.value = ''
+          }} />
         <label htmlFor={complet ? 'question-complete' : 'question'} className="sr-only">Votre question</label>
         <input
           id={complet ? 'question-complete' : 'question'}
