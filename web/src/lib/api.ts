@@ -126,6 +126,14 @@ export interface Profil {
   formule_fin: string | null
   usage: { jour: string; questions: number; quiz: number }
   admin: boolean
+  double_authentification?: boolean
+  codes_secours_restants?: number
+}
+
+/** Reponse de /auth/connexion quand le compte a la double authentification : le code reste a saisir. */
+export interface DeuxiemeEtape {
+  double_authentification_requise: true
+  jeton: string
 }
 
 export interface JourStats {
@@ -327,7 +335,13 @@ export const api = {
   session: () => requete<Profil | null>('/auth/session'),
   inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean) =>
     post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu }),
-  connexion: (email: string, mot_de_passe: string) => post<Profil>('/auth/connexion', { email, mot_de_passe }),
+  connexion: (email: string, mot_de_passe: string) => post<Profil | DeuxiemeEtape>('/auth/connexion', { email, mot_de_passe }),
+  connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
+  deuxFacteurs: {
+    preparer: () => post<{ secret: string; uri: string }>('/auth/2fa/preparer', {}),
+    activer: (code: string) => post<{ codes_secours: string[] }>('/auth/2fa/activer', { code }),
+    desactiver: (mot_de_passe: string, code: string) => post<Profil>('/auth/2fa/desactiver', { mot_de_passe, code }),
+  },
   deconnexion: () => post<void>('/auth/deconnexion', {}),
   supprimerCompte: (mot_de_passe: string) => post<void>('/auth/supprimer', { mot_de_passe }),
   admin: {

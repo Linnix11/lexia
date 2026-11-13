@@ -191,6 +191,7 @@ export function Confidentialite() {
         <h2>Données collectées</h2>
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création.</li>
+          <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
           <li><strong>Cours déposés</strong> : le texte extrait de vos cours (découpé en passages, avec le numéro de page), leur titre, leur matière et le nom du fichier. Le fichier d’origine n’est pas conservé. Vos cours ne sont visibles que par vous.</li>
           <li><strong>Journaux techniques</strong> : identifiants des sources utilisées, durée de traitement, statut des réponses. Le texte de vos questions n’y est pas enregistré.</li>

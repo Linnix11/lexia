@@ -8,6 +8,7 @@ Sur le serveur :
     sudo -u lexia .venv/bin/python -m api.admin admin moi@exemple.fr        (--retirer pour l'enlever)
     sudo -u lexia .venv/bin/python -m api.admin supprimer etudiant@exemple.fr
     sudo -u lexia .venv/bin/python -m api.admin motdepasse etudiant@exemple.fr   (saisie masquee ; ssh -t)
+    sudo -u lexia .venv/bin/python -m api.admin desactiver2fa etudiant@exemple.fr (telephone et codes de secours perdus)
 
 Formules : gratuit, etudiant, intensif (voir api/plans.py). --jours : duree d'une formule payante ;
 a l'echeance, le compte repasse automatiquement en gratuit.
@@ -40,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sous.add_parser("supprimer", help="Supprimer definitivement un compte")
     p.add_argument("email")
     p.add_argument("--oui", action="store_true", help="Ne pas demander de confirmation")
+    p = sous.add_parser("desactiver2fa", help="Desactiver la double authentification (telephone perdu)")
+    p.add_argument("email")
     p = sous.add_parser("motdepasse", help="Definir un nouveau mot de passe (saisie masquee) et fermer les sessions")
     p.add_argument("email")
     args = parser.parse_args(argv)
@@ -78,6 +81,12 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             comptes.supprimer(u.id)
             print(f"{u.email} supprime.")
+        elif args.commande == "desactiver2fa":
+            u = comptes.par_email(args.email)
+            if u is None:
+                raise ErreurCompte(f"Aucun compte pour {args.email}")
+            comptes.desactiver_2fa(u.id)
+            print(f"{u.email} : double authentification desactivee, sessions fermees.")
         elif args.commande == "motdepasse":
             mdp = getpass.getpass("Nouveau mot de passe : ")
             if getpass.getpass("Confirmer : ") != mdp:

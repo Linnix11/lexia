@@ -25,10 +25,12 @@ function Erreur({ message }: { message: string | null }) {
 }
 
 export function Connexion() {
-  const { connexion } = useSession()
+  const { connexion, terminerConnexion } = useSession()
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
   const [mdp, setMdp] = useState('')
+  const [jeton, setJeton] = useState<string | null>(null) // double authentification : code a saisir
+  const [code, setCode] = useState('')
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
   const expiree = new URLSearchParams(window.location.search).has('expiree')
@@ -38,13 +40,48 @@ export function Connexion() {
     setErreur(null)
     setEnvoi(true)
     try {
-      await connexion(email, mdp)
-      naviguer('/app', { remplacer: true })
+      const r = await connexion(email, mdp)
+      if ('jeton' in r) setJeton(r.jeton)
+      else naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Connexion impossible pour le moment.')
     } finally {
       setEnvoi(false)
     }
+  }
+
+  const soumettreCode = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!jeton) return
+    setErreur(null)
+    setEnvoi(true)
+    try {
+      await terminerConnexion(jeton, code)
+      naviguer('/app', { remplacer: true })
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Vérification impossible pour le moment.')
+      if (err instanceof ApiError && err.message.includes('reconnectez')) setJeton(null)
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  if (jeton) {
+    return (
+      <Carte titre="Code de vérification" sousTitre="Ouvrez votre application d’authentification et saisissez le code à 6 chiffres affiché pour Lexia.">
+        <form onSubmit={soumettreCode} className="grid gap-4" noValidate>
+          <label className="grid gap-1.5 text-[13px]">
+            Code de l’application (ou code de secours)
+            <input autoFocus inputMode="numeric" autoComplete="one-time-code" required value={code} maxLength={12}
+              onChange={(e) => setCode(e.target.value)} className={`${champ} tracking-[3px]`} />
+          </label>
+          <Erreur message={erreur} />
+          <button type="submit" disabled={envoi || code.trim().length < 6} className={bouton}>{envoi ? 'Vérification…' : 'Valider'}</button>
+        </form>
+        <button type="button" onClick={() => { setJeton(null); setCode(''); setErreur(null) }}
+          className="mt-4 text-[12px] text-muted hover:text-forest">← Revenir à l’e-mail et au mot de passe</button>
+      </Carte>
+    )
   }
 
   return (

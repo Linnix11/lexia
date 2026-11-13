@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ApiError } from '../lib/api'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
+import { DoubleAuthentification } from './DoubleAuthentification'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 function Jauge({ libelle, utilise, limite }: { libelle: string; utilise: number; limite: number }) {
@@ -68,6 +69,8 @@ export function Compte() {
             </div>
             <p className="mt-3 text-[12px] text-muted">Les compteurs se remettent à zéro chaque jour à minuit.</p>
           </section>
+
+          <DoubleAuthentification />
 
           <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-5">
             <div>

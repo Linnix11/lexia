@@ -7,6 +7,8 @@ s'il est present, doit correspondre au site : protection contre les requetes int
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 import threading
 import time
 from collections import defaultdict, deque
@@ -15,6 +17,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
+from api import totp
 from api.comptes import DUREE_SESSION, Comptes, ErreurCompte, Utilisateur
 from api.plans import FORMULES
 
@@ -34,6 +37,54 @@ class Connexion(BaseModel):
 
 class Suppression(BaseModel):
     mot_de_passe: str = Field(max_length=256)
+
+
+class CodeConnexion(BaseModel):
+    jeton: str = Field(max_length=100)
+    code: str = Field(max_length=20)
+
+
+class Code2FA(BaseModel):
+    code: str = Field(max_length=20)
+
+
+class Desactivation2FA(BaseModel):
+    mot_de_passe: str = Field(max_length=256)
+    code: str = Field(max_length=20)
+
+
+class AttentesDeuxiemeFacteur:
+    """Connexions dont le mot de passe est bon mais le code de l'application pas encore saisi (5 min, 5 essais)."""
+
+    DUREE, ESSAIS = 300, 5
+
+    def __init__(self):
+        self._items: dict[str, list] = {}  # empreinte du jeton -> [uid, expiration, essais restants]
+        self._lock = threading.Lock()
+
+    def creer(self, uid: int) -> str:
+        jeton = secrets.token_urlsafe(32)
+        with self._lock:
+            now = time.monotonic()
+            for k in [k for k, v in self._items.items() if v[1] < now]:
+                del self._items[k]
+            self._items[hashlib.sha256(jeton.encode()).hexdigest()] = [uid, now + self.DUREE, self.ESSAIS]
+        return jeton
+
+    def essai(self, jeton: str) -> int | None:
+        """uid si le jeton est valable (et decompte un essai), sinon None."""
+        cle = hashlib.sha256(jeton.encode()).hexdigest()
+        with self._lock:
+            v = self._items.get(cle)
+            if v is None or v[1] < time.monotonic() or v[2] <= 0:
+                self._items.pop(cle, None)
+                return None
+            v[2] -= 1
+            return v[0]
+
+    def terminer(self, jeton: str) -> None:
+        with self._lock:
+            self._items.pop(hashlib.sha256(jeton.encode()).hexdigest(), None)
 
 
 class Freins:
@@ -103,13 +154,28 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
         "formule_fin": u.formule_fin if u.formule_id == f.id else None,
         "usage": comptes.usage(u.id),
         "admin": u.admin,
+        "double_authentification": u.double_authentification,
+        "codes_secours_restants": comptes.codes_secours_restants(u.id) if u.double_authentification else 0,
     }
+
+
+MESSAGE_ADMIN_2FA = ("Activez la double authentification dans « Mon compte » pour accéder à l'administration.")
+
+
+def exiger_admin(u: Utilisateur) -> Utilisateur:
+    """Administration : role admin ET double authentification active (un mot de passe vole ne suffit pas)."""
+    if not u.admin:
+        raise HTTPException(403, "Accès réservé aux administrateurs.")
+    if not u.double_authentification:
+        raise HTTPException(403, MESSAGE_ADMIN_2FA)
+    return u
 
 
 def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIRouter, callable]:
     """Renvoie (routes /auth, dependance utilisateur_requis)."""
     router = APIRouter()
     freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour)
+    attentes = AttentesDeuxiemeFacteur()
 
     def utilisateur_requis(request: Request) -> Utilisateur:
         u = comptes.session(request.cookies.get(COOKIE))
@@ -147,8 +213,53 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
             freins.echec(email)
             raise HTTPException(401, "E-mail ou mot de passe incorrect.")
         freins.succes(email)
+        if u.double_authentification:
+            # Mot de passe correct : la session ne s'ouvre qu'apres le code de l'application.
+            return {"double_authentification_requise": True, "jeton": attentes.creer(u.id)}
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
         return profil(comptes, u)
+
+    @router.post("/connexion/code", dependencies=[Depends(verifier_origine)])
+    def connexion_code(req: CodeConnexion, request: Request, response: Response):
+        uid = attentes.essai(req.jeton)
+        if uid is None:
+            raise HTTPException(401, "Délai dépassé ou trop d'essais : reconnectez-vous.")
+        freins.verifier(_ip(request), f"2fa:{uid}")
+        if not comptes.verifier_2fa(uid, req.code):
+            freins.echec(f"2fa:{uid}")
+            raise HTTPException(401, "Code incorrect.")
+        attentes.terminer(req.jeton)
+        freins.succes(f"2fa:{uid}")
+        _poser_cookie(request, response, comptes.ouvrir_session(uid))
+        return profil(comptes, comptes.par_id(uid))
+
+    @router.post("/2fa/preparer", dependencies=[Depends(verifier_origine)])
+    def preparer_2fa(u: Utilisateur = Depends(utilisateur_requis)):
+        if u.double_authentification:
+            raise HTTPException(422, "La double authentification est déjà active.")
+        secret = comptes.preparer_2fa(u.id)
+        return {"secret": secret, "uri": totp.uri(secret, u.email)}
+
+    @router.post("/2fa/activer", dependencies=[Depends(verifier_origine)])
+    def activer_2fa(req: Code2FA, request: Request, u: Utilisateur = Depends(utilisateur_requis)):
+        freins.verifier(_ip(request), f"2fa:{u.id}")
+        try:
+            codes = comptes.activer_2fa(u.id, req.code)
+        except ErreurCompte as e:
+            freins.echec(f"2fa:{u.id}")
+            raise HTTPException(422, str(e)) from None
+        return {"codes_secours": codes}
+
+    @router.post("/2fa/desactiver", dependencies=[Depends(verifier_origine)])
+    def desactiver_2fa(req: Desactivation2FA, request: Request, response: Response,
+                       u: Utilisateur = Depends(utilisateur_requis)):
+        freins.verifier(_ip(request), u.email)
+        if comptes.authentifier(u.email, req.mot_de_passe) is None or not comptes.verifier_2fa(u.id, req.code):
+            freins.echec(u.email)
+            raise HTTPException(401, "Mot de passe ou code incorrect.")
+        comptes.desactiver_2fa(u.id)  # ferme toutes les sessions ; celle-ci est rouverte ci-dessous
+        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
+        return profil(comptes, comptes.par_id(u.id))
 
     @router.post("/deconnexion", status_code=204, dependencies=[Depends(verifier_origine)])
     def deconnexion(request: Request, response: Response):

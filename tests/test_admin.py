@@ -22,10 +22,20 @@ def env(tmp_path):
     return app, comptes
 
 
+def activer_2fa(c) -> str:
+    """Active la double authentification du compte connecte ; renvoie le secret."""
+    from api import totp
+    secret = c.post("/auth/2fa/preparer").json()["secret"]
+    assert c.post("/auth/2fa/activer", json={"code": totp._code(secret, totp.etape_courante())}).status_code == 200
+    return secret
+
+
 def client_connecte(app, email):
     c = TestClient(app)
     r = c.post("/auth/inscription", json={"email": email, "mot_de_passe": MDP, "accepte_cgu": True})
     assert r.status_code == 201
+    if email.startswith("chef") or email.startswith("adjoint"):
+        activer_2fa(c)  # l'administration exige la double authentification
     return c
 
 

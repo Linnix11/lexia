@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import re
 import secrets
 import sqlite3
@@ -18,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from api import totp
 from api.plans import FORMULE_PAR_DEFAUT, FORMULES, Formule, formule
 
 FUSEAU = ZoneInfo("Europe/Paris")
@@ -57,7 +59,14 @@ class ErreurCompte(ValueError):
     """Erreur presentable a l'utilisateur (message en francais)."""
 
 
-COLONNES_U = "id, email, formule, formule_fin, cree_le, admin"
+COLONNES_U = "id, email, formule, formule_fin, cree_le, admin, totp_secret IS NOT NULL"
+# Double authentification par application (api/totp.py) : colonnes ajoutees aux bases existantes.
+COLONNES_2FA = {
+    "totp_secret": "TEXT",        # secret actif (NULL = double authentification desactivee)
+    "totp_attente": "TEXT",       # secret en cours d'activation (le temps de scanner le QR code)
+    "totp_etape": "INTEGER",      # derniere etape acceptee : un code ne sert qu'une fois
+    "totp_secours": "TEXT",       # empreintes JSON des codes de secours restants
+}
 
 
 @dataclass
@@ -68,6 +77,7 @@ class Utilisateur:
     formule_fin: str | None
     cree_le: str
     admin: bool = False
+    double_authentification: bool = False
 
     @property
     def formule(self) -> Formule:
@@ -123,6 +133,10 @@ class Comptes:
         if "admin" not in colonnes:  # migration des bases creees avant le role admin
             self._con.execute("ALTER TABLE utilisateurs ADD COLUMN admin INTEGER NOT NULL DEFAULT 0")
             self._con.commit()
+        for nom, genre in COLONNES_2FA.items():  # migration : double authentification
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+        self._con.commit()
         self._lock = threading.Lock()
         # adresses declarees administrateur dans la configuration (ADMIN_EMAILS)
         self._admins = {a.strip().lower() for a in admins if a.strip()}
@@ -138,7 +152,7 @@ class Comptes:
     def _utilisateur(self, row) -> Utilisateur | None:
         if not row:
             return None
-        u = Utilisateur(*row[:5], admin=bool(row[5]))
+        u = Utilisateur(*row[:5], admin=bool(row[5]), double_authentification=bool(row[6]))
         u.admin = u.admin or u.email in self._admins
         return u
 
@@ -196,6 +210,56 @@ class Comptes:
             self._con.execute("UPDATE utilisateurs SET mdp = ? WHERE id = ?", (hacher_mdp(mdp), u.id))
             self._con.execute("DELETE FROM sessions WHERE utilisateur = ?", (u.id,))
         return u
+
+    # --- double authentification ---------------------------------------------
+
+    def preparer_2fa(self, uid: int) -> str:
+        """Nouveau secret en attente : il ne devient actif qu'apres un premier code correct (activer_2fa)."""
+        secret = totp.nouveau_secret()
+        self._q("UPDATE utilisateurs SET totp_attente = ? WHERE id = ?", (secret, uid))
+        return secret
+
+    def activer_2fa(self, uid: int, code: str) -> list[str]:
+        rows = self._q("SELECT totp_attente FROM utilisateurs WHERE id = ?", (uid,))
+        attente = rows[0][0] if rows else None
+        if not attente:
+            raise ErreurCompte("Commencez par afficher le QR code.")
+        etape = totp.verifier(attente, code)
+        if etape is None:
+            raise ErreurCompte("Code incorrect : vérifiez l'heure de votre téléphone et réessayez.")
+        secours = totp.codes_de_secours()
+        self._q("UPDATE utilisateurs SET totp_secret = ?, totp_attente = NULL, totp_etape = ?, totp_secours = ? "
+                "WHERE id = ?", (attente, etape, json.dumps([totp.empreinte_secours(c) for c in secours]), uid))
+        return secours
+
+    def desactiver_2fa(self, uid: int) -> None:
+        self._q("UPDATE utilisateurs SET totp_secret = NULL, totp_attente = NULL, totp_etape = NULL, "
+                "totp_secours = NULL WHERE id = ?", (uid,))
+        self._q("DELETE FROM sessions WHERE utilisateur = ?", (uid,))  # les autres appareils se reconnectent
+
+    def verifier_2fa(self, uid: int, code: str) -> bool:
+        """Code de l'application (une seule fois) ou code de secours (consomme)."""
+        with self._lock, self._con:
+            row = self._con.execute("SELECT totp_secret, totp_etape, totp_secours FROM utilisateurs WHERE id = ?",
+                                    (uid,)).fetchone()
+            if not row or not row[0]:
+                return False
+            secret, derniere, secours = row
+            etape = totp.verifier(secret, code, derniere)
+            if etape is not None:
+                self._con.execute("UPDATE utilisateurs SET totp_etape = ? WHERE id = ?", (etape, uid))
+                return True
+            restants = json.loads(secours or "[]")
+            emp = totp.empreinte_secours(code)
+            if emp in restants:
+                restants.remove(emp)
+                self._con.execute("UPDATE utilisateurs SET totp_secours = ? WHERE id = ?", (json.dumps(restants), uid))
+                return True
+            return False
+
+    def codes_secours_restants(self, uid: int) -> int:
+        rows = self._q("SELECT totp_secours FROM utilisateurs WHERE id = ?", (uid,))
+        return len(json.loads(rows[0][0] or "[]")) if rows else 0
 
     def supprimer(self, uid: int) -> None:
         self._q("DELETE FROM utilisateurs WHERE id = ?", (uid,))
@@ -262,13 +326,13 @@ class Comptes:
             params += (f"%{recherche.strip().lower()}%",)
         out = []
         for r in self._q(sql + " ORDER BY cree_le DESC", params):
-            u = self._utilisateur(r[:6])
+            u = self._utilisateur(r[:7])
             f = u.formule
             out.append({
-                "id": u.id, "email": u.email, "admin": u.admin, "formule": f.id, "formule_enregistree": u.formule_id,
+                "id": u.id, "email": u.email, "admin": u.admin, "double_authentification": u.double_authentification, "formule": f.id, "formule_enregistree": u.formule_id,
                 "formule_fin": u.formule_fin, "cree_le": u.cree_le,
-                "questions_aujourdhui": r[6] or 0, "quiz_aujourdhui": r[7] or 0,
-                "questions_30j": r[8] or 0, "derniere_activite": r[9],
+                "questions_aujourdhui": r[7] or 0, "quiz_aujourdhui": r[8] or 0,
+                "questions_30j": r[9] or 0, "derniere_activite": r[10],
                 "limite_questions": f.questions_par_jour,
             })
         return out

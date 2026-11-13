@@ -18,7 +18,7 @@ from statistics import mean
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from api.auth import verifier_origine
+from api.auth import exiger_admin, verifier_origine
 from api.comptes import Comptes, ErreurCompte, Utilisateur
 from api.config import ROOT, Settings
 from api.journal import Journal
@@ -152,10 +152,7 @@ def creer_routes_admin(comptes: Comptes, utilisateur_requis, journal: Journal, s
     router = APIRouter()
 
     def admin_requis(request: Request) -> Utilisateur:
-        u = utilisateur_requis(request)
-        if not u.admin:
-            raise HTTPException(403, "Accès réservé aux administrateurs.")
-        return u
+        return exiger_admin(utilisateur_requis(request))
 
     def _client(uid: int) -> Utilisateur:
         u = comptes.par_id(uid)

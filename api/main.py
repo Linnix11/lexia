@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
-from api.auth import creer_routes, routes_formules
+from api.auth import creer_routes, exiger_admin, routes_formules
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
 from api.config import Settings, get_settings
@@ -167,10 +167,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                            prefix="/admin")
 
         def admin_requis(request: Request) -> Utilisateur:
-            u = utilisateur_requis(request)
-            if not u.admin:
-                raise HTTPException(403, "Accès réservé aux administrateurs.")
-            return u
+            return exiger_admin(utilisateur_requis(request))
 
         cours = Cours(comptes.chemin, embedder)
         lexia.cours = cours

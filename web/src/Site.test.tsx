@@ -46,6 +46,11 @@ beforeEach(() => {
       connecte = true
       return json(PROFIL, 201)
     }
+    if (url.endsWith('/auth/connexion')) return json({ double_authentification_requise: true, jeton: 'j1' })
+    if (url.endsWith('/auth/connexion/code')) {
+      connecte = true
+      return json({ ...PROFIL, double_authentification: true })
+    }
     if (url.endsWith('/config')) return json({ comptes: true, contact_email: 'contact@exemple.fr' })
     if (url.endsWith('/formules')) return json(FORMULES)
     if (url.endsWith('/matieres')) return json([])
@@ -94,6 +99,25 @@ describe('Site', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/app'))
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/inscription'))!
     expect(JSON.parse(String(appel[1].body))).toEqual({ email: 'etu@exemple.fr', mot_de_passe: 'motdepasse-solide', accepte_cgu: true })
+  })
+
+  it('connexion avec double authentification : code demande apres le mot de passe', async () => {
+    aller('/connexion')
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText('Adresse e-mail'), { target: { value: 'etu@exemple.fr' } })
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'motdepasse-solide' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }))
+    })
+    const champ = await screen.findByLabelText(/Code de l’application/)
+    expect(window.location.pathname).toBe('/connexion')
+    fireEvent.change(champ, { target: { value: '123456' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Valider' }))
+    })
+    await waitFor(() => expect(window.location.pathname).toBe('/app'))
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/connexion/code'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j1', code: '123456' })
   })
 
   it('limite atteinte : message et lien vers les formules', async () => {

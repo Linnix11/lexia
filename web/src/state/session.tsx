@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, quandSessionExpiree, type ConfigPublique, type Profil } from '../lib/api'
+
+/** Resultat d'une connexion : session ouverte, ou code de l'application a saisir (jeton de l'etape 2). */
+export type ResultatConnexion = { ok: true } | { jeton: string }
 import { useRouteur } from '../lib/router'
 
 interface Session {
@@ -7,7 +10,9 @@ interface Session {
   profil: Profil | null | undefined
   config: ConfigPublique | null
   rafraichir: () => Promise<void>
-  connexion: (email: string, mdp: string) => Promise<void>
+  connexion: (email: string, mdp: string) => Promise<ResultatConnexion>
+  terminerConnexion: (jeton: string, code: string) => Promise<void>
+  majProfil: (p: Profil) => void
   inscription: (email: string, mdp: string, cgu: boolean) => Promise<void>
   deconnexion: () => Promise<void>
   supprimer: (mdp: string) => Promise<void>
@@ -45,7 +50,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     profil,
     config,
     rafraichir,
-    connexion: async (email, mdp) => setProfil(await api.connexion(email, mdp)),
+    connexion: async (email, mdp) => {
+      const r = await api.connexion(email, mdp)
+      if ('double_authentification_requise' in r) return { jeton: r.jeton }
+      setProfil(r)
+      return { ok: true }
+    },
+    terminerConnexion: async (jeton, code) => setProfil(await api.connexionCode(jeton, code)),
+    majProfil: setProfil,
     inscription: async (email, mdp, cgu) => setProfil(await api.inscription(email, mdp, cgu)),
     deconnexion: async () => {
       await api.deconnexion().catch(() => undefined)
