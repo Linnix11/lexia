@@ -2,7 +2,7 @@
 
 Lancement en developpement :
     uvicorn api.main:app --reload --port 8000
-Documentation interactive : http://localhost:8000/docs
+Documentation interactive (avec API_DOCS=1 dans .env) : http://localhost:8000/docs
 """
 
 from __future__ import annotations
@@ -146,7 +146,10 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     # en garde un jusqu'a ~100 s. Au-dela de ce plafond, reponse 503 immediate pour garder des threads libres.
     appels_modele = threading.BoundedSemaphore(max(1, settings.appels_modele_simultanes))
 
-    app = FastAPI(title="Lexia API", version="0.2.0",
+    # Documentation interactive (/docs, /openapi.json) : seulement si API_DOCS=1 (developpement). En production,
+    # elle donnait a tout visiteur le plan complet des routes, administration comprise.
+    docs = {} if settings.api_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    app = FastAPI(title="Lexia API", version="0.2.0", **docs,
                   description="Assistant d'étude en droit français : réponses fondées sur des sources officielles citées.")
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                        allow_methods=["GET", "POST"], allow_headers=["Content-Type"])

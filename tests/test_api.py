@@ -515,3 +515,10 @@ def test_date_de_remplacement_dila_jamais_affichee():
     from api.rag import fiche_source
     p = {"id": "x", "source_id": "conseil_etat", "type": "sommaire", "url": "u", "texte": "t", "meta": {"date": "2999-01-01"}}
     assert fiche_source(p)["date"] is None
+
+
+def test_documentation_api_masquee_par_defaut(env, index_dir, tmp_path):
+    client, _, _ = env
+    assert client.get("/docs").status_code == 404 and client.get("/openapi.json").status_code == 404
+    settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path, api_docs=True)
+    assert TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=FakeLLM())).get("/openapi.json").status_code == 200

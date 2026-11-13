@@ -42,6 +42,7 @@ class Settings:
     budget_avant_secours: float = 35.0
     # Disjoncteur : apres N echecs de Gemini d'affilee, Groq seul pendant cette pause (secondes)
     disjoncteur_seuil: int = 3
+    api_docs: bool = False                     # documentation interactive /docs (developpement seulement)
     disjoncteur_pause: float = 300.0
     comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
     app_db: Path = ROOT / "donnees" / "lexia.db"
@@ -76,6 +77,7 @@ def get_settings() -> Settings:
         groq_model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         budget_avant_secours=float(os.environ.get("BUDGET_AVANT_SECOURS_SECONDES", "35")),
         disjoncteur_seuil=int(os.environ.get("DISJONCTEUR_SEUIL", "3")),
+        api_docs=os.environ.get("API_DOCS", "0") in ("1", "true", "oui"),
         disjoncteur_pause=float(os.environ.get("DISJONCTEUR_PAUSE_SECONDES", "300")),
         comptes_actifs=os.environ.get("COMPTES_ACTIFS", "1") not in ("0", "false", "non"),
         app_db=Path(os.environ.get("APP_DB") or ROOT / "donnees" / "lexia.db"),

@@ -12,6 +12,7 @@ import logging
 import re
 import sqlite3
 import threading
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -28,6 +29,9 @@ log = logging.getLogger("lexia.cours")
 
 TAILLE_MAX = 20 * 1024 * 1024       # 20 Mo par fichier
 CARACTERES_MAX = 1_000_000          # texte extrait au plus
+PAGES_MAX = 1000                    # pages d'un PDF
+XML_WORD_MAX = 10 * 1024 * 1024     # word/document.xml decompresse : au-dela, archive piegee (« zip bomb »)
+DEPOTS_PAR_JOUR = 20                # depots par compte sur 24 h (deposer/retirer en boucle saturerait le serveur)
 TAILLE_PASSAGE = 1500               # caracteres par passage (environ)
 FORMATS = {".pdf": "PDF", ".docx": "Word", ".txt": "texte", ".md": "texte"}
 SOURCE_ID = "cours_perso"
@@ -79,7 +83,16 @@ def extraire_texte(nom: str, contenu: bytes) -> list[tuple[int | None, str]]:
             lecteur = PdfReader(io.BytesIO(contenu))
             if lecteur.is_encrypted:
                 raise ErreurCours("Ce PDF est protégé par un mot de passe : déposez une version sans protection.")
-            pages = [(i, (p.extract_text() or "")) for i, p in enumerate(lecteur.pages, start=1)]
+            if len(lecteur.pages) > PAGES_MAX:
+                raise ErreurCours(f"Document trop long ({len(lecteur.pages)} pages, {PAGES_MAX} au plus) : "
+                                  "découpez-le en plusieurs cours.")
+            pages, total = [], 0
+            for i, p in enumerate(lecteur.pages, start=1):
+                texte = p.extract_text() or ""
+                total += len(texte)
+                if total > CARACTERES_MAX:
+                    raise ErreurCours("Document trop long : découpez-le en plusieurs cours.")
+                pages.append((i, texte))
         except (PdfReadError, ValueError, KeyError) as e:
             if isinstance(e, ErreurCours):
                 raise
@@ -90,8 +103,11 @@ def extraire_texte(nom: str, contenu: bytes) -> list[tuple[int | None, str]]:
         return pages
     if ext == ".docx":
         try:
-            with zipfile.ZipFile(io.BytesIO(contenu)) as z:
-                xml = z.read("word/document.xml").decode("utf-8", "replace")
+            with zipfile.ZipFile(io.BytesIO(contenu)) as z, z.open("word/document.xml") as f:
+                brut = f.read(XML_WORD_MAX + 1)  # lecture bornee : jamais plus que la limite en memoire
+            if len(brut) > XML_WORD_MAX:
+                raise ErreurCours("Ce fichier Word est anormalement volumineux une fois décompressé : il est refusé.")
+            xml = brut.decode("utf-8", "replace")
         except (zipfile.BadZipFile, KeyError):
             raise ErreurCours("Ce fichier Word est illisible ou endommagé.") from None
         paragraphes = [re.sub(r"<[^>]+>", "", p) for p in re.findall(r"<w:p[ >].*?</w:p>", xml, re.S)]
@@ -145,6 +161,7 @@ class Cours:
         self._lock = threading.Lock()
         self.embedder = embedder
         self._fil = ThreadPoolExecutor(max_workers=1, thread_name_prefix="cours")  # un calcul a la fois
+        self._depots: dict[int, list[float]] = {}  # uid -> instants des depots des dernieres 24 h
         if embedder is not None:
             for (cid,) in self._q("SELECT DISTINCT cours FROM cours_passages WHERE vecteur IS NULL"):
                 self._fil.submit(self._vectoriser, cid)  # reprise apres redemarrage
@@ -168,6 +185,12 @@ class Cours:
             raise ErreurCours("Fichier trop volumineux (20 Mo au plus).")
         if not contenu:
             raise ErreurCours("Le fichier est vide.")
+        maintenant_s = time.monotonic()
+        with self._lock:
+            recents = [t for t in self._depots.get(uid, []) if maintenant_s - t < 86400]
+            if len(recents) >= DEPOTS_PAR_JOUR:
+                raise ErreurCours(f"Trop de dépôts aujourd'hui ({DEPOTS_PAR_JOUR} au plus sur 24 h) : réessayez demain.")
+            self._depots[uid] = recents + [maintenant_s]
         if self.nombre(uid) >= maximum:
             raise ErreurCours(f"Limite atteinte : {maximum} cours avec votre formule. Retirez un cours ou "
                               "passez à une formule supérieure.")

@@ -67,7 +67,7 @@ Le script peut être interrompu puis relancé sans rien recalculer (cache par em
 
 ```bash
 python -m ingest.build_index          # index local (SQLite FTS5 + vecteurs), sans base de données
-uvicorn api.main:app --port 8000      # documentation interactive : http://localhost:8000/docs
+uvicorn api.main:app --port 8000      # avec API_DOCS=1 : documentation interactive sur http://localhost:8000/docs
 python eval/essai_api.py http://localhost:8000   # essai rapide avec de vraies questions
 ```
 

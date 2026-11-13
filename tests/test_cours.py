@@ -138,3 +138,32 @@ def test_un_cours_reste_prive(env):
     with sqlite3.connect(base) as c:
         assert c.execute("SELECT count(*) FROM cours").fetchone()[0] == 0
         assert c.execute("SELECT count(*) FROM cours_fts").fetchone()[0] == 0
+
+
+def test_fichier_word_piege_refuse_sans_tout_decompresser():
+    tampon = io.BytesIO()
+    with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/document.xml", "<w:p>" + "a" * 30_000_000 + "</w:p>")   # 30 Mo -> ~30 Ko compresses
+    assert len(tampon.getvalue()) < 100_000
+    with pytest.raises(ErreurCours, match="anormalement volumineux"):
+        extraire_texte("piege.docx", tampon.getvalue())
+
+
+def test_pdf_trop_de_pages(monkeypatch):
+    import api.cours as cours
+    monkeypatch.setattr(cours, "PAGES_MAX", 0)
+    with pytest.raises(ErreurCours, match="Document trop long"):
+        extraire_texte("c.pdf", pdf_minimal("Le dol est une manoeuvre destinee a tromper le cocontractant. " * 5))
+
+
+def test_depots_limites_par_jour(env, monkeypatch):
+    import api.cours as cours
+    monkeypatch.setattr(cours, "DEPOTS_PAR_JOUR", 2)
+    app, _, _, _ = env
+    client = TestClient(app)
+    inscrire(client)
+    for _ in range(2):
+        cid = deposer(client).json()["id"]
+        assert client.post(f"/cours/{cid}/supprimer").status_code == 204    # deposer / retirer en boucle...
+    r = deposer(client)
+    assert r.status_code == 422 and "Trop de dépôts" in r.json()["detail"]   # ...est plafonne
