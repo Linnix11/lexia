@@ -17,6 +17,8 @@ sources:
   - droit_constitutionnel
   - introduction_au_droit
   - droit_administratif
+  - libertes_fondamentales
+  - finances_publiques
   niveaux:
   - L1
   ingestion: ingest/sources/constitution.py
@@ -36,6 +38,8 @@ sources:
   - droit_civil
   - introduction_au_droit
   - droit_des_contrats
+  - droit_de_la_famille
+  - droit_des_biens
   niveaux:
   - L1
   ingestion: ingest/sources/legi.py
@@ -52,6 +56,9 @@ sources:
   perimetre: decisions DC et QPC (contentieux electoral exclu)
   matieres:
   - droit_constitutionnel
+  - libertes_fondamentales
+  - finances_publiques
+  - droit_fiscal
   niveaux:
   - L1
   ingestion: ingest/sources/constit.py
@@ -70,6 +77,8 @@ sources:
   - droit_civil
   - procedure_civile
   - droit_des_contrats
+  - droit_de_la_famille
+  - droit_des_biens
   niveaux:
   - L1
   ingestion: ingest/sources/cass.py
@@ -535,6 +544,184 @@ sources:
   ingestion: ingest/sources/codes.py
   statut: actif
   derniere_synchro: null
+- id: ddhc_1789
+  nom: Déclaration des droits de l'homme et du citoyen de 1789
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: JORFTEXT000000697056
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_constitutionnel
+  - libertes_fondamentales
+  - introduction_au_droit
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: preambule_1946
+  nom: Préambule de la Constitution du 27 octobre 1946
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: JORFTEXT000000868390
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_constitutionnel
+  - libertes_fondamentales
+  - droit_social
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_general_impots
+  nom: Code général des impôts
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006069577
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_fiscal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: livre_procedures_fiscales
+  nom: Livre des procédures fiscales
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006069583
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_fiscal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_juridictions_financieres
+  nom: Code des juridictions financières
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006070249
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - finances_publiques
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_securite_interieure
+  nom: Code de la sécurité intérieure
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000025503132
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - libertes_fondamentales
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_action_sociale_familles
+  nom: Code de l'action sociale et des familles
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074069
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_de_la_famille
+  - droit_social
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_penitentiaire
+  nom: Code pénitentiaire
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000045476241
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_expropriation
+  nom: Code de l'expropriation pour cause d'utilité publique
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074224
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_administratif
+  - droit_des_biens
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
 - id: lois
   nom: Lois, lois organiques et ordonnances en vigueur (textes non codifies)
   type: texte_officiel
@@ -554,6 +741,11 @@ sources:
   - droit_social
   - droit_administratif
   - droit_des_contrats
+  - droit_fiscal
+  - finances_publiques
+  - libertes_fondamentales
+  - droit_de_la_famille
+  - droit_des_biens
   niveaux:
   - L1
   - L2
@@ -571,6 +763,7 @@ sources:
   frequence_maj: hebdomadaire
   matieres:
   - droit_penal
+  - libertes_fondamentales
   niveaux:
   - L1
   - L2
@@ -606,6 +799,7 @@ sources:
   matieres:
   - droit_des_affaires
   - droit_des_contrats
+  - droit_fiscal
   niveaux:
   - L1
   - L2
@@ -623,6 +817,10 @@ sources:
   frequence_maj: hebdomadaire
   matieres:
   - droit_administratif
+  - droit_fiscal
+  - finances_publiques
+  - libertes_fondamentales
+  - droit_des_biens
   niveaux:
   - L1
   - L2

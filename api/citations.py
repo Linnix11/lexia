@@ -54,7 +54,9 @@ def verifier_texte(texte: str, passages: list[dict], controle: Controle) -> bool
     return True
 
 
-def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exiger_source: bool) -> list[dict]:
+def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exiger_source: bool,
+                      rubriques: tuple[str, ...] = ()) -> list[dict]:
+    """rubriques : rubriques admises pour ces elements (le champ est garde s'il en fait partie)."""
     passages = list(table.values())
     out: list[dict] = []
     for it in items or []:
@@ -65,7 +67,11 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
         if (exiger_source and not sources) or not verifier_texte(texte, passages, controle):
             controle.elements_retires += 1
             continue
-        out.append({"texte": texte, "sources": sources})
+        element = {"texte": texte, "sources": sources}
+        rubrique = str((it or {}).get("rubrique") or "").strip()
+        if rubrique in rubriques:
+            element["rubrique"] = rubrique
+        out.append(element)
     return out
 
 
@@ -88,7 +94,9 @@ def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer")
                 "points_incertains": [], "message": message or _message_defaut(statut)}, controle
 
     droit = nettoyer_elements(brut.get("droit_positif"), table, controle, exiger_source=True)
-    expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False)
+    from api.prompts import RUBRIQUES  # import local : prompts importe deja ce module indirectement
+    expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False,
+                             rubriques=RUBRIQUES.get(mode, RUBRIQUES["expliquer"]))
     incert = nettoyer_elements(brut.get("points_incertains"), table, controle, exiger_source=False)
 
     methode_seule = mode in MODES_METHODE and bool(expl)

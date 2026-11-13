@@ -9,6 +9,7 @@ export type Niveau = 'L1' | 'L2' | 'L3'
 export interface Element {
   texte: string
   sources: string[] // identifiants de passages
+  rubrique?: string // rubrique imposee par le mode (Definition, Probleme de droit...)
 }
 
 export interface FicheSource {

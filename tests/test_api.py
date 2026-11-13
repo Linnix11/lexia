@@ -204,7 +204,7 @@ def test_chat_entrees_invalides(env):
     client, _, _ = env
     assert client.post("/chat", json={"question": "x" * 501}).status_code == 413
     assert client.post("/chat", json={"question": "article 1240", "mode": "inconnu"}).status_code == 422
-    assert client.post("/chat", json={"question": "article 1240", "matiere": "droit_fiscal"}).status_code == 422
+    assert client.post("/chat", json={"question": "article 1240", "matiere": "matiere_inexistante"}).status_code == 422
 
 
 def test_limite_de_requetes(index_dir, tmp_path):
@@ -522,3 +522,20 @@ def test_documentation_api_masquee_par_defaut(env, index_dir, tmp_path):
     assert client.get("/docs").status_code == 404 and client.get("/openapi.json").status_code == 404
     settings = Settings(gemini_models=("fake",), index_dir=index_dir, logs_dir=tmp_path, api_docs=True)
     assert TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=FakeLLM())).get("/openapi.json").status_code == 200
+
+
+def test_rubriques_propres_a_chaque_mode():
+    from api import prompts
+    from api.citations import valider_reponse
+    assert "Problème de droit ; Majeure ; Mineure" in prompts.prompt_chat("q", "cas_pratique", [])
+    assert "Mémo" in prompts.prompt_chat("q", "fiche", []) and "Majeure" not in prompts.prompt_chat("q", "fiche", [])
+    enum = prompts.schema_reponse("dissertation")["properties"]["explication"]["items"]["properties"]["rubrique"]["enum"]
+    assert enum == list(prompts.RUBRIQUES["dissertation"])
+    table = {"S1": {"id": "code_civil:x", "numero": "1103", "texte": "", "entete": ""}}
+    brut = {"statut": "reponse", "titre": "t", "droit_positif": [{"texte": "Règle.", "sources": ["S1"]}],
+            "explication": [{"texte": "Faits.", "sources": [], "rubrique": "Faits et qualification"},
+                            {"texte": "Autre.", "sources": [], "rubrique": "Rubrique inventée"}],
+            "points_incertains": [], "message": ""}
+    r, _ = valider_reponse(brut, table, "cas_pratique")
+    assert r["explication"][0]["rubrique"] == "Faits et qualification"
+    assert "rubrique" not in r["explication"][1]                       # rubrique hors du mode : ignoree

@@ -5,7 +5,7 @@ from eval.cas import charger, correspond
 
 def test_jeu_bien_forme():
     cas = charger()
-    assert len(cas) == 200
+    assert len(cas) == 215
     assert sum(1 for c in cas if c.piege) == 30
     for c in cas:
         assert c.attendu and c.question.strip()
@@ -13,7 +13,8 @@ def test_jeu_bien_forme():
             assert c.sources, f"{c.id} sans source attendue"
         for ref in c.sources:
             genre = ref.split(":")[0]
-            assert genre.startswith("code_") or genre in ("constitution", "cc"), ref
+            assert genre.startswith("code_") or genre in ("constitution", "cc", "ddhc_1789", "preambule_1946",
+                                                           "livre_procedures_fiscales"), ref
 
 
 def test_correspondance_des_sources():

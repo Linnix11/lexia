@@ -53,6 +53,16 @@ CODES: tuple[Code, ...] = (
     Code("code_construction_habitation", "LEGITEXT000006074096", "Code de la construction et de l'habitation"),
     Code("code_entree_sejour_etrangers", "LEGITEXT000006070158", "Code de l'entrée et du séjour des étrangers et du droit d'asile"),
     Code("code_electoral", "LEGITEXT000006070239", "Code électoral"),
+    # Ajouts du 2026-11-13. DDHC et Preambule de 1946 : textes non codifies (dossier JORFTEXT de l'archive LEGI).
+    Code("ddhc_1789", "JORFTEXT000000697056", "Déclaration des droits de l'homme et du citoyen de 1789"),
+    Code("preambule_1946", "JORFTEXT000000868390", "Préambule de la Constitution du 27 octobre 1946"),
+    Code("code_general_impots", "LEGITEXT000006069577", "Code général des impôts"),
+    Code("livre_procedures_fiscales", "LEGITEXT000006069583", "Livre des procédures fiscales"),
+    Code("code_juridictions_financieres", "LEGITEXT000006070249", "Code des juridictions financières"),
+    Code("code_securite_interieure", "LEGITEXT000025503132", "Code de la sécurité intérieure"),
+    Code("code_action_sociale_familles", "LEGITEXT000006074069", "Code de l'action sociale et des familles"),
+    Code("code_penitentiaire", "LEGITEXT000045476241", "Code pénitentiaire"),
+    Code("code_expropriation", "LEGITEXT000006074224", "Code de l'expropriation pour cause d'utilité publique"),
 )
 NATURES_LOIS = {"LOI", "LOI_ORGANIQUE", "ORDONNANCE", "LOI_CONSTIT"}
 SOURCE_LOIS = "lois"

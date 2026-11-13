@@ -236,3 +236,19 @@ cas:
   - {id: proc-03, matiere: procedure_civile, question: "Le juge doit-il faire respecter le principe du contradictoire ?", attendu: [reponse], sources: [code_procedure_civile:16]}
   - {id: proc-04, matiere: procedure_civile, question: "Que doit contenir une assignation ?", attendu: [reponse], sources: [code_procedure_civile:56]}
   - {id: proc-05, matiere: procedure_civile, question: "Qu'est-ce qu'une fin de non-recevoir ?", attendu: [reponse], sources: [code_procedure_civile:122]}
+  # ===================================================================== AJOUT DU 2026-11-13 : 15 CAS (nouvelles matieres)
+  - {id: lib-01, matiere: libertes_fondamentales, question: "Que protège l'article 11 de la Déclaration de 1789 ?", attendu: [reponse], sources: [ddhc_1789:11]}
+  - {id: lib-02, matiere: libertes_fondamentales, question: "Qu'est-ce que la séparation des pouvoirs selon la Déclaration de 1789 ?", attendu: [reponse], sources: [ddhc_1789:16]}
+  - {id: lib-03, matiere: libertes_fondamentales, question: "Quels droits sociaux le préambule de 1946 garantit-il ?", attendu: [reponse], sources: [preambule_1946:PREAMBULE]}
+  - {id: lib-04, matiere: libertes_fondamentales, question: "Une manifestation doit-elle être déclarée à l'avance ?", attendu: [reponse], sources: [code_securite_interieure:L211-1]}
+  - {id: fis-01, matiere: droit_fiscal, question: "Qui est soumis à l'impôt sur le revenu ?", attendu: [reponse], sources: [code_general_impots:1 A, code_general_impots:4 A]}
+  - {id: fis-02, matiere: droit_fiscal, question: "Quel est le taux normal de TVA ?", attendu: [reponse], sources: [code_general_impots:278]}
+  - {id: fis-03, matiere: droit_fiscal, question: "Comment se déroule une vérification de comptabilité ?", attendu: [reponse], sources: [livre_procedures_fiscales:L13]}
+  - {id: fis-04, matiere: droit_fiscal, question: "Combien de temps l'administration fiscale peut-elle rectifier l'impôt sur le revenu ?", attendu: [reponse], sources: [livre_procedures_fiscales:L169]}
+  - {id: fin-01, matiere: finances_publiques, question: "Quel est le rôle de la Cour des comptes ?", attendu: [reponse], sources: [constitution:47-2, code_juridictions_financieres:L111-2]}
+  - {id: fin-02, matiere: finances_publiques, question: "Comment le Parlement vote-t-il les lois de finances ?", attendu: [reponse], sources: [constitution:47]}
+  - {id: fam-01, matiere: droit_de_la_famille, question: "Qu'est-ce que l'autorité parentale ?", attendu: [reponse], sources: [code_civil:371-1]}
+  - {id: fam-02, matiere: droit_de_la_famille, question: "Comment divorcer par consentement mutuel ?", attendu: [reponse], sources: [code_civil:229]}
+  - {id: fam-03, matiere: droit_de_la_famille, question: "Les enfants doivent-ils des aliments à leurs parents ?", attendu: [reponse], sources: [code_civil:205]}
+  - {id: bie-01, matiere: droit_des_biens, question: "Qu'est-ce que l'usufruit ?", attendu: [reponse], sources: [code_civil:578]}
+  - {id: bie-02, matiere: droit_des_biens, question: "Quelle indemnité reçoit un propriétaire exproprié ?", attendu: [reponse], sources: [code_expropriation:L321-1]}

@@ -9,7 +9,7 @@ const REPONSE: ReponseChat = {
   statut: 'reponse',
   titre: 'La responsabilité pour faute',
   droit_positif: [{ texte: 'Tout fait fautif causant un dommage oblige à réparer.', sources: ['code_civil:A1240'] }],
-  explication: [{ texte: 'Il faut une faute, un dommage et un lien de causalité.', sources: [] }],
+  explication: [{ texte: 'Il faut une faute, un dommage et un lien de causalité.', sources: [], rubrique: 'Conditions' }],
   points_incertains: [],
   message: '',
   sources: [{
@@ -67,6 +67,7 @@ describe('Assistant', () => {
     await poser('Que dit l’article 1240 ?')
     expect(screen.getByText('Droit positif')).toBeInTheDocument()
     expect(screen.getByText('Explication')).toBeInTheDocument()
+    expect(screen.getByText('Conditions')).toBeInTheDocument()   // rubrique du mode affichee en sous-titre
     expect(screen.getByRole('button', { name: '[S1]' })).toBeInTheDocument()
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)

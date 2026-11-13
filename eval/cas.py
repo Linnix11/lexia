@@ -11,6 +11,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 FICHIER = ROOT / "eval" / "cas.yaml"
+# Textes hors codes cites directement par leur identifiant de source
+AUTRES_TEXTES = ("ddhc_1789", "preambule_1946", "livre_procedures_fiscales")
 
 
 @dataclass
@@ -50,7 +52,7 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
         sql, params = ("SELECT data FROM passages WHERE source_id = 'decisions_conseil_constitutionnel'"
                        " AND json_extract(data, '$.meta.numero') = ? AND json_extract(data, '$.meta.nature') = ?",
                        (num, nature))
-    elif genre.startswith("code_"):  # tout autre code : code_penal:122-5, code_travail:L1233-3...
+    elif genre.startswith("code_") or genre in AUTRES_TEXTES:  # code_penal:122-5, ddhc_1789:11...
         sql, params = ("SELECT data FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1", (genre, valeur))
     else:
         raise ValueError(f"Type de source inconnu : {ref}")
@@ -60,7 +62,7 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
 def correspond(ref: str, passage: dict) -> bool:
     """Le passage (fourni ou cite) correspond-il a la source attendue ?"""
     genre, _, valeur = ref.partition(":")
-    if genre.startswith("code_"):
+    if genre.startswith("code_") or genre in AUTRES_TEXTES:
         return passage["source_id"] == genre and passage.get("numero") == valeur
     if genre == "constitution":
         return passage["source_id"] == "constitution_1958" and passage.get("numero") == valeur

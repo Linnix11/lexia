@@ -78,6 +78,36 @@ SCHEMA_REPONSE = {
 }
 
 
+
+# Rubriques imposees de l'explication, par mode : chaque mode produit une reponse de forme differente
+# (une fiche n'est pas un cas pratique). L'interface les affiche comme sous-titres.
+RUBRIQUES: dict[str, tuple[str, ...]] = {
+    "expliquer": ("Définition", "Conditions", "Exceptions", "Exemple"),
+    "fiche": ("Définition", "Règles à retenir", "Jurisprudence clé", "Pièges fréquents", "Mémo"),
+    "cas_pratique": ("Faits et qualification", "Problème de droit", "Majeure", "Mineure", "Conclusion"),
+    "commentaire": ("Fiche d'arrêt", "Problème de droit", "Sens de la décision", "Valeur et portée", "Plan proposé"),
+    "dissertation": ("Définition des termes", "Intérêt du sujet", "Problématique", "Plan proposé"),
+}
+
+
+def consigne_rubriques(mode: str) -> str:
+    rubriques = RUBRIQUES.get(mode, RUBRIQUES["expliquer"])
+    return (
+        "\nStructure obligatoire de 'explication' : au moins un élément pour CHACUNE de ces rubriques, dans cet "
+        f"ordre, avec le nom exact de la rubrique dans le champ 'rubrique' : {' ; '.join(rubriques)}. Si les "
+        "extraits ne permettent pas de remplir une rubrique, écris-le en une phrase dans cette rubrique plutôt que "
+        "de l'omettre ou d'inventer."
+    )
+
+
+def schema_reponse(mode: str) -> dict:
+    """Schema de la reponse ; l'explication porte une rubrique choisie dans celles du mode."""
+    element = {**_ELEMENT, "properties": {**_ELEMENT["properties"],
+                                          "rubrique": {"type": "string",
+                                                       "enum": list(RUBRIQUES.get(mode, RUBRIQUES["expliquer"]))}},
+               "required": ["texte", "sources", "rubrique"]}
+    return {**SCHEMA_REPONSE, "properties": {**SCHEMA_REPONSE["properties"], "explication": {"type": "array", "items": element}}}
+
 def format_extraits(passages: list[dict]) -> str:
     blocs = []
     for i, p in enumerate(passages, start=1):
@@ -128,7 +158,7 @@ def consigne_cours(cours: str | None) -> str:
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
                 semestre: int | None = None, anciens: dict | None = None, cours: str | None = None) -> str:
     consigne = (public(niveau, semestre) + consigne_cours(cours) + MODES[mode]
-                + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else ""))
+                + (METHODE_SANS_EXTRAIT if mode in MODES_METHODE else "") + consigne_rubriques(mode))
     if anciens:
         consigne += "\n" + note_concordance(anciens)
     return (

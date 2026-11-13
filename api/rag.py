@@ -296,7 +296,7 @@ class Lexia:
                 construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
                                                           infos.get("concordance"), option_cours),
                 passages=passages,
-                schema=prompts.SCHEMA_REPONSE,
+                schema=prompts.schema_reponse(mode),
             )
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode)

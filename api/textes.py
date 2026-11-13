@@ -53,6 +53,15 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_entree_sejour_etrangers", "Code de l'entrée et du séjour des étrangers et du droit d'asile",
           (r"code de l'entree et du sejour des etrangers", r"ceseda")),
     Texte("code_electoral", "Code électoral", (r"code electoral",)),
+    Texte("ddhc_1789", "Déclaration des droits de l'homme et du citoyen de 1789", ("declaration des droits de l'homme(?: et du citoyen)?", 'ddhc',)),
+    Texte("preambule_1946", "Préambule de la Constitution du 27 octobre 1946", ('preambule de (?:la constitution de )?1946',)),
+    Texte("code_general_impots", "Code général des impôts", ('code general des impots', 'cgi',)),
+    Texte("livre_procedures_fiscales", "Livre des procédures fiscales", ('livre des procedures fiscales', 'lpf',)),
+    Texte("code_juridictions_financieres", "Code des juridictions financières", ('code des juridictions financieres', 'cjf',)),
+    Texte("code_securite_interieure", "Code de la sécurité intérieure", ('code de la securite interieure', 'csi',)),
+    Texte("code_action_sociale_familles", "Code de l'action sociale et des familles", ("code de l'action sociale et des familles", 'casf',)),
+    Texte("code_penitentiaire", "Code pénitentiaire", ('code penitentiaire',)),
+    Texte("code_expropriation", "Code de l'expropriation pour cause d'utilité publique", ("code de l'expropriation",)),
     Texte("lois", "Lois et ordonnances en vigueur", ()),
 )
 

@@ -18,6 +18,11 @@ LIBELLES = {
     "droit_des_affaires": "Droit des affaires",
     "droit_social": "Droit social",
     "droit_administratif": "Droit administratif",
+    "libertes_fondamentales": "Libertés fondamentales",
+    "droit_de_la_famille": "Droit de la famille",
+    "droit_des_biens": "Droit des biens",
+    "droit_fiscal": "Droit fiscal",
+    "finances_publiques": "Finances publiques",
 }
 
 

@@ -20,6 +20,9 @@ CC, CONST = "code_civil", "constitution_1958"
 CP, CPP, CT = "code_penal", "code_procedure_penale", "code_travail"
 CJA, CRPA = "code_justice_administrative", "code_relations_public_administration"
 CPC = "code_procedure_civile"
+DDHC, P46, CSI = "ddhc_1789", "preambule_1946", "code_securite_interieure"
+CGI, LPF, CJF = "code_general_impots", "livre_procedures_fiscales", "code_juridictions_financieres"
+CASF, CPEN, CEXP = "code_action_sociale_familles", "code_penitentiaire", "code_expropriation"
 MAX_LEXIQUE = 4
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
@@ -32,10 +35,11 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"autorite de (?:la )?chose jugee", ((CC, "1355"),)),
     (r"ordre public|bonnes moeurs", ((CC, "6"), (CC, "1102"), (CC, "1162"))),
     (r"vie privee", ((CC, "9"),)),
-    (r"presomption d.innocence", ((CC, "9-1"),)),
+    (r"droit des personnes|droits? de la personnalite", ((CC, "16"), (CC, "9"), (CC, "16-1"))),
+    (r"presomption d.innocence", ((CC, "9-1"), (DDHC, "9"))),
     (r"corps humain", ((CC, "16"), (CC, "16-1"))),
     (r"\bmajeurs?\b|\bmajorite\b", ((CC, "414"),)),
-    (r"droit de propriete|\bla propriete\b", ((CC, "544"),)),
+    (r"droit de propriete|\bla propriete\b", ((CC, "544"), (DDHC, "17"))),
     (r"meubles?.{0,12}immeubles?|immeubles?.{0,12}meubles?", ((CC, "516"),)),
     (r"charge de la preuve", ((CC, "1353"),)),
     (r"prescription extinctive|delai de prescription(?!.{0,30}(?:delit|crime|contravention|penal|action publique))",
@@ -111,7 +115,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"ordre de la loi|commandement de l.autorite legitime", ((CP, "122-4"),)),
     (r"trouble psychique|abolition du discernement|alteration du discernement", ((CP, "122-1"),)),
     (r"(?:mineurs?|minorite).{0,40}penal", ((CP, "122-8"),)),
-    (r"legalite des delits|legalite criminelle|legalite penale|nullum crimen", ((CP, "111-3"), (CP, "111-4"))),
+    (r"legalite des delits|legalite criminelle|legalite penale|nullum crimen", ((CP, "111-3"), (CP, "111-4"), (DDHC, "8"))),
     (r"interpretation stricte", ((CP, "111-4"),)),
     (r"in mitius|loi penale (?:plus douce|dans le temps)|application de la loi penale dans le temps", ((CP, "112-1"),)),
     (r"\btentative\b", ((CP, "121-5"),)),
@@ -162,6 +166,51 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bassignation", ((CPC, "56"),)),
     (r"principe (?:du )?contradictoire|principe de la contradiction", ((CPC, "16"),)),
     (r"fins? de non.recevoir", ((CPC, "122"),)),
+    # --- libertes fondamentales (DDHC 1789, Preambule de 1946, Code de la securite interieure) ---
+    (r"egalite devant la loi|principe d.egalite", ((DDHC, "6"), (DDHC, "1"), (CONST, "1"))),
+    (r"liberte d.expression|libre communication des pensees|liberte d.opinion", ((DDHC, "11"),)),
+    (r"separation des pouvoirs|garantie des droits", ((DDHC, "16"),)),
+    (r"necessite des peines|proportionnalite des peines", ((DDHC, "8"),)),
+    (r"definition de la liberte|liberte consiste", ((DDHC, "4"),)),
+    (r"consentement (?:a|de) l.impot", ((DDHC, "14"),)),
+    (r"egalite devant (?:l.impot|les charges publiques)|contribution commune", ((DDHC, "13"),)),
+    (r"preambule de (?:la constitution de )?1946|droits? (?:economiques et )?sociaux.{0,30}constitution|liberte syndicale|(?:droit de greve|greve).{0,40}(?:constitution|preambule)",
+     ((P46, "PREAMBULE"),)),
+    (r"(?:manifestations?|cortege|rassemblement).{0,40}(?:declaration|interdi)|declaration prealable", ((CSI, "L211-1"),)),
+    (r"dissolution.{0,30}(?:association|groupement)", ((CSI, "L212-1"),)),
+    (r"\bmicas\b|mesures? individuelles? de controle", ((CSI, "L228-1"),)),
+    # --- droit fiscal (CGI, LPF) ---------------------------------------------------------------
+    (r"droit de reprise|prescription.{0,20}fiscale|rectifier l.impot|(?:delai|combien de temps).{0,60}(?:administration fiscale|\bfisc\b)",
+     ((LPF, "L169"),)),
+    (r"impot sur le revenu", ((CGI, "1 A"), (CGI, "4 A"))),
+    (r"quotient familial|parts? fiscales?", ((CGI, "194"), (CGI, "193"))),
+    (r"impot sur les societes", ((CGI, "205"), (CGI, "206"))),
+    (r"\btva\b|taxe sur la valeur ajoutee", ((CGI, "256"), (CGI, "256 A"), (CGI, "278"))),
+    (r"verification de comptabilite|controle fiscal", ((LPF, "L13"), (LPF, "L10"))),
+    (r"examen contradictoire de (?:la )?situation fiscale|\besfp\b", ((LPF, "L47"),)),
+    (r"(?:procedure|proposition) de rectification|rectification contradictoire", ((LPF, "L55"), (LPF, "L57"))),
+    (r"reclamation.{0,30}(?:impot|fiscal)|contentieux fiscal", ((LPF, "L190"),)),
+    # --- finances publiques (Constitution, CJF) -------------------------------------------------
+    (r"lois? de finances", ((CONST, "47"),)),
+    (r"cour des comptes", ((CONST, "47-2"), (CJF, "L111-2"), (CJF, "L111-3"))),
+    (r"chambres? regionales? des comptes", ((CJF, "L211-1"),)),
+    # --- droit de la famille (Code civil, CASF) -------------------------------------------------
+    (r"autorite parentale", ((CC, "371-1"),)),
+    (r"\bdivorce", ((CC, "229"),)),
+    (r"\bfiliation", ((CC, "310-1"),)),
+    (r"obligation alimentaire|\baliments\b", ((CC, "205"),)),
+    (r"aide sociale a l.enfance|\base\b", ((CASF, "L221-1"),)),
+    (r"protection de l.enfance", ((CASF, "L112-3"),)),
+    # --- droit des biens (Code civil, expropriation) --------------------------------------------
+    (r"\busufruit", ((CC, "578"),)),
+    (r"\bservitude", ((CC, "637"),)),
+    (r"\bpossession", ((CC, "2255"), (CC, "2261"))),
+    (r"\baccession", ((CC, "546"),)),
+    (r"\bindivision", ((CC, "815"),)),
+    (r"indemni\w*.{0,40}expropri|expropri\w*.{0,40}indemni", ((CEXP, "L321-1"), (CEXP, "L1"))),
+    (r"\bexpropri|utilite publique", ((CEXP, "L1"), (CEXP, "L121-1"), (CEXP, "L321-1"))),
+    # --- execution des peines (Code penitentiaire) ----------------------------------------------
+    (r"service public penitentiaire|\bprisons?\b|\bdetenus?\b", ((CPEN, "L1"), (CPEN, "L2"))),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

@@ -36,6 +36,10 @@ function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[];
       <ul className="grid gap-1.5">
         {items.map((it, i) => (
           <li key={i} className="text-[12.5px] leading-[1.6]">
+            {/* rubrique affichee a son premier element : sous-titres propres a chaque mode */}
+            {it.rubrique && it.rubrique !== items[i - 1]?.rubrique && (
+              <span className="mt-1.5 mb-0.5 block text-[11.5px] font-semibold text-ink">{it.rubrique}</span>
+            )}
             {it.texte}
             <Citations ids={it.sources} sources={sources} />
           </li>
