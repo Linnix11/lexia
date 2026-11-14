@@ -28,7 +28,11 @@ echo "== Version"
 git rev-parse --short HEAD > VERSION 2>/dev/null && echo "  $(cat VERSION)" || echo "inconnue" > VERSION
 
 echo "== Envoi du code, du front et de l'index (rsync)"
-rsync -az --delete \
+# --partial-dir : une coupure pendant les 4 Go d'index laisse le morceau deja recu dans un dossier
+# a part et reprend au prochain envoi. Sans « -dir », rsync ecrit dans le fichier de destination et
+# une coupure laisse l'index de production tronque (constate le 2026-11-14).
+# --timeout : une connexion muette est abandonnee au lieu de rester bloquee.
+rsync -az --delete --partial-dir=.rsync-partiel --timeout=120 \
   --exclude '.git' --exclude '.venv' --exclude '.cache' --exclude 'node_modules' --exclude '.env' \
   --exclude 'donnees' --exclude '.claude' --exclude 'sauvegardes' \
   --exclude 'data/raw' --exclude 'data/embeddings' --exclude 'data/passages' \
