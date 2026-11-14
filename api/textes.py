@@ -63,6 +63,17 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_action_sociale_familles", "Code de l'action sociale et des familles", ("code de l'action sociale et des familles", 'casf',)),
     Texte("code_penitentiaire", "Code pénitentiaire", ('code penitentiaire',)),
     Texte("code_expropriation", "Code de l'expropriation pour cause d'utilité publique", ("code de l'expropriation",)),
+    # Traites (ingest/sources/traites.py). « TUE » seul n'est reconnu que precede de « du » : le verbe
+    # « tue » (« Paul tue Jean ») detournerait sinon la recherche d'un article du Code penal.
+    Texte("tue", "Traité sur l'Union européenne", (r"traite sur l'union europeenne", r"du tue")),
+    Texte("tfue", "Traité sur le fonctionnement de l'Union européenne",
+          (r"traite sur le fonctionnement de l'union europeenne", r"tfue")),
+    Texte("charte_droits_fondamentaux_ue", "Charte des droits fondamentaux de l'Union européenne",
+          (r"charte des droits fondamentaux(?: de l'union europeenne)?", r"cdfue")),
+    Texte("cedh", "Convention européenne des droits de l'homme",
+          (r"convention europeenne des droits de l'homme", r"convention (?:europeenne )?de sauvegarde des droits de l'homme",
+           r"conv\.? ?edh", r"cesdh", r"cedh")),
+    Texte("charte_onu", "Charte des Nations unies", (r"charte des nations unies", r"charte de l'onu")),
     Texte("lois", "Lois et ordonnances en vigueur", ()),
 )
 

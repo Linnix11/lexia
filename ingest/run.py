@@ -27,11 +27,12 @@ from pathlib import Path
 
 import httpx
 
-from ingest.sources import cass, codes, constit, constitution, jade, legi
+from ingest.sources import cass, codes, constit, constitution, jade, legi, traites
 
 ROOT = Path(__file__).resolve().parent.parent
 DILA_DIR = ROOT / "data" / "raw" / "dila"
-SOURCES = {m.SOURCE_ID: m for m in (constitution, constit, cass, legi, jade, *codes.SOURCES, *cass.SOURCES)}
+SOURCES = {m.SOURCE_ID: m for m in (constitution, constit, cass, legi, jade, *codes.SOURCES, *cass.SOURCES,
+                                         *traites.SOURCES)}
 USER_AGENT = "LexiaIngest/0.1"
 
 

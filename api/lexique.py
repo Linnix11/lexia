@@ -23,6 +23,8 @@ CPC = "code_procedure_civile"
 DDHC, P46, CSI = "ddhc_1789", "preambule_1946", "code_securite_interieure"
 CGI, LPF, CJF = "code_general_impots", "livre_procedures_fiscales", "code_juridictions_financieres"
 CASF, CPEN, CEXP = "code_action_sociale_familles", "code_penitentiaire", "code_expropriation"
+TUE, TFUE, CDF = "tue", "tfue", "charte_droits_fondamentaux_ue"
+CEDH, ONU = "cedh", "charte_onu"
 MAX_LEXIQUE = 4
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
@@ -34,12 +36,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
      ((CC, "5"), (CC, "1355"))),
     (r"autorite de (?:la )?chose jugee", ((CC, "1355"),)),
     (r"ordre public|bonnes moeurs", ((CC, "6"), (CC, "1102"), (CC, "1162"))),
-    (r"vie privee", ((CC, "9"),)),
+    (r"vie privee", ((CC, "9"), (CEDH, "8"), (CDF, "7"))),
     (r"droit des personnes|droits? de la personnalite", ((CC, "16"), (CC, "9"), (CC, "16-1"))),
     (r"presomption d.innocence", ((CC, "9-1"), (DDHC, "9"))),
     (r"corps humain", ((CC, "16"), (CC, "16-1"))),
     (r"\bmajeurs?\b|\bmajorite\b", ((CC, "414"),)),
-    (r"droit de propriete|\bla propriete\b", ((CC, "544"), (DDHC, "17"))),
+    (r"droit de propriete|\bla propriete\b", ((CC, "544"), (DDHC, "17"), (CEDH, "P1-1"))),
     (r"meubles?.{0,12}immeubles?|immeubles?.{0,12}meubles?", ((CC, "516"),)),
     (r"charge de la preuve", ((CC, "1353"),)),
     (r"prescription extinctive|delai de prescription(?!.{0,30}(?:delit|crime|contravention|penal|action publique))",
@@ -168,7 +170,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"fins? de non.recevoir", ((CPC, "122"),)),
     # --- libertes fondamentales (DDHC 1789, Preambule de 1946, Code de la securite interieure) ---
     (r"egalite devant la loi|principe d.egalite", ((DDHC, "6"), (DDHC, "1"), (CONST, "1"))),
-    (r"liberte d.expression|libre communication des pensees|liberte d.opinion", ((DDHC, "11"),)),
+    (r"liberte d.expression|libre communication des pensees|liberte d.opinion", ((DDHC, "11"), (CEDH, "10"))),
     (r"separation des pouvoirs|garantie des droits", ((DDHC, "16"),)),
     (r"necessite des peines|proportionnalite des peines", ((DDHC, "8"),)),
     (r"definition de la liberte|liberte consiste", ((DDHC, "4"),)),
@@ -211,6 +213,33 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bexpropri|utilite publique", ((CEXP, "L1"), (CEXP, "L121-1"), (CEXP, "L321-1"))),
     # --- execution des peines (Code penitentiaire) ----------------------------------------------
     (r"service public penitentiaire|\bprisons?\b|\bdetenus?\b", ((CPEN, "L1"), (CPEN, "L2"))),
+    # --- droit de l'Union europeenne (TUE, TFUE, Charte des droits fondamentaux) -------------------
+    (r"renvoi prejudiciel|question prejudicielle.{0,40}(?:cour de justice|cjue|union)", ((TFUE, "267"),)),
+    (r"abus de position dominante", ((TFUE, "102"),)),
+    (r"\bententes?\b.{0,60}(?:concurrence|entreprises)|pratiques? concertees?", ((TFUE, "101"),)),
+    (r"aides? d.etat", ((TFUE, "107"), (TFUE, "108"))),
+    (r"libre circulation des marchandises|restrictions? quantitatives?|mesures? d.effet equivalent",
+     ((TFUE, "34"), (TFUE, "36"))),
+    (r"libre circulation des travailleurs", ((TFUE, "45"),)),
+    (r"liberte d.etablissement", ((TFUE, "49"),)),
+    (r"libre prestation (?:de|des) services", ((TFUE, "56"),)),
+    (r"libre circulation des capitaux", ((TFUE, "63"),)),
+    (r"recours en manquement|manquement d.un etat membre", ((TFUE, "258"), (TFUE, "260"))),
+    (r"recours en annulation", ((TFUE, "263"),)),
+    (r"citoyennete (?:europeenne|de l.union)", ((TFUE, "20"), (TUE, "9"))),
+    (r"principe de subsidiarite|principe d.attribution", ((TUE, "5"),)),
+    (r"valeurs de l.union", ((TUE, "2"),)),
+    (r"retrait de l.union|\bbrexit\b", ((TUE, "50"),)),
+    # --- Convention europeenne des droits de l'homme ----------------------------------------------
+    (r"proces equitable|delai raisonnable.{0,40}(?:juge|jugement|proces|procedure|justice)", ((CEDH, "6"),)),
+    (r"(?:non|ne) bis in idem|juge (?:ou puni )?deux fois|puni deux fois", ((CEDH, "P7-4"), (CDF, "50"))),
+    (r"\btorture|traitements? inhumains", ((CEDH, "3"),)),
+    (r"recours effectif", ((CEDH, "13"),)),
+    # --- droit international public (Charte des Nations unies) -------------------------------------
+    (r"recours a la force|emploi de la force.{0,40}(?:etats?|international)", ((ONU, "2"),)),
+    (r"legitime defense (?:individuelle ou collective|des etats|internationale)|agression armee", ((ONU, "51"),)),
+    (r"conseil de securite", ((ONU, "24"), (ONU, "39"))),
+    (r"cour internationale de justice", ((ONU, "92"),)),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

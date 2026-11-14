@@ -3,11 +3,14 @@ import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
 const OFFICIELLES = [
-  { sym: '§', nom: 'Légifrance', desc: '25 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais' },
+  { sym: '§', nom: 'Légifrance', desc: '31 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais' },
   { sym: '⚖', nom: 'Cour de cassation', desc: 'Arrêts publiés depuis 2000, toutes chambres',
     url: 'https://www.courdecassation.fr/acces-rapide-judilibre/donnees-ouvertes-open-data-et-api' },
   { sym: '⚖', nom: 'Conseil d’État', desc: 'Recueil Lebon et Tribunal des conflits', url: 'https://www.conseil-etat.fr/' },
   { sym: '◈', nom: 'Conseil constitutionnel', desc: 'Constitution, décisions DC et QPC', url: 'https://www.conseil-constitutionnel.fr/les-decisions' },
+  { sym: '✦', nom: 'Union européenne', desc: 'TUE, TFUE et Charte des droits fondamentaux', url: 'https://eur-lex.europa.eu/' },
+  { sym: '✦', nom: 'Cour européenne des droits de l’homme', desc: 'Convention et protocoles ratifiés', url: 'https://www.echr.coe.int/fr/' },
+  { sym: '◎', nom: 'Nations unies', desc: 'Charte des Nations unies', url: 'https://www.un.org/fr/about-us/un-charter' },
 ]
 
 const fleche = 'text-[14px] text-[#9aa19a] hover:text-forest'

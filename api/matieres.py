@@ -23,6 +23,8 @@ LIBELLES = {
     "droit_des_biens": "Droit des biens",
     "droit_fiscal": "Droit fiscal",
     "finances_publiques": "Finances publiques",
+    "droit_europeen": "Droit européen",
+    "droit_international": "Droit international",
 }
 
 
