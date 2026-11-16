@@ -182,3 +182,22 @@ def test_ancien_numero_cite_ne_declenche_pas_les_regles_des_vices(retriever_reel
     numeros = [p.get("numero") for p in passages if p["source_id"] == "code_civil"]
     assert "1130" not in numeros and "1131" not in numeros, numeros
     assert "1103" in [p.get("numero") for p in pour_secours(passages)], numeros
+
+
+def test_questions_bloquees_n_ouvrent_pas_le_disjoncteur():
+    """Second audit du 2026-11-16, point 11 : un tiers basculait tout le site sur le secours."""
+    from api.llm.base import ContenuRefuse
+
+    class Bloque(LLM):
+        def generate_json(self, *, prompt, **kw):
+            self.prompts.append(prompt)
+            raise ContenuRefuse("blocage : SAFETY")
+
+    principal, secours = Bloque(echec=True), LLM(echec=False)
+    settings = Settings(gemini_models=("fake",), logs_dir=None, rate_limit_per_minute=0, disjoncteur_seuil=2)
+    app = create_app(settings, retriever=Retriever(), llm=principal, secours=secours, journal=None)
+    client = TestClient(app)
+    for i in range(4):
+        assert client.post("/chat", json={"question": f"responsabilité {i}"}).json()["statut"] == "reponse"
+    assert len(principal.prompts) == 4                                     # Gemini toujours essaye
+    assert TestClient(app, client=("127.0.0.1", 50000)).get("/sante").json()["disjoncteur"] == "ferme"

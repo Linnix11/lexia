@@ -15,7 +15,7 @@ from concurrent.futures import TimeoutError as DelaiDepasse
 from api import conseil, concordance, lexique, prompts
 from api.citations import valider_reponse
 from api.journal import Journal
-from api.llm.base import LLM, LLMError
+from api.llm.base import LLM, ContenuRefuse, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, groupes
@@ -28,6 +28,9 @@ AVERTISSEMENT = (
 K_CHAT = 8
 MAX_SUGGESTIONS = 4  # articles ajoutes sans recherche (lexique, concordance, reformulation)
 K_SECOURS = 4  # extraits envoyes au modele de secours (quota Groq gratuit : ~8 000 jetons par minute)
+# Au-dela, pas de relance « hors champ » : une seconde generation (jusqu'a 35 s de Gemini + 30 s de Groq)
+# depasserait les 120 s de nginx (second audit du 2026-11-16, point 10).
+DELAI_MAX_RELANCE = 40.0
 # Erreur, dol et violence (Code civil, art. 1132 a 1144) partagent la condition (vice determinant, art. 1130)
 # et la sanction (nullite relative, art. 1131), que la recherche ne ramenait pas : sur un cas de dol, la
 # reponse ne pouvait pas dire que le contrat est annulable (cas pratique cp-08, 2026-11-16).
@@ -289,7 +292,8 @@ class Lexia:
             except LLMError as e:
                 if self.secours is None:
                     raise
-                self.disjoncteur.echec()
+                if not isinstance(e, ContenuRefuse):  # une question bloquee n'est pas une panne de Gemini
+                    self.disjoncteur.echec()
                 log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
                 erreur_principal = e
         reduits = pour_secours(passages)
@@ -339,10 +343,12 @@ class Lexia:
                     schema=prompts.schema_reponse(mode),
                 )
             brut, modele, extraits_envoyes = generer()
-            if brut.get("statut") == "hors_champ":
-                # Le modele refusait des faits racontes a la premiere personne une fois sur trois (D77) :
-                # ce n'est pas une demande de conseil, il est relance une fois avec une note.
-                brut, modele, extraits_envoyes = generer(prompts.NOTE_PAS_UN_CONSEIL)
+            if brut.get("statut") == "hors_champ" and time.monotonic() - debut < DELAI_MAX_RELANCE:
+                # Le modele refusait des faits racontes a la premiere personne une fois sur trois (D77) : il est
+                # relance une fois, avec une note qui lui rappelle les quatre refus legitimes sans lui imposer
+                # de repondre. Pas de relance apres une premiere generation lente (secours, 503 en serie) : la
+                # reponse depasserait les 120 s de nginx, l'etudiant aurait une erreur et un quota decompte.
+                brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_HORS_CHAMP)
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode)

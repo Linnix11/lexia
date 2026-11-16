@@ -92,3 +92,32 @@ def test_12_un_questionnaire_ne_se_corrige_que_par_son_auteur():
     assert service.corriger("q1", [{"index": 0, "valeur": 0}], uid=8) is None      # autre compte : introuvable
     assert service.corriger("q1", [{"index": 0, "valeur": 0}], uid=None) is None   # visiteur : introuvable
     assert service.corriger("q1", [{"index": 0, "valeur": 0}], uid=7)["score"] == 1
+
+
+def test_second_audit_12_corrections_simultanees_un_seul_appel_au_modele():
+    """Plusieurs /quiz/correct simultanes sur un questionnaire ouvert lancaient chacun un appel payant."""
+    import threading
+    import time as t
+
+    class LLMLent:
+        def __init__(self):
+            self.appels = 0
+
+        def generate_json(self, **kw):
+            self.appels += 1
+            t.sleep(0.3)
+            return {"corrections": [{"index": 0, "evaluation": "correct", "commentaire": "Bien.",
+                                     "elements_manquants": []}]}, "fake"
+
+    llm, store = LLMLent(), QuizStore()
+    service = QuizService(lexia=None, llm=llm, store=store)
+    q = {"question": "?", "elements_attendus": ["a"], "explication": "", "sources": []}
+    store.ajouter(Quiz(id="q1", format="ouvertes", theme="t", questions=[q], table={}, proprietaire=7))
+    resultats = []
+    fils = [threading.Thread(target=lambda: resultats.append(
+        service.corriger("q1", [{"index": 0, "valeur": "ma reponse"}], uid=7))) for _ in range(4)]
+    for f in fils:
+        f.start()
+    for f in fils:
+        f.join()
+    assert llm.appels == 1 and len(resultats) == 4 and all(r == resultats[0] for r in resultats)

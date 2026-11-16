@@ -94,3 +94,20 @@ def test_budget_de_temps_avant_le_secours():
     with pytest.raises(LLMError, match="ecoule"):
         llm.generate_json(system="s", prompt="p", schema={})
     assert appels == ["a", "b"] and _time.monotonic() - debut < 1.0      # « c » n'est pas tente
+
+
+def test_question_bloquee_par_le_filtre_est_un_refus_et_pas_une_panne(monkeypatch):
+    """Second audit du 2026-11-16, point 11 : trois questions bloquees ouvraient le disjoncteur."""
+    from api.llm.base import ContenuRefuse
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    appels: list[str] = []
+
+    def bloque(request: httpx.Request) -> httpx.Response:
+        appels.append(request.url.path.rsplit("/", 1)[-1].split(":")[0])
+        return httpx.Response(200, json={"promptFeedback": {"blockReason": "SAFETY"}})
+
+    llm = GeminiLLM(api_key="k", models=("a", "b"), tentatives=2)
+    llm._client = httpx.Client(transport=httpx.MockTransport(bloque))
+    with pytest.raises(ContenuRefuse):
+        llm.generate_json(system="s", prompt="p", schema={})
+    assert appels == ["a", "b"]                       # pas de second tour pour une question bloquee

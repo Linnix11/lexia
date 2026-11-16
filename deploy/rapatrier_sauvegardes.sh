@@ -20,7 +20,17 @@ JOURS="${JOURS_CONSERVES:-60}"
 mkdir -p "$COPIES" && chmod 700 "$COPIES"
 echo "$(date -Iseconds) rapatriement depuis $LEXIA_SERVEUR"
 # (pas d'option --chmod : le rsync fourni avec macOS ne la connait pas)
-rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" --include='lexia-*.db' --exclude='*' "$SOURCE" "$COPIES/"
+# Plusieurs essais : au reveil du Mac a 9 h 30, le reseau n'est souvent pas encore la (« Network is
+# unreachable » le 2026-11-16) et la copie du jour etait perdue jusqu'au lendemain.
+ESSAIS="${LEXIA_ESSAIS:-6}"
+for essai in $(seq 1 "$ESSAIS"); do
+  if rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" --include='lexia-*.db' --exclude='*' "$SOURCE" "$COPIES/"; then
+    break
+  fi
+  [ "$essai" -eq "$ESSAIS" ] && { echo "ERREUR : serveur injoignable apres $ESSAIS essais" >&2; exit 1; }
+  echo "essai $essai echoue, nouvel essai dans 2 minutes"
+  sleep "${LEXIA_PAUSE:-120}"
+done
 chmod 600 "$COPIES"/lexia-*.db 2>/dev/null || true
 
 # la date est dans le nom (lexia-AAAAMMJJ.db) : tri par nom, plus sur que la date de modification

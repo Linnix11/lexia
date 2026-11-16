@@ -36,6 +36,9 @@ class Quiz:
     # Compte qui l'a cree (None : visiteur) : seul lui peut le faire corriger. La correction renvoie les
     # extraits, y compris d'un cours personnel (audit du 2026-11-16, point 12).
     proprietaire: int | None = None
+    # Une correction a la fois par questionnaire : plusieurs /quiz/correct simultanes lancaient chacun un
+    # appel au modele, hors quota (second audit du 2026-11-16, point 12). Le second recoit la correction du premier.
+    verrou: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
 
 class QuizStore:
@@ -168,8 +171,12 @@ class QuizService:
         quiz = self.store.get(quiz_id)
         if quiz is None or quiz.proprietaire != uid:
             return None
-        if quiz.correction is not None:
-            return quiz.correction
+        with quiz.verrou:
+            if quiz.correction is not None:
+                return quiz.correction
+            return self._corriger(quiz, reponses)
+
+    def _corriger(self, quiz: Quiz, reponses: list[dict]) -> dict:
         donnees = {r["index"]: r.get("valeur") for r in reponses}
         resultats: list[dict] = []
         a_corriger: list[tuple[int, dict, str]] = []

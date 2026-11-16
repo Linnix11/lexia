@@ -13,10 +13,12 @@ import time
 
 import httpx
 
-from api.llm.base import LLMError
+from api.llm.base import ContenuRefuse, LLMError
 
 log = logging.getLogger("lexia.llm")
 BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+# Fins de generation qui signalent un blocage du contenu, pas une panne du service.
+FINS_REFUS = {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"}
 RETRY_STATUS = {429, 500, 503}
 
 
@@ -55,11 +57,13 @@ class GeminiLLM:
     def _texte(reponse: dict) -> str:
         cands = reponse.get("candidates") or []
         if not cands:
-            raise LLMError(f"Aucune reponse (blocage : {reponse.get('promptFeedback', {}).get('blockReason')})")
+            blocage = reponse.get("promptFeedback", {}).get("blockReason")
+            raise (ContenuRefuse if blocage else LLMError)(f"Aucune reponse (blocage : {blocage})")
         parts = [p for p in cands[0].get("content", {}).get("parts", []) if not p.get("thought")]
         texte = "".join(p.get("text", "") for p in parts)
         if not texte:
-            raise LLMError(f"Reponse vide (fin : {cands[0].get('finishReason')})")
+            fin = cands[0].get("finishReason")
+            raise (ContenuRefuse if fin in FINS_REFUS else LLMError)(f"Reponse vide (fin : {fin})")
         return texte
 
     def generate_json(self, *, system, prompt, schema, temperature=0.2):
@@ -70,6 +74,7 @@ class GeminiLLM:
         """
         body = self._body(system, prompt, schema, temperature)
         erreurs: list[str] = []
+        refus = 0  # modeles qui ont bloque la question (filtre de securite) plutot qu'echoue
         exclus: set[str] = set()  # delai depasse ou requete refusee (400, 404...) : pas de second tour
         fin = time.monotonic() + self._budget if self._budget else None
         for tour in range(self._tentatives):
@@ -102,6 +107,9 @@ class GeminiLLM:
                         resultat = json.loads(self._texte(donnees))
                     except (json.JSONDecodeError, LLMError) as e:
                         erreurs.append(f"{model}: {e}")
+                        if isinstance(e, ContenuRefuse):
+                            refus += 1
+                            exclus.add(model)  # la meme question serait bloquee au second tour
                         continue
                     if self._releve is not None:
                         try:
@@ -113,4 +121,6 @@ class GeminiLLM:
                 log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, time.monotonic() - debut)
                 if r.status_code not in RETRY_STATUS:
                     exclus.add(model)
+        if erreurs and refus == len(erreurs):
+            raise ContenuRefuse("; ".join(erreurs))  # tous ont bloque la question : Gemini n'est pas en panne
         raise LLMError("; ".join(erreurs) or "aucun modele configure")

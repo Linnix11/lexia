@@ -27,7 +27,15 @@ _CONSEIL = re.compile(
     # decider des demarches a la place de l'utilisateur
     r"|\b(?:que|quoi) (?:dois-je|devrais-je|je dois) faire\b"
     r"|\bquelles? demarches?\b.{0,60}\b(?:dois-je|devrais-je|pour moi|je dois)"
-    r"|\bdois-je (?:porter plainte|saisir|prendre un avocat|signer|accepter|refuser)\b"
+    r"|\b(?:dois-je|devrais-je|faut-il que je|est-ce que je dois|est-ce que je devrais)\b.{0,20}"
+    r"\b(?:porte[rz]? plainte|saisir|saisisse|prendre un avocat|prenne un avocat|signer|signe|accepter|accepte"
+    r"|refuser|refuse|attaquer|attaque|poursuivre|poursuive)\b"
+    # rediger un document precis, a l'imperatif (« redigez une mise en demeure pour mon voisin ») : la
+    # liste exclut fiche, plan, reponse, commentaire, dissertation, qui sont des exercices d'etude.
+    r"|\b(?:redige|redigez|ecris|ecrivez|prepare|preparez)\b(?:[- ]?(?:moi|nous))?\s+"
+    r"(?:un|une|la|le|ma|mon|mes|les|des|l')\s*(?:mise en demeure|lettre|courrier|mail|e-?mail|plainte"
+    r"|contestation|reclamation|recours|requete|assignation|conclusions?|resiliation|declaration|attestation"
+    r"|preavis|demission)\b"
 )
 
 
