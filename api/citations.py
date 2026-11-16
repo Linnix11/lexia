@@ -16,6 +16,9 @@ from dataclasses import dataclass, field
 from api.references import references_non_couvertes
 
 _LABEL_RE = re.compile(r"S\d+")
+# « [S1] », « (S2) », « [S1, S5] » ecrits dans le texte : la source s'affichait deux fois sur la meme
+# ligne (dans le texte et en pastille). Retires du texte et rattaches aux sources de l'element.
+_LABELS_DANS_TEXTE = re.compile(r"\s*[\[(]\s*S\d+(?:\s*(?:,|;|/|et)\s*S\d+)*\s*[\])]", re.IGNORECASE)
 
 
 @dataclass
@@ -61,9 +64,11 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
     out: list[dict] = []
     for it in items or []:
         texte = str((it or {}).get("texte", "")).strip()
+        dans_texte = [lab for m in _LABELS_DANS_TEXTE.finditer(texte) for lab in _LABEL_RE.findall(m.group(0).upper())]
+        texte = _LABELS_DANS_TEXTE.sub("", texte).strip()
         if not texte:
             continue
-        sources = labels_valides((it or {}).get("sources"), table, controle)
+        sources = labels_valides(list((it or {}).get("sources") or []) + dans_texte, table, controle)
         if (exiger_source and not sources) or not verifier_texte(texte, passages, controle):
             controle.elements_retires += 1
             continue

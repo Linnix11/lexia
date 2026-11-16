@@ -27,8 +27,13 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
   )
 }
 
+const cle = (it?: Element) => (it ? `${it.rubrique ?? ''}|${[...it.sources].sort().join(',')}` : '')
+
 function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[]; sources: FicheSource[]; ton: 'droit' | 'neutre' | 'attention' }) {
   if (!items.length) return null
+  // Des phrases qui se suivent avec les memes sources (et la meme rubrique) : la citation n'est affichee
+  // qu'apres la derniere, comme en fin de paragraphe. Sinon [S1] revenait apres chaque phrase.
+  const citer = (i: number) => cle(items[i]) !== cle(items[i + 1])
   const couleur = ton === 'droit' ? 'text-forest' : ton === 'attention' ? 'text-[#8a6537]' : 'text-muted'
   return (
     <div className="mt-3.5">
@@ -41,7 +46,7 @@ function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[];
               <span className="mt-1.5 mb-0.5 block text-[11.5px] font-semibold text-ink">{it.rubrique}</span>
             )}
             {it.texte}
-            <Citations ids={it.sources} sources={sources} />
+            {citer(i) && <Citations ids={it.sources} sources={sources} />}
           </li>
         ))}
       </ul>

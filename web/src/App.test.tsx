@@ -35,9 +35,11 @@ function repondre(corps: unknown, status = 200) {
 let fetchMock: ReturnType<typeof vi.fn>
 
 let emailVerifie = true
+let reponseChat: ReponseChat = REPONSE
 
 beforeEach(() => {
   emailVerifie = true
+  reponseChat = REPONSE
   localStorage.clear()
   window.history.pushState({}, '', '/app')
   fetchMock = vi.fn((url: string) => {
@@ -45,7 +47,7 @@ beforeEach(() => {
     if (url.endsWith('/auth/email/renvoyer')) return repondre({ envoye: true }, 202)
     if (url.endsWith('/config')) return repondre({ comptes: true, contact_email: null })
     if (url.endsWith('/matieres')) return repondre([{ id: 'droit_civil', libelle: 'Droit civil', sources: ['code_civil'] }])
-    if (url.endsWith('/chat')) return repondre(REPONSE)
+    if (url.endsWith('/chat')) return repondre(reponseChat)
     if (url.includes('/vigueur')) return repondre({ id: 'code_civil:A1240', applicable: true, en_vigueur: true, version: 'v',
       url: 'u', version_en_vigueur: null, message: 'Cette version est en vigueur.' })
     if (url.includes('/sources/')) return repondre({ ...REPONSE.sources[0], texte: "Tout fait quelconque de l'homme…", titre: null, meta: {} })
@@ -76,6 +78,13 @@ describe('Assistant', () => {
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
+  })
+
+  it('affiche une seule fois la citation de phrases consecutives qui ont la meme source', async () => {
+    const r = REPONSE.droit_positif[0]
+    reponseChat = { ...REPONSE, droit_positif: [r, { ...r, texte: 'Deuxième règle.' }, { ...r, texte: 'Troisième règle.' }] }
+    await poser('Que dit l’article 1240 ?')
+    expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(1)
   })
 
   it('propose les six semestres et envoie le semestre choisi', async () => {
