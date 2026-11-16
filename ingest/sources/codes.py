@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import tarfile
+import xml.etree.ElementTree as ET
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -68,15 +70,52 @@ NATURES_LOIS = {"LOI", "LOI_ORGANIQUE", "ORDONNANCE", "LOI_CONSTIT"}
 SOURCE_LOIS = "lois"
 
 
+# Dossier d'un texte dans un chemin de l'archive, et la suite du chemin (absente pour le dossier lui-meme).
+_MOTIF = re.compile(r"/((?:LEGITEXT|JORFTEXT)\d+)(?:/(.+))?$")
+
+
+def _fichier_inventaire(raw_dir: Path, date: str) -> Path:
+    return raw_dir / f"inventaire_legi_{date}.json"
+
+
+def _loi(nom: str, raw: bytes) -> list[str] | None:
+    """[dossier, nature, date, titre] si ce fichier texte/version est celui d'une loi ou ordonnance."""
+    mm = _MOTIF.search("/" + nom)
+    if not mm or "/TNC_" not in nom or "/texte/version/" not in nom:
+        return None
+    root = ET.fromstring(raw)
+    nature = dila.text_of(root, ".//NATURE")
+    if nature not in NATURES_LOIS:
+        return None
+    return [mm.group(1), nature, dila.text_of(root, ".//DATE_TEXTE"), dila.text_of(root, ".//TITREFULL")]
+
+
+def inventorier(raw_dir: Path) -> Path:
+    """Liste les lois, lois organiques et ordonnances de l'archive globale (une passe, quelques minutes)."""
+    archive, _, date = _dossier(raw_dir)
+    print(f"  inventaire des lois de {archive.name}...", flush=True)
+    lois = {}
+    for nom, raw in dila.iter_xml(archive, lambda n: "/TNC_" in n and "/texte/version/" in n):
+        if loi := _loi(nom, raw):
+            lois[loi[0]] = loi
+    f = _fichier_inventaire(raw_dir, date)
+    f.write_text(json.dumps({"lois": sorted(lois.values())}, ensure_ascii=False), encoding="utf-8")
+    return f
+
+
 def _inventaire(raw_dir: Path, date: str) -> dict:
-    f = raw_dir / f"inventaire_legi_{date}.json"
+    f = _fichier_inventaire(raw_dir, date)
     if not f.exists():
-        raise FileNotFoundError(f"{f} absent : inventaire des textes LEGI a produire (voir docs).")
+        inventorier(raw_dir)
     return json.loads(f.read_text(encoding="utf-8"))
 
 
 def _ids_lois(raw_dir: Path, date: str) -> set[str]:
     return {i for i, nature, *_ in _inventaire(raw_dir, date)["lois"] if nature in NATURES_LOIS}
+
+
+def _voulus(raw_dir: Path, date: str) -> set[str]:
+    return {c.legitext for c in CODES} | {legi.CODE_ID} | _ids_lois(raw_dir, date)
 
 
 def _dossier(raw_dir: Path) -> tuple[Path, Path, str]:
@@ -86,30 +125,75 @@ def _dossier(raw_dir: Path) -> tuple[Path, Path, str]:
 
 
 def extraire(raw_dir: Path) -> Path:
-    """Extrait en une passe les codes retenus et les lois en vigueur (si pas deja fait)."""
+    """Extrait les codes retenus et les lois (une passe d'environ 6 minutes sur l'archive globale, faite
+    une fois), puis applique les archives quotidiennes pas encore lues."""
     archive, dest, date = _dossier(raw_dir)
-    if dest.exists():
-        return dest
-    voulus = {c.legitext for c in CODES} | _ids_lois(raw_dir, date)
-    tmp = dest.with_name(dest.name + ".partiel")
-    tmp.mkdir(parents=True, exist_ok=True)
-    motif = re.compile(r"/((?:LEGITEXT|JORFTEXT)\d+)/(.+)$")
-    print(f"  extraction de {len(voulus)} textes depuis {archive.name} (environ 6 minutes)...", flush=True)
-    with tarfile.open(archive, "r|gz") as tar:
-        for m in tar:
-            if not (m.isfile() and m.name.endswith(".xml") and "/article/" in m.name):
-                continue
-            mm = motif.search(m.name)
+    if not dest.exists():
+        voulus = _voulus(raw_dir, date)
+        tmp = dest.with_name(dest.name + ".partiel")
+        tmp.mkdir(parents=True, exist_ok=True)
+        print(f"  extraction de {len(voulus)} textes depuis {archive.name} (environ 6 minutes)...", flush=True)
+        with tarfile.open(archive, "r|gz") as tar:
+            for m in tar:
+                if not (m.isfile() and m.name.endswith(".xml") and "/article/" in m.name):
+                    continue
+                mm = _MOTIF.search(m.name)
+                if not mm or mm.group(1) not in voulus:
+                    continue
+                f = tar.extractfile(m)
+                if f is None:
+                    continue
+                cible = tmp / mm.group(1) / mm.group(2)
+                cible.parent.mkdir(parents=True, exist_ok=True)
+                cible.write_bytes(f.read())
+        tmp.rename(dest)
+    appliquer_increments(raw_dir, dest, date)
+    return dest
+
+
+def appliquer_increments(raw_dir: Path, dest: Path, date: str) -> list[str]:
+    """Applique a l'extraction les archives quotidiennes pas encore lues (liste dans dest/.increments) :
+    nouvelles lois ajoutees a l'inventaire, articles ecrits par-dessus, dossiers supprimes retires (D78).
+    Renvoie les horodatages appliques."""
+    journal = dest / ".increments"
+    deja = set(journal.read_text().split()) if journal.exists() else set()
+    appliques = []
+    for inc in dila.increments(raw_dir, "legi"):
+        h = dila.horodatage(inc)
+        if h in deja:
+            continue
+        supprimes, fichiers = dila.lire_increment(inc)
+        inventaire = _inventaire(raw_dir, date)
+        connues = {loi[0] for loi in inventaire["lois"]}
+        nouvelles = [loi for nom, raw in fichiers if (loi := _loi(nom, raw)) and loi[0] not in connues]
+        if nouvelles:
+            inventaire["lois"] += nouvelles
+            _fichier_inventaire(raw_dir, date).write_text(json.dumps(inventaire, ensure_ascii=False), encoding="utf-8")
+        voulus = _voulus(raw_dir, date)
+        republies = {mm.group(1) for nom, _ in fichiers if (mm := _MOTIF.search("/" + nom))}
+        for chemin in supprimes:
+            mm = _MOTIF.search("/" + chemin)
             if not mm or mm.group(1) not in voulus:
                 continue
-            f = tar.extractfile(m)
-            if f is None:
+            # Un texte qui change d'etat (en vigueur / non en vigueur) change de dossier dans l'archive :
+            # la DILA supprime l'ancien et republie le texte dans la meme archive quotidienne.
+            if mm.group(2) is None and mm.group(1) in republies:
                 continue
-            cible = tmp / mm.group(1) / mm.group(2)
-            cible.parent.mkdir(parents=True, exist_ok=True)
-            cible.write_bytes(f.read())
-    tmp.rename(dest)
-    return dest
+            cible = dest / mm.group(1) / (mm.group(2) or "")
+            if cible.is_dir():
+                shutil.rmtree(cible)
+            else:
+                cible.unlink(missing_ok=True)
+        for nom, raw in fichiers:
+            mm = _MOTIF.search("/" + nom)
+            if mm and mm.group(2) and "/article/" in nom and mm.group(1) in voulus:
+                cible = dest / mm.group(1) / mm.group(2)
+                cible.parent.mkdir(parents=True, exist_ok=True)
+                cible.write_bytes(raw)
+        with journal.open("a", encoding="utf-8") as f:
+            f.write(h + "\n")
+        appliques.append(h)
+    return appliques
 
 
 class SourceCode:
@@ -120,9 +204,8 @@ class SourceCode:
         self.SOURCE_ID = code.source_id
 
     def collect(self, raw_dir: Path, *, date_recuperation: str) -> Iterator[legi.Passage]:
-        archive, _, _ = _dossier(raw_dir)
         dossier = extraire(raw_dir) / self.code.legitext
-        version = f"archive DILA LEGI du {dila.archive_date(archive)}"
+        version = f"archive DILA LEGI du {dila.date_corpus(raw_dir, 'legi')}"
         passages: dict[str, legi.Passage] = {}
         for f in dossier.rglob("LEGIARTI*.xml"):
             p = legi.parse_article(f.read_bytes(), date_recuperation=date_recuperation, version_archive=version,
@@ -140,9 +223,9 @@ class SourceLois:
     SOURCE_ID = SOURCE_LOIS
 
     def collect(self, raw_dir: Path, *, date_recuperation: str) -> Iterator[legi.Passage]:
-        archive, _, date = _dossier(raw_dir)
+        _, _, date = _dossier(raw_dir)
         racine = extraire(raw_dir)
-        version = f"archive DILA LEGI du {dila.archive_date(archive)}"
+        version = f"archive DILA LEGI du {dila.date_corpus(raw_dir, 'legi')}"
         n = 0
         vus: set[str] = set()  # un meme article peut etre range sous deux textes (loi et texte JORF)
         for texte_id in sorted(_ids_lois(raw_dir, date)):

@@ -22,14 +22,17 @@ echo "== Compilation du front"
 (cd web && npm ci && npm run build)
 
 echo "== Index de recherche"
-# LEXIA_SANS_INDEX=1 : l'index du serveur est garde tel quel (il a ete mis a jour sur place, ou il n'a pas
-# change) ; seuls le code et le front partent. Evite de renvoyer 4 Go par une liaison montante lente.
-EXCLURE_INDEX=()
-if [ "${LEXIA_SANS_INDEX:-}" = 1 ]; then
-  EXCLURE_INDEX=(--exclude 'data/index')
-  echo "  index du serveur conserve (LEXIA_SANS_INDEX=1)"
-else
+# Le serveur met son index a jour chaque nuit depuis la DILA (D78, deploy/mettre_a_jour_corpus.sh) : par
+# defaut il est garde tel quel et seuls le code et le front partent. LEXIA_AVEC_INDEX=1 envoie l'index
+# du Mac a la place (4 Go, et il remplace un index peut-etre plus recent). LEXIA_SANS_INDEX est ignore.
+# Les dossiers data/index.* (index en preparation ou precedent) du serveur ne sont jamais touches.
+EXCLURE_INDEX=(--exclude 'data/index.*')
+if [ "${LEXIA_AVEC_INDEX:-}" = 1 ]; then
   test -f data/index/lexia.sqlite || { echo "data/index absent : lancer python -m ingest.build_index" >&2; exit 1; }
+  echo "  index du Mac envoye (LEXIA_AVEC_INDEX=1)"
+else
+  EXCLURE_INDEX+=(--exclude 'data/index')
+  echo "  index du serveur conserve"
 fi
 
 echo "== Version"
@@ -80,6 +83,8 @@ runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --upgrade pip
 runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir -r deploy/requirements-serveur.txt
 cp deploy/lexia.service /etc/systemd/system/lexia.service
 chmod 755 deploy/sauvegarder_comptes.sh
+# Mise a jour nocturne du corpus (D78) : lancee par root, donc copie appartenant a root, hors de /opt/lexia.
+install -m 755 -o root -g root deploy/mettre_a_jour_corpus.sh /usr/local/sbin/lexia-mise-a-jour
 install -m 644 deploy/lexia.cron /etc/cron.d/lexia
 # Adresse reelle des visiteurs derriere Cloudflare (inclus par la configuration nginx)
 install -m 644 deploy/nginx-cloudflare.conf /etc/nginx/snippets/lexia-cloudflare.conf

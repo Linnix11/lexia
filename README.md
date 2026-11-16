@@ -61,7 +61,7 @@ Le script peut être interrompu puis relancé sans rien recalculer (cache par em
 
 `EMBED_PROVIDER=gemini` reste possible, mais le niveau gratuit est limité à 1 000 embeddings par jour.
 
-**En production** : calculer les embeddings sur une machine avec GPU (ou un Mac), puis construire l'index (`ingest.build_index`), que `deploy/publier.sh` envoie au serveur. Le serveur n'a besoin du modèle que pour vectoriser les questions (rapide, même sur CPU).
+**En production** : le serveur tient lui-même son index à jour chaque nuit (`python -m ingest.mise_a_jour`, voir `deploy/DEPLOIEMENT.md`) avec les archives quotidiennes de la DILA, et ne calcule que les embeddings des passages modifiés.
 
 ## 4. Lancer l'API
 
@@ -71,7 +71,7 @@ uvicorn api.main:app --port 8000      # avec API_DOCS=1 : documentation interact
 python eval/essai_api.py http://localhost:8000   # essai rapide avec de vraies questions
 ```
 
-En production, le même index local est utilisé (envoyé par `deploy/publier.sh`).
+En production, le même index local est utilisé, mis à jour chaque nuit sur le serveur.
 
 | Route | Rôle |
 |---|---|

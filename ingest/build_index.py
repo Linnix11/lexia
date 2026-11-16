@@ -99,20 +99,33 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
     con.close()
     tmp.replace(index_dir / "lexia.sqlite")
 
-    # Vecteurs decodes directement en float32 par blocs (une liste Python de 500 000 vecteurs
-    # occuperait plus de 10 Go).
+    # Vecteurs ecrits directement dans vectors.npy, projete en memoire, en deux passes sur le cache
+    # (ids retenus, puis valeurs) : le serveur construit l'index la nuit a cote du service en marche,
+    # sans la place de garder 1,5 Go de vecteurs en double dans la memoire vive (D78).
+    def retenus():
+        vus: set[str] = set()
+        for f in sorted(cache_dir.glob("*.jsonl")) if cache_dir.exists() else []:
+            for r in iter_cache(f, model):
+                if empreintes.get(r["id"]) == r["empreinte"] and r["id"] not in vus:
+                    vus.add(r["id"])
+                    yield r
+
     ids: list[str] = []
-    blocs: list[np.ndarray] = []
-    for f in sorted(cache_dir.glob("*.jsonl")) if cache_dir.exists() else []:
-        for r in iter_cache(f, model):
-            if empreintes.get(r["id"]) == r["empreinte"]:
-                ids.append(r["id"])
-                blocs.append(np.frombuffer(base64.b64decode(r["b64"]), dtype="<f4"))
-    arr = np.vstack(blocs).astype(np.float32, copy=False) if blocs else np.zeros((0, 0), dtype=np.float32)
-    del blocs
-    if len(arr):
-        arr /= np.linalg.norm(arr, axis=1, keepdims=True)
-    np.save(index_dir / "vectors.npy", arr)
+    dim = 0
+    for r in retenus():
+        ids.append(r["id"])
+        dim = dim or len(base64.b64decode(r["b64"])) // 4
+    if not ids:
+        np.save(index_dir / "vectors.npy", np.zeros((0, 0), dtype=np.float32))
+    else:
+        arr = np.lib.format.open_memmap(index_dir / "vectors.npy", mode="w+", dtype=np.float32, shape=(len(ids), dim))
+        for i, r in enumerate(retenus()):
+            arr[i] = np.frombuffer(base64.b64decode(r["b64"]), dtype="<f4")
+        for i in range(0, len(ids), 50_000):
+            bloc = arr[i:i + 50_000]
+            bloc /= np.linalg.norm(bloc, axis=1, keepdims=True)
+        arr.flush()
+        del arr
     (index_dir / "vectors_ids.json").write_text(json.dumps(ids))
     (index_dir / "vectors_model.txt").write_text(model)
     print(f"index : {n} passages, {len(ids)} embeddings ({model}) -> {index_dir}")

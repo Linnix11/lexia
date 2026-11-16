@@ -137,9 +137,8 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str, seulement: 
 
 
 def collect(raw_dir: Path, *, date_recuperation: str, seulement: str = SOURCE_ID) -> Iterator[Passage]:
-    archive = dila.latest_archive(raw_dir, FONDS)
-    version = f"Archive DILA CASS du {dila.archive_date(archive)}"
-    for _, raw in dila.iter_xml(archive):
+    version = f"Archive DILA CASS du {dila.date_corpus(raw_dir, FONDS)}"
+    for _, raw in dila.iter_xml_a_jour(raw_dir, FONDS):
         yield from parse_arret(raw, date_recuperation=date_recuperation, version=version, seulement=seulement)
 
 

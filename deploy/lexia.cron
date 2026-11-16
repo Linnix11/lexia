@@ -3,3 +3,6 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # En tant que lexia, jamais root : les fichiers de /opt/lexia sont modifiables par le service.
 15 3 * * * lexia /opt/lexia/deploy/sauvegarder_comptes.sh >> /opt/lexia/logs/sauvegarde.log 2>&1
+# Mise a jour du corpus depuis la DILA (D78). Root seulement pour redemarrer le service : le script est une
+# copie appartenant a root (/usr/local/sbin), qui fait tout le reste en tant que lexia.
+30 4 * * * root /usr/local/sbin/lexia-mise-a-jour >> /var/log/lexia-mise-a-jour.log 2>&1

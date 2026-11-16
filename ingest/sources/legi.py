@@ -4,14 +4,13 @@
 conservees avec en_vigueur = false pour pouvoir repondre "dans sa redaction applicable
 au litige" ; la recherche filtre par defaut sur les versions en vigueur.
 
-L'archive LEGI complete (~1,2 Go) n'est parcourue qu'une fois : les fichiers du Code civil
-sont extraits dans data/raw/dila/extrait_code_civil_<date>/ puis relus depuis le disque.
+Les fichiers du Code civil sont extraits avec ceux des autres codes (ingest.sources.codes.extraire),
+puis relus depuis le disque.
 """
 
 from __future__ import annotations
 
 import re
-import tarfile
 import xml.etree.ElementTree as ET
 from collections.abc import Iterator
 from datetime import date
@@ -39,23 +38,6 @@ ETATS = {
 
 # Lien Legifrance vers une version d'article (format a confirmer en navigateur).
 URL_ARTICLE = "https://www.legifrance.gouv.fr/codes/article_lc/{id}"
-
-
-def extraire(archive: Path, dest: Path) -> None:
-    """Extrait les seuls fichiers du code depuis l'archive LEGI (operation longue, faite une fois)."""
-    tmp = dest.with_name(dest.name + ".partiel")
-    tmp.mkdir(parents=True, exist_ok=True)
-    marqueur = f"/{CODE_ID}/"
-    with tarfile.open(archive, "r|gz") as tar:
-        for m in tar:
-            if m.isfile() and marqueur in m.name and m.name.endswith(".xml"):
-                f = tar.extractfile(m)
-                if f is None:
-                    continue
-                cible = tmp / m.name
-                cible.parent.mkdir(parents=True, exist_ok=True)
-                cible.write_bytes(f.read())
-    tmp.rename(dest)
 
 
 def _couvre(el: ET.Element, date: str) -> bool:
@@ -147,13 +129,10 @@ def _cle_num(p: Passage):
 
 
 def collect(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
-    archive = dila.latest_archive(raw_dir, FONDS)
-    date = archive.name.split("_")[-1][:8]
-    dossier = raw_dir / f"extrait_code_civil_{date}"
-    if not dossier.exists():
-        print(f"  extraction du Code civil depuis {archive.name} (quelques minutes)...", flush=True)
-        extraire(archive, dossier)
-    version_archive = f"archive DILA LEGI du {dila.archive_date(archive)}"
+    from ingest.sources import codes  # import local : codes importe ce module
+
+    dossier = codes.extraire(raw_dir) / CODE_ID
+    version_archive = f"archive DILA LEGI du {dila.date_corpus(raw_dir, FONDS)}"
 
     passages: dict[str, Passage] = {}
     for f in dossier.rglob("LEGIARTI*.xml"):

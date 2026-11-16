@@ -71,7 +71,6 @@ def parse_decision(raw: bytes, *, date_recuperation: str, version: str) -> list[
 
 
 def collect(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
-    archive = dila.latest_archive(raw_dir, FONDS)
-    version = f"Archive DILA CONSTIT du {dila.archive_date(archive)}"
-    for _, raw in dila.iter_xml(archive):
+    version = f"Archive DILA CONSTIT du {dila.date_corpus(raw_dir, FONDS)}"
+    for _, raw in dila.iter_xml_a_jour(raw_dir, FONDS):
         yield from parse_decision(raw, date_recuperation=date_recuperation, version=version)

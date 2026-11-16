@@ -43,7 +43,7 @@ LEXIA_SERVEUR=root@IP_DU_VPS LEXIA_DOMAINE=lexia.mondomaine.fr deploy/publier.sh
 Le script :
 1. lance les tests (API et front) ;
 2. compile le front (`web/dist`) ;
-3. envoie le code, le front et l'index (`data/index`) avec rsync ;
+3. envoie le code et le front avec rsync. L'index de recherche du serveur est gardé tel quel, puisqu'il est mis à jour chaque nuit (voir « Mise à jour du corpus »). `LEXIA_AVEC_INDEX=1` envoie à la place celui du Mac (4 Go) ;
 4. installe les dépendances Python (PyTorch en version CPU) ;
 5. installe le service systemd et la configuration nginx, puis redémarre le service ;
 6. attend que `/api/sante` réponde.
@@ -88,7 +88,22 @@ Puis ouvrir `https://lexia.mondomaine.fr` : le panel doit afficher « Mon espace
 | Journaux applicatifs (sans texte des questions) | `/opt/lexia/logs/requetes.jsonl`, `/opt/lexia/logs/feedback.jsonl` |
 | Mettre à jour | relancer `deploy/publier.sh` depuis le Mac |
 
-Mettre à jour le corpus : sur le Mac, `python -m ingest.run --all`, `python -m ingest.embed --all`, `python -m ingest.build_index`, puis `deploy/publier.sh`.
+### Mise à jour du corpus (automatique, chaque nuit)
+
+La DILA publie chaque soir vers 21 h les textes et décisions modifiés du jour (archives quotidiennes de `https://echanges.dila.gouv.fr/OPENDATA/`). À 4 h 30, `/etc/cron.d/lexia` lance `/usr/local/sbin/lexia-mise-a-jour`, une copie de `deploy/mettre_a_jour_corpus.sh` appartenant à root et installée par `publier.sh`. Le script :
+
+1. télécharge les nouvelles archives LEGI, CASS, JADE et CONSTIT dans `/opt/lexia/data/raw/dila` ;
+2. s'il y a du nouveau, réimporte les sources, calcule les embeddings des seuls passages nouveaux ou modifiés et construit `data/index.nouveau` (`python -m ingest.mise_a_jour`, en tant que `lexia`, en priorité basse) ;
+3. refuse le nouvel index s'il perd plus de 2 % des passages ou des embeddings, ou une source entière ;
+4. le met en service (l'ancien est gardé dans `data/index.precedent`), redémarre le service (une trentaine de secondes) et revient à l'ancien si `/api/sante` ne répond plus.
+
+| Action | Commande (sur le serveur) |
+|---|---|
+| Journal | `tail -50 /var/log/lexia-mise-a-jour.log` |
+| Lancer tout de suite | `/usr/local/sbin/lexia-mise-a-jour` (`--forcer` pour reconstruire sans nouvelle archive) |
+| Revenir à l'index précédent | `cd /opt/lexia && sudo -u lexia bash -c 'mv data/index data/index.echec && mv data/index.precedent data/index' && systemctl restart lexia` |
+
+Espace disque utilisé sur le serveur : environ 25 Go (archives DILA, extraction, passages, embeddings, trois index).
 
 ## Administration
 

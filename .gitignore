@@ -26,6 +26,7 @@ data/embeddings/
 
 # Index local de recherche (regenere par ingest/build_index.py)
 data/index/
+data/index.*/
 
 # Journaux de l'API
 logs/
