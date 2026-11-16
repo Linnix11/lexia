@@ -35,7 +35,9 @@ class Settings:
     expansion_timeout: float = 8.0
     rerank_model: str = ""                     # vide = pas de reclassement
     groq_api_key: str = ""                     # vide = pas de modele de secours
-    groq_model: str = "openai/gpt-oss-120b"
+    # Qwen d'abord : 4 reponses sur 4 sans faute de francais, contre des fautes dans presque toutes celles de
+    # gpt-oss-120b (essais du 2026-11-16, D76). Qwen est en preversion chez Groq : gpt-oss-120b prend le relais.
+    groq_models: tuple[str, ...] = ("qwen/qwen3.8-27b", "openai/gpt-oss-120b")
     # Avec un secours : un seul tour de modeles Gemini et ce temps total au plus avant de passer a Groq.
     # Assez long pour une reponse Gemini lente mais reussie (~25 s constatees), assez court pour ne pas
     # attendre six 503 d'affilee (74 s constatees).
@@ -74,7 +76,7 @@ def get_settings() -> Settings:
         expansion_timeout=float(os.environ.get("QUERY_EXPANSION_TIMEOUT", "8")),
         rerank_model=os.environ.get("RERANK_MODEL", ""),
         groq_api_key=os.environ.get("GROQ_API_KEY", ""),
-        groq_model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+        groq_models=_list("GROQ_MODELS", "qwen/qwen3.8-27b,openai/gpt-oss-120b"),
         budget_avant_secours=float(os.environ.get("BUDGET_AVANT_SECOURS_SECONDES", "35")),
         disjoncteur_seuil=int(os.environ.get("DISJONCTEUR_SEUIL", "3")),
         api_docs=os.environ.get("API_DOCS", "0") in ("1", "true", "oui"),

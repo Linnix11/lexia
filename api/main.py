@@ -98,7 +98,7 @@ def _construire_secours(settings: Settings):
         return None
     from api.llm.groq import GroqLLM
 
-    return GroqLLM(api_key=settings.groq_api_key, model=settings.groq_model, timeout=settings.llm_timeout)
+    return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models, timeout=settings.llm_timeout)
 
 
 def _construire_expanseur(settings: Settings, journal: Journal | None = None):

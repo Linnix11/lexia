@@ -1,5 +1,7 @@
 """Modele de secours (Groq) : appele seulement si Gemini echoue, avec moins d'extraits."""
 
+import json
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
@@ -80,13 +82,43 @@ def test_client_groq(monkeypatch):
         assert '"json_schema"' in corps and "openai/gpt-oss-120b" in corps
         return httpx.Response(200, json={"choices": [{"message": {"content": '{"statut": "reponse"}'}}]})
 
-    llm = GroqLLM(api_key="k", model="openai/gpt-oss-120b")
+    llm = GroqLLM(api_key="k", models=("openai/gpt-oss-120b",))
     llm._client = httpx.Client(transport=httpx.MockTransport(repondre), headers={"Authorization": "Bearer k"})
     assert llm.generate_json(system="s", prompt="p", schema={}) == ({"statut": "reponse"}, "groq/openai/gpt-oss-120b")
 
     llm._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(429, json={})))
     with pytest.raises(LLMError, match="HTTP 429"):
         llm.generate_json(system="s", prompt="p", schema={})
+
+
+def test_groq_passe_au_modele_suivant_sur_refus_mais_pas_sur_delai():
+    appels = []
+
+    def repondre(request: httpx.Request) -> httpx.Response:
+        modele = json.loads(request.read())["model"]
+        appels.append(modele)
+        if modele == "preversion":
+            return httpx.Response(404, json={"error": {"code": "model_decommissioned"}})
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"statut": "reponse"}'}}]})
+
+    llm = GroqLLM(api_key="k", models=("preversion", "stable"))
+    llm._client = httpx.Client(transport=httpx.MockTransport(repondre))
+    assert llm.generate_json(system="s", prompt="p", schema={}) == ({"statut": "reponse"}, "groq/stable")
+    assert appels == ["preversion", "stable"]
+
+    def lent(request: httpx.Request) -> httpx.Response:
+        appels.append("lent")
+        raise httpx.ReadTimeout("lent", request=request)
+
+    appels.clear()
+    llm._client = httpx.Client(transport=httpx.MockTransport(lent))
+    with pytest.raises(LLMError, match="delai depasse"):
+        llm.generate_json(system="s", prompt="p", schema={})
+    assert appels == ["lent"]                   # un delai depasse ne double pas l'attente
+
+
+def test_secours_par_defaut_qwen_puis_gpt_oss():
+    assert Settings().groq_models == ("qwen/qwen3.8-27b", "openai/gpt-oss-120b")
 
 
 def test_disjoncteur():
