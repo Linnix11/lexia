@@ -370,9 +370,15 @@ export const api = {
   cours: {
     lister: () => requete<{ cours: CoursDepose[]; maximum: number; formats: string[] }>('/cours'),
     deposer: (fichier: File, matiere: string, titre: string) => {
-      const params = new URLSearchParams({ matiere, fichier: fichier.name, titre })
-      return requete<CoursDepose>(`/cours?${params}`, {
-        method: 'POST', body: fichier, headers: { 'Content-Type': 'application/octet-stream' },
+      // Nom du fichier et titre en en-tetes, pas dans l'adresse : l'adresse est ecrite dans les journaux
+      // de nginx et de Cloudflare, et le nom contient parfois celui de l'etudiant (« Droit civil Dupont.pdf »).
+      return requete<CoursDepose>(`/cours?${new URLSearchParams({ matiere })}`, {
+        method: 'POST', body: fichier,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Lexia-Fichier': encodeURIComponent(fichier.name),
+          'X-Lexia-Titre': encodeURIComponent(titre),
+        },
       })
     },
     supprimer: (id: number) => post<void>(`/cours/${id}/supprimer`, {}),

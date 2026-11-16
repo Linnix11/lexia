@@ -155,6 +155,8 @@ describe('Assistant', () => {
     })
     const envoi = fetchMock.mock.calls.find(([u, i]) => String(u).includes('/cours?') && i?.method === 'POST')!
     expect(String(envoi[0])).toContain('matiere=droit_civil')
+    expect(String(envoi[0])).not.toContain('chapitre3')                     // nom et titre hors de l'adresse
+    expect((envoi[1].headers as Record<string, string>)['X-Lexia-Fichier']).toBe('chapitre3.pdf')
     expect(envoi[1].body).toBe(pdf)
     await waitFor(() => expect(screen.getByLabelText('Mon cours')).toHaveValue('7'))   // devient le cours de travail
     expect(screen.queryByRole('form', { name: 'Ajouter un cours' })).not.toBeInTheDocument()
@@ -243,6 +245,15 @@ describe('Favoris', () => {
     localStorage.setItem('lexia.favoris.v1', JSON.stringify([{ id: 'ancienne', question: 'q', mode: 'fiche', enregistre_le: 'x', reponse: REPONSE }]))
     expect(lireFavoris('a@exemple.fr').map((f) => f.id)).toEqual(['ancienne'])
     expect(localStorage.getItem('lexia.favoris.v1')).toBeNull()
+    expect(lireFavoris('b@exemple.fr')).toEqual([])
+  })
+
+  it('l adresse du compte n apparait pas dans le stockage du navigateur', () => {
+    localStorage.setItem('lexia.favoris.v1.a@exemple.fr', JSON.stringify([{ id: 'r-a', question: 'q', mode: 'fiche', enregistre_le: 'x', reponse: REPONSE }]))
+    expect(lireFavoris('a@exemple.fr').map((f) => f.id)).toEqual(['r-a'])     // reprise de l'ancienne cle
+    expect(ecrireFavoris(lireFavoris('a@exemple.fr'), 'a@exemple.fr')).toBe(true)
+    const cles = Object.keys(localStorage)
+    expect(cles.some((c) => c.includes('exemple.fr'))).toBe(false)
     expect(lireFavoris('b@exemple.fr')).toEqual([])
   })
 

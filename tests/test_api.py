@@ -341,7 +341,9 @@ def test_feedback_et_sante(env):
                                           "motif": "source_incorrecte"}).status_code == 204
     assert "source_incorrecte" in (logs / "feedback.jsonl").read_text()
     assert client.post("/feedback", json={"reponse_id": "12345678", "utile": True, "commentaire": "x"}).status_code == 204
-    sante = client.get("/sante").json()
+    assert client.get("/sante").json() == {"statut": "ok"}                    # en public : rien d'autre
+    local = TestClient(client.app, client=("127.0.0.1", 50000))              # depuis le serveur : le detail
+    sante = local.get("/sante").json()
     assert sante["statut"] == "ok" and sante["passages"] > 100
     assert {m["id"] for m in client.get("/matieres").json()} >= {"droit_civil", "droit_constitutionnel"}
 

@@ -33,6 +33,9 @@ class Quiz:
     # Correction des questions ouvertes deja faite par le modele : renvoyee telle quelle ensuite,
     # pour qu'un meme questionnaire ne declenche qu'un seul appel payant.
     correction: dict | None = None
+    # Compte qui l'a cree (None : visiteur) : seul lui peut le faire corriger. La correction renvoie les
+    # extraits, y compris d'un cours personnel (audit du 2026-11-16, point 12).
+    proprietaire: int | None = None
 
 
 class QuizStore:
@@ -136,7 +139,8 @@ class QuizService:
                     controle.elements_retires += 1
                 elif len(questions) < nombre:
                     questions.append(v)
-        quiz = Quiz(id=str(uuid.uuid4()), format=fmt, theme=theme, questions=questions, table=table)
+        quiz = Quiz(id=str(uuid.uuid4()), format=fmt, theme=theme, questions=questions, table=table,
+                    proprietaire=uid)
         if questions:
             self.store.ajouter(quiz)
         utilises = {pid for q in questions for pid in q["sources"]}
@@ -160,9 +164,9 @@ class QuizService:
             "controle": {**controle.as_dict(), "recherche": recherche, "modele_appele": modele is not None},
         }
 
-    def corriger(self, quiz_id: str, reponses: list[dict]) -> dict | None:
+    def corriger(self, quiz_id: str, reponses: list[dict], uid: int | None = None) -> dict | None:
         quiz = self.store.get(quiz_id)
-        if quiz is None:
+        if quiz is None or quiz.proprietaire != uid:
             return None
         if quiz.correction is not None:
             return quiz.correction

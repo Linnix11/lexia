@@ -17,6 +17,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote
 from xml.etree import ElementTree
 
 import numpy as np
@@ -361,7 +362,15 @@ def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
     en_cours: set[int] = set()
 
     @router.post("/cours", status_code=201, dependencies=[Depends(verifier_origine)])
-    async def deposer(request: Request, matiere: str, fichier: str, titre: str = "", u=Depends(utilisateur_requis)):
+    async def deposer(request: Request, matiere: str, fichier: str = "", titre: str = "",
+                      u=Depends(utilisateur_requis)):
+        # Nom et titre en en-tetes (X-Lexia-Fichier, X-Lexia-Titre, encodes) : dans l'adresse, ils finissaient
+        # dans les journaux de nginx et de Cloudflare (audit du 2026-11-16, point 16). Les parametres d'adresse
+        # restent acceptes pour un onglet ouvert avant la mise a jour du site.
+        fichier = unquote(request.headers.get("x-lexia-fichier", "")) or fichier
+        titre = unquote(request.headers.get("x-lexia-titre", "")) or titre
+        if not fichier:
+            raise HTTPException(422, "Nom de fichier manquant.")
         if not u.email_verifie:
             raise HTTPException(403, "Confirmez votre adresse e-mail pour déposer un cours : "
                                      "le lien vous a été envoyé à l'inscription.")

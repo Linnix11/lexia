@@ -238,7 +238,13 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             raise HTTPException(422, f"Matière inconnue : {m}")
 
     @app.get("/sante")
-    def sante():
+    def sante(request: Request):
+        # Detail (modeles, etat du disjoncteur, taille de l'index) seulement depuis le serveur lui-meme
+        # (publier.sh, verifications) : en public, il disait quels modeles viser et quand le secours etait
+        # seul actif (audit du 2026-11-16, point 14). Derriere nginx, request.client est la vraie adresse
+        # du visiteur (uvicorn --proxy-headers, --forwarded-allow-ips 127.0.0.1).
+        if not request.client or request.client.host not in ("127.0.0.1", "::1"):
+            return {"statut": "ok"}
         return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
                 "secours": getattr(secours, "model", None),
                 "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.ouvert() else "ferme",
@@ -278,8 +284,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.post("/quiz/correct", dependencies=[Depends(limite)])
     def corriger_quiz(req: CorrectionRequest, request: Request):
-        _utilisateur(request)
-        res = _place_libre(lambda: quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses]))
+        u = _utilisateur(request)
+        res = _place_libre(lambda: quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses],
+                                                 u.id if u else None))
         if res is None:
             raise HTTPException(404, "Questionnaire introuvable ou expiré : générez-en un nouveau.")
         return res

@@ -149,7 +149,7 @@ def test_disjoncteur_ouvert_le_principal_n_est_plus_appele():
     for i in range(4):
         assert client.post("/chat", json={"question": f"responsabilité {i}"}).json()["statut"] == "reponse"
     assert len(principal.prompts) == 2 and len(secours.prompts) == 4       # 2 echecs, puis Groq directement
-    assert client.get("/sante").json()["disjoncteur"] == "ouvert"
+    assert TestClient(app, client=("127.0.0.1", 50000)).get("/sante").json()["disjoncteur"] == "ouvert"
 
 
 def test_le_secours_recoit_aussi_une_decision():

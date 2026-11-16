@@ -12,16 +12,33 @@ export interface Favori {
 const ANCIENNE_CLE = 'lexia.favoris.v1'
 // Une cle par compte : sur un ordinateur partage (BU, salle de cours), l'etudiant suivant ne voit pas
 // les fiches du precedent, meme si celui-ci a ferme l'onglet sans se deconnecter.
-const cle = (compte: string) => `${ANCIENNE_CLE}.${compte.toLowerCase()}`
+// L'adresse n'apparait plus dans le nom de la cle : sur un poste partage, l'etudiant suivant la lisait
+// dans les outils du navigateur (audit du 2026-11-16, point 13). Empreinte FNV-1a : pas un secret,
+// seulement une cle stable qui ne montre pas l'adresse.
+function empreinte(texte: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < texte.length; i++) {
+    h ^= texte.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(36)
+}
+const cle = (compte: string) => `lexia.favoris.v2.${empreinte(compte.toLowerCase())}`
+
+/** Reprend une fois des fiches rangees sous une ancienne cle, puis efface celle-ci. */
+function reprendre(ancienne: string, compte: string) {
+  const valeur = localStorage.getItem(ancienne)
+  if (valeur === null) return
+  if (localStorage.getItem(cle(compte)) === null) localStorage.setItem(cle(compte), valeur)
+  localStorage.removeItem(ancienne)
+}
 
 export function lireFavoris(compte: string): Favori[] {
   try {
-    // Fiches enregistrees avant la separation par compte : reprises une fois par le premier compte qui se connecte.
-    const ancienne = localStorage.getItem(ANCIENNE_CLE)
-    if (ancienne !== null) {
-      if (localStorage.getItem(cle(compte)) === null) localStorage.setItem(cle(compte), ancienne)
-      localStorage.removeItem(ANCIENNE_CLE)
-    }
+    // Fiches d'avant la separation par compte (reprises par le premier compte qui se connecte), puis
+    // fiches rangees sous l'adresse en clair.
+    reprendre(ANCIENNE_CLE, compte)
+    reprendre(`${ANCIENNE_CLE}.${compte.toLowerCase()}`, compte)
     const brut = localStorage.getItem(cle(compte))
     const liste = brut ? (JSON.parse(brut) as Favori[]) : []
     return Array.isArray(liste) ? liste : []

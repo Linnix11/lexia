@@ -93,11 +93,12 @@ def test_inscription_refusee(env):
 
 def test_plafond_d_inscriptions_par_ip(tmp_path):
     app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
-                              inscriptions_par_ip_jour=2),
+                              inscriptions_par_ip_jour=3),
                      retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "comptes.db"))
     client = TestClient(app)
     assert inscrire(client, email="pris@exemple.fr").status_code == 201
-    assert inscrire(client, email="pris@exemple.fr").status_code == 422   # echec : non compte
+    # Un refus compte aussi : « un compte existe deja » permettait de tester des adresses sans limite.
+    assert inscrire(client, email="pris@exemple.fr").status_code == 422
     assert inscrire(client, email="b@exemple.fr").status_code == 201
     r = inscrire(client, email="c@exemple.fr")
     assert r.status_code == 429 and "demain" in r.json()["detail"]

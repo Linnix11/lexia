@@ -79,8 +79,20 @@ def env(tmp_path):
 
 
 def deposer(client, titre="Le dol", contenu=COURS.encode(), fichier="dol.txt", matiere="droit_civil"):
-    return client.post("/cours", params={"matiere": matiere, "fichier": fichier, "titre": titre}, content=contenu,
-                       headers={"Content-Type": "application/octet-stream"})
+    """Comme le site : nom et titre en en-tetes encodes, hors de l'adresse (ecrite dans les journaux)."""
+    from urllib.parse import quote
+    return client.post("/cours", params={"matiere": matiere}, content=contenu,
+                       headers={"Content-Type": "application/octet-stream",
+                                "X-Lexia-Fichier": quote(fichier), "X-Lexia-Titre": quote(titre)})
+
+
+def test_nom_et_titre_accentues_lus_dans_les_en_tetes(env):
+    app, _, _, _ = env
+    client = TestClient(app)
+    inscrire(client)
+    r = deposer(client, titre="Les sûretés réelles", fichier="Sûretés Dupont.txt")
+    assert r.status_code == 201 and r.json()["titre"] == "Les sûretés réelles"
+    assert r.json()["fichier"] == "Sûretés Dupont.txt"
 
 
 def test_depot_liste_limite_et_suppression(env):

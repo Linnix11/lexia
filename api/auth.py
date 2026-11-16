@@ -92,9 +92,13 @@ class Freins:
     """Limite les essais de connexion : par IP (par minute) et par e-mail (echecs sur 15 min),
     et les comptes crees par IP sur 24 h (sans plafond, le quota gratuit se contourne en creant des comptes)."""
 
-    def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5, inscriptions_ip_jour: int = 20):
+    def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5, inscriptions_ip_jour: int = 20,
+                 echecs_compte: int = 50):
         self.par_ip, self.max_echecs = par_ip_minute, echecs_email
         self.max_inscriptions = inscriptions_ip_jour
+        # Plafond par compte, toutes adresses IP confondues : la limite de 5 echecs vise l'adresse qui se
+        # trompe (sinon 5 faux mots de passe bloquaient le titulaire), celle-ci arrete une attaque repartie.
+        self.max_echecs_compte = echecs_compte
         self._ip: dict[str, deque] = defaultdict(deque)
         self._echecs: dict[str, deque] = defaultdict(deque)
         self._inscriptions: dict[str, deque] = defaultdict(deque)
@@ -116,7 +120,7 @@ class Freins:
             for k in [k for k, q in d.items() if not q or now - q[-1] > fenetre]:
                 del d[k]
 
-    def verifier(self, ip: str, email: str) -> None:
+    def verifier(self, ip: str, email: str, compte: str | None = None) -> None:
         now = time.monotonic()
         with self._lock:
             self._oublier(now)
@@ -129,6 +133,11 @@ class Freins:
             self._purger(e, 900, now)
             if len(e) >= self.max_echecs:
                 raise HTTPException(429, "Trop d'échecs de connexion pour ce compte : réessayez dans 15 minutes.")
+            if compte is not None:
+                c = self._echecs[compte]
+                self._purger(c, 900, now)
+                if len(c) >= self.max_echecs_compte:
+                    raise HTTPException(429, "Trop d'échecs de connexion pour ce compte : réessayez dans 15 minutes.")
 
     def verifier_inscription(self, ip: str) -> None:
         if self.max_inscriptions <= 0:
@@ -143,13 +152,17 @@ class Freins:
         with self._lock:
             self._inscriptions[ip].append(time.monotonic())
 
-    def echec(self, email: str) -> None:
+    def echec(self, email: str, compte: str | None = None) -> None:
         with self._lock:
             self._echecs[email].append(time.monotonic())
+            if compte is not None:
+                self._echecs[compte].append(time.monotonic())
 
-    def succes(self, email: str) -> None:
+    def succes(self, email: str, compte: str | None = None) -> None:
         with self._lock:
             self._echecs.pop(email, None)
+            if compte is not None:
+                self._echecs.pop(compte, None)
 
 
 def verifier_origine(request: Request) -> None:
@@ -215,6 +228,9 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         try:
             u = comptes.creer(req.email, req.mot_de_passe)
         except ErreurCompte as e:
+            # Un refus compte dans la limite du jour : « Un compte existe deja » permettait de tester des
+            # adresses sans limite (audit du 2026-11-16, point 8 ; reste possible 20 fois par jour et par IP).
+            freins.inscrit(_ip(request))
             raise HTTPException(422, str(e)) from None
         freins.inscrit(_ip(request))
         _envoyer_verification(request, u)  # l'echec d'envoi n'empeche pas la creation du compte
@@ -224,12 +240,14 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
     @router.post("/connexion", dependencies=[Depends(verifier_origine)])
     def connexion(req: Connexion, request: Request, response: Response):
         email = req.email.strip().lower()
-        freins.verifier(_ip(request), email)
+        # 5 echecs par compte ET par adresse IP, 50 par compte en tout (audit du 2026-11-16, point 7).
+        cle, compte = f"{email}|{_ip(request)}", f"compte:{email}"
+        freins.verifier(_ip(request), cle, compte)
         u = comptes.authentifier(email, req.mot_de_passe)
         if u is None:
-            freins.echec(email)
+            freins.echec(cle, compte)
             raise HTTPException(401, "E-mail ou mot de passe incorrect.")
-        freins.succes(email)
+        freins.succes(cle, compte)
         if u.double_authentification:
             # Mot de passe correct : la session ne s'ouvre qu'apres le code de l'application.
             return {"double_authentification_requise": True, "jeton": attentes.creer(u.id)}

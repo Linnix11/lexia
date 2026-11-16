@@ -21,7 +21,10 @@ RestartSec=5
 # Durcissement
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
+# strict : tout le disque en lecture seule pour le service, sauf les trois dossiers ci-dessous. Avec « full »,
+# /opt restait inscriptible : une faille dans la lecture d'un fichier depose pouvait reecrire le code
+# (api/, .venv) et survivre au redemarrage (audit du 2026-11-16, point 15). pip tourne hors du service.
+ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/opt/lexia/logs /opt/lexia/.cache /opt/lexia/donnees
 

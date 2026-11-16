@@ -39,7 +39,9 @@ def etape_courante(maintenant: float | None = None) -> int:
 def verifier(secret: str, code: str, derniere_etape: int | None = None, maintenant: float | None = None) -> int | None:
     """Etape TOTP correspondant au code, ou None. Un code deja utilise (etape <= derniere_etape) est refuse :
     un code intercepte ne peut pas resservir."""
-    code = "".join(c for c in str(code) if c.isdigit())
+    # Chiffres 0-9 seulement : isdigit() acceptait « ² » ou les chiffres arabes, et la comparaison
+    # qui suit levait une erreur 500 (audit du 2026-11-16, point 9).
+    code = "".join(c for c in str(code) if c in "0123456789")
     if len(code) != CHIFFRES:
         return None
     courante = etape_courante(maintenant)

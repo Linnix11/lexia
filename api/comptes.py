@@ -26,8 +26,10 @@ FUSEAU = ZoneInfo("Europe/Paris")
 DUREE_SESSION = timedelta(days=30)
 MDP_MIN = 10
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
-# scrypt : parametres recommandes pour un usage interactif (~50 ms, 16 Mo)
-SCRYPT_N, SCRYPT_R, SCRYPT_P = 2**14, 8, 1
+# scrypt : N=2^14, r=8, p=5, une des combinaisons recommandees par l'OWASP (16 Mo de memoire, ~120 ms).
+# p=1 etait sous la recommandation (audit du 2026-11-16, point 10) ; p plutot que N pour garder 16 Mo par
+# calcul sur un petit serveur. Les anciennes empreintes sont refaites a la connexion suivante.
+SCRYPT_N, SCRYPT_R, SCRYPT_P = 2**14, 8, 5
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS utilisateurs (
@@ -210,7 +212,11 @@ class Comptes:
             verifier_mdp(mdp or "", self._mdp_factice)
             return None
         uid, stocke = rows[0]
-        return self.par_id(uid) if verifier_mdp(mdp or "", stocke) else None
+        if not verifier_mdp(mdp or "", stocke):
+            return None
+        if not stocke.startswith(f"scrypt${SCRYPT_N}${SCRYPT_R}${SCRYPT_P}$"):
+            self._q("UPDATE utilisateurs SET mdp = ? WHERE id = ?", (hacher_mdp(mdp), uid))  # parametres a jour
+        return self.par_id(uid)
 
     def changer_formule(self, email: str, id_formule: str, jours: int | None = None) -> Utilisateur:
         if id_formule not in FORMULES:
