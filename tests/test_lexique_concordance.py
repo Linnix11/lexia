@@ -68,6 +68,45 @@ def test_lexique_reticence_sans_faux_positif(question):
     assert (CC, "1137") not in lexique.suggestions(question)
 
 
+# Situations racontees (D75) : formulations differentes de celles des jeux d'evaluation.
+@pytest.mark.parametrize("question, attendu", [
+    ("Mon neveu de huit ans a cassé la fenêtre de la boulangerie. Qui va payer ?", (CC, "1242")),
+    ("Un livreur salarié renverse une passante avec son scooter. L'employeur doit-il payer ?", (CC, "1242")),
+    ("Le berger allemand du voisin a mordu le facteur.", (CC, "1243")),
+    ("Une cheminée mal entretenue s'est effondrée sur la voiture garée en bas.", (CC, "1244")),
+    ("Un automobiliste distrait a endommagé ma clôture : peut-il être obligé de la réparer ?", (CC, "1240")),
+    ("Il a signé la cession de son fonds sous la menace d'une arme. Que faire ?", (CC, "1140")),
+    ("Elle a acheté un vase en pensant qu'il datait de l'époque Ming.", (CC, "1132")),
+    ("Le locataire a trois loyers impayés : le bailleur peut-il résilier le bail ?", (CC, "1728")),
+    ("Le maçon n'a jamais terminé le mur commandé et payé. Quels recours ?", (CC, "1217")),
+    ("Le client ne paie pas ses factures : le prestataire peut-il cesser de livrer ?", (CC, "1219")),
+    ("Un garçon de treize ans a acheté seul une console à 600 euros.", (CC, "1146")),
+    ("J'ai payé deux fois la même facture au plombier.", (CC, "1302")),
+    ("Elle ne verse plus rien pour l'entretien de leur fille depuis la séparation.", (CC, "371-2")),
+    ("Il occupe la maison depuis trente-deux ans sans titre. Peut-il devenir propriétaire ?", (CC, "2272")),
+    ("Elle frappe l'homme qui l'agressait dans le métro.", ("code_penal", "122-5")),
+    ("Un homme se faisait passer pour un agent EDF afin d'entrer chez les gens.", ("code_penal", "313-1")),
+    ("La comptable détourne l'argent que l'association lui avait confié.", ("code_penal", "314-1")),
+    ("Un salarié est renvoyé parce qu'il porte la barbe.", ("code_travail", "L1232-1")),
+    ("Son chef l'humilie devant ses collègues chaque matin.", ("code_travail", "L1152-1")),
+    ("Le préfet interdit une réunion publique : peut-on obtenir une suspension en urgence ?",
+     ("code_justice_administrative", "L521-2")),
+])
+def test_lexique_reconnait_les_situations(question, attendu):
+    assert attendu in lexique.suggestions(question)
+
+
+@pytest.mark.parametrize("question, exclu", [
+    ("Un père divorcé refuse de payer la pension de ses enfants.", (CC, "1219")),      # pas un contrat synallagmatique
+    ("Un client glisse un parfum dans son sac sans payer.", (CC, "1242")),             # vol, pas une chute
+    ("L'employé vire l'argent des clients sur son compte.", ("code_travail", "L1232-1")),
+    ("Quelle est la différence entre la responsabilité contractuelle et délictuelle ?", (CC, "1146")),
+    ("Le juge civil peut-il statuer en urgence sur un litige entre voisins ?", ("code_justice_administrative", "L521-2")),
+])
+def test_lexique_situations_sans_faux_positif(question, exclu):
+    assert exclu not in lexique.suggestions(question)
+
+
 def test_lexique_plafonne():
     q = "force obligatoire, bonne foi dans le contrat, vices du consentement, dol, violence, lésion"
     assert len(lexique.suggestions(q)) == lexique.MAX_LEXIQUE

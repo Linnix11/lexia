@@ -1,0 +1,38 @@
+# Cas pratiques de controle, second jeu - version 1 (2026-11-16)
+#
+# Ecrit avant les regles de lexique des cas pratiques (D75), jamais utilise pour les regler : le premier jeu
+# de controle (eval/cas_pratiques_controle.yaml) avait ete lu pendant le travail sur le dol et n'etait plus
+# tout a fait independant. Memes regles d'ecriture : des faits, sans numero d'article ni nom de notion.
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+
+cas:
+  - {id: ctl2-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241],
+     question: "Pendant un match de foot amateur, un joueur tacle violemment un adversaire et lui brise la jambe. La victime peut-elle être indemnisée ?"}
+  - {id: ctl2-02, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Une adolescente de quatorze ans raye volontairement la voiture d’un voisin. Qui doit payer ?"}
+  - {id: ctl2-03, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1243],
+     question: "Le chat de ma voisine a griffé mon fils au visage. Puis-je demander réparation à ma voisine ?"}
+  - {id: ctl2-04, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Un chauffeur de taxi salarié percute un cycliste pendant son service. Le cycliste peut-il demander réparation à la compagnie ?"}
+  - {id: ctl2-05, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1132, code_civil:1137],
+     question: "Un client a acheté une montre présentée comme étant en or massif ; elle n’est qu’en plaqué. Peut-il annuler l’achat ?"}
+  - {id: ctl2-06, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1217, code_civil:1221, code_civil:1224, code_civil:1231-1],
+     question: "Un peintre payé d’avance pour repeindre une façade abandonne le chantier au bout d’une journée. Que peut exiger le propriétaire ?"}
+  - {id: ctl2-07, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1219, code_civil:1220],
+     question: "Une société cesse de payer ses factures d’électricité. Le fournisseur peut-il suspendre la fourniture ?"}
+  - {id: ctl2-08, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1146, code_civil:1148],
+     question: "Un jeune de seize ans a souscrit seul un abonnement téléphonique très coûteux. Le contrat peut-il être remis en cause ?"}
+  - {id: ctl2-09, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1302, code_civil:1302-1],
+     question: "Ma banque m’a crédité par erreur une somme qui ne m’était pas destinée. Dois-je la rendre ?"}
+  - {id: ctl2-10, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:371-2, code_civil:373-2-2],
+     question: "Un père divorcé refuse de payer la somme prévue pour ses deux enfants. Que peut faire la mère ?"}
+  - {id: ctl2-11, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:544, code_civil:545],
+     question: "Mon voisin a construit son garage en dépassant de cinquante centimètres sur mon terrain. Puis-je exiger la démolition ?"}
+  - {id: ctl2-12, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:122-5],
+     question: "Un homme repousse à coups de poing un individu qui tentait de lui arracher son sac. Peut-il échapper à une condamnation ?"}
+  - {id: ctl2-13, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:314-1],
+     question: "Un employé de banque vire sur son propre compte l’argent que des clients lui avaient confié. Quelle infraction a-t-il commise ?"}
+  - {id: ctl2-14, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1232-1, code_travail:L1235-3],
+     question: "Une salariée est mise à la porte pour avoir refusé de travailler un dimanche, ce que son contrat ne prévoit pas. Est-ce justifié ?"}
+  - {id: ctl2-15, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: [code_justice_administrative:L521-2, code_justice_administrative:L521-1],
+     question: "Un maire ferme un lieu de culte par arrêté du jour au lendemain. Les fidèles peuvent-ils obtenir rapidement la suspension de la mesure ?"}

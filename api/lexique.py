@@ -32,6 +32,15 @@ _SILENCE = (r"(?:\bcach(?:ant|ait|aient|er)\b|\b(?:a|avait|ont|avaient|lui|leur|
             r"|ne (?:l.)?(?:lui |leur )?(?:a|avait) (?:pas|jamais|rien) (?:dit|signale|precise|indique|revele|mentionne)"
             r"|sous silence)")
 _CONTRAT = r"(?:\bvend|\bvente|\bachet|\bachat|\bacquere|contrat|\bsign|\bcede|\bcession|\bbail\b|\blou)"
+_DOMMAGE = (r"(?:\bbless|renvers|percut|\bcass(?:e|ant)\b|\bbris(?:e|ant)\b|\babim|endommag|\bdegats?\b|degrad"
+            r"|\bray(?:e|er|ant)\b|\bfractur|\bheurt|\bmord|\bgriff|\bpietin)")
+_REPARER = r"(?:repar|indemni|dedommag|dommages|\bpayer\b|rembours|responsable|poursuivre|se retourner)"
+_SUSPENDRE = (r"(?:refuser?|cesser?|suspendre|arreter|retenir) (?:de )?(?:payer|livrer|fournir|travailler|executer"
+              r"|la fourniture|le paiement|sa prestation)")
+_MANQUE = (r"(?:ne (?:livre|paie|paye|fournit|execute)\w* (?:pas|plus)|pas (?:livre|paye)|impaye"
+           r"|cesse de (?:payer|livrer|fournir))")
+_AGE = (r"(?:\benfants?\b|\bfils\b|\bfille\b|\bmineure?s?\b|adolescent|\b(?:[2-9]|1[0-7]) ans\b"
+        r"|\b(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|dix-sept) ans\b)")
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # --- introduction au droit -------------------------------------------------
@@ -111,6 +120,8 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"execution forcee", ((CC, "1221"),)),
     (r"resolution du contrat|contrat .{0,20}resolu", ((CC, "1224"),)),
     (r"dommages(?: |-)et(?: |-)interets", ((CC, "1231-1"),)),
+    (r"capacite (?:de|a) contracter|incapacite.{0,30}(?:mineur|contracter)|mineurs? non emancipes?", ((CC, "1145"), (CC, "1146"), (CC, "1148"))),
+    (r"obligations? du (?:preneur|locataire)", ((CC, "1728"),)),
     # --- responsabilite et quasi-contrats ---------------------------------------
     (r"responsabilite (?:civile )?(?:pour faute|du fait personnel|delictuelle)|faute.{0,40}(?:dommage|responsab)", ((CC, "1240"), (CC, "1241"))),
     (r"fait des choses|fait d.autrui|\bparents\b.{0,40}(?:responsab|enfants?)", ((CC, "1242"),)),
@@ -211,11 +222,13 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bdivorce", ((CC, "229"),)),
     (r"\bfiliation", ((CC, "310-1"),)),
     (r"obligation alimentaire|\baliments\b", ((CC, "205"),)),
+    (r"pension alimentaire|contribution a l.entretien", ((CC, "371-2"), (CC, "373-2-2"))),
     (r"aide sociale a l.enfance|\base\b", ((CASF, "L221-1"),)),
     (r"protection de l.enfance", ((CASF, "L112-3"),)),
     # --- droit des biens (Code civil, expropriation) --------------------------------------------
     (r"\busufruit", ((CC, "578"),)),
     (r"\bservitude", ((CC, "637"),)),
+    (r"prescription acquisitive|usucapion", ((CC, "2258"), (CC, "2272"), (CC, "2261"))),
     (r"\bpossession", ((CC, "2255"), (CC, "2261"))),
     (r"\baccession", ((CC, "546"),)),
     (r"\bindivision", ((CC, "815"),)),
@@ -223,6 +236,69 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bexpropri|utilite publique", ((CEXP, "L1"), (CEXP, "L121-1"), (CEXP, "L321-1"))),
     # --- execution des peines (Code penitentiaire) ----------------------------------------------
     (r"service public penitentiaire|\bprisons?\b|\bdetenus?\b", ((CPEN, "L1"), (CPEN, "L2"))),
+    # --- situations racontees (cas pratiques, D75) ------------------------------------------------
+    # Faits decrits sans le nom de la notion. Apres les notions de cours, qui restent prioritaires ; une
+    # suggestion hors des sources de la matiere choisie est ignoree par la recherche.
+    # Responsabilite civile
+    (_AGE + r".{0,80}" + _DOMMAGE, ((CC, "1242"), (CC, "1240"))),
+    (r"(?:salarie|employe|prepose|livreur|chauffeur|ouvrier|apprenti)\w*.{0,120}" + _DOMMAGE
+     + r"|" + _DOMMAGE + r".{0,120}(?:son employeur|l.entreprise|la (?:societe|compagnie))", ((CC, "1242"),)),
+    (r"(?:glisse|trebuch)\w* (?:sur|dans)\b.{0,80}(?:magasin|supermarche|escalier|flaque|chantier|piscine|sol)"
+     r"|\b(?:pots?|objets?|panneaux?|echelles?|branches?)\b.{0,60}tomb", ((CC, "1242"),)),
+    (r"\b(?:chiens?|chats?|chevaux|cheval|vaches?|taureaux?|moutons?|chevres?)\b.{0,80}"
+     r"(?:mord|griff|bless|attaqu|pietin|renvers|echapp|devor)|\bmordu\b|\bmorsures?\b", ((CC, "1243"),)),
+    (r"\b(?:tuiles?|toit|toiture|murs?|balcon|facade|cheminee|batiment|immeuble|gouttiere)\b.{0,80}"
+     r"(?:tomb|effondr|ecroul|s.est detache)", ((CC, "1244"),)),
+    (_DOMMAGE + r".{0,120}" + _REPARER + r"|" + _REPARER + r".{0,60}(?:degats|blessures?|prejudice)",
+     ((CC, "1240"), (CC, "1241"))),
+    # Contrats
+    (r"menac\w*.{0,120}" + _CONTRAT + r"|" + _CONTRAT + r"\w*.{0,120}menac", ((CC, "1140"),)),
+    (r"(?:croyant|pensant|croyait|pensait|persuade|presente\w* comme)\b.{0,120}" + _CONTRAT
+     + r"|" + _CONTRAT + r"\w*.{0,120}(?:croyant|pensant|croyait|pensait|presente\w* comme)\b", ((CC, "1132"), (CC, "1133"))),
+    (r"loyers?.{0,60}(?:impaye|ne (?:paie|paye|verse)|plus|retard)|(?:ne (?:paie|paye|verse) plus|impayes?).{0,60}loyer",
+     ((CC, "1728"), (CC, "1224"), (CC, "1741"))),
+    # exception d'inexecution : suspendre sa prestation parce que l'autre partie n'execute pas la sienne
+    (_SUSPENDRE + r".{0,40}(?:en attendant|tant que|jusqu.a ce)|" + _MANQUE + r".{0,150}" + _SUSPENDRE
+     + r"|" + _SUSPENDRE + r".{0,150}" + _MANQUE, ((CC, "1219"), (CC, "1220"))),
+    (r"ne (?:livre|vient|fait|execute|termine|rembourse|honore)\w* (?:pas|jamais|plus|rien)"
+     r"|n.(?:a|ont) (?:jamais|pas) (?:livre|fait|execute|termine|effectue|realise)|abandonn\w* (?:le )?chantier"
+     r"|jamais (?:livre|venu|fait|realise)", ((CC, "1217"), (CC, "1231-1"), (CC, "1224"), (CC, "1221"))),
+    (_AGE + r".{0,100}(?:achet|achat|signe|souscri|contrat|abonnement|emprunt)", ((CC, "1146"), (CC, "1148"))),
+    (r"(?:par erreur|deux fois|en trop|a tort|par meprise).{0,100}(?:pay|vers|vire|virement|credit|rembours|somme)"
+     r"|(?:pay|vers|vire|virement|credit)\w*.{0,100}(?:par erreur|deux fois|en trop|a tort)", ((CC, "1302"), (CC, "1302-1"))),
+    # Famille et biens
+    (r"(?:ne (?:verse|paie|paye)|refuse de (?:payer|verser)|plus rien).{0,100}(?:enfants?|pension|entretien)",
+     ((CC, "371-2"), (CC, "373-2-2"))),
+    (r"(?:depuis|pendant|plus de) (?:\d+|dix|vingt|trente|quarante|cinquante) ans.{0,120}(?:terrain|maison|parcelle|champ|occup|cultiv)"
+     r"|(?:terrain|parcelle|champ|maison).{0,120}(?:depuis|pendant) (?:\d+|dix|vingt|trente|quarante|cinquante) ans"
+     r"|devenir proprietaire", ((CC, "2272"), (CC, "2261"))),
+    (r"enclav|(?:aucun|pas d.|sans) acces.{0,40}(?:route|voie publique|chemin)", ((CC, "682"),)),
+    (r"(?:branches?|racines?|arbres?|haie)\b.{0,80}(?:depass|avanc|empiet|deborde)", ((CC, "673"), (CC, "671"))),
+    (r"(?:construi|bati|install|pose|empiet|depass)\w*.{0,100}sur (?:mon|son|le|leur|notre) (?:terrain|jardin|propriete|parcelle)"
+     r"|(?:dans|sur) (?:mon|son|notre) (?:jardin|terrain).{0,80}sans (?:mon|son|leur|notre) (?:avis|accord|autorisation)",
+     ((CC, "544"), (CC, "545"))),
+    # Penal
+    (r"(?:frapp|repouss|riposte|se defend|coups?|neutralis)\w*.{0,120}(?:agress|attaqu|cambriol|voleur|arracher)"
+     r"|(?:agress|attaqu|cambriol|voleur)\w*.{0,120}(?:frapp|repouss|riposte|se defend|coups? de poing|neutralis)",
+     ((CP, "122-5"), (CP, "122-6"))),
+    (r"(?:prend|pris|vole|derob|subtilis|empoch|glisse|emporte|s.empare)\w*.{0,80}"
+     r"(?:portefeuille|sac|telephone|bijou|parfum|argent|objet|velo|marchandise)|sans payer|a l.etalage", ((CP, "311-1"),)),
+    (r"se (?:fait|faisant|faisait) passer pour|faux (?:site|plombier|policier|agent|conseiller|profil|annonce|billets?)"
+     r"|fausse (?:qualite|identite|annonce|facture)|arnaqu|manoeuvres? frauduleuses?", ((CP, "313-1"),)),
+    (r"(?:utilise|detourn|depens|vire|empoch|puise)\w*.{0,100}(?:argent|fonds|caisse|sommes?).{0,100}"
+     r"(?:confie|association|employeur|clients?)", ((CP, "314-1"),)),
+    (r"(?:prete|fourni|donne|aide|procure|conduit|guette|fait le guet)\w*.{0,120}(?:sachant|savait|connaissant).{0,120}"
+     r"(?:cambriol|vol|crime|delit|infraction|agression|meurtre|braquage)", ((CP, "121-7"), (CP, "121-6"))),
+    # Travail
+    (r"renvoy|mis\w* a la porte|congedi|licencie\w*.{0,80}(?:sans|parce|pour avoir|au motif|car\b|du jour au lendemain)",
+     ((CT, "L1232-1"), (CT, "L1235-3"))),
+    (r"(?:humili|brimad|denigr|insult|rabaiss|reproches? (?:injustifi|incessant|permanent))\w*.{0,120}"
+     r"(?:chef|manager|employeur|superieur|collegue|travail|salari)"
+     r"|(?:chef|manager|employeur|superieur|collegue)\w*.{0,120}(?:humili|brimad|denigr|insult|rabaiss)", ((CT, "L1152-1"),)),
+    (r"\bavances\b|propositions? (?:sexuelles?|deplacees?)|gestes? deplaces?|remarques? (?:sexistes|sexuelles)", ((CT, "L1153-1"),)),
+    # Administratif : une decision publique et une demande d'urgence
+    (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|universite))"
+     r".*(?:en urgence|d.urgence|rapidement|au plus vite|suspension)", ((CJA, "L521-2"), (CJA, "L521-1"))),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )
