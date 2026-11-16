@@ -12,7 +12,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as DelaiDepasse
 
-from api import concordance, lexique, prompts
+from api import conseil, concordance, lexique, prompts
 from api.citations import valider_reponse
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
@@ -314,21 +314,36 @@ class Lexia:
                                 statut=deja["statut"], cache=True, duree_ms=int((time.monotonic() - debut) * 1000))
             deja["controle"]["cache"] = True
             return {**deja, "reponse_id": reponse_id}
-        passages, infos = self.extraits(question, matiere, K_CHAT, cours_ids, avec_officiel, uid)
+        conseil_demande = conseil.demande_de_conseil(question)
+        if conseil_demande:
+            # Demande de conseil personnel (rediger, predire, chiffrer, decider des demarches, D77) :
+            # refus sans recherche ni appel au modele.
+            passages, infos = [], {"recherche": "conseil_personnel"}
+        else:
+            passages, infos = self.extraits(question, matiere, K_CHAT, cours_ids, avec_officiel, uid)
         recherche = infos["recherche"]
         table = table_extraits(passages)
         modele = None
-        if not passages and mode not in prompts.MODES_METHODE:
+        if conseil_demande:
+            reponse, controle = valider_reponse({"statut": "hors_champ"}, table)
+        elif not passages and mode not in prompts.MODES_METHODE:
             # Rien trouve : abstention sans appeler le modele. Une demande de methode s'explique sans extrait.
             reponse, controle = valider_reponse({"statut": "abstention"}, table)
         else:
-            brut, modele, passages = self.generer(
-                system=prompts.SYSTEME,
-                construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
-                                                          infos.get("concordance"), option_cours),
-                passages=passages,
-                schema=prompts.schema_reponse(mode),
-            )
+            def generer(note: str = ""):
+                return self.generer(
+                    system=prompts.SYSTEME,
+                    construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
+                                                              infos.get("concordance"), option_cours) + note,
+                    passages=passages,
+                    schema=prompts.schema_reponse(mode),
+                )
+            brut, modele, extraits_envoyes = generer()
+            if brut.get("statut") == "hors_champ":
+                # Le modele refusait des faits racontes a la premiere personne une fois sur trois (D77) :
+                # ce n'est pas une demande de conseil, il est relance une fois avec une note.
+                brut, modele, extraits_envoyes = generer(prompts.NOTE_PAS_UN_CONSEIL)
+            passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode)
         sources = sources_citees(reponse, table)
