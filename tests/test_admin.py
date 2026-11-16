@@ -16,7 +16,8 @@ MDP = "motdepasse-solide"
 @pytest.fixture
 def env(tmp_path):
     comptes = Comptes(tmp_path / "c.db", admins=("chef@exemple.fr",))
-    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              url_publique="https://lexia.test"),
                      retriever=Retriever(), llm=LLM(), comptes=comptes)
     app.state.logs = tmp_path / "logs"
     return app, comptes

@@ -19,7 +19,8 @@ def env(tmp_path, monkeypatch):
     envoyes: list[tuple[str, str]] = []
     monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: envoyes.append((dest, lien)))
     comptes = Comptes(tmp_path / "comptes.db")
-    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              url_publique="https://lexia.test"),
                      retriever=Retriever(), llm=LLM(), comptes=comptes)
     return TestClient(app), comptes, envoyes
 
@@ -93,7 +94,8 @@ def test_sans_envoi_configure_rien_ne_bloque(tmp_path, monkeypatch):
     """Sans RESEND_API_KEY, la verification est desactivee : le site reste utilisable."""
     monkeypatch.delenv("RESEND_API_KEY", raising=False)
     comptes = Comptes(tmp_path / "comptes.db")
-    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              url_publique="https://lexia.test"),
                      retriever=Retriever(), llm=LLM(), comptes=comptes)
     client = TestClient(app)
     assert inscrire(client).json()["email_verifie"] is True
@@ -115,3 +117,55 @@ def test_comptes_anterieurs_restent_utilisables(tmp_path, monkeypatch):
 
     monkeypatch.setenv("RESEND_API_KEY", "cle-de-test")
     assert Comptes(chemin).par_id(u.id).email_verifie is True
+
+
+def test_le_lien_ne_suit_jamais_l_en_tete_host(env):
+    """Un domaine tiers pointe sur le serveur faisait envoyer, depuis l'adresse de Lexia, des liens vers lui."""
+    client, _, envoyes = env
+    client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                           "accepte_cgu": True},
+                headers={"Host": "pirate.example", "Origin": "https://pirate.example"})
+    assert envoyes and envoyes[0][1].startswith("https://lexia.test/verifier-email?jeton=")
+
+
+def test_sans_url_publique_aucun_lien_n_est_envoye(tmp_path, monkeypatch):
+    monkeypatch.setenv("RESEND_API_KEY", "cle-de-test")
+    envoyes = []
+    monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: envoyes.append(lien))
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+                     retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "c.db"))
+    assert inscrire(TestClient(app)).status_code == 201 and envoyes == []
+
+
+def test_renvois_plafonnes_par_compte(env, monkeypatch):
+    """Sans plafond, un compte inscrit a l'adresse d'un tiers lui envoyait 720 e-mails par jour (audit 2, point 4)."""
+    client, comptes, envoyes = env
+    inscrire(client)
+    monkeypatch.setattr(comptes, "jeton_verification", lambda uid, force=False: "jeton")  # sans les 2 minutes d'ecart
+    codes = [client.post("/auth/email/renvoyer").status_code for _ in range(6)]
+    assert codes == [202] * 5 + [429]
+    assert len(envoyes) == 1 + 5
+
+
+def test_adresse_squattee_reprise_apres_le_delai_du_lien(env, tmp_path):
+    """Un compte cree avec l'adresse d'un tiers et jamais confirme bloquait a vie son inscription (audit 2, point 6)."""
+    client, comptes, envoyes = env
+    squatteur = TestClient(client.app)
+    inscrire(squatteur, mdp="mot-de-passe-du-squatteur")
+    assert inscrire(TestClient(client.app)).status_code == 422          # avant 24 h : l'adresse reste prise
+    with sqlite3.connect(comptes.chemin) as c:                          # 25 h plus tard
+        c.execute("UPDATE utilisateurs SET cree_le = '2000-01-01T00:00:00+00:00'")
+    titulaire = TestClient(client.app)
+    assert inscrire(titulaire).status_code == 201                       # le vrai titulaire s'inscrit
+    assert squatteur.get("/auth/moi").status_code == 401                # la session du squatteur est fermee
+    r = titulaire.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide"})
+    assert r.status_code == 200
+
+
+def test_compte_confirme_jamais_remplace(env):
+    client, comptes, envoyes = env
+    inscrire(client)
+    client.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])})
+    with sqlite3.connect(comptes.chemin) as c:
+        c.execute("UPDATE utilisateurs SET cree_le = '2000-01-01T00:00:00+00:00'")
+    assert inscrire(TestClient(client.app), mdp="autre-mot-de-passe").status_code == 422

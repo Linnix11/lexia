@@ -164,7 +164,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     utilisateur_requis = None
     cours = None
     if comptes is not None:
-        routes_auth, utilisateur_requis = creer_routes(comptes, settings.inscriptions_par_ip_jour)
+        routes_auth, utilisateur_requis = creer_routes(comptes, settings.inscriptions_par_ip_jour,
+                                                       settings.url_publique)
         app.include_router(routes_auth, prefix="/auth")
         extras = {"embeddings": getattr(embedder, "model", None), "reclassement": getattr(reclasseur, "model", None)}
         app.include_router(creer_routes_admin(comptes, utilisateur_requis, journal, settings, retriever, extras),

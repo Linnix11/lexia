@@ -202,6 +202,13 @@ class Comptes:
         empreinte = hacher_mdp(mdp)
         try:
             with self._lock, self._con:
+                if courriel.configure():
+                    # Adresse « squattee » : un compte cree avec l'adresse d'un tiers, jamais confirme, bloquait a
+                    # vie l'inscription du vrai titulaire (pas de mot de passe oublie). Passe le delai de validite
+                    # du lien, il est remplace ; un compte non confirme n'a ni question, ni cours (audit 2, point 6).
+                    limite = (_maintenant() - DUREE_VERIFICATION).isoformat(timespec="seconds")
+                    self._con.execute("DELETE FROM utilisateurs WHERE email = ? AND email_verifie_le IS NULL "
+                                      "AND cree_le < ?", (email, limite))
                 # Numero suivant le plus grand jamais attribue (compteur) ou existant (comptes anterieurs).
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.

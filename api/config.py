@@ -52,6 +52,9 @@ class Settings:
     admin_emails: tuple[str, ...] = ()         # comptes administrateurs (ADMIN_EMAILS, separes par des virgules)
     # comptes crees par adresse IP sur 24 h (0 = sans limite) ; un campus derriere une seule IP compte pour une
     inscriptions_par_ip_jour: int = 20
+    # Adresse publique du site (https://...), seule base des liens envoyes par e-mail. Jamais l'en-tete Host ou
+    # Origin de la requete : un domaine tiers pointe sur le serveur faisait envoyer des liens vers lui (audit 2).
+    url_publique: str = ""
     # Pages legales (mentions, CGU, confidentialite) : vide = affiche « a completer »
     legal: dict = field(default_factory=dict)
 
@@ -86,6 +89,7 @@ def get_settings() -> Settings:
         contact_email=os.environ.get("CONTACT_EMAIL", ""),
         admin_emails=_list("ADMIN_EMAILS"),
         inscriptions_par_ip_jour=int(os.environ.get("INSCRIPTIONS_PAR_IP_JOUR", "20")),
+        url_publique=os.environ.get("URL_PUBLIQUE", "").strip().rstrip("/"),
         legal={
             "editeur": os.environ.get("LEGAL_EDITEUR", ""),
             "statut": os.environ.get("LEGAL_STATUT", ""),

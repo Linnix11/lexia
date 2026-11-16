@@ -8,6 +8,7 @@ s'il est present, doit correspondre au site : protection contre les requetes int
 from __future__ import annotations
 
 import hashlib
+import logging
 import secrets
 import threading
 import time
@@ -22,6 +23,9 @@ from api.comptes import DUREE_SESSION, Comptes, ErreurCompte, Utilisateur
 from api.plans import FORMULES
 
 COOKIE = "lexia_session"
+RENVOIS_PAR_COMPTE_JOUR = 5   # renvois de l'e-mail de confirmation par compte sur 24 h
+RENVOIS_TOTAL_JOUR = 50       # en tout sur 24 h : laisse au moins 50 e-mails d'inscription (Resend : 100 par jour)
+log = logging.getLogger("lexia.auth")
 
 
 class Inscription(BaseModel):
@@ -200,11 +204,18 @@ def exiger_admin(u: Utilisateur) -> Utilisateur:
     return u
 
 
-def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIRouter, callable]:
+def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
+                 url_publique: str = "") -> tuple[APIRouter, callable]:
     """Renvoie (routes /auth, dependance utilisateur_requis)."""
     router = APIRouter()
     freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour)
     attentes = AttentesDeuxiemeFacteur()
+    # Renvois de l'e-mail de confirmation sur 24 h : par compte, et en tout (quota Resend). Sans plafond, un compte
+    # inscrit a l'adresse d'un tiers lui envoyait 720 e-mails par jour, et quelques comptes epuisaient le quota :
+    # plus aucun inscrit ne recevait son lien (audit 2, point 4). Les e-mails d'inscription ne sont pas comptes ici.
+    renvois: dict[int, deque] = defaultdict(deque)
+    renvois_total: deque = deque()
+    verrou_renvois = threading.Lock()
 
     def utilisateur_requis(request: Request) -> Utilisateur:
         u = comptes.session(request.cookies.get(COOKIE))
@@ -310,12 +321,15 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         adresse deja confirmee, ou service indisponible)."""
         if not courriel.configure():
             return False
+        if not url_publique:
+            # Jamais l'en-tete Host ou Origin : il est choisi par l'expediteur de la requete (audit 2, point 3).
+            log.error("URL_PUBLIQUE absente du .env : e-mail de confirmation non envoye")
+            return False
         jeton = comptes.jeton_verification(u.id, force=force)
         if jeton is None:
             return False
-        origine = request.headers.get("origin") or f"{request.url.scheme}://{request.headers.get('host', '')}"
         try:
-            courriel.envoyer_verification(u.email, f"{origine}/verifier-email?jeton={jeton}")
+            courriel.envoyer_verification(u.email, f"{url_publique}/verifier-email?jeton={jeton}")
         except courriel.ErreurCourriel:
             return False
         return True
@@ -341,9 +355,20 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
     def renvoyer_verification(request: Request, u: Utilisateur = Depends(utilisateur_requis)):
         if u.email_verifie:
             raise HTTPException(422, "Votre adresse est déjà confirmée.")
+        maintenant = time.monotonic()
+        with verrou_renvois:
+            for q in (renvois[u.id], renvois_total):
+                while q and maintenant - q[0] > 86400:
+                    q.popleft()
+            if len(renvois[u.id]) >= RENVOIS_PAR_COMPTE_JOUR or len(renvois_total) >= RENVOIS_TOTAL_JOUR:
+                raise HTTPException(429, "Trop d'e-mails de confirmation envoyés aujourd'hui : réessayez demain, "
+                                         "ou écrivez-nous si le message n'arrive pas.")
         if not _envoyer_verification(request, u, force=False):
             raise HTTPException(429, "Un e-mail vient d'être envoyé : vérifiez vos courriers indésirables, "
                                      "puis réessayez dans deux minutes.")
+        with verrou_renvois:
+            renvois[u.id].append(maintenant)
+            renvois_total.append(maintenant)
         return {"envoye": True}
 
     @router.post("/deconnexion", status_code=204, dependencies=[Depends(verifier_origine)])

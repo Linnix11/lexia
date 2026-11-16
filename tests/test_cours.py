@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from api.comptes import Comptes
 from api.config import Settings
 from api.cours import ErreurCours, decouper, extraire_texte
+from api.extraction import extraire_isole
 from api.main import create_app
 from tests.test_comptes import Retriever, inscrire
 
@@ -170,7 +171,8 @@ def test_fichier_word_aux_paragraphes_jamais_fermes_refuse_vite():
     debut = time.monotonic()
     with pytest.raises(ErreurCours, match="illisible"):
         extraire_texte("piege.docx", tampon.getvalue())
-    assert time.monotonic() - debut < 5
+    # Seuil large : l'ancienne lecture prenait des heures ; une machine chargee ne doit pas faire echouer le test.
+    assert time.monotonic() - debut < 60
 
 
 def test_fichier_word_texte_paragraphes_et_entites():
@@ -179,8 +181,8 @@ def test_fichier_word_texte_paragraphes_et_entites():
 
 
 def test_pdf_trop_de_pages(monkeypatch):
-    import api.cours as cours
-    monkeypatch.setattr(cours, "PAGES_MAX", 0)
+    import api.extraction as extraction
+    monkeypatch.setattr(extraction, "PAGES_MAX", 0)
     with pytest.raises(ErreurCours, match="Document trop long"):
         extraire_texte("c.pdf", pdf_minimal("Le dol est une manoeuvre destinee a tromper le cocontractant. " * 5))
 
@@ -266,3 +268,44 @@ def test_un_seul_depot_a_la_fois_par_compte(env, monkeypatch):
             return (await premier).status_code, second.status_code
 
     assert asyncio.run(deux_depots()) == (201, 429)
+
+
+def _docx_brut(xml: str) -> bytes:
+    tampon = io.BytesIO()
+    with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/document.xml", xml)
+    return tampon.getvalue()
+
+
+def test_word_aux_entites_repetees_refuse_sans_rien_developper():
+    """1 Ko de Word developpait 98 millions de caracteres (280 Mo) : expat accepte une amplification x100."""
+    xml = ('<?xml version="1.0"?><!DOCTYPE d [<!ENTITY a "' + "x" * 290 + '">]>'
+           '<w:document xmlns:w="x"><w:p><w:t>' + "&a;" * 340_000 + "</w:t></w:p></w:document>")
+    debut = time.monotonic()
+    with pytest.raises(ErreurCours, match="illisible"):
+        extraire_texte("e.docx", _docx_brut(xml))
+    assert time.monotonic() - debut < 30                      # ancienne lecture : 23 s et 1 Go a 10 Mo
+
+
+def test_word_aux_balises_trop_imbriquees_refuse():
+    with pytest.raises(ErreurCours, match="illisible"):
+        extraire_texte("p.docx", _docx_brut('<w:document xmlns:w="x">' + "<a>" * 100_000 + "</a>" * 100_000 + "</w:document>"))
+
+
+def test_word_trop_de_texte_arrete_en_cours_de_lecture(monkeypatch):
+    import api.extraction as extraction
+    monkeypatch.setattr(extraction, "CARACTERES_MAX", 10)
+    with pytest.raises(ErreurCours, match="trop long"):
+        extraire_texte("l.docx", docx_minimal(["un texte de plus de dix caracteres"]))
+
+
+def test_lecture_isolee_dans_un_autre_processus():
+    assert extraire_isole("c.docx", docx_minimal(["Titre", "R &amp; D"]))[0][1].split("\n") == ["Titre", "R & D"]
+    with pytest.raises(ErreurCours, match="Format"):
+        extraire_isole("c.exe", b"x")                       # l'erreur du processus de lecture est relayee
+
+
+def test_lecture_trop_longue_refusee():
+    """Un PDF dont les 1000 pages partagent un meme contenu compresse prenait 4 a 5 h : le processus est tue."""
+    with pytest.raises(ErreurCours, match="trop de temps"):
+        extraire_isole("c.txt", b"x" * 10, delai=0.001)

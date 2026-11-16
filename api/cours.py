@@ -7,36 +7,31 @@ lui (ON DELETE CASCADE). Voir docs/superpowers/specs/2026-11-12-cours-deposes-de
 
 from __future__ import annotations
 
-import io
 import logging
 import re
 import sqlite3
 import threading
 import time
-import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote
-from xml.etree import ElementTree
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from api.auth import verifier_origine
+from api.extraction import (CARACTERES_MAX, FORMATS, ErreurCours, extraire_isole,  # noqa: F401
+                            extraire_texte)
 from api.matieres import LIBELLES
 from api.retrieval.base import fusion_rrf, termes
 
 log = logging.getLogger("lexia.cours")
 
 TAILLE_MAX = 20 * 1024 * 1024       # 20 Mo par fichier
-CARACTERES_MAX = 1_000_000          # texte extrait au plus
-PAGES_MAX = 1000                    # pages d'un PDF
-XML_WORD_MAX = 10 * 1024 * 1024     # word/document.xml decompresse : au-dela, archive piegee (« zip bomb »)
 DEPOTS_PAR_JOUR = 20                # depots par compte sur 24 h (deposer/retirer en boucle saturerait le serveur)
 DEPOTS_SIMULTANES = 2               # depots lus en meme temps, tous comptes confondus (memoire du serveur)
 TAILLE_PASSAGE = 1500               # caracteres par passage (environ)
-FORMATS = {".pdf": "PDF", ".docx": "Word", ".txt": "texte", ".md": "texte"}
 SOURCE_ID = "cours_perso"
 
 SCHEMA = """
@@ -67,80 +62,7 @@ BEGIN DELETE FROM cours_fts WHERE rowid = old.id; END;
 """
 
 
-class ErreurCours(ValueError):
-    """Erreur presentable a l'etudiant."""
-
-
-# --- extraction ----------------------------------------------------------------
-
-def extraire_texte(nom: str, contenu: bytes) -> list[tuple[int | None, str]]:
-    """[(page, texte)] ; page = None quand le format n'a pas de pages."""
-    ext = Path(nom).suffix.lower()
-    if ext not in FORMATS:
-        raise ErreurCours("Format non pris en charge : déposez un PDF, un fichier Word (.docx) ou un texte (.txt).")
-    if ext == ".pdf":
-        from pypdf import PdfReader
-        from pypdf.errors import PdfReadError
-
-        try:
-            lecteur = PdfReader(io.BytesIO(contenu))
-            if lecteur.is_encrypted:
-                raise ErreurCours("Ce PDF est protégé par un mot de passe : déposez une version sans protection.")
-            if len(lecteur.pages) > PAGES_MAX:
-                raise ErreurCours(f"Document trop long ({len(lecteur.pages)} pages, {PAGES_MAX} au plus) : "
-                                  "découpez-le en plusieurs cours.")
-            pages, total = [], 0
-            for i, p in enumerate(lecteur.pages, start=1):
-                texte = p.extract_text() or ""
-                total += len(texte)
-                if total > CARACTERES_MAX:
-                    raise ErreurCours("Document trop long : découpez-le en plusieurs cours.")
-                pages.append((i, texte))
-        except (PdfReadError, ValueError, KeyError) as e:
-            if isinstance(e, ErreurCours):
-                raise
-            raise ErreurCours("Ce PDF est illisible ou endommagé.") from None
-        if sum(len(t.strip()) for _, t in pages) < 200:
-            raise ErreurCours("Ce PDF ne contient pas de texte (scan ou photo) : la lecture des documents "
-                              "scannés n'est pas encore disponible.")
-        return pages
-    if ext == ".docx":
-        try:
-            with zipfile.ZipFile(io.BytesIO(contenu)) as z, z.open("word/document.xml") as f:
-                brut = f.read(XML_WORD_MAX + 1)  # lecture bornee : jamais plus que la limite en memoire
-            if len(brut) > XML_WORD_MAX:
-                raise ErreurCours("Ce fichier Word est anormalement volumineux une fois décompressé : il est refusé.")
-        except (zipfile.BadZipFile, KeyError):
-            raise ErreurCours("Ce fichier Word est illisible ou endommagé.") from None
-        return [(None, _texte_word(brut))]
-    try:
-        return [(None, contenu.decode("utf-8"))]
-    except UnicodeDecodeError:
-        return [(None, contenu.decode("latin-1"))]
-
-
-def _texte_word(xml: bytes) -> str:
-    """Paragraphes (w:p) et leurs morceaux de texte (w:t), lus en un seul passage.
-
-    Lecteur XML et non expression reguliere : « <w:p[ >].*?</w:p> » prenait un temps quadratique sur des
-    paragraphes jamais fermes (40 Ko : 2 s ; 10 Mo : des heures) et bloquait tout le serveur (audit du
-    2026-11-16). expat refuse les entites en cascade et ne charge aucune entite externe.
-    """
-    paragraphes: list[str] = []
-    courant: list[str] = []
-    try:
-        for _, el in ElementTree.iterparse(io.BytesIO(xml)):
-            nom = el.tag.rsplit("}", 1)[-1]
-            if nom == "t":
-                courant.append(el.text or "")
-            elif nom == "p":
-                paragraphes.append("".join(courant))
-                courant = []
-                el.clear()
-    except ElementTree.ParseError:
-        raise ErreurCours("Ce fichier Word est illisible ou endommagé.") from None
-    return "\n".join(paragraphes)
-
+# --- decoupage ------------------------------------------------------------------
 
 def decouper(pages: list[tuple[int | None, str]]) -> list[tuple[int | None, str]]:
     """Passages d'environ TAILLE_PASSAGE caracteres, coupes entre paragraphes, avec leur page de depart."""
@@ -218,7 +140,7 @@ class Cours:
         # fichier vide ou trop gros) restent gratuits : un etudiant ne s'y bloque pas lui-meme.
         with self._lock:
             self._depots.setdefault(uid, []).append(time.monotonic())
-        pages = extraire_texte(fichier, contenu)
+        pages = extraire_isole(fichier, contenu)  # processus a part, borne en duree et en memoire
         if sum(len(t) for _, t in pages) > CARACTERES_MAX:
             raise ErreurCours("Document trop long : découpez-le en plusieurs cours.")
         passages = decouper(pages)
