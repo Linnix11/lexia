@@ -22,7 +22,15 @@ echo "== Compilation du front"
 (cd web && npm ci && npm run build)
 
 echo "== Index de recherche"
-test -f data/index/lexia.sqlite || { echo "data/index absent : lancer python -m ingest.build_index" >&2; exit 1; }
+# LEXIA_SANS_INDEX=1 : l'index du serveur est garde tel quel (il a ete mis a jour sur place, ou il n'a pas
+# change) ; seuls le code et le front partent. Evite de renvoyer 4 Go par une liaison montante lente.
+EXCLURE_INDEX=()
+if [ "${LEXIA_SANS_INDEX:-}" = 1 ]; then
+  EXCLURE_INDEX=(--exclude 'data/index')
+  echo "  index du serveur conserve (LEXIA_SANS_INDEX=1)"
+else
+  test -f data/index/lexia.sqlite || { echo "data/index absent : lancer python -m ingest.build_index" >&2; exit 1; }
+fi
 
 echo "== Version"
 git rev-parse --short HEAD > VERSION 2>/dev/null && echo "  $(cat VERSION)" || echo "inconnue" > VERSION
@@ -38,6 +46,7 @@ rsync -az --delete --partial-dir=.rsync-partiel --timeout=120 \
   --exclude 'data/raw' --exclude 'data/embeddings' --exclude 'data/passages' \
   --exclude 'logs' --exclude 'eval/resultats' --exclude '__pycache__' --exclude '.pytest_cache' \
   --exclude 'web/src' --exclude 'tests' \
+  ${EXCLURE_INDEX[@]+"${EXCLURE_INDEX[@]}"} \
   ./ "$SERVEUR:$APP/"
 
 echo "== .env (seulement s'il manque sur le serveur)"
