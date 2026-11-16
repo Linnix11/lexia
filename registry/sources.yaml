@@ -65,14 +65,14 @@ sources:
   statut: actif
   derniere_synchro: null
 - id: judilibre
-  nom: Cour de cassation, chambres civiles, Assemblee pleniere et chambre mixte (arrets publies depuis 2000)
+  nom: Cour de cassation, chambres civiles, Assemblee pleniere et chambre mixte (arrets publies depuis 2000, sommaires depuis 1960)
   type: jurisprudence
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
   frequence_maj: hebdomadaire
-  perimetre: arrets publies depuis 2000 ; sommaires officiels indexes ; moyens annexes exclus
+  perimetre: arrets publies depuis 2000 ; de 1960 a 1999, sommaire officiel seul (D82) ; moyens annexes exclus
   matieres:
   - droit_civil
   - procedure_civile
@@ -854,7 +854,7 @@ sources:
   statut: actif
   derniere_synchro: null
 - id: cass_criminelle
-  nom: Cour de cassation, chambre criminelle (arrets publies depuis 2000)
+  nom: Cour de cassation, chambre criminelle (arrets publies depuis 2000, sommaires depuis 1963)
   type: jurisprudence
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
@@ -872,7 +872,7 @@ sources:
   statut: actif
   derniere_synchro: null
 - id: cass_sociale
-  nom: Cour de cassation, chambre sociale (arrets publies depuis 2000)
+  nom: Cour de cassation, chambre sociale (arrets publies depuis 2000, sommaires depuis 1960)
   type: jurisprudence
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
@@ -889,7 +889,7 @@ sources:
   statut: actif
   derniere_synchro: null
 - id: cass_commerciale
-  nom: Cour de cassation, chambre commerciale (arrets publies depuis 2000)
+  nom: Cour de cassation, chambre commerciale (arrets publies depuis 2000, sommaires depuis 1960)
   type: jurisprudence
   autorite: Cour de cassation
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/

@@ -89,6 +89,17 @@ def test_cass_perimetre(monkeypatch):
     assert cass.parse_arret(lire("cass_civ1_avant_2016.xml"), date_recuperation="d", version="v") == []
 
 
+def test_cass_avant_2000_sommaire_seul(monkeypatch):
+    # Avant DATE_ARRET_COMPLET, seul le sommaire officiel est repris (D82) : ni motifs ni dispositif.
+    complet = cass.parse_arret(lire("cass_civ1_avant_2016.xml"), date_recuperation="d", version="v")
+    assert {p.type for p in complet} > {"sommaire"}
+    monkeypatch.setattr(cass, "DATE_ARRET_COMPLET", "2010-01-01")   # l'arret de 2009 devient « ancien »
+    ancien = cass.parse_arret(lire("cass_civ1_avant_2016.xml"), date_recuperation="d", version="v")
+    assert ancien and {p.type for p in ancien} == {"sommaire"}
+    assert [p.id for p in ancien] == [p.id for p in complet if p.type == "sommaire"]
+    assert cass.DATE_MIN == "1960-01-01"
+
+
 # --- Code civil (LEGI) -------------------------------------------------------
 
 def test_legi_article_en_vigueur():

@@ -1,6 +1,8 @@
 """Arrets publies de la Cour de cassation depuis l'archive DILA CASS.
 
-Perimetre : toutes les chambres, arrets publies depuis DATE_MIN (2000).
+Perimetre : toutes les chambres, arrets publies depuis DATE_MIN (1960). Avant DATE_ARRET_COMPLET (2000),
+seul le sommaire officiel est repris (D82) : il enonce la regle et suffit a retrouver un grand arret (Blieck,
+Bertrand, Chronopost), pour un quart du volume des arrets complets.
 Passages produits par arret :
   - "sommaire" : titrage + analyse officiels (resume redige par la Cour)
   - "motifs"   : paragraphes de motivation regroupes
@@ -40,7 +42,8 @@ SOURCE_PAR_FORMATION = {
     "CHAMBRE_SOCIALE": "cass_sociale",
     "CHAMBRE_COMMERCIALE": "cass_commerciale",
 }
-DATE_MIN = "2000-01-01"
+DATE_MIN = "1960-01-01"           # chambres civiles depuis 1960, criminelle depuis 1963 dans l'archive
+DATE_ARRET_COMPLET = "2000-01-01"  # avant : sommaire seul (D82)
 
 # Lien Legifrance construit a partir de l'identifiant DILA (format a confirmer en navigateur).
 URL_LEGIFRANCE = "https://www.legifrance.gouv.fr/juri/id/{id}"
@@ -127,6 +130,8 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str, seulement: 
         for k, bloc in enumerate(decouper_sommaire(som)):
             suffixe = "sommaire" if k == 0 else f"sommaire-{k + 1}"
             passages.append(Passage(id=f"{source_id}:{doc_id}:{suffixe}", type="sommaire", numero=None, alineas=bloc, **common))
+    if date < DATE_ARRET_COMPLET:
+        return passages
 
     lines = lignes_utiles(dila.contenu_lines(raw.decode("utf-8")))
     for i, m in enumerate(decouper(lines, est_dispositif, ignorer=est_formule), start=1):
