@@ -3,7 +3,7 @@ import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
 const OFFICIELLES = [
-  { sym: '§', nom: 'Légifrance', desc: '31 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais' },
+  { sym: '§', nom: 'Légifrance', desc: '36 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais' },
   { sym: '⚖', nom: 'Cour de cassation', desc: 'Arrêts publiés depuis 2000, toutes chambres',
     url: 'https://www.courdecassation.fr/acces-rapide-judilibre/donnees-ouvertes-open-data-et-api' },
   { sym: '⚖', nom: 'Conseil d’État', desc: 'Recueil Lebon et Tribunal des conflits', url: 'https://www.conseil-etat.fr/' },

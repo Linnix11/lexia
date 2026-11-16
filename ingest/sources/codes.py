@@ -65,6 +65,12 @@ CODES: tuple[Code, ...] = (
     Code("code_action_sociale_familles", "LEGITEXT000006074069", "Code de l'action sociale et des familles"),
     Code("code_penitentiaire", "LEGITEXT000045476241", "Code pénitentiaire"),
     Code("code_expropriation", "LEGITEXT000006074224", "Code de l'expropriation pour cause d'utilité publique"),
+    # Ajouts du 2026-11-16 (identifiants verifies dans l'archive LEGI du 2026-11-08, TITREFULL).
+    Code("code_route", "LEGITEXT000006074228", "Code de la route"),
+    Code("code_sante_publique", "LEGITEXT000006072665", "Code de la santé publique"),
+    Code("code_rural", "LEGITEXT000006071367", "Code rural et de la pêche maritime"),
+    Code("code_douanes", "LEGITEXT000006071570", "Code des douanes"),
+    Code("code_impositions_biens_services", "LEGITEXT000044595989", "Code des impositions sur les biens et services"),
 )
 NATURES_LOIS = {"LOI", "LOI_ORGANIQUE", "ORDONNANCE", "LOI_CONSTIT"}
 SOURCE_LOIS = "lois"
@@ -133,43 +139,69 @@ def extraire(raw_dir: Path) -> Path:
         tmp = dest.with_name(dest.name + ".partiel")
         tmp.mkdir(parents=True, exist_ok=True)
         print(f"  extraction de {len(voulus)} textes depuis {archive.name} (environ 6 minutes)...", flush=True)
-        with tarfile.open(archive, "r|gz") as tar:
-            for m in tar:
-                if not (m.isfile() and m.name.endswith(".xml") and "/article/" in m.name):
-                    continue
-                mm = _MOTIF.search(m.name)
-                if not mm or mm.group(1) not in voulus:
-                    continue
-                f = tar.extractfile(m)
-                if f is None:
-                    continue
-                cible = tmp / mm.group(1) / mm.group(2)
-                cible.parent.mkdir(parents=True, exist_ok=True)
-                cible.write_bytes(f.read())
+        _extraire_textes(archive, tmp, voulus)
         tmp.rename(dest)
+    else:
+        # Code ajoute a CODES apres l'extraction (sur le Mac comme sur le serveur, D78) : seuls les codes
+        # absents du dossier sont extraits. Les lois ne sont pas concernees (inventaire et increments).
+        manquants = {c.legitext for c in CODES} - {d.name for d in dest.iterdir() if d.is_dir()}
+        if manquants:
+            print(f"  extraction de {len(manquants)} code(s) ajoute(s) depuis {archive.name}...", flush=True)
+            tmp = dest.with_name(dest.name + ".ajout")
+            shutil.rmtree(tmp, ignore_errors=True)
+            _extraire_textes(archive, tmp, manquants)
+            for lt in sorted(manquants):
+                if (tmp / lt).is_dir():
+                    (tmp / lt).rename(dest / lt)
+            shutil.rmtree(tmp, ignore_errors=True)
+            # Archive globale = etat du jour de l'archive : les archives quotidiennes deja notees dans le
+            # journal sont reappliquees a ces seuls codes, sinon ils resteraient a cette date.
+            appliquer_increments(raw_dir, dest, date, seulement=manquants)
     appliquer_increments(raw_dir, dest, date)
     return dest
 
 
-def appliquer_increments(raw_dir: Path, dest: Path, date: str) -> list[str]:
+def _extraire_textes(archive: Path, dest: Path, voulus: set[str]) -> None:
+    """Articles des textes voulus, ecrits sous dest/<identifiant du texte>/ (une passe sur l'archive)."""
+    dest.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive, "r|gz") as tar:
+        for m in tar:
+            if not (m.isfile() and m.name.endswith(".xml") and "/article/" in m.name):
+                continue
+            mm = _MOTIF.search(m.name)
+            if not mm or mm.group(1) not in voulus:
+                continue
+            f = tar.extractfile(m)
+            if f is None:
+                continue
+            cible = dest / mm.group(1) / mm.group(2)
+            cible.parent.mkdir(parents=True, exist_ok=True)
+            cible.write_bytes(f.read())
+
+
+def appliquer_increments(raw_dir: Path, dest: Path, date: str, seulement: set[str] | None = None) -> list[str]:
     """Applique a l'extraction les archives quotidiennes pas encore lues (liste dans dest/.increments) :
     nouvelles lois ajoutees a l'inventaire, articles ecrits par-dessus, dossiers supprimes retires (D78).
+    seulement : rattrapage de textes tout juste extraits de l'archive globale. Toutes les archives
+    quotidiennes leur sont appliquees, journal ignore et laisse tel quel, inventaire inchange.
     Renvoie les horodatages appliques."""
     journal = dest / ".increments"
-    deja = set(journal.read_text().split()) if journal.exists() else set()
+    deja = set(journal.read_text().split()) if journal.exists() and seulement is None else set()
     appliques = []
     for inc in dila.increments(raw_dir, "legi"):
         h = dila.horodatage(inc)
         if h in deja:
             continue
         supprimes, fichiers = dila.lire_increment(inc)
-        inventaire = _inventaire(raw_dir, date)
-        connues = {loi[0] for loi in inventaire["lois"]}
-        nouvelles = [loi for nom, raw in fichiers if (loi := _loi(nom, raw)) and loi[0] not in connues]
-        if nouvelles:
-            inventaire["lois"] += nouvelles
-            _fichier_inventaire(raw_dir, date).write_text(json.dumps(inventaire, ensure_ascii=False), encoding="utf-8")
-        voulus = _voulus(raw_dir, date)
+        if seulement is None:
+            inventaire = _inventaire(raw_dir, date)
+            connues = {loi[0] for loi in inventaire["lois"]}
+            nouvelles = [loi for nom, raw in fichiers if (loi := _loi(nom, raw)) and loi[0] not in connues]
+            if nouvelles:
+                inventaire["lois"] += nouvelles
+                _fichier_inventaire(raw_dir, date).write_text(json.dumps(inventaire, ensure_ascii=False),
+                                                              encoding="utf-8")
+        voulus = _voulus(raw_dir, date) if seulement is None else seulement
         republies = {mm.group(1) for nom, _ in fichiers if (mm := _MOTIF.search("/" + nom))}
         for chemin in supprimes:
             mm = _MOTIF.search("/" + chemin)
@@ -190,8 +222,9 @@ def appliquer_increments(raw_dir: Path, dest: Path, date: str) -> list[str]:
                 cible = dest / mm.group(1) / mm.group(2)
                 cible.parent.mkdir(parents=True, exist_ok=True)
                 cible.write_bytes(raw)
-        with journal.open("a", encoding="utf-8") as f:
-            f.write(h + "\n")
+        if seulement is None:
+            with journal.open("a", encoding="utf-8") as f:
+                f.write(h + "\n")
         appliques.append(h)
     return appliques
 

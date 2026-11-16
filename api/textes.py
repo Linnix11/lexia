@@ -63,6 +63,12 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_action_sociale_familles", "Code de l'action sociale et des familles", ("code de l'action sociale et des familles", 'casf',)),
     Texte("code_penitentiaire", "Code pénitentiaire", ('code penitentiaire',)),
     Texte("code_expropriation", "Code de l'expropriation pour cause d'utilité publique", ("code de l'expropriation",)),
+    Texte("code_route", "Code de la route", ("code de la route",)),
+    Texte("code_sante_publique", "Code de la santé publique", ("code de la sante publique", "csp")),
+    Texte("code_rural", "Code rural et de la pêche maritime", ("code rural(?: et de la peche maritime)?",)),
+    Texte("code_douanes", "Code des douanes", ("code des douanes",)),
+    Texte("code_impositions_biens_services", "Code des impositions sur les biens et services",
+          ("code des impositions sur les biens et services", "cibs")),
     Texte("lois", "Lois et ordonnances en vigueur", ()),
 )
 

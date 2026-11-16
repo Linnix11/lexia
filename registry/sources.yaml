@@ -722,6 +722,106 @@ sources:
   ingestion: ingest/sources/codes.py
   statut: actif
   derniere_synchro: null
+- id: code_route
+  nom: Code de la route
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006074228
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_sante_publique
+  nom: Code de la santé publique
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006072665
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_civil
+  - libertes_fondamentales
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_rural
+  nom: Code rural et de la pêche maritime
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006071367
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_des_biens
+  - droit_des_affaires
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_douanes
+  nom: Code des douanes
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000006071570
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_fiscal
+  - droit_penal
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
+- id: code_impositions_biens_services
+  nom: Code des impositions sur les biens et services
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: LEGITEXT000044595989
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
+  matieres:
+  - droit_fiscal
+  - finances_publiques
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
 - id: lois
   nom: Lois, lois organiques et ordonnances en vigueur (textes non codifies)
   type: texte_officiel
