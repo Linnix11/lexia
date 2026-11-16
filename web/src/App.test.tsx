@@ -80,9 +80,15 @@ describe('Assistant', () => {
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
   })
 
-  it('affiche une seule fois la citation de phrases consecutives qui ont la meme source', async () => {
+  it('affiche chaque source une seule fois dans la reponse, a sa premiere mention', async () => {
     const r = REPONSE.droit_positif[0]
-    reponseChat = { ...REPONSE, droit_positif: [r, { ...r, texte: 'Deuxième règle.' }, { ...r, texte: 'Troisième règle.' }] }
+    reponseChat = {
+      ...REPONSE,
+      droit_positif: [r, { ...r, texte: 'Deuxième règle.' }],
+      explication: [{ texte: 'La majeure.', sources: [r.sources[0]], rubrique: 'Majeure' },
+        { texte: 'La mineure.', sources: [r.sources[0]], rubrique: 'Mineure' }],
+      points_incertains: [{ texte: 'Un doute.', sources: [r.sources[0]] }],
+    }
     await poser('Que dit l’article 1240 ?')
     expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(1)
   })
