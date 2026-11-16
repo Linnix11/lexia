@@ -116,6 +116,20 @@ def test_cache_amorce_depuis_l_index_et_sources_hors_dila_reconstituees(tmp_path
     assert mise_a_jour.amorcer_cache(actuel, cache) == 2
     lignes = [json.loads(x) for x in (cache / "constitution_1958.jsonl").read_text().splitlines()]
     assert lignes[0]["id"] == "b" and lignes[0]["empreinte"] == "eb" and lignes[0]["model"] == "modele"
-    assert mise_a_jour.amorcer_cache(actuel, cache) == 0   # cache deja present : rien a faire
+    assert mise_a_jour.amorcer_cache(actuel, cache) == 0   # deja amorce pour ce modele : rien a faire
     assert mise_a_jour.reconstituer(actuel, passages, a_garder={"code_civil"}) == ["constitution_1958"]
     assert json.loads((passages / "constitution_1958.jsonl").read_text()) == {"id": "b"}
+
+
+def test_amorce_additive_avec_des_lignes_calculees_sur_le_mac(tmp_path):
+    actuel = index(tmp_path / "index", [("a", "code_civil"), ("b", "code_civil"), ("c", "judilibre")], 3)
+    cache = tmp_path / "embeddings"
+    cache.mkdir()
+    # Envoye du Mac avant le premier passage : une nouvelle source, et « b » deja present (meme empreinte)
+    mac = [{"id": "n", "empreinte": "en", "model": "modele", "dim": 4, "b64": ""},
+           {"id": "b", "empreinte": "eb", "model": "modele", "dim": 4, "b64": ""}]
+    (cache / "code_civil.jsonl").write_text("".join(json.dumps(r) + "\n" for r in mac))
+    assert mise_a_jour.amorcer_cache(actuel, cache) == 2   # a et c ajoutes, b deja la
+    civil = [json.loads(x)["id"] for x in (cache / "code_civil.jsonl").read_text().splitlines()]
+    assert civil == ["n", "b", "a"]   # lignes du Mac gardees, celles de l'index ajoutees a la suite
+    assert [json.loads(x)["id"] for x in (cache / "judilibre.jsonl").read_text().splitlines()] == ["c"]

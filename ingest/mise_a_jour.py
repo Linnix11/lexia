@@ -131,33 +131,42 @@ def reconstituer(index_dir: Path, passages_dir: Path, a_garder: set[str]) -> lis
 
 
 def amorcer_cache(index_dir: Path, cache_dir: Path) -> int:
-    """Cache d'embeddings vide (premier passage sur le serveur) : reprend les vecteurs de l'index actuel,
-    pour ne calculer ensuite que les passages nouveaux ou modifies. Les vecteurs de l'index sont normalises,
-    ce que build_index refait de toute facon."""
-    if any(cache_dir.glob("*.jsonl")) or not (index_dir / "vectors.npy").exists():
+    """Premier passage sur une machine (le serveur) : ajoute au cache les vecteurs de l'index en service
+    qui y manquent (meme id, meme empreinte), pour ne calculer ensuite que les passages nouveaux ou modifies.
+    Additif : le cache peut deja contenir des lignes calculees ailleurs (Mac) pour de nouvelles sources.
+    Fait une fois par modele (marqueur .amorce_*) : ensuite, l'index est toujours construit depuis le cache.
+    Les vecteurs de l'index sont normalises, ce que build_index refait de toute facon. Renvoie le nombre ajoute."""
+    if not (index_dir / "vectors.npy").exists():
+        return 0
+    model = (index_dir / "vectors_model.txt").read_text().strip()
+    marqueur = cache_dir / f".amorce_{model.replace('/', '_')}"
+    if marqueur.exists():
         return 0
     cache_dir.mkdir(parents=True, exist_ok=True)
-    model = (index_dir / "vectors_model.txt").read_text().strip()
+    presents = {(r["id"], r["empreinte"]) for f in cache_dir.glob("*.jsonl") for r in embed.iter_cache(f, model)}
     ids = json.loads((index_dir / "vectors_ids.json").read_text())
     vecs = np.load(index_dir / "vectors.npy", mmap_mode="r")
     con = sqlite3.connect(index_dir / "lexia.sqlite")
     infos = {pid: (src, emp) for pid, src, emp in con.execute("SELECT id, source_id, empreinte FROM passages")}
     con.close()
     fichiers: dict[str, object] = {}
+    ajoutes = 0
     try:
         for i, pid in enumerate(ids):
-            if pid not in infos:
+            if pid not in infos or (pid, infos[pid][1]) in presents:
                 continue
             src, emp = infos[pid]
             if src not in fichiers:
-                fichiers[src] = (cache_dir / f"{src}.jsonl").open("w", encoding="utf-8")
+                fichiers[src] = (cache_dir / f"{src}.jsonl").open("a", encoding="utf-8")
+            ajoutes += 1
             b64 = base64.b64encode(np.asarray(vecs[i], dtype="<f4").tobytes()).decode("ascii")
             fichiers[src].write(json.dumps({"id": pid, "empreinte": emp, "model": model, "dim": vecs.shape[1],
                                             "b64": b64}) + "\n")
     finally:
         for f in fichiers.values():
             f.close()
-    return len(ids)
+    marqueur.write_text(f"{ajoutes}\n")
+    return ajoutes
 
 
 def compter(index_dir: Path) -> tuple[int, int, set[str]]:
