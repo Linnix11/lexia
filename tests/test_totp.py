@@ -27,8 +27,8 @@ def test_activation_connexion_secours_desactivation(env):  # noqa: F811
     inscrire(client)
     assert client.get("/auth/moi").json()["double_authentification"] is False
     secret = client.post("/auth/2fa/preparer").json()["secret"]
-    assert client.post("/auth/2fa/activer", json={"code": "000000" if code(secret) != "000000" else "111111"}).status_code == 422
-    r = client.post("/auth/2fa/activer", json={"code": code(secret)})
+    assert client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide", "code": "000000" if code(secret) != "000000" else "111111"}).status_code == 422
+    r = client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide", "code": code(secret)})
     assert r.status_code == 200
     secours = r.json()["codes_secours"]
     assert len(secours) == 8
@@ -57,7 +57,7 @@ def test_desactivation(env):  # noqa: F811
     client, _, _ = env
     inscrire(client)
     secret = client.post("/auth/2fa/preparer").json()["secret"]
-    secours = client.post("/auth/2fa/activer", json={"code": code(secret)}).json()["codes_secours"]
+    secours = client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide", "code": code(secret)}).json()["codes_secours"]
     # Desactivation : mot de passe et code exiges.
     assert client.post("/auth/2fa/desactiver", json={"mot_de_passe": "faux", "code": secours[2]}).status_code >= 400
     r = client.post("/auth/2fa/desactiver", json={"mot_de_passe": "motdepasse-solide", "code": secours[3]})
@@ -71,10 +71,30 @@ def test_jeton_limite_en_essais(env):  # noqa: F811
     client, _, _ = env
     inscrire(client)
     secret = client.post("/auth/2fa/preparer").json()["secret"]
-    client.post("/auth/2fa/activer", json={"code": code(secret)})
+    client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide", "code": code(secret)})
     client.post("/auth/deconnexion")
     jeton = client.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide"}).json()["jeton"]
     for _ in range(5):
         client.post("/auth/connexion/code", json={"jeton": jeton, "code": "zzzz-zzzz"})
     # Apres 5 essais le jeton est detruit, meme un bon code est refuse.
     assert client.post("/auth/connexion/code", json={"jeton": jeton, "code": "zzzz-zzzz"}).status_code >= 400
+
+
+def test_activation_exige_le_mot_de_passe_et_ferme_les_autres_sessions(env):  # noqa: F811
+    """Une session restee ouverte (poste partage, mot de passe vole) ne doit ni activer la double
+    authentification avec un autre telephone, ni survivre a son activation (audit du 2026-11-16)."""
+    from fastapi.testclient import TestClient
+
+    client, _, _ = env
+    inscrire(client)
+    autre = TestClient(client.app)
+    autre.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide"})
+    assert autre.get("/auth/moi").status_code == 200
+    secret = client.post("/auth/2fa/preparer").json()["secret"]
+    r = client.post("/auth/2fa/activer", json={"mot_de_passe": "faux-mot-de-passe", "code": code(secret)})
+    assert r.status_code == 401
+    assert client.get("/auth/moi").json()["double_authentification"] is False
+    r = client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide", "code": code(secret)})
+    assert r.status_code == 200
+    assert client.get("/auth/moi").json()["double_authentification"] is True   # cette session est rouverte
+    assert autre.get("/auth/moi").status_code == 401                          # l'autre appareil est deconnecte

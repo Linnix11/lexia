@@ -55,6 +55,30 @@ def test_jeton_invalide_ou_deja_utilise(env):
     assert client.post("/auth/email/verifier", json={"jeton": jeton}).status_code == 422  # ne sert qu'une fois
 
 
+def test_le_lien_confirme_sans_ouvrir_de_session(env):
+    """Le lien contournait mot de passe et double authentification, et connectait la victime au compte
+    d'un tiers inscrit avec son adresse (audit du 2026-11-16)."""
+    client, _, envoyes = env
+    inscrire(client)
+    autre_appareil = TestClient(client.app)
+    r = autre_appareil.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])})
+    assert r.status_code == 200 and r.json() is None
+    assert "lexia_session" not in autre_appareil.cookies
+    assert autre_appareil.get("/auth/session").json() is None
+    assert client.get("/auth/session").json()["email_verifie"] is True       # l'adresse est bien confirmee
+
+
+def test_faux_jetons_ne_bloquent_pas_les_autres_inscrits(env):
+    """Le compteur d'echecs etait commun : 5 faux jetons bloquaient la confirmation pour tout le monde."""
+    client, _, envoyes = env
+    attaquant = TestClient(client.app, client=("203.0.113.9", 50000))
+    for _ in range(6):
+        attaquant.post("/auth/email/verifier", json={"jeton": "faux"})
+    assert attaquant.post("/auth/email/verifier", json={"jeton": "faux"}).status_code == 429
+    inscrire(client)
+    assert client.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])}).status_code == 200
+
+
 def test_renvoi_limite_puis_refuse_si_deja_confirme(env):
     client, _, envoyes = env
     inscrire(client)

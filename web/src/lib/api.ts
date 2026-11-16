@@ -339,11 +339,11 @@ export const api = {
     post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu }),
   connexion: (email: string, mot_de_passe: string) => post<Profil | DeuxiemeEtape>('/auth/connexion', { email, mot_de_passe }),
   connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
-  verifierEmail: (jeton: string) => post<Profil>('/auth/email/verifier', { jeton }),
+  verifierEmail: (jeton: string) => post<Profil | null>('/auth/email/verifier', { jeton }),
   renvoyerVerification: () => post<{ envoye: boolean }>('/auth/email/renvoyer', {}),
   deuxFacteurs: {
     preparer: () => post<{ secret: string; uri: string }>('/auth/2fa/preparer', {}),
-    activer: (code: string) => post<{ codes_secours: string[] }>('/auth/2fa/activer', { code }),
+    activer: (mot_de_passe: string, code: string) => post<{ codes_secours: string[] }>('/auth/2fa/activer', { mot_de_passe, code }),
     desactiver: (mot_de_passe: string, code: string) => post<Profil>('/auth/2fa/desactiver', { mot_de_passe, code }),
   },
   deconnexion: () => post<void>('/auth/deconnexion', {}),

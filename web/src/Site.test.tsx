@@ -49,10 +49,8 @@ beforeEach(() => {
       return json(PROFIL, 201)
     }
     if (url.endsWith('/auth/connexion')) return json({ double_authentification_requise: true, jeton: 'j1' })
-    if (url.endsWith('/auth/email/verifier')) {
-      connecte = true
-      return json({ ...PROFIL, email_verifie: true })
-    }
+    // Le lien confirme l'adresse sans ouvrir de session : profil seulement si deja connecte.
+    if (url.endsWith('/auth/email/verifier')) return json(connecte ? { ...PROFIL, email_verifie: true } : null)
     if (url.endsWith('/auth/email/renvoyer')) return json({ envoye: true }, 202)
     if (url.endsWith('/auth/connexion/code')) {
       connecte = true
@@ -177,6 +175,8 @@ describe('Site', () => {
     expect(await screen.findByRole('heading', { name: 'Adresse confirmée' })).toBeInTheDocument()
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/email/verifier'))!
     expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j-abc' })
+    // Pas connecte sur ce navigateur : le lien ne connecte pas, il invite a se connecter.
+    expect(screen.getByRole('link', { name: 'Se connecter' })).toBeInTheDocument()
   })
 
   it('lien sans jeton : message et aucun appel', async () => {

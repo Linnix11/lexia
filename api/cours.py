@@ -17,6 +17,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from xml.etree import ElementTree
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -32,6 +33,7 @@ CARACTERES_MAX = 1_000_000          # texte extrait au plus
 PAGES_MAX = 1000                    # pages d'un PDF
 XML_WORD_MAX = 10 * 1024 * 1024     # word/document.xml decompresse : au-dela, archive piegee (« zip bomb »)
 DEPOTS_PAR_JOUR = 20                # depots par compte sur 24 h (deposer/retirer en boucle saturerait le serveur)
+DEPOTS_SIMULTANES = 2               # depots lus en meme temps, tous comptes confondus (memoire du serveur)
 TAILLE_PASSAGE = 1500               # caracteres par passage (environ)
 FORMATS = {".pdf": "PDF", ".docx": "Word", ".txt": "texte", ".md": "texte"}
 SOURCE_ID = "cours_perso"
@@ -107,20 +109,36 @@ def extraire_texte(nom: str, contenu: bytes) -> list[tuple[int | None, str]]:
                 brut = f.read(XML_WORD_MAX + 1)  # lecture bornee : jamais plus que la limite en memoire
             if len(brut) > XML_WORD_MAX:
                 raise ErreurCours("Ce fichier Word est anormalement volumineux une fois décompressé : il est refusé.")
-            xml = brut.decode("utf-8", "replace")
         except (zipfile.BadZipFile, KeyError):
             raise ErreurCours("Ce fichier Word est illisible ou endommagé.") from None
-        paragraphes = [re.sub(r"<[^>]+>", "", p) for p in re.findall(r"<w:p[ >].*?</w:p>", xml, re.S)]
-        texte = "\n".join(_entites(p) for p in paragraphes)
-        return [(None, texte)]
+        return [(None, _texte_word(brut))]
     try:
         return [(None, contenu.decode("utf-8"))]
     except UnicodeDecodeError:
         return [(None, contenu.decode("latin-1"))]
 
 
-def _entites(t: str) -> str:
-    return t.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&apos;", "'").replace("&amp;", "&")
+def _texte_word(xml: bytes) -> str:
+    """Paragraphes (w:p) et leurs morceaux de texte (w:t), lus en un seul passage.
+
+    Lecteur XML et non expression reguliere : « <w:p[ >].*?</w:p> » prenait un temps quadratique sur des
+    paragraphes jamais fermes (40 Ko : 2 s ; 10 Mo : des heures) et bloquait tout le serveur (audit du
+    2026-11-16). expat refuse les entites en cascade et ne charge aucune entite externe.
+    """
+    paragraphes: list[str] = []
+    courant: list[str] = []
+    try:
+        for _, el in ElementTree.iterparse(io.BytesIO(xml)):
+            nom = el.tag.rsplit("}", 1)[-1]
+            if nom == "t":
+                courant.append(el.text or "")
+            elif nom == "p":
+                paragraphes.append("".join(courant))
+                courant = []
+                el.clear()
+    except ElementTree.ParseError:
+        raise ErreurCours("Ce fichier Word est illisible ou endommagé.") from None
+    return "\n".join(paragraphes)
 
 
 def decouper(pages: list[tuple[int | None, str]]) -> list[tuple[int | None, str]]:
@@ -187,8 +205,6 @@ class Cours:
             raise ErreurCours("Le fichier est vide.")
         maintenant_s = time.monotonic()
         with self._lock:
-            # Seul un depot reussi est compte (plus bas) : sinon une suite de refus (limite de la
-            # formule atteinte, mauvais format) epuiserait le quota du jour sans rien deposer.
             recents = [t for t in self._depots.get(uid, []) if maintenant_s - t < 86400]
             if len(recents) >= DEPOTS_PAR_JOUR:
                 raise ErreurCours(f"Trop de dépôts aujourd'hui ({DEPOTS_PAR_JOUR} au plus sur 24 h) : réessayez demain.")
@@ -196,6 +212,11 @@ class Cours:
         if self.nombre(uid) >= maximum:
             raise ErreurCours(f"Limite atteinte : {maximum} cours avec votre formule. Retirez un cours ou "
                               "passez à une formule supérieure.")
+        # Chaque lecture de fichier compte, reussie ou non : c'est elle qui coute (un fichier refuse a la
+        # lecture se renvoyait sans limite, audit du 2026-11-16). Les refus d'avant (limite de la formule,
+        # fichier vide ou trop gros) restent gratuits : un etudiant ne s'y bloque pas lui-meme.
+        with self._lock:
+            self._depots.setdefault(uid, []).append(time.monotonic())
         pages = extraire_texte(fichier, contenu)
         if sum(len(t) for _, t in pages) > CARACTERES_MAX:
             raise ErreurCours("Document trop long : découpez-le en plusieurs cours.")
@@ -214,8 +235,6 @@ class Cours:
                 pid = self._con.execute("INSERT INTO cours_passages (cours, rang, page, texte) VALUES (?,?,?,?)",
                                         (cid, rang, page, texte)).lastrowid
                 self._con.execute("INSERT INTO cours_fts (rowid, texte) VALUES (?,?)", (pid, texte))
-        with self._lock:
-            self._depots.setdefault(uid, []).append(time.monotonic())
         if self.embedder is not None:
             self._fil.submit(self._vectoriser, cid)
         return self.fiche(uid, cid)
@@ -335,18 +354,32 @@ def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
     def lister(u=Depends(utilisateur_requis)):
         return {"cours": cours.lister(u.id), "maximum": u.formule.cours_max, "formats": sorted(set(FORMATS))}
 
+    # Comptes dont un depot est en cours (lecture du corps puis du fichier). Un seul par compte et
+    # DEPOTS_SIMULTANES en tout : 40 fichiers de 20 Mo envoyes d'un coup saturaient la memoire, et deux depots
+    # paralleles d'un meme compte passaient tous deux la limite de cours de la formule (audit du 2026-11-16).
+    # Pas de verrou : la route est asynchrone, ce compteur n'est touche que par la boucle d'evenements.
+    en_cours: set[int] = set()
+
     @router.post("/cours", status_code=201, dependencies=[Depends(verifier_origine)])
     async def deposer(request: Request, matiere: str, fichier: str, titre: str = "", u=Depends(utilisateur_requis)):
+        if not u.email_verifie:
+            raise HTTPException(403, "Confirmez votre adresse e-mail pour déposer un cours : "
+                                     "le lien vous a été envoyé à l'inscription.")
         longueur = int(request.headers.get("content-length") or 0)
         if longueur > TAILLE_MAX:
             raise HTTPException(413, "Fichier trop volumineux (20 Mo au plus).")
-        contenu = await request.body()
+        if u.id in en_cours or len(en_cours) >= DEPOTS_SIMULTANES:
+            raise HTTPException(429, "Un dépôt est déjà en cours de lecture : réessayez dans un instant.")
+        en_cours.add(u.id)
         try:
+            contenu = await request.body()
             from starlette.concurrency import run_in_threadpool
 
             return await run_in_threadpool(cours.ajouter, u.id, matiere, titre, fichier, contenu, u.formule.cours_max)
         except ErreurCours as e:
             _erreur(e)
+        finally:
+            en_cours.discard(u.id)
 
     @router.post("/cours/{cid}/supprimer", status_code=204, dependencies=[Depends(verifier_origine)])
     def supprimer(cid: int, u=Depends(utilisateur_requis)):

@@ -295,6 +295,7 @@ class Comptes:
         self._q("UPDATE utilisateurs SET totp_secret = ?, totp_attente = NULL, totp_etape = ?, totp_secours = ? "
                 "WHERE id = ?", (coffre.chiffrer(attente), etape,
                                  coffre.chiffrer(json.dumps([totp.empreinte_secours(c) for c in secours])), uid))
+        self._q("DELETE FROM sessions WHERE utilisateur = ?", (uid,))  # les autres appareils se reconnectent
         return secours
 
     def desactiver_2fa(self, uid: int) -> None:

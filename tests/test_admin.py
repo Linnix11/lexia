@@ -26,7 +26,7 @@ def activer_2fa(c) -> str:
     """Active la double authentification du compte connecte ; renvoie le secret."""
     from api import totp
     secret = c.post("/auth/2fa/preparer").json()["secret"]
-    assert c.post("/auth/2fa/activer", json={"code": totp._code(secret, totp.etape_courante())}).status_code == 200
+    assert c.post("/auth/2fa/activer", json={"mot_de_passe": MDP, "code": totp._code(secret, totp.etape_courante())}).status_code == 200
     return secret
 
 
@@ -49,6 +49,19 @@ def test_admin_par_configuration_et_acces_refuse(env):
         assert etu.get(route).status_code == 403
         assert TestClient(app).get(route).status_code == 401
         assert chef.get(route).status_code == 200
+
+
+def test_adresse_admin_non_confirmee_n_ouvre_pas_l_administration(env, monkeypatch):
+    """Une adresse d'ADMIN_EMAILS sans compte pouvait etre prise par le premier venu (audit du 2026-11-16)."""
+    from api import courriel
+    monkeypatch.setenv("RESEND_API_KEY", "cle-de-test")
+    envoyes = []
+    monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: envoyes.append(lien))
+    app, _ = env
+    intrus = client_connecte(app, "chef@exemple.fr")          # inscrit avec l'adresse, double authentification active
+    assert intrus.get("/admin/stats").status_code == 403         # mais l'adresse n'est pas confirmee
+    intrus.post("/auth/email/verifier", json={"jeton": envoyes[0].split("jeton=")[1]})
+    assert intrus.get("/admin/stats").status_code == 200         # seul le vrai titulaire recoit le lien
 
 
 def test_statistiques_et_clients(env):

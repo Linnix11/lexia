@@ -10,7 +10,9 @@ export function VerifierEmail() {
   const { majProfil } = useSession()
   const { naviguer } = useRouteur()
   const jeton = new URLSearchParams(window.location.search).get('jeton') ?? ''
-  const [etat, setEtat] = useState<'verification' | 'ok' | 'echec'>(jeton ? 'verification' : 'echec')
+  // 'ok' : ce navigateur est connecte au compte ; 'connexion' : adresse confirmee, mais le lien n'ouvre
+  // pas de session (il contournerait le mot de passe et la double authentification).
+  const [etat, setEtat] = useState<'verification' | 'ok' | 'connexion' | 'echec'>(jeton ? 'verification' : 'echec')
   const [erreur, setErreur] = useState(jeton ? '' : 'Ce lien est incomplet : ouvrez-le depuis l’e-mail reçu.')
   const lance = useRef(false)
 
@@ -18,7 +20,10 @@ export function VerifierEmail() {
     if (!jeton || lance.current) return // le jeton ne sert qu'une fois : jamais deux appels
     lance.current = true
     api.verifierEmail(jeton)
-      .then((p) => { majProfil(p); setEtat('ok') })
+      .then((p) => {
+        if (p) majProfil(p)
+        setEtat(p ? 'ok' : 'connexion')
+      })
       .catch((e) => {
         setErreur(e instanceof ApiError ? e.message : 'Vérification impossible pour le moment.')
         setEtat('echec')
@@ -34,6 +39,13 @@ export function VerifierEmail() {
         <button type="button" onClick={() => naviguer('/app', { remplacer: true })} className={bouton}>
           Ouvrir mon espace
         </button>
+      </Carte>
+    )
+  }
+  if (etat === 'connexion') {
+    return (
+      <Carte titre="Adresse confirmée" sousTitre="Connectez-vous pour poser vos questions de droit.">
+        <Lien href="/connexion" className={bouton}>Se connecter</Lien>
       </Carte>
     )
   }

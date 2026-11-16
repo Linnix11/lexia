@@ -45,14 +45,11 @@ class CodeConnexion(BaseModel):
 
 
 class JetonEmail(BaseModel):
-    jeton: str
+    jeton: str = Field(max_length=100)
 
 
-class Code2FA(BaseModel):
-    code: str = Field(max_length=20)
-
-
-class Desactivation2FA(BaseModel):
+class MotDePasseEtCode2FA(BaseModel):
+    """Activer ou desactiver la double authentification : mot de passe et code de l'application."""
     mot_de_passe: str = Field(max_length=256)
     code: str = Field(max_length=20)
 
@@ -181,7 +178,9 @@ MESSAGE_ADMIN_2FA = ("Activez la double authentification dans « Mon compte » p
 
 def exiger_admin(u: Utilisateur) -> Utilisateur:
     """Administration : role admin ET double authentification active (un mot de passe vole ne suffit pas)."""
-    if not u.admin:
+    # Adresse confirmee exigee : le role vient aussi d'ADMIN_EMAILS, et une adresse listee sans compte
+    # (compte supprime, pas encore cree) pouvait etre prise par le premier venu (audit du 2026-11-16).
+    if not u.admin or not u.email_verifie:
         raise HTTPException(403, "Accès réservé aux administrateurs.")
     if not u.double_authentification:
         raise HTTPException(403, MESSAGE_ADMIN_2FA)
@@ -259,17 +258,26 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         return {"secret": secret, "uri": totp.uri(secret, u.email)}
 
     @router.post("/2fa/activer", dependencies=[Depends(verifier_origine)])
-    def activer_2fa(req: Code2FA, request: Request, u: Utilisateur = Depends(utilisateur_requis)):
-        freins.verifier(_ip(request), f"2fa:{u.id}")
+    def activer_2fa(req: MotDePasseEtCode2FA, request: Request, response: Response,
+                    u: Utilisateur = Depends(utilisateur_requis)):
+        # Mot de passe exige : sans lui, quelqu'un sur une session restee ouverte (poste partage) activait la
+        # double authentification avec son propre telephone et le titulaire ne pouvait plus se connecter.
+        freins.verifier(_ip(request), f"2fa:{u.id}")  # 5 echecs (mot de passe ou code) par 15 min
+        if comptes.authentifier(u.email, req.mot_de_passe) is None:
+            freins.echec(f"2fa:{u.id}")
+            raise HTTPException(401, "Mot de passe incorrect.")
         try:
             codes = comptes.activer_2fa(u.id, req.code)
         except ErreurCompte as e:
             freins.echec(f"2fa:{u.id}")
             raise HTTPException(422, str(e)) from None
+        # activer_2fa ferme toutes les sessions (un mot de passe vole ouvrait une session de 30 jours que
+        # l'activation laissait vivre) ; celle-ci est rouverte.
+        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
         return {"codes_secours": codes}
 
     @router.post("/2fa/desactiver", dependencies=[Depends(verifier_origine)])
-    def desactiver_2fa(req: Desactivation2FA, request: Request, response: Response,
+    def desactiver_2fa(req: MotDePasseEtCode2FA, request: Request, response: Response,
                        u: Utilisateur = Depends(utilisateur_requis)):
         freins.verifier(_ip(request), u.email)
         if comptes.authentifier(u.email, req.mot_de_passe) is None or not comptes.verifier_2fa(u.id, req.code):
@@ -295,16 +303,21 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20) -> tuple[APIR
         return True
 
     @router.post("/email/verifier", dependencies=[Depends(verifier_origine)])
-    def verifier_email(req: JetonEmail, request: Request, response: Response):
-        freins.verifier(_ip(request), "verification")
+    def verifier_email(req: JetonEmail, request: Request):
+        # Compteur d'echecs par adresse IP : une cle commune laissait 5 faux jetons bloquer la
+        # confirmation de tous les nouveaux inscrits pendant 15 minutes (audit du 2026-11-16).
+        cle = f"verification:{_ip(request)}"
+        freins.verifier(_ip(request), cle)
         try:
             u = comptes.verifier_email(req.jeton)
         except ErreurCompte as e:
-            freins.echec("verification")
+            freins.echec(cle)
             raise HTTPException(422, str(e)) from None
-        # Confirmer depuis le lien reconnecte l'etudiant : il arrive souvent depuis un autre appareil.
-        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
-        return profil(comptes, u)
+        # Le lien confirme l'adresse mais n'ouvre jamais de session : il contournait le mot de passe et la
+        # double authentification, et connectait la victime au compte d'un tiers inscrit avec son adresse
+        # (audit du 2026-11-16). Profil renvoye seulement si ce navigateur est deja connecte a ce compte.
+        actuel = comptes.session(request.cookies.get(COOKIE))
+        return profil(comptes, comptes.par_id(u.id)) if actuel is not None and actuel.id == u.id else None
 
     @router.post("/email/renvoyer", status_code=202, dependencies=[Depends(verifier_origine)])
     def renvoyer_verification(request: Request, u: Utilisateur = Depends(utilisateur_requis)):

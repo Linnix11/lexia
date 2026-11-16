@@ -2,6 +2,7 @@
 
 import io
 import sqlite3
+import time
 import zipfile
 
 import pytest
@@ -149,6 +150,22 @@ def test_fichier_word_piege_refuse_sans_tout_decompresser():
         extraire_texte("piege.docx", tampon.getvalue())
 
 
+def test_fichier_word_aux_paragraphes_jamais_fermes_refuse_vite():
+    """L'ancienne expression reguliere prenait 2 s pour 40 Ko et des heures pour 10 Mo (tout le site bloque)."""
+    tampon = io.BytesIO()
+    with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/document.xml", '<w:document xmlns:w="x">' + "<w:p>" * 2_000_000)   # 10 Mo
+    debut = time.monotonic()
+    with pytest.raises(ErreurCours, match="illisible"):
+        extraire_texte("piege.docx", tampon.getvalue())
+    assert time.monotonic() - debut < 5
+
+
+def test_fichier_word_texte_paragraphes_et_entites():
+    texte = extraire_texte("c.docx", docx_minimal(["Titre", "R &amp; D", "a &lt; b"]))[0][1]
+    assert texte.split("\n") == ["Titre", "R & D", "a < b"]
+
+
 def test_pdf_trop_de_pages(monkeypatch):
     import api.cours as cours
     monkeypatch.setattr(cours, "PAGES_MAX", 0)
@@ -186,3 +203,54 @@ def test_un_depot_refuse_ne_consomme_pas_d_essai(tmp_path, monkeypatch):
             c.ajouter(u.id, "droit_civil", "Refuse", "x.txt", b"texte", 3)
     c.supprimer(u.id, c.lister(u.id)[0]["id"])
     c.ajouter(u.id, "droit_civil", "Nouveau", "n.txt", b"La bonne foi.", 3)  # 4e depot reussi : accepte
+
+
+def test_une_lecture_de_fichier_refusee_compte_un_essai(tmp_path, monkeypatch):
+    """Un fichier refuse a la lecture coute autant qu'un depot reussi : il se renvoyait sans limite."""
+    import api.cours as cours_mod
+    from api.cours import Cours
+
+    monkeypatch.setattr(cours_mod, "DEPOTS_PAR_JOUR", 2)
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    for _ in range(2):
+        with pytest.raises(ErreurCours, match="illisible"):
+            c.ajouter(u.id, "droit_civil", "Piege", "p.docx", b"pas un zip", 3)
+    with pytest.raises(ErreurCours, match="Trop de dépôts"):
+        c.ajouter(u.id, "droit_civil", "Vrai", "v.txt", b"Le dol est une manoeuvre.", 3)
+
+
+def test_un_seul_depot_a_la_fois_par_compte(env, monkeypatch):
+    """Deux depots paralleles du meme compte passaient tous deux la limite de cours de la formule."""
+    import asyncio
+    import threading
+
+    import httpx
+
+    from api.cours import Cours
+
+    app, _, _, _ = env
+    client = TestClient(app)
+    inscrire(client)
+    cookies = dict(client.cookies)
+    lent = threading.Event()
+    original = Cours.ajouter
+
+    def ajouter_lent(self, *a, **k):
+        lent.wait(5)
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(Cours, "ajouter", ajouter_lent)
+
+    async def deux_depots():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://testserver",
+                                     cookies=cookies) as ac:
+            params = {"matiere": "droit_civil", "fichier": "dol.txt", "titre": "Le dol"}
+            premier = asyncio.create_task(ac.post("/cours", params=params, content=COURS.encode()))
+            await asyncio.sleep(0.3)
+            second = await ac.post("/cours", params=params, content=COURS.encode())
+            lent.set()
+            return (await premier).status_code, second.status_code
+
+    assert asyncio.run(deux_depots()) == (201, 429)

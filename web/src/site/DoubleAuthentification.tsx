@@ -42,8 +42,9 @@ export function DoubleAuthentification() {
     e.preventDefault()
     setErreur(null)
     try {
-      setSecours((await api.deuxFacteurs.activer(code)).codes_secours)
+      setSecours((await api.deuxFacteurs.activer(mdp, code)).codes_secours)
       setEtape('secours')
+      setMdp('')
       await rafraichir()
     } catch (err) {
       message(err)
@@ -88,9 +89,14 @@ export function DoubleAuthentification() {
             2. Saisissez le code à 6 chiffres affiché
             <input inputMode="numeric" autoComplete="one-time-code" value={code} maxLength={6} onChange={(e) => setCode(e.target.value)} className={`${champ} max-w-[200px] tracking-[3px]`} />
           </label>
+          <label className="grid gap-1.5 text-[13px]">
+            3. Confirmez avec votre mot de passe
+            <input type="password" autoComplete="current-password" value={mdp} onChange={(e) => setMdp(e.target.value)} className={champ} />
+          </label>
+          <p className="text-[12px] text-muted">Vos autres appareils seront déconnectés.</p>
           {erreur && <p role="alert" className="text-[13px] text-[#8c4a36]">{erreur}</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={code.trim().length !== 6} className={bouton}>Activer</button>
+            <button type="submit" disabled={code.trim().length !== 6 || !mdp} className={bouton}>Activer</button>
             <button type="button" onClick={() => setEtape('repos')} className={boutonSecondaire}>Annuler</button>
           </div>
         </form>
