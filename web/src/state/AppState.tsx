@@ -1,13 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, type CoursDepose, type Matiere, type Mode, type OptionsCours } from '../lib/api'
 import { ecrireFavoris, lireFavoris, type Favori } from '../lib/favoris'
+import { ecrireSeance, lireSeance } from '../lib/seance'
 import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
-import { Ctx, type AppState, type Message, type Vue } from './contexte'
+import { Ctx, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
 import { useSession } from './session'
 
 const AUCUN_COURS: CoursDepose[] = []
 let compteur = 0
 const nouvelId = () => `m${Date.now()}-${compteur++}`
+const MESSAGES_GARDES = 30
+const QUIZ_VIDE: EtatQuiz = { parametres: null, quiz: null, reponses: {}, correction: null, etat: 'libre', erreur: null }
+
+/** Conversation reprise de la seance : une reponse attendue au moment du rechargement ne reviendra pas. */
+function conversationReprise(compte: string): Message[] {
+  const liste = lireSeance<Message[]>('conversation', compte)
+  if (!Array.isArray(liste)) return []
+  return liste.map((m) => (m.etat === 'en_cours'
+    ? { ...m, etat: 'erreur', erreur: 'La page a été rechargée avant la réponse : relancez la question.' }
+    : m))
+}
+
+function quizRepris(compte: string): EtatQuiz {
+  const q = lireSeance<EtatQuiz>('quiz', compte)
+  if (!q || typeof q !== 'object') return QUIZ_VIDE
+  const interrompu = q.etat === 'generation'
+  return { ...QUIZ_VIDE, ...q, etat: 'libre', erreur: interrompu ? 'La page a été rechargée pendant la génération : relancez-la.' : null }
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [vue, setVue] = useState<Vue>('espace')
@@ -24,14 +43,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [coursChoisi, setCoursChoisi] = useState<number | null>(null)
   const [avecOfficiel, setAvecOfficiel] = useState(true)
   const [matieres, setMatieres] = useState<Matiere[]>([])
-  const [messages, setMessages] = useState<Message[]>([])
   const { rafraichir, profil } = useSession()
   const compte = profil?.email ?? ''
+  // Le fournisseur est monte au-dessus des pages (Site.tsx) avec une cle par compte : la conversation et le
+  // questionnaire survivent au passage par Compte ou Tarifs (audit du 2026-11-16, points 12 et 16).
+  const [messages, setMessages] = useState<Message[]>(() => conversationReprise(compte))
+  const [dernierQuiz, setDernierQuiz] = useState<EtatQuiz>(() => quizRepris(compte))
   const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris(compte))
   const [sourceOuverte, setSourceOuverte] = useState<string | null>(null)
   const [quizOuvert, setQuizOuvert] = useState<{ theme?: string; id: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const minuteur = useRef<number | undefined>(undefined)
+  const quizVisible = useRef(false)
+  useEffect(() => {
+    quizVisible.current = quizOuvert !== null
+  }, [quizOuvert])
+
+  useEffect(() => {
+    if (compte) ecrireSeance('conversation', compte, messages.length ? messages.slice(-MESSAGES_GARDES) : null)
+  }, [messages, compte])
+  useEffect(() => {
+    if (compte) ecrireSeance('quiz', compte, dernierQuiz.quiz || dernierQuiz.parametres ? dernierQuiz : null)
+  }, [dernierQuiz, compte])
 
   const rafraichirCours = useCallback(() => {
     api.cours.lister()
@@ -70,6 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (!connecte) return // pages publiques : l'espace etudiant n'est pas affiche
     // L'API peut encore etre en train de demarrer (chargement du modele d'embeddings) : quelques essais.
     let actif = true
     let essai = 0
@@ -87,7 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       actif = false
       window.clearTimeout(minuterie)
     }
-  }, [])
+  }, [connecte])
 
   const occupe = messages.some((m) => m.etat === 'en_cours')
 
@@ -98,7 +132,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setFavoris((liste) => {
         if (liste.some((x) => x.id === f.id)) return liste
         const suivante = [f, ...liste]
-        notifier(ecrireFavoris(suivante, compte) ? 'Fiche enregistrée dans « Fiches & révisions »' : "Le navigateur n'a pas pu enregistrer cette fiche.")
+        notifier(ecrireFavoris(suivante, compte) ? 'Fiche enregistrée dans ce navigateur uniquement (« Fiches & révisions »)' : "Le navigateur n'a pas pu enregistrer cette fiche.")
         return suivante
       })
     },
@@ -140,6 +174,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche, optionsCours],
   )
 
+  // La generation continue si la fenetre est fermee (clic hors de la fenetre, Echap, changement de page) :
+  // le questionnaire attend a sa reouverture (audit du 2026-11-16, point 9).
+  const genererQuiz = useCallback(
+    (p: ParametresQuiz) => {
+      setDernierQuiz({ ...QUIZ_VIDE, parametres: p, etat: 'generation' })
+      api
+        .quiz(p.theme, p.format, p.nombre, p.matiere, niveau, semestre, optionsCours)
+        .then((quiz) => {
+          setDernierQuiz((d) => ({ ...d, quiz, etat: 'libre', erreur: quiz.quiz_id ? null : quiz.message }))
+          if (quiz.quiz_id && !quizVisible.current) notifier('Votre questionnaire est prêt : rouvrez-le avec « S’entraîner ».')
+        })
+        .catch((e: unknown) => {
+          setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La génération a échoué.' }))
+        })
+        .finally(() => void rafraichir())
+    },
+    [niveau, semestre, optionsCours, notifier, rafraichir],
+  )
+
+  const repondreQuiz = useCallback((index: number, valeur: ValeurQuiz) => {
+    setDernierQuiz((d) => ({ ...d, reponses: { ...d.reponses, [index]: valeur } }))
+  }, [])
+
+  const corrigerQuiz = useCallback(() => {
+    const { quiz, reponses } = dernierQuiz
+    if (!quiz?.quiz_id) return
+    setDernierQuiz((d) => ({ ...d, etat: 'correction', erreur: null }))
+    const liste = quiz.questions.map((q) => ({ index: q.index, valeur: reponses[q.index] ?? null }))
+    api
+      .corriger(quiz.quiz_id, liste)
+      .then((correction) => setDernierQuiz((d) => ({ ...d, correction, etat: 'libre' })))
+      .catch((e: unknown) => {
+        setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La correction a échoué.' }))
+      })
+  }, [dernierQuiz])
+
+  const signalerErreurQuiz = useCallback((erreur: string | null) => setDernierQuiz((d) => ({ ...d, erreur })), [])
+
   const basculerFavori = useCallback(
     (m: Message) => {
       if (!m.reponse) return
@@ -150,7 +222,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? liste.filter((f) => f.id !== rid)
           : [{ id: rid, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse! }, ...liste]
         if (!ecrireFavoris(suivante, compte)) notifier("Le navigateur n'a pas pu enregistrer ce favori.")
-        else notifier(existe ? 'Retiré des fiches' : 'Ajouté à « Fiches & révisions »')
+        else notifier(existe ? 'Retiré des fiches' : 'Enregistrée dans ce navigateur uniquement (« Fiches & révisions »)')
         return suivante
       })
     },
@@ -189,10 +261,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       quizOuvert,
       ouvrirQuiz: (theme) => setQuizOuvert({ theme, id: Date.now() }),
       fermerQuiz: () => setQuizOuvert(null),
+      dernierQuiz,
+      genererQuiz,
+      repondreQuiz,
+      corrigerQuiz,
+      signalerErreurQuiz,
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier],
+    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

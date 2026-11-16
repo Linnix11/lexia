@@ -61,7 +61,7 @@ export function Sidebar() {
         <div className="rounded-[10px] border border-[#dfdfd5] bg-chip p-3">
           <small className="text-[11px] text-muted">Semestre {semestre} · {niveau}</small>
           <strong className="my-1.5 block text-[13px]">Parcours droit général</strong>
-          <small className="text-[11px] text-muted">{matieres.length || 3} matières suivies</small>
+          <small className="text-[11px] text-muted">{matieres.length > 1 ? `${matieres.length} matières disponibles` : `${matieres.length} matière disponible`}</small>
         </div>
       </div>
     </aside>

@@ -5,6 +5,7 @@ import { Chat } from '../components/Chat'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
+import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { MODES } from '../lib/modes'
 import { useApp } from '../state/contexte'
 
@@ -69,7 +70,7 @@ export function VueMatieres() {
   const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
   return (
     <>
-      <EnTete surtitre="Mes matières" titre="Matières suivies." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
+      <EnTete surtitre="Mes matières" titre="Matières disponibles." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
       <DepotCours />
       {matieres.length === 0 ? (
         <Card className="p-6 text-[12px] text-muted">Impossible de charger les matières : vérifiez que l’API Lexia est démarrée.</Card>
@@ -109,7 +110,16 @@ export function VueFiches() {
   }
   return (
     <>
-      <EnTete surtitre="Fiches & révisions" titre="Vos fiches." texte="Les réponses enregistrées restent dans ce navigateur uniquement." />
+      <EnTete surtitre="Fiches & révisions" titre="Vos fiches."
+        texte="Les fiches restent dans ce navigateur uniquement : exportez-les pour les garder ailleurs ou les ouvrir sur un autre appareil." />
+      {favoris.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={() => telecharger('fiches-lexia.md', fichesEnMarkdown(favoris))}
+            className="rounded-[7px] border border-line bg-surface px-3 py-2 text-[12px] text-forest hover:border-[#9eafa3]">
+            Exporter toutes les fiches (.md)
+          </button>
+        </div>
+      )}
       <Card className="mb-[18px] p-4 tab:p-[19px]">
         <form onSubmit={creer} className="flex flex-wrap items-end gap-2">
           <label className="grid min-w-[220px] flex-1 gap-1.5 text-[11px] text-muted">
@@ -146,8 +156,13 @@ export function VueFiches() {
                       {MODES.find((m) => m.id === f.mode)?.label} · {new Date(f.enregistre_le).toLocaleDateString('fr-FR')} · {f.reponse.sources.length} source(s)
                     </span>
                   </button>
-                  <button type="button" onClick={() => basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })}
-                    className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                  <span className="flex gap-3">
+                    <button type="button" onClick={() => telecharger(nomFichier(f.reponse.titre || f.question), ficheEnMarkdown(f))}
+                      aria-label={`Exporter la fiche « ${f.reponse.titre || f.question} »`}
+                      className="text-[11px] text-forest hover:underline">Exporter</button>
+                    <button type="button" onClick={() => basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })}
+                      className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                  </span>
                 </div>
                 {ouverte === f.id && (
                   <div className="mt-3">

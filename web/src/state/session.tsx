@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, quandSessionExpiree, type ConfigPublique, type Profil } from '../lib/api'
+import { oublierSeance } from '../lib/seance'
 
 /** Resultat d'une connexion : session ouverte, ou code de l'application a saisir (jeton de l'etape 2). */
 export type ResultatConnexion = { ok: true } | { jeton: string }
@@ -61,10 +62,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     inscription: async (email, mdp, cgu) => setProfil(await api.inscription(email, mdp, cgu)),
     deconnexion: async () => {
       await api.deconnexion().catch(() => undefined)
+      oublierSeance() // poste partage : la conversation et le questionnaire ne restent pas dans l'onglet
       setProfil(null)
     },
     supprimer: async (mdp) => {
       await api.supprimerCompte(mdp)
+      oublierSeance()
       setProfil(null)
     },
   }), [profil, config, rafraichir])

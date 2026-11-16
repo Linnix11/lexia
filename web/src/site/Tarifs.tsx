@@ -40,7 +40,13 @@ export function Formules() {
         } else if (config?.contact_email) {
           const sujet = encodeURIComponent(`Lexia - formule ${f.nom}`)
           const corps = encodeURIComponent(`Bonjour,\n\nJe souhaite passer à la formule ${f.nom}.\nAdresse de mon compte Lexia : ${profil?.email ?? ''}\n`)
-          action = <a href={`mailto:${config.contact_email}?subject=${sujet}&body=${corps}`} className={miseEnAvant ? bouton : boutonSecondaire}>Demander cette formule</a>
+          action = (
+            <>
+              <a href={`mailto:${config.contact_email}?subject=${sujet}&body=${corps}`} className={miseEnAvant ? bouton : boutonSecondaire}>Demander cette formule</a>
+              {/* Mention au plus pres du bouton (audit du 2026-11-16, point 15) : il ouvre un e-mail, rien n'est paye. */}
+              <p className="mt-2 text-[12px] leading-[1.5] text-muted">Ouvre un e-mail de demande. La formule est activée à la main après réception, sans paiement en ligne pour l’instant.</p>
+            </>
+          )
         } else {
           action = <span className={`${boutonSecondaire} cursor-default opacity-70`}>Bientôt disponible</span>
         }
@@ -74,8 +80,9 @@ export function Tarifs() {
         <Surtitre>Tarifs</Surtitre>
         <h1 className="mt-3 font-display text-[36px] leading-[1.1] font-normal tracking-[-.6px]">Une formule pour chaque rythme de révision.</h1>
         <p className="mt-3 mb-8 max-w-[620px] text-[14px] leading-[1.6] text-muted">
-          Toutes les formules donnent accès aux mêmes sources et aux mêmes garde-fous : seule la quantité de questions
-          et de questionnaires par jour change. Les compteurs se remettent à zéro chaque jour à minuit.
+          Toutes les formules donnent accès aux mêmes sources et aux mêmes garde-fous. Elles diffèrent par le nombre de
+          questions et de questionnaires par jour, et par le nombre de cours que vous pouvez déposer. Les compteurs
+          quotidiens se remettent à zéro chaque jour à minuit.
         </p>
         <Formules />
         <p className="mt-6 text-[12px] text-muted">
@@ -84,10 +91,7 @@ export function Tarifs() {
           Conditions de vente : <Lien href="/cgu" className="underline">conditions générales</Lien>, section 4.
         </p>
         <p className="mt-2 text-[12px] text-muted">
-          {config?.contact_email
-            ? 'Le paiement en ligne arrive bientôt : en attendant, les formules payantes sont activées sur demande.'
-            : 'Le paiement en ligne arrive bientôt.'}{' '}
-          Sans engagement.
+          Le paiement en ligne arrive bientôt. Sans engagement.
         </p>
       </Section>
     </PublicLayout>

@@ -11,6 +11,7 @@ import { Tarifs } from './site/Tarifs'
 import { VerifierEmail } from './site/VerifierEmail'
 import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
 import { SessionProvider, useSession } from './state/session'
+import { AppProvider } from './state/AppState'
 import { Signet } from './components/Logo'
 
 const PUBLIQUES: Record<string, () => ReactNode> = {
@@ -80,11 +81,20 @@ function Routes() {
   return <Introuvable />
 }
 
+/** Espace etudiant monte au-dessus des pages, une instance par compte : passer par Compte ou Tarifs
+ * ne perd ni la conversation, ni le questionnaire, ni la vue ouverte (audit du 2026-11-16, point 16). */
+function EspaceEtudiant({ children }: { children: ReactNode }) {
+  const { profil } = useSession()
+  return <AppProvider key={profil?.email ?? ''}>{children}</AppProvider>
+}
+
 export default function Site() {
   return (
     <RouteurProvider>
       <SessionProvider>
-        <Routes />
+        <EspaceEtudiant>
+          <Routes />
+        </EspaceEtudiant>
       </SessionProvider>
     </RouteurProvider>
   )

@@ -166,6 +166,7 @@ export function Reponse({ message, actions = true }: { message: Message; actions
               type="button"
               onClick={() => basculerFavori(message)}
               aria-pressed={estFavori(r.reponse_id)}
+              title="La fiche reste dans ce navigateur uniquement ; elle peut être exportée depuis « Fiches & révisions »."
               className="text-[10px] font-semibold text-forest hover:underline"
             >
               {estFavori(r.reponse_id) ? '★ Enregistrée' : '☆ Enregistrer en fiche'}
