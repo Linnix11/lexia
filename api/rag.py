@@ -224,7 +224,7 @@ class Lexia:
                     passages.insert(rang, v)
                     rang += 1
         if sources is None or "code_civil" in sources:
-            passages = self._regles_communes_vices(passages)
+            passages = self._regles_communes_vices(passages, ignorer=frozenset(anciens))
         infos = {
             "recherche": "hybride" if any("vecteur" in h.via for h in hits) else "lexicale",
             "reformulation": reformule,
@@ -236,10 +236,14 @@ class Lexia:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
         return passages, infos
 
-    def _regles_communes_vices(self, passages: list[dict]) -> list[dict]:
-        """Articles 1130 et 1131 places juste apres le premier vice du consentement en vigueur trouve."""
-        rang = next((i for i, p in enumerate(passages)
-                     if _civil_en_vigueur(p) and p.get("numero") in VICES_DU_CONSENTEMENT), None)
+    def _regles_communes_vices(self, passages: list[dict], ignorer: frozenset[str] = frozenset()) -> list[dict]:
+        """Articles 1130 et 1131 places juste apres le premier vice du consentement en vigueur trouve.
+
+        ignorer : numeros cites sous leur ancienne numerotation. « L'article 1134 sur la force obligatoire »
+        ramene aussi l'actuel 1134 (l'erreur) : ce n'est pas un vice dont parle la question (piege-30).
+        """
+        rang = next((i for i, p in enumerate(passages) if _civil_en_vigueur(p)
+                     and p.get("numero") in VICES_DU_CONSENTEMENT - ignorer), None)
         if rang is None:
             return passages
         presents = {p.get("numero") for p in passages if _civil_en_vigueur(p)}

@@ -9,6 +9,7 @@ from api.llm.base import LLMError
 from api.llm.groq import GroqLLM
 from api.main import create_app
 from api.retrieval.base import Hit
+from tests.test_lexique_concordance import INDEX_REEL, retriever_reel  # noqa: F401  (fixture partagee)
 
 REPONSE = {"statut": "reponse", "titre": "t", "droit_positif": [{"texte": "Règle.", "sources": ["S1"]}],
            "explication": [], "points_incertains": [], "message": ""}
@@ -137,3 +138,15 @@ def test_le_secours_recoit_1130_et_1131_avec_le_vice_du_consentement():
     # vice du consentement hors des extraits gardes : rien n'est ajoute
     extraits = [art("1641"), art("1644"), art("1643"), art("1137"), art("1130"), art("1131"), dec(1)]
     assert [x["id"] for x in pour_secours(extraits)] == ["1641", "1644", "1643", "d1"]
+
+
+def test_ancien_numero_cite_ne_declenche_pas_les_regles_des_vices(retriever_reel):  # noqa: F811
+    """piege-30 : « l'article 1134 sur la force obligatoire » ramene aussi l'actuel 1134 (l'erreur)."""
+    if not (INDEX_REEL / "lexia.sqlite").exists():
+        pytest.skip("index reel absent")
+    from api.rag import K_CHAT, Lexia, pour_secours
+    q = "Que dit l'article 1134 du Code civil sur la force obligatoire du contrat ?"
+    passages, _ = Lexia(retriever_reel, llm=None).rechercher(q, None, K_CHAT)
+    numeros = [p.get("numero") for p in passages if p["source_id"] == "code_civil"]
+    assert "1130" not in numeros and "1131" not in numeros, numeros
+    assert "1103" in [p.get("numero") for p in pour_secours(passages)], numeros
