@@ -121,3 +121,95 @@ def test_second_audit_12_corrections_simultanees_un_seul_appel_au_modele():
     for f in fils:
         f.join()
     assert llm.appels == 1 and len(resultats) == 4 and all(r == resultats[0] for r in resultats)
+
+
+# --- Second audit du 2026-11-16 : points 6 a 16 ---------------------------------------------------------
+
+def test_second_audit_6_une_boite_un_compte(env):  # noqa: F811
+    """« x+1@ », « x+2@ » ou les points Gmail ouvraient autant de comptes gratuits que de variantes."""
+    from api.comptes import forme_canonique
+    assert forme_canonique("Jean.Dupont+td3@gmail.com") == forme_canonique("jeandupont@googlemail.com")
+    assert forme_canonique("a.b+x@univ.fr") == "a.b@univ.fr"                 # points gardes hors Gmail
+    client, _, _ = env
+    assert inscrire(client, email="x@exemple.fr").status_code == 201
+    r = inscrire(TestClient(client.app), email="x+cours@exemple.fr")
+    assert r.status_code == 422 and "existe déjà" in r.json()["detail"]
+
+
+def test_second_audit_6_supprimer_puis_se_reinscrire_attend_24_h(env):  # noqa: F811
+    """Supprimer son compte puis se reinscrire remettait le quota du jour a zero."""
+    client, comptes, _ = env
+    inscrire(client)
+    assert client.post("/auth/supprimer", json={"mot_de_passe": MDP}).status_code in (200, 204)
+    r = inscrire(TestClient(client.app))
+    assert r.status_code == 422 and "24 heures" in r.json()["detail"]
+    # suppression par l'administration (compte de test, demande de l'etudiant) : pas de delai
+    autre = comptes.creer("autre@exemple.fr", MDP)
+    comptes.supprimer(autre.id)
+    assert comptes.creer("autre@exemple.fr", MDP) is not None
+
+
+def test_second_audit_7_ipv6_compte_par_reseau_64():
+    from types import SimpleNamespace
+
+    from api.auth import cle_ip
+    req = lambda h: SimpleNamespace(client=SimpleNamespace(host=h))  # noqa: E731
+    assert cle_ip(req("2001:db8:1:2::1")) == cle_ip(req("2001:db8:1:2:ffff::9")) == "2001:db8:1:2::/64"
+    assert cle_ip(req("2001:db8:1:3::1")) != cle_ip(req("2001:db8:1:2::1"))
+    assert cle_ip(req("203.0.113.9")) == "203.0.113.9"
+
+
+def test_second_audit_8_le_limiteur_oublie_les_adresses_anciennes(monkeypatch):
+    from types import SimpleNamespace
+
+    from api.main import LimiteRequetes
+    horloge = [1000.0]
+    monkeypatch.setattr("api.main.time.monotonic", lambda: horloge[0])
+    lim = LimiteRequetes(10)
+    for i in range(500):
+        lim(SimpleNamespace(client=SimpleNamespace(host=f"10.0.{i // 250}.{i % 250}")))
+    assert len(lim._hits) == 500
+    horloge[0] += 120
+    lim(SimpleNamespace(client=SimpleNamespace(host="10.9.9.9")))
+    assert len(lim._hits) == 1
+
+
+def test_second_audit_9_ancienne_empreinte_meme_cout_qu_une_adresse_inconnue(tmp_path, monkeypatch):
+    import hashlib
+    import secrets
+
+    import api.comptes as mod
+    comptes = Comptes(tmp_path / "c.db")
+    u = comptes.creer("etu@exemple.fr", MDP)
+    sel = secrets.token_bytes(16)
+    ancienne = hashlib.scrypt(MDP.encode(), salt=sel, n=2**14, r=8, p=1, dklen=32)
+    with sqlite3.connect(tmp_path / "c.db") as c:
+        c.execute("UPDATE utilisateurs SET mdp = ? WHERE id = ?", (f"scrypt${2**14}$8$1${sel.hex()}${ancienne.hex()}", u.id))
+    verifies = []
+    original = mod.verifier_mdp
+    monkeypatch.setattr(mod, "verifier_mdp", lambda m, s: verifies.append(s.split("$")[3]) or original(m, s))
+    assert comptes.authentifier("etu@exemple.fr", "faux-mot-de-passe") is None
+    assert str(SCRYPT_P) in verifies                     # l'empreinte factice au cout actuel est aussi calculee
+
+
+def test_second_audit_14_avis_exige_une_adresse_confirmee(tmp_path, monkeypatch):
+    from api import courriel
+    from api.config import Settings
+    from api.main import create_app
+    from tests.test_comptes import LLM, Retriever
+    monkeypatch.setenv("RESEND_API_KEY", "cle-de-test")
+    monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: None)
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0),
+                     retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "c.db"))
+    client = TestClient(app)
+    inscrire(client)
+    r = client.post("/feedback", json={"reponse_id": "12345678-aaaa", "utile": False})
+    assert r.status_code == 403
+
+
+def test_second_audit_16_nom_de_fichier_refuse_dans_l_adresse(env):  # noqa: F811
+    client, _, _ = env
+    inscrire(client)
+    r = client.post("/cours", params={"matiere": "droit_civil", "fichier": "Dupont.txt", "titre": "t"},
+                    content=b"Le dol est une manoeuvre.", headers={"Content-Type": "application/octet-stream"})
+    assert r.status_code == 422 and "rechargez" in r.json()["detail"]

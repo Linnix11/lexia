@@ -33,8 +33,14 @@ def activer_2fa(c) -> str:
 
 def client_connecte(app, email):
     c = TestClient(app)
-    r = c.post("/auth/inscription", json={"email": email, "mot_de_passe": MDP, "accepte_cgu": True})
-    assert r.status_code == 201
+    if email.startswith("chef"):
+        # Adresse d'ADMIN_EMAILS : creee sur le serveur (commande d'administration), jamais depuis le site.
+        comptes = app.state.comptes
+        comptes.confirmer_email(comptes.creer(email, MDP, depuis_le_site=False).id)
+        assert c.post("/auth/connexion", json={"email": email, "mot_de_passe": MDP}).status_code == 200
+    else:
+        r = c.post("/auth/inscription", json={"email": email, "mot_de_passe": MDP, "accepte_cgu": True})
+        assert r.status_code == 201
     if email.startswith("chef") or email.startswith("adjoint"):
         activer_2fa(c)  # l'administration exige la double authentification
     return c
@@ -52,17 +58,17 @@ def test_admin_par_configuration_et_acces_refuse(env):
         assert chef.get(route).status_code == 200
 
 
-def test_adresse_admin_non_confirmee_n_ouvre_pas_l_administration(env, monkeypatch):
-    """Une adresse d'ADMIN_EMAILS sans compte pouvait etre prise par le premier venu (audit du 2026-11-16)."""
+def test_adresse_admin_ne_s_inscrit_pas_depuis_le_site(env, monkeypatch):
+    """Une adresse d'ADMIN_EMAILS sans compte, inscrite par un tiers, devenait administrateur au premier clic du
+    vrai titulaire sur le lien recu (second audit du 2026-11-16, points 4 et 15)."""
     from api import courriel
     monkeypatch.setenv("RESEND_API_KEY", "cle-de-test")
-    envoyes = []
-    monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: envoyes.append(lien))
-    app, _ = env
-    intrus = client_connecte(app, "chef@exemple.fr")          # inscrit avec l'adresse, double authentification active
-    assert intrus.get("/admin/stats").status_code == 403         # mais l'adresse n'est pas confirmee
-    intrus.post("/auth/email/verifier", json={"jeton": envoyes[0].split("jeton=")[1]})
-    assert intrus.get("/admin/stats").status_code == 200         # seul le vrai titulaire recoit le lien
+    monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: None)
+    app, comptes = env
+    for adresse in ("chef@exemple.fr", "Chef+admin@exemple.fr"):
+        r = TestClient(app).post("/auth/inscription", json={"email": adresse, "mot_de_passe": MDP, "accepte_cgu": True})
+        assert r.status_code == 422 and "réservée" in r.json()["detail"]
+    assert comptes.par_email("chef@exemple.fr") is None
 
 
 def test_statistiques_et_clients(env):

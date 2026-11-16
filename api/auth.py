@@ -8,6 +8,7 @@ s'il est present, doit correspondre au site : protection contre les requetes int
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import logging
 import secrets
 import threading
@@ -169,6 +170,21 @@ class Freins:
                 self._echecs.pop(compte, None)
 
 
+def cle_ip(request: Request) -> str:
+    """Adresse du client pour les limites de debit ; en IPv6, son reseau /64.
+
+    Un abonnement IPv6 recoit au moins un /64 (des milliards d'adresses) : limiter par adresse entiere
+    laissait creer des comptes et essayer des mots de passe sans limite (second audit du 2026-11-16, point 7).
+    """
+    hote = request.client.host if request.client else "inconnu"
+    if ":" in hote:
+        try:
+            return str(ipaddress.ip_network(f"{hote}/64", strict=False))
+        except ValueError:
+            return hote
+    return hote
+
+
 def verifier_origine(request: Request) -> None:
     origine = request.headers.get("origin")
     if origine and urlparse(origine).netloc != request.headers.get("host", ""):
@@ -228,7 +244,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
                             samesite="lax", secure=request.url.scheme == "https", path="/")
 
     def _ip(request: Request) -> str:
-        return request.client.host if request.client else "inconnu"
+        return cle_ip(request)
 
     @router.post("/inscription", status_code=201, dependencies=[Depends(verifier_origine)])
     def inscription(req: Inscription, request: Request, response: Response):
@@ -393,7 +409,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if comptes.authentifier(u.email, req.mot_de_passe) is None:
             freins.echec(u.email)
             raise HTTPException(401, "Mot de passe incorrect.")
-        comptes.supprimer(u.id)
+        comptes.supprimer(u.id, garder_trace=True)  # pas de reinscription avant 24 h (quota remis a zero)
         response.delete_cookie(COOKIE, path="/")
 
     return router, utilisateur_requis

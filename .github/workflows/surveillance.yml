@@ -1,0 +1,41 @@
+# Alerte de panne : interroge le site toutes les 15 minutes. Si la reponse n'est pas {"statut":"ok"}
+# apres trois essais, l'execution echoue et GitHub envoie un e-mail au proprietaire du depot (reglage par
+# defaut des notifications Actions). Aucun compte ni service supplementaire.
+#
+# A savoir :
+# - GitHub ne garantit pas l'heure exacte des taches planifiees (retards de quelques minutes possibles).
+# - Sur un depot public, les taches planifiees sont suspendues apres 60 jours sans activite sur le depot :
+#   GitHub previent par e-mail, un clic les reactive.
+# - Lancement a la main : onglet Actions > Surveillance du site > Run workflow.
+name: Surveillance du site
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/surveillance.yml
+
+permissions: {}
+
+jobs:
+  sante:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      URL: https://lexia-axionstudio.cloud/api/sante
+    steps:
+      - name: Interroger /api/sante
+        run: |
+          for essai in 1 2 3; do
+            reponse=$(curl -sS --max-time 20 -A "lexia-surveillance" -w ' HTTP %{http_code}' "$URL" || true)
+            if echo "$reponse" | grep -q '"statut":"ok"'; then
+              echo "Lexia repond : $reponse"
+              exit 0
+            fi
+            echo "Essai $essai : $reponse"
+            [ "$essai" -lt 3 ] && sleep 30
+          done
+          echo "::error::Lexia ne repond pas correctement depuis plus d'une minute : $reponse"
+          exit 1

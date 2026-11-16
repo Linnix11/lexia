@@ -260,10 +260,11 @@ def test_un_seul_depot_a_la_fois_par_compte(env, monkeypatch):
     async def deux_depots():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://testserver",
                                      cookies=cookies) as ac:
-            params = {"matiere": "droit_civil", "fichier": "dol.txt", "titre": "Le dol"}
-            premier = asyncio.create_task(ac.post("/cours", params=params, content=COURS.encode()))
+            params = {"matiere": "droit_civil"}
+            entetes = {"X-Lexia-Fichier": "dol.txt", "X-Lexia-Titre": "Le%20dol"}
+            premier = asyncio.create_task(ac.post("/cours", params=params, headers=entetes, content=COURS.encode()))
             await asyncio.sleep(0.3)
-            second = await ac.post("/cours", params=params, content=COURS.encode())
+            second = await ac.post("/cours", params=params, headers=entetes, content=COURS.encode())
             lent.set()
             return (await premier).status_code, second.status_code
 

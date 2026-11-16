@@ -62,6 +62,12 @@ CREATE TABLE IF NOT EXISTS compteurs (
     nom          TEXT PRIMARY KEY,
     valeur       INTEGER NOT NULL
 );
+-- Boites dont le titulaire a supprime son compte depuis le site, pendant 24 h : supprimer puis se reinscrire
+-- remettait le quota du jour a zero (second audit du 2026-11-16, point 6). Empreinte, pas l'adresse.
+CREATE TABLE IF NOT EXISTS suppressions (
+    boite        TEXT PRIMARY KEY,
+    supprime_le  TEXT NOT NULL
+);
 """
 
 
@@ -134,6 +140,19 @@ def verifier_mdp(mdp: str, stocke: str) -> bool:
     return hmac.compare_digest(calcule.hex(), h)
 
 
+def forme_canonique(email: str) -> str:
+    """Boite reelle d'une adresse : « x+cours1@domaine » arrive chez « x@domaine », et Gmail ignore les points.
+
+    Sans cela, une seule boite ouvrait autant de comptes gratuits confirmes que de variantes (second audit
+    du 2026-11-16, point 6).
+    """
+    local, _, domaine = email.strip().lower().partition("@")
+    local = local.split("+", 1)[0]
+    if domaine in ("gmail.com", "googlemail.com"):
+        local, domaine = local.replace(".", ""), "gmail.com"
+    return f"{local}@{domaine}"
+
+
 def _hash_jeton(jeton: str) -> str:
     return hashlib.sha256(jeton.encode()).hexdigest()
 
@@ -195,20 +214,41 @@ class Comptes:
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
 
-    def creer(self, email: str, mdp: str) -> Utilisateur:
+    def creer(self, email: str, mdp: str, depuis_le_site: bool = True) -> Utilisateur:
+        """depuis_le_site=False : creation par la commande d'administration (adresses d'administration)."""
         email = normaliser_email(email)
+        boite = forme_canonique(email)
+        if depuis_le_site and boite in {forme_canonique(a) for a in self._admins}:
+            # Une adresse d'ADMIN_EMAILS sans compte, inscrite par un tiers, devenait administrateur des que le
+            # vrai titulaire cliquait sur le lien recu (second audit du 2026-11-16, points 4 et 15).
+            raise ErreurCompte("Cette adresse est réservée à l'administration : le compte se crée sur le serveur "
+                               "avec la commande d'administration.")
         self._valider_mdp(mdp)
         maintenant = _maintenant().isoformat(timespec="seconds")
         empreinte = hacher_mdp(mdp)
         try:
             with self._lock, self._con:
-                if courriel.configure():
-                    # Adresse « squattee » : un compte cree avec l'adresse d'un tiers, jamais confirme, bloquait a
-                    # vie l'inscription du vrai titulaire (pas de mot de passe oublie). Passe le delai de validite
-                    # du lien, il est remplace ; un compte non confirme n'a ni question, ni cours (audit 2, point 6).
-                    limite = (_maintenant() - DUREE_VERIFICATION).isoformat(timespec="seconds")
-                    self._con.execute("DELETE FROM utilisateurs WHERE email = ? AND email_verifie_le IS NULL "
-                                      "AND cree_le < ?", (email, limite))
+                if depuis_le_site:
+                    trace = self._con.execute("SELECT supprime_le FROM suppressions WHERE boite = ?",
+                                              (_hash_jeton(boite),)).fetchone()
+                    if trace and trace[0] > (_maintenant() - timedelta(days=1)).isoformat(timespec="seconds"):
+                        raise ErreurCompte("Un compte avec cette adresse vient d'être supprimé : "
+                                           "réessayez dans 24 heures.")
+                # Adresse « squattee » : un compte cree avec l'adresse d'un tiers, jamais confirme, bloquait a
+                # vie l'inscription du vrai titulaire (pas de mot de passe oublie). Passe le delai de validite
+                # du lien, il est remplace ; un compte non confirme n'a ni question, ni cours (audit 2, point 6).
+                # Meme boite sous une autre forme (« + », points Gmail) : un seul compte.
+                # shortcut: parcours de tous les comptes a chaque inscription ; une colonne indexee de la
+                # forme canonique s'impose au-dela de quelques dizaines de milliers de comptes.
+                limite = (_maintenant() - DUREE_VERIFICATION).isoformat(timespec="seconds")
+                for uid_autre, autre, verifie, cree in self._con.execute(
+                        "SELECT id, email, email_verifie_le, cree_le FROM utilisateurs").fetchall():
+                    if forme_canonique(autre) != boite:
+                        continue
+                    if courriel.configure() and verifie is None and cree < limite:
+                        self._con.execute("DELETE FROM utilisateurs WHERE id = ?", (uid_autre,))
+                    else:
+                        raise ErreurCompte("Un compte existe déjà avec cette adresse e-mail.")
                 # Numero suivant le plus grand jamais attribue (compteur) ou existant (comptes anterieurs).
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.
@@ -237,9 +277,14 @@ class Comptes:
             verifier_mdp(mdp or "", self._mdp_factice)
             return None
         uid, stocke = rows[0]
+        a_jour = stocke.startswith(f"scrypt${SCRYPT_N}${SCRYPT_R}${SCRYPT_P}$")
+        if not a_jour:
+            # Ancienne empreinte, 5 fois plus rapide a verifier que l'empreinte factice d'une adresse inconnue :
+            # le temps de reponse revelait que l'adresse avait un compte (second audit du 2026-11-16, point 9).
+            verifier_mdp(mdp or "", self._mdp_factice)
         if not verifier_mdp(mdp or "", stocke):
             return None
-        if not stocke.startswith(f"scrypt${SCRYPT_N}${SCRYPT_R}${SCRYPT_P}$"):
+        if not a_jour:
             self._q("UPDATE utilisateurs SET mdp = ? WHERE id = ?", (hacher_mdp(mdp), uid))  # parametres a jour
         return self.par_id(uid)
 
@@ -359,8 +404,20 @@ class Comptes:
         rows = self._q("SELECT totp_secours FROM utilisateurs WHERE id = ?", (uid,))
         return len(json.loads(coffre.dechiffrer(rows[0][0]) or "[]")) if rows else 0
 
-    def supprimer(self, uid: int) -> None:
-        self._q("DELETE FROM utilisateurs WHERE id = ?", (uid,))
+    def supprimer(self, uid: int, garder_trace: bool = False) -> None:
+        """garder_trace : suppression demandee depuis le site, la boite ne peut pas se reinscrire avant 24 h."""
+        u = self.par_id(uid)
+        with self._lock, self._con:
+            if garder_trace and u is not None:
+                self._con.execute("INSERT INTO suppressions (boite, supprime_le) VALUES (?, ?) ON CONFLICT(boite) "
+                                  "DO UPDATE SET supprime_le = excluded.supprime_le",
+                                  (_hash_jeton(forme_canonique(u.email)), _maintenant().isoformat(timespec="seconds")))
+            self._con.execute("DELETE FROM utilisateurs WHERE id = ?", (uid,))
+
+    def confirmer_email(self, uid: int) -> None:
+        """Adresse confirmee sans lien (compte cree sur le serveur par la commande d'administration)."""
+        self._q("UPDATE utilisateurs SET email_verifie_le = ?, verif_jeton = NULL WHERE id = ?",
+                (_maintenant().isoformat(timespec="seconds"), uid))
 
     def lister(self) -> list[Utilisateur]:
         rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs ORDER BY id")

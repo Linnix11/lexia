@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
-from api.auth import creer_routes, exiger_admin, routes_formules
+from api.auth import cle_ip, creer_routes, exiger_admin, routes_formules
 from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
@@ -42,13 +42,20 @@ class LimiteRequetes:
         self.par_minute = par_minute
         self._hits: dict[str, deque] = defaultdict(deque)
         self._lock = threading.Lock()
+        self._derniere_purge = 0.0
 
     def __call__(self, request: Request) -> None:
         if self.par_minute <= 0:
             return
-        ip = request.client.host if request.client else "inconnu"
+        ip = cle_ip(request)  # reseau /64 en IPv6
         now = time.monotonic()
         with self._lock:
+            if now - self._derniere_purge > 60:
+                # Adresses vues il y a plus d'une minute oubliees : chaque adresse restait en memoire jusqu'au
+                # redemarrage, des adresses tournantes faisaient grossir le processus (second audit, point 8).
+                self._derniere_purge = now
+                for k in [k for k, q in self._hits.items() if not q or now - q[-1] > 60]:
+                    del self._hits[k]
             q = self._hits[ip]
             while q and now - q[0] > 60:
                 q.popleft()
@@ -321,9 +328,13 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             raise HTTPException(404, "Source introuvable.")
         return {**fiche_source(p), "texte": p["texte"], "titre": p.get("titre"), "meta": p.get("meta") or {}}
 
-    @app.post("/feedback", status_code=204)
+    @app.post("/feedback", status_code=204, dependencies=[Depends(limite)])
     def feedback(req: FeedbackRequest, request: Request):
-        _utilisateur(request)  # compte requis : evite qu'un anonyme fausse les statistiques ou remplisse le disque
+        # Compte a l'adresse confirmee et limite de debit : un compte jetable ecrivait des milliers de lignes
+        # par minute et faussait les statistiques (second audit du 2026-11-16, point 14).
+        u = _utilisateur(request)
+        if u is not None and not u.email_verifie:
+            raise HTTPException(403, "Confirmez votre adresse e-mail pour donner votre avis.")
         journal.ecrire("feedback", reponse_id=req.reponse_id, utile=req.utile, motif=req.motif)
 
     app.state.retriever = retriever  # utile aux outils d'evaluation

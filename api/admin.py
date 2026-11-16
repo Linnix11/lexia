@@ -4,6 +4,7 @@ Sur le serveur :
     cd /opt/lexia && sudo -u lexia .venv/bin/python -m api.admin liste
     sudo -u lexia .venv/bin/python -m api.admin formule etudiant@exemple.fr etudiant --jours 31
     sudo -u lexia .venv/bin/python -m api.admin formule etudiant@exemple.fr gratuit
+    sudo -u lexia .venv/bin/python -m api.admin creer admin@exemple.fr   (saisie masquee ; adresse confirmee)
     sudo -u lexia .venv/bin/python -m api.admin infos etudiant@exemple.fr
     sudo -u lexia .venv/bin/python -m api.admin admin moi@exemple.fr        (--retirer pour l'enlever)
     sudo -u lexia .venv/bin/python -m api.admin supprimer etudiant@exemple.fr
@@ -35,6 +36,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("email")
     p.add_argument("formule", choices=sorted(FORMULES))
     p.add_argument("--jours", type=int, help="Duree en jours (formule payante), sinon sans fin")
+    p = sous.add_parser("creer", help="Creer un compte (seul moyen pour une adresse d'ADMIN_EMAILS)")
+    p.add_argument("email")
     p = sous.add_parser("infos", help="Formule et consommation du jour d'un compte")
     p.add_argument("email")
     p = sous.add_parser("admin", help="Donner ou retirer le role administrateur")
@@ -67,6 +70,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.commande == "admin":
             u = comptes.definir_admin(args.email, not args.retirer)
             print(f"{u.email} : {'administrateur' if u.admin else 'utilisateur'}")
+        elif args.commande == "creer":
+            # Les adresses d'administration ne s'inscrivent pas depuis le site : un tiers aurait pu les prendre
+            # et devenir administrateur au premier clic du vrai titulaire sur le lien recu.
+            mdp = getpass.getpass("Mot de passe : ")
+            if getpass.getpass("Confirmer : ") != mdp:
+                raise ErreurCompte("Les deux saisies ne correspondent pas.")
+            u = comptes.creer(args.email, mdp, depuis_le_site=False)
+            comptes.confirmer_email(u.id)
+            print(f"{u.email} : compte cree, adresse confirmee{' (administrateur)' if u.admin else ''}. "
+                  "Activez la double authentification depuis le site avant d'ouvrir l'administration.")
         elif args.commande == "infos":
             u = comptes.par_email(args.email)
             if u is None:
