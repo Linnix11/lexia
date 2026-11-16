@@ -1,0 +1,37 @@
+# Cas pratiques de controle, troisieme jeu - version 1 (2026-11-16)
+#
+# Ecrit avant les regles de la D78 (vices caches, residence de l'enfant, atteinte a la propriete, urgence),
+# jamais utilise pour les regler. Memes regles d'ecriture : des faits, sans numero d'article ni nom de notion.
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+
+cas:
+  - {id: ctl3-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241, code_civil:1242],
+     question: "Un bricoleur fait tomber son échelle sur la véranda du voisin en réparant sa gouttière. Le voisin peut-il obtenir le remboursement des réparations ?"}
+  - {id: ctl3-02, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Une élève de douze ans pousse une camarade dans l’escalier du collège ; la camarade se casse le poignet. Les parents de l’élève sont-ils responsables ?"}
+  - {id: ctl3-03, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137, code_civil:1112-1],
+     question: "Un antiquaire achète à une vieille dame un tableau pour 200 euros alors qu’il sait qu’il en vaut 50 000. La vente peut-elle être annulée ?"}
+  - {id: ctl3-04, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1217, code_civil:1224, code_civil:1229],
+     question: "Une couturière a reçu un acompte pour une robe de mariée qu’elle n’a jamais cousue. La cliente peut-elle récupérer son argent ?"}
+  - {id: ctl3-05, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1641, code_civil:1644],
+     question: "Les pieds du canapé livré cèdent au bout de dix jours ; le défaut vient de la fabrication. Que peut demander l’acheteur ?"}
+  - {id: ctl3-06, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1719, code_civil:1720],
+     question: "Un étudiant loue un studio ; la propriétaire refuse de réparer le chauffage tombé en panne en plein hiver. Que peut faire le locataire ?"}
+  - {id: ctl3-07, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:371-1, code_civil:373-2, code_civil:373-2-6],
+     question: "Un couple séparé ne s’entend pas sur la ville où vivra leur fille de six ans. Qui tranche ?"}
+  - {id: ctl3-08, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:671, code_civil:672],
+     question: "Le voisin a planté une haie de bambous à trente centimètres de la limite de mon jardin. Puis-je exiger qu’il l’arrache ?"}
+  - {id: ctl3-09, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:544, code_civil:545],
+     question: "Une entreprise de travaux stocke ses gravats sur un terrain privé sans l’accord de son propriétaire. Que peut faire ce dernier ?"}
+  - {id: ctl3-10, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:311-1, code_penal:311-8],
+     question: "Un adolescent menace un passant avec un couteau pour lui prendre son téléphone. Quelle infraction commet-il ?"}
+  - {id: ctl3-11, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:314-1],
+     question: "Le gérant d’un magasin garde pour lui l’argent des ventes qu’il devait reverser chaque soir à la société. Que risque-t-il ?"}
+  - {id: ctl3-12, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:121-3, code_penal:222-19],
+     question: "En voulant éviter un chien sur la route, un conducteur fait une embardée et blesse un piéton. Est-il pénalement responsable ?"}
+  - {id: ctl3-13, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1225-4, code_travail:L1132-1],
+     question: "Une salariée est licenciée une semaine après avoir annoncé sa grossesse. Que dit la loi ?"}
+  - {id: ctl3-14, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L3121-28, code_travail:L3121-36],
+     question: "Un employeur impose chaque semaine dix heures de travail en plus sans les payer. Que peut réclamer le salarié ?"}
+  - {id: ctl3-15, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: [code_relations_public_administration:L211-2, code_justice_administrative:R421-1],
+     question: "Une université refuse l’inscription d’un étudiant sans aucune explication. Peut-il contester cette décision ?"}

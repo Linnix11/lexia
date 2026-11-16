@@ -263,19 +263,27 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"ne (?:livre|vient|fait|execute|termine|rembourse|honore)\w* (?:pas|jamais|plus|rien)"
      r"|n.(?:a|ont) (?:jamais|pas) (?:livre|fait|execute|termine|effectue|realise)|abandonn\w* (?:le )?chantier"
      r"|jamais (?:livre|venu|fait|realise)", ((CC, "1217"), (CC, "1231-1"), (CC, "1224"), (CC, "1221"))),
+    # garantie des vices caches : un bien achete qui casse ou tombe en panne a cause d'un defaut anterieur
+    (r"(?:achet|achat|vend|vendu|vente|livr|neuf|d.occasion)\w*.{0,150}(?:tombe\w* en panne|ne (?:fonctionne|marche|demarre|s.allume)\w* plus"
+     r"|\bcass|\bcede|\bdefaut|fissure|\bvices?\b(?! du consentement)|termites?|merule|amiante|infiltr|moisi|rouill|\brong)"
+     r"|defaut de fabrication|existait (?:deja|avant)|avant la vente",
+     ((CC, "1641"), (CC, "1644"))),
     (_AGE + r".{0,100}(?:achet|achat|signe|souscri|contrat|abonnement|emprunt)", ((CC, "1146"), (CC, "1148"))),
     (r"(?:par erreur|deux fois|en trop|a tort|par meprise).{0,100}(?:pay|vers|vire|virement|credit|rembours|somme)"
      r"|(?:pay|vers|vire|virement|credit)\w*.{0,100}(?:par erreur|deux fois|en trop|a tort)", ((CC, "1302"), (CC, "1302-1"))),
     # Famille et biens
     (r"(?:ne (?:verse|paie|paye)|refuse de (?:payer|verser)|plus rien).{0,100}(?:enfants?|pension|entretien)",
      ((CC, "371-2"), (CC, "373-2-2"))),
+    (r"(?:demenag|partir vivre|s.installer|changer de ville|residence|vivre (?:chez|avec)|vivra)\w*.{0,100}(?:\benfants?\b|\bfils\b|\bfille\b)"
+     r"|(?:\benfants?\b|\bfils\b|\bfille\b).{0,100}(?:demenag|residence|vivra|vivre chez)", ((CC, "373-2"), (CC, "371-1"), (CC, "373-2-6"))),
     (r"(?:depuis|pendant|plus de) (?:\d+|dix|vingt|trente|quarante|cinquante) ans.{0,120}(?:terrain|maison|parcelle|champ|occup|cultiv)"
      r"|(?:terrain|parcelle|champ|maison).{0,120}(?:depuis|pendant) (?:\d+|dix|vingt|trente|quarante|cinquante) ans"
      r"|devenir proprietaire", ((CC, "2272"), (CC, "2261"))),
     (r"enclav|(?:aucun|pas d.|sans) acces.{0,40}(?:route|voie publique|chemin)", ((CC, "682"),)),
     (r"(?:branches?|racines?|arbres?|haie)\b.{0,80}(?:depass|avanc|empiet|deborde)", ((CC, "673"), (CC, "671"))),
-    (r"(?:construi|bati|install|pose|empiet|depass)\w*.{0,100}sur (?:mon|son|le|leur|notre) (?:terrain|jardin|propriete|parcelle)"
-     r"|(?:dans|sur) (?:mon|son|notre) (?:jardin|terrain).{0,80}sans (?:mon|son|leur|notre) (?:avis|accord|autorisation)",
+    (r"(?:construi|bati|install|pose|empiet|depass|stock|depos|occup)\w*.{0,100}(?:sur|dans) (?:mon|son|le|leur|notre|un|une) "
+     r"(?:terrain|jardin|propriete|parcelle|champ)"
+     r"|(?:jardin|terrain|propriete|parcelle).{0,80}sans (?:\w+ ){0,3}(?:avis|accord|autorisation|permission)",
      ((CC, "544"), (CC, "545"))),
     # Penal
     (r"(?:frapp|repouss|riposte|se defend|coups?|neutralis)\w*.{0,120}(?:agress|attaqu|cambriol|voleur|arracher)"
@@ -298,7 +306,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bavances\b|propositions? (?:sexuelles?|deplacees?)|gestes? deplaces?|remarques? (?:sexistes|sexuelles)", ((CT, "L1153-1"),)),
     # Administratif : une decision publique et une demande d'urgence
     (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|universite))"
-     r".*(?:en urgence|d.urgence|rapidement|au plus vite|suspension)", ((CJA, "L521-2"), (CJA, "L521-1"))),
+     r".*(?:en urgence|d.urgence|rapidement|\bvite\b|sans attendre|suspension)", ((CJA, "L521-2"), (CJA, "L521-1"))),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

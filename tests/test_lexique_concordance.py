@@ -91,6 +91,11 @@ def test_lexique_reticence_sans_faux_positif(question):
     ("Son chef l'humilie devant ses collègues chaque matin.", ("code_travail", "L1152-1")),
     ("Le préfet interdit une réunion publique : peut-on obtenir une suspension en urgence ?",
      ("code_justice_administrative", "L521-2")),
+    ("La télévision achetée le mois dernier ne s'allume plus à cause d'une soudure défectueuse.", (CC, "1641")),
+    ("Le vendeur savait-il que la charpente de la maison vendue était rongée par les termites ?", (CC, "1641")),
+    ("Le père veut que son fils vienne vivre chez lui après le divorce ; la mère refuse.", (CC, "373-2")),
+    ("Un agriculteur stocke son fourrage sur le champ du voisin sans lui en parler ni demander son autorisation.", (CC, "544")),
+    ("La mairie va démolir mon kiosque demain : puis-je saisir le juge très vite ?", ("code_justice_administrative", "L521-2")),
 ])
 def test_lexique_reconnait_les_situations(question, attendu):
     assert attendu in lexique.suggestions(question)
@@ -102,6 +107,9 @@ def test_lexique_reconnait_les_situations(question, attendu):
     ("L'employé vire l'argent des clients sur son compte.", ("code_travail", "L1232-1")),
     ("Quelle est la différence entre la responsabilité contractuelle et délictuelle ?", (CC, "1146")),
     ("Le juge civil peut-il statuer en urgence sur un litige entre voisins ?", ("code_justice_administrative", "L521-2")),
+    ("Un enfant de dix ans casse la vitre d'un voisin avec son ballon.", (CC, "1641")),            # pas de vente
+    ("Qu'est-ce qu'un vice du consentement dans la vente ?", (CC, "1641")),
+    ("J'ai planté un pommier dans mon jardin, quelles distances respecter ?", (CC, "544")),
 ])
 def test_lexique_situations_sans_faux_positif(question, exclu):
     assert exclu not in lexique.suggestions(question)
