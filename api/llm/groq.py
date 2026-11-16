@@ -17,6 +17,7 @@ import time
 import httpx
 
 from api.llm.base import LLMError
+from api.llm.gemini import MAX_JETONS_SORTIE
 
 log = logging.getLogger("lexia.llm")
 URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -27,12 +28,13 @@ class _Delai(LLMError):
 
 
 class GroqLLM:
-    def __init__(self, *, api_key: str, models: tuple[str, ...], timeout: float = 30.0):
+    def __init__(self, *, api_key: str, models: tuple[str, ...], timeout: float = 30.0, releve=None):
         if not api_key or not models:
             raise ValueError("GROQ_API_KEY et GROQ_MODELS sont requis")
         self.models = tuple(models)
         self.model = self.models[0]
         self._timeout = timeout
+        self._releve = releve  # releve(modele, usage) apres chaque reponse : cout du secours (eval/cout.py)
         self._client = httpx.Client(headers={"Authorization": f"Bearer {api_key}"})
 
     def generate_json(self, *, system, prompt, schema, temperature=0.2):
@@ -53,6 +55,7 @@ class GroqLLM:
             "messages": [{"role": "system", "content": system + "\nRéponds uniquement en JSON."},
                          {"role": "user", "content": prompt}],
             "temperature": temperature,
+            "max_completion_tokens": MAX_JETONS_SORTIE,  # comme Gemini (api/llm/gemini.py)
             "response_format": {"type": "json_schema", "json_schema": {"name": "reponse", "schema": schema}},
         }
         debut = time.monotonic()
@@ -66,7 +69,18 @@ class GroqLLM:
             log.warning("groq %s HTTP %s en %.1fs", model, r.status_code, time.monotonic() - debut)
             raise LLMError(f"groq {model}: HTTP {r.status_code}")
         try:
-            texte = r.json()["choices"][0]["message"]["content"]
+            donnees = r.json()
+        except ValueError:
+            raise LLMError(f"groq {model}: reponse illisible (JSONDecodeError)") from None
+        if self._releve is not None:
+            try:
+                u = donnees.get("usage") or {}
+                self._releve(f"groq/{model}", {"promptTokenCount": u.get("prompt_tokens", 0),
+                                               "candidatesTokenCount": u.get("completion_tokens", 0)})
+            except Exception:  # la mesure ne doit jamais faire echouer une reponse
+                log.exception("releve des jetons impossible")
+        try:
+            texte = donnees["choices"][0]["message"]["content"]
             brut = json.loads(texte)
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
             raise LLMError(f"groq {model}: reponse illisible ({type(e).__name__})") from None

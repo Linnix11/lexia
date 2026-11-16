@@ -341,6 +341,9 @@ export const api = {
   connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
   verifierEmail: (jeton: string) => post<Profil | null>('/auth/email/verifier', { jeton }),
   renvoyerVerification: () => post<{ envoye: boolean }>('/auth/email/renvoyer', {}),
+  motDePasseOublie: (email: string) => post<{ envoye: boolean }>('/auth/mot-de-passe/oubli', { email }),
+  nouveauMotDePasse: (jeton: string, mot_de_passe: string) =>
+    post<{ modifie: boolean }>('/auth/mot-de-passe/nouveau', { jeton, mot_de_passe }),
   deuxFacteurs: {
     preparer: () => post<{ secret: string; uri: string }>('/auth/2fa/preparer', {}),
     activer: (mot_de_passe: string, code: string) => post<{ codes_secours: string[] }>('/auth/2fa/activer', { mot_de_passe, code }),

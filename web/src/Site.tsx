@@ -9,6 +9,7 @@ import { Cgu, Confidentialite, MentionsLegales } from './site/Legal'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
 import { VerifierEmail } from './site/VerifierEmail'
+import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
 import { SessionProvider, useSession } from './state/session'
 import { Signet } from './components/Logo'
 
@@ -19,6 +20,8 @@ const PUBLIQUES: Record<string, () => ReactNode> = {
   '/cgu': () => <Cgu />,
   '/confidentialite': () => <Confidentialite />,
   '/verifier-email': () => <VerifierEmail />,
+  '/mot-de-passe-oublie': () => <MotDePasseOublie />,
+  '/nouveau-mot-de-passe': () => <NouveauMotDePasse />,
 }
 const INVITES: Record<string, () => ReactNode> = {
   '/connexion': () => <Connexion />,

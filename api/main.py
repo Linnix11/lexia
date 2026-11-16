@@ -100,12 +100,13 @@ def _construire_llm(settings: Settings, journal: Journal | None = None) -> LLM:
                      budget=settings.budget_avant_secours if avec_secours else None)
 
 
-def _construire_secours(settings: Settings):
+def _construire_secours(settings: Settings, journal: Journal | None = None):
     if not settings.groq_api_key:
         return None
     from api.llm.groq import GroqLLM
 
-    return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models, timeout=settings.llm_timeout)
+    return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models, timeout=settings.llm_timeout,
+                   releve=releve_jetons(journal, "secours"))
 
 
 def _construire_expanseur(settings: Settings, journal: Journal | None = None):
@@ -145,7 +146,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     if reclasseur is None:
         reclasseur = _construire_reclasseur(settings)
     if secours is None:
-        secours = _construire_secours(settings)
+        secours = _construire_secours(settings, journal)
     lexia = Lexia(retriever, llm, journal, embedder, expanseur, reclasseur, delai_reformulation=settings.expansion_timeout,
                   secours=secours, disjoncteur=Disjoncteur(settings.disjoncteur_seuil, settings.disjoncteur_pause))
     quiz = QuizService(lexia, llm, journal=journal)

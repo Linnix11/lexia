@@ -78,3 +78,24 @@ def envoyer_verification(destinataire: str, lien: str) -> None:
         "Si vous n'avez pas créé de compte sur Lexia, ignorez ce message.</p></div>"
     )
     envoyer(destinataire, "Confirmez votre adresse e-mail — Lexia", texte, html)
+
+
+def envoyer_reinitialisation(destinataire: str, lien: str) -> None:
+    """E-mail « mot de passe oublie ». Le lien contient le jeton a usage unique, valable une heure."""
+    lien_sur = _echapper(lien)
+    texte = (
+        "Vous avez demandé à changer le mot de passe de votre compte Lexia.\n\n"
+        f"Choisissez un nouveau mot de passe ici :\n{lien}\n\n"
+        "Ce lien est valable une heure et ne sert qu'une fois.\n"
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.\n"
+    )
+    html = (
+        '<div style="font-family:-apple-system,Segoe UI,sans-serif;color:#202724;max-width:480px">'
+        "<p>Vous avez demandé à changer le mot de passe de votre compte Lexia.</p>"
+        f'<p><a href="{lien_sur}" style="display:inline-block;background:#315e4b;color:#fff;'
+        'padding:12px 20px;border-radius:8px;text-decoration:none">Choisir un nouveau mot de passe</a></p>'
+        f'<p style="font-size:12px;color:#707873">Ou copiez ce lien : {lien_sur}</p>'
+        '<p style="font-size:12px;color:#707873">Ce lien est valable une heure et ne sert qu\'une fois. '
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.</p></div>"
+    )
+    envoyer(destinataire, "Nouveau mot de passe — Lexia", texte, html)

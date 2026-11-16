@@ -111,3 +111,22 @@ def test_question_bloquee_par_le_filtre_est_un_refus_et_pas_une_panne(monkeypatc
     with pytest.raises(ContenuRefuse):
         llm.generate_json(system="s", prompt="p", schema={})
     assert appels == ["a", "b"]                       # pas de second tour pour une question bloquee
+
+
+def test_reponse_plafonnee_et_releve_meme_si_le_json_est_illisible():
+    """Sans plafond, une question piegee faisait ecrire le modele jusqu'au delai ; une reponse illisible etait
+    payee mais pas relevee (second audit de securite, points 15 et 17)."""
+    import json as _json
+    corps, releves = [], []
+
+    def repondre(request):
+        corps.append(_json.loads(request.read()))
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "{coupe"}]}}],
+                                         "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 4096}})
+
+    llm = GeminiLLM(api_key="k", models=("m",), tentatives=1, releve=lambda m, u: releves.append((m, u)))
+    llm._client = httpx.Client(transport=httpx.MockTransport(repondre))
+    with pytest.raises(LLMError):
+        llm.generate_json(system="s", prompt="p", schema={})
+    assert corps[0]["generationConfig"]["maxOutputTokens"] == 4096
+    assert releves == [("m", {"promptTokenCount": 10, "candidatesTokenCount": 4096})]

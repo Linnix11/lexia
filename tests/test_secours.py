@@ -201,3 +201,22 @@ def test_questions_bloquees_n_ouvrent_pas_le_disjoncteur():
         assert client.post("/chat", json={"question": f"responsabilité {i}"}).json()["statut"] == "reponse"
     assert len(principal.prompts) == 4                                     # Gemini toujours essaye
     assert TestClient(app, client=("127.0.0.1", 50000)).get("/sante").json()["disjoncteur"] == "ferme"
+
+
+def test_groq_plafonne_et_releve_le_cout(tmp_path):
+    from api.journal import Journal
+    from api.main import releve_jetons
+    from eval.cout import lire
+    corps = []
+
+    def repondre(request: httpx.Request) -> httpx.Response:
+        corps.append(json.loads(request.read()))
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"statut": "reponse"}'}}],
+                                         "usage": {"prompt_tokens": 2500, "completion_tokens": 900}})
+
+    llm = GroqLLM(api_key="k", models=("qwen",), releve=releve_jetons(Journal(tmp_path), "secours"))
+    llm._client = httpx.Client(transport=httpx.MockTransport(repondre))
+    llm.generate_json(system="s", prompt="p", schema={})
+    assert corps[0]["max_completion_tokens"] == 4096
+    ligne = lire(tmp_path / "modele.jsonl")[0]
+    assert (ligne["modele"], ligne["role"], ligne["entree"], ligne["sortie"]) == ("groq/qwen", "secours", 2500, 900)

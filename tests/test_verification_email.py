@@ -169,3 +169,80 @@ def test_compte_confirme_jamais_remplace(env):
     with sqlite3.connect(comptes.chemin) as c:
         c.execute("UPDATE utilisateurs SET cree_le = '2000-01-01T00:00:00+00:00'")
     assert inscrire(TestClient(client.app), mdp="autre-mot-de-passe").status_code == 422
+
+
+# --- mot de passe oublie --------------------------------------------------------
+
+def _liens_oubli(monkeypatch):
+    liens = []
+    monkeypatch.setattr(courriel, "envoyer_reinitialisation", lambda dest, lien: liens.append((dest, lien)))
+    return liens
+
+
+def _attendre(liste, n=1):
+    import time
+    for _ in range(100):
+        if len(liste) >= n:
+            return
+        time.sleep(0.02)
+
+
+def test_mot_de_passe_oublie_de_bout_en_bout(env, monkeypatch):
+    client, _, envoyes = env
+    liens = _liens_oubli(monkeypatch)
+    inscrire(client)
+    client.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])})
+    autre = TestClient(client.app)
+    # Meme reponse pour une adresse inconnue : la page ne dit pas qui est inscrit.
+    assert autre.post("/auth/mot-de-passe/oubli", json={"email": "inconnu@exemple.fr"}).json() == {"envoye": True}
+    assert autre.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"}).json() == {"envoye": True}
+    _attendre(liens)
+    assert len(liens) == 1 and liens[0][0] == "etu@exemple.fr"
+    assert liens[0][1].startswith("https://lexia.test/nouveau-mot-de-passe?jeton=")
+    jeton = liens[0][1].split("jeton=")[1]
+    assert autre.post("/auth/mot-de-passe/nouveau", json={"jeton": jeton, "mot_de_passe": "court"}).status_code == 422
+    r = autre.post("/auth/mot-de-passe/nouveau", json={"jeton": jeton, "mot_de_passe": "nouveau-mot-de-passe"})
+    assert r.status_code == 200 and "lexia_session" not in autre.cookies          # le lien n'ouvre pas de session
+    assert client.get("/auth/moi").status_code == 401                             # anciennes sessions fermees
+    assert autre.post("/auth/mot-de-passe/nouveau", json={"jeton": jeton, "mot_de_passe": "encore-un-autre"}).status_code == 422
+    assert autre.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide"}).status_code == 401
+    assert autre.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "nouveau-mot-de-passe"}).status_code == 200
+
+
+def test_le_titulaire_reprend_une_adresse_squattee(env, monkeypatch):
+    """Un tiers a cree le compte avec l'adresse de la victime et active sa double authentification : le lien
+    recu dans la vraie boite rend l'adresse a son titulaire (second audit, point 6)."""
+    from api import totp
+    client, comptes, _ = env
+    liens = _liens_oubli(monkeypatch)
+    squatteur = TestClient(client.app)
+    inscrire(squatteur, mdp="mot-de-passe-du-squatteur")
+    secret = squatteur.post("/auth/2fa/preparer").json()["secret"]
+    squatteur.post("/auth/2fa/activer", json={"mot_de_passe": "mot-de-passe-du-squatteur",
+                                              "code": totp._code(secret, totp.etape_courante())})
+    titulaire = TestClient(client.app)
+    titulaire.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"})
+    _attendre(liens)
+    titulaire.post("/auth/mot-de-passe/nouveau", json={"jeton": liens[0][1].split("jeton=")[1],
+                                                       "mot_de_passe": "le-vrai-mot-de-passe"})
+    r = titulaire.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "le-vrai-mot-de-passe"})
+    assert r.status_code == 200 and r.json()["email_verifie"] is True       # adresse confirmee par le lien
+    assert r.json()["double_authentification"] is False                    # celle du squatteur est retiree
+    assert squatteur.get("/auth/moi").status_code == 401
+
+
+def test_un_compte_confirme_garde_sa_double_authentification(env, monkeypatch):
+    from api import totp
+    client, _, envoyes = env
+    liens = _liens_oubli(monkeypatch)
+    inscrire(client)
+    client.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])})
+    secret = client.post("/auth/2fa/preparer").json()["secret"]
+    client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide",
+                                           "code": totp._code(secret, totp.etape_courante())})
+    client.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"})
+    _attendre(liens)
+    client.post("/auth/mot-de-passe/nouveau", json={"jeton": liens[0][1].split("jeton=")[1],
+                                                    "mot_de_passe": "nouveau-mot-de-passe"})
+    r = client.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "nouveau-mot-de-passe"})
+    assert r.json().get("double_authentification_requise") is True          # le lien seul ne suffit pas a entrer

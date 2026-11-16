@@ -90,6 +90,12 @@ COLONNES_EMAIL = {
     "verif_envoye_le": "TEXT",    # date d'envoi : limite les renvois et fixe l'expiration
 }
 DUREE_VERIFICATION = timedelta(hours=24)
+# Mot de passe oublie : lien a usage unique envoye a l'adresse du compte, valable une heure.
+COLONNES_REINIT = {
+    "reinit_jeton": "TEXT",       # empreinte du jeton du dernier lien envoye
+    "reinit_envoye_le": "TEXT",   # date d'envoi : limite les renvois et fixe l'expiration
+}
+DUREE_REINITIALISATION = timedelta(hours=1)
 DELAI_ENTRE_ENVOIS = timedelta(minutes=2)
 
 
@@ -178,6 +184,9 @@ class Comptes:
             self._con.execute("ALTER TABLE utilisateurs ADD COLUMN admin INTEGER NOT NULL DEFAULT 0")
             self._con.commit()
         for nom, genre in COLONNES_2FA.items():  # migration : double authentification
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+        for nom, genre in COLONNES_REINIT.items():  # migration : mot de passe oublie
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
         for nom, genre in COLONNES_EMAIL.items():  # migration : verification de l'adresse e-mail
@@ -337,6 +346,46 @@ class Comptes:
             raise ErreurCompte("Ce lien a expiré : demandez un nouvel e-mail de confirmation.")
         self._q("UPDATE utilisateurs SET email_verifie_le = ?, verif_jeton = NULL WHERE id = ?",
                 (_maintenant().isoformat(timespec="seconds"), uid))
+        return self.par_id(uid)
+
+    def jeton_reinitialisation(self, email: str) -> tuple[Utilisateur, str] | None:
+        """Jeton du lien « mot de passe oublie ». None si aucun compte ou si un lien vient de partir."""
+        u = self.par_email(email or "")
+        if u is None:
+            return None
+        rows = self._q("SELECT reinit_envoye_le FROM utilisateurs WHERE id = ?", (u.id,))
+        if rows and rows[0][0] and _maintenant() - _lire_date(rows[0][0]) < DELAI_ENTRE_ENVOIS:
+            return None
+        jeton = secrets.token_urlsafe(32)
+        self._q("UPDATE utilisateurs SET reinit_jeton = ?, reinit_envoye_le = ? WHERE id = ?",
+                (_hash_jeton(jeton), _maintenant().isoformat(timespec="seconds"), u.id))
+        return u, jeton
+
+    def reinitialiser_mdp(self, jeton: str, mdp: str) -> Utilisateur:
+        """Nouveau mot de passe depuis le lien recu par e-mail : ferme toutes les sessions.
+
+        Cliquer sur ce lien prouve que l'on possede la boite. Une adresse jamais confirmee l'est donc, et la
+        double authentification qu'y aurait mise un tiers (compte cree a l'adresse de quelqu'un d'autre) est
+        retiree : le vrai titulaire reprend son adresse (second audit de securite, point 6). Sur un compte deja
+        confirme, la double authentification reste : le lien seul ne suffit pas a entrer.
+        """
+        self._valider_mdp(mdp)
+        rows = self._q("SELECT id, reinit_envoye_le, email_verifie_le FROM utilisateurs WHERE reinit_jeton = ?",
+                       (_hash_jeton(jeton or ""),))
+        if not rows:
+            raise ErreurCompte("Ce lien n'est plus valable : demandez un nouvel e-mail.")
+        uid, envoye, verifie = rows[0]
+        if not envoye or _maintenant() - _lire_date(envoye) > DUREE_REINITIALISATION:
+            raise ErreurCompte("Ce lien a expiré : demandez un nouvel e-mail.")
+        maintenant = _maintenant().isoformat(timespec="seconds")
+        with self._lock, self._con:
+            self._con.execute("UPDATE utilisateurs SET mdp = ?, reinit_jeton = NULL, verif_jeton = NULL, "
+                              "email_verifie_le = COALESCE(email_verifie_le, ?) WHERE id = ?",
+                              (hacher_mdp(mdp), maintenant, uid))
+            if not verifie:
+                self._con.execute("UPDATE utilisateurs SET totp_secret = NULL, totp_attente = NULL, "
+                                  "totp_etape = NULL, totp_secours = NULL WHERE id = ?", (uid,))
+            self._con.execute("DELETE FROM sessions WHERE utilisateur = ?", (uid,))
         return self.par_id(uid)
 
     def _chiffrer_secrets_en_clair(self) -> None:

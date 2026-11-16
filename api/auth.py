@@ -14,6 +14,7 @@ import secrets
 import threading
 import time
 from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -51,6 +52,15 @@ class CodeConnexion(BaseModel):
 
 class JetonEmail(BaseModel):
     jeton: str = Field(max_length=100)
+
+
+class OubliMdp(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class NouveauMdp(BaseModel):
+    jeton: str = Field(max_length=100)
+    mot_de_passe: str = Field(max_length=256)
 
 
 class MotDePasseEtCode2FA(BaseModel):
@@ -386,6 +396,50 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             renvois[u.id].append(maintenant)
             renvois_total.append(maintenant)
         return {"envoye": True}
+
+    # --- mot de passe oublie -------------------------------------------------
+    # Meme reponse et meme duree qu'il existe un compte ou non (l'e-mail part dans un fil a part) : la page ne
+    # dit pas quelles adresses sont inscrites. Envois plafonnes par adresse et en tout, comme les renvois.
+    oublis: dict[str, deque] = defaultdict(deque)
+    envois_oubli = ThreadPoolExecutor(max_workers=2, thread_name_prefix="oubli")
+
+    def _envoyer_oubli(email: str, lien: str) -> None:
+        try:
+            courriel.envoyer_reinitialisation(email, lien)
+        except courriel.ErreurCourriel:
+            log.warning("e-mail « mot de passe oublie » non envoye")
+
+    @router.post("/mot-de-passe/oubli", status_code=202, dependencies=[Depends(verifier_origine)])
+    def mot_de_passe_oublie(req: OubliMdp, request: Request):
+        freins.verifier(_ip(request), f"oubli:{_ip(request)}")
+        email = req.email.strip().lower()
+        maintenant = time.monotonic()
+        with verrou_renvois:
+            for q in (oublis[email], renvois_total):
+                while q and maintenant - q[0] > 86400:
+                    q.popleft()
+            plafond = len(oublis[email]) >= RENVOIS_PAR_COMPTE_JOUR or len(renvois_total) >= RENVOIS_TOTAL_JOUR
+        if courriel.configure() and url_publique and not plafond:
+            r = comptes.jeton_reinitialisation(email)
+            if r is not None:
+                u, jeton = r
+                with verrou_renvois:
+                    oublis[email].append(maintenant)
+                    renvois_total.append(maintenant)
+                envois_oubli.submit(_envoyer_oubli, u.email, f"{url_publique}/nouveau-mot-de-passe?jeton={jeton}")
+        return {"envoye": True}
+
+    @router.post("/mot-de-passe/nouveau", dependencies=[Depends(verifier_origine)])
+    def nouveau_mot_de_passe(req: NouveauMdp, request: Request):
+        cle = f"reinit:{_ip(request)}"
+        freins.verifier(_ip(request), cle)
+        try:
+            comptes.reinitialiser_mdp(req.jeton, req.mot_de_passe)
+        except ErreurCompte as e:
+            freins.echec(cle)
+            raise HTTPException(422, str(e)) from None
+        # Pas de session ouverte par le lien : l'etudiant se connecte (code de l'application compris).
+        return {"modifie": True}
 
     @router.post("/deconnexion", status_code=204, dependencies=[Depends(verifier_origine)])
     def deconnexion(request: Request, response: Response):

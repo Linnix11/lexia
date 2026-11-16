@@ -20,6 +20,11 @@ BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 # Fins de generation qui signalent un blocage du contenu, pas une panne du service.
 FINS_REFUS = {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"}
 RETRY_STATUS = {429, 500, 503}
+# Plafond de la reponse : la plus longue des 92 reponses relevees en production faisait 1 393 jetons
+# (16 novembre 2026, logs/modele.jsonl). Sans plafond, une question piegee (« developpe 40 elements tres
+# longs ») faisait ecrire le modele jusqu'au delai, a nos frais. Une reponse coupee est du JSON invalide :
+# le modele suivant, puis le secours, prennent le relais.
+MAX_JETONS_SORTIE = 4096
 
 
 class GeminiLLM:
@@ -44,6 +49,7 @@ class GeminiLLM:
             "responseMimeType": "application/json",
             "responseJsonSchema": schema,
             "temperature": temperature,
+            "maxOutputTokens": MAX_JETONS_SORTIE,
         }
         if self._thinking:
             config["thinkingConfig"] = {"thinkingLevel": self._thinking}
@@ -104,6 +110,16 @@ class GeminiLLM:
                 if r.status_code == 200:
                     try:
                         donnees = r.json()
+                    except json.JSONDecodeError as e:
+                        erreurs.append(f"{model}: {e}")
+                        continue
+                    # Releve avant la lecture du JSON : une reponse illisible est payee quand meme.
+                    if self._releve is not None:
+                        try:
+                            self._releve(model, donnees.get("usageMetadata") or {})
+                        except Exception:  # la mesure ne doit jamais faire echouer une reponse
+                            log.exception("releve des jetons impossible")
+                    try:
                         resultat = json.loads(self._texte(donnees))
                     except (json.JSONDecodeError, LLMError) as e:
                         erreurs.append(f"{model}: {e}")
@@ -111,11 +127,6 @@ class GeminiLLM:
                             refus += 1
                             exclus.add(model)  # la meme question serait bloquee au second tour
                         continue
-                    if self._releve is not None:
-                        try:
-                            self._releve(model, donnees.get("usageMetadata") or {})
-                        except Exception:  # la mesure ne doit jamais faire echouer une reponse
-                            log.exception("releve des jetons impossible")
                     return resultat, model
                 erreurs.append(f"{model}: HTTP {r.status_code}")
                 log.warning("gemini %s HTTP %s en %.1fs", model, r.status_code, time.monotonic() - debut)

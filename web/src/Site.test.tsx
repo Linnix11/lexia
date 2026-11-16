@@ -52,6 +52,8 @@ beforeEach(() => {
     // Le lien confirme l'adresse sans ouvrir de session : profil seulement si deja connecte.
     if (url.endsWith('/auth/email/verifier')) return json(connecte ? { ...PROFIL, email_verifie: true } : null)
     if (url.endsWith('/auth/email/renvoyer')) return json({ envoye: true }, 202)
+    if (url.endsWith('/auth/mot-de-passe/oubli')) return json({ envoye: true }, 202)
+    if (url.endsWith('/auth/mot-de-passe/nouveau')) return json({ modifie: true })
     if (url.endsWith('/auth/connexion/code')) {
       connecte = true
       return json({ ...PROFIL, double_authentification: true })
@@ -177,6 +179,28 @@ describe('Site', () => {
     expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j-abc' })
     // Pas connecte sur ce navigateur : le lien ne connecte pas, il invite a se connecter.
     expect(screen.getByRole('link', { name: 'Se connecter' })).toBeInTheDocument()
+  })
+
+  it('mot de passe oublie : lien depuis la connexion, puis meme message pour toute adresse', async () => {
+    aller('/connexion')
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('link', { name: 'Mot de passe oublié ?' }))
+    fireEvent.change(await screen.findByLabelText('Adresse e-mail du compte'), { target: { value: 'etu@exemple.fr' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Recevoir le lien' }))
+    expect(await screen.findByRole('heading', { name: 'Vérifiez vos e-mails' })).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/mot-de-passe/oubli'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ email: 'etu@exemple.fr' })
+  })
+
+  it('nouveau mot de passe depuis le lien de l e-mail', async () => {
+    aller('/nouveau-mot-de-passe?jeton=j-xyz')
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText(/Nouveau mot de passe/), { target: { value: 'nouveau-mot-de-passe' } })
+    fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'nouveau-mot-de-passe' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByRole('heading', { name: 'Mot de passe modifié' })).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/mot-de-passe/nouveau'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j-xyz', mot_de_passe: 'nouveau-mot-de-passe' })
   })
 
   it('lien sans jeton : message et aucun appel', async () => {

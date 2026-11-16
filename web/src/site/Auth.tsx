@@ -4,8 +4,8 @@ import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { PublicLayout, bouton } from './Public'
 
-const champ = 'w-full rounded-[8px] border border-line bg-white px-3 py-2.5 text-[14px] text-ink aria-[invalid=true]:border-[#c2765f]'
-const MDP_MIN = 10
+export const champ = 'w-full rounded-[8px] border border-line bg-white px-3 py-2.5 text-[14px] text-ink aria-[invalid=true]:border-[#c2765f]'
+export const MDP_MIN = 10
 
 export function Carte({ titre, sousTitre, children }: { titre: string; sousTitre: string; children: ReactNode }) {
   return (
@@ -19,13 +19,13 @@ export function Carte({ titre, sousTitre, children }: { titre: string; sousTitre
   )
 }
 
-function Erreur({ message }: { message: string | null }) {
+export function Erreur({ message }: { message: string | null }) {
   if (!message) return null
   return <p role="alert" className="rounded-lg bg-[#f6e9e4] px-3 py-2 text-[13px] text-[#8c4a36]">{message}</p>
 }
 
 export function Connexion() {
-  const { connexion, terminerConnexion, config } = useSession()
+  const { connexion, terminerConnexion } = useSession()
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
   const [mdp, setMdp] = useState('')
@@ -99,14 +99,9 @@ export function Connexion() {
         <Erreur message={erreur} />
         <button type="submit" disabled={envoi || !email || !mdp} className={bouton}>{envoi ? 'Connexion…' : 'Se connecter'}</button>
       </form>
-      {config?.contact_email && (
-        <p className="mt-3 text-center text-[12px] text-muted">
-          Mot de passe oublié ?{' '}
-          <a href={`mailto:${config.contact_email}?subject=${encodeURIComponent('Lexia : mot de passe oublié')}`} className="text-forest hover:underline">
-            Écrivez-nous depuis l’adresse de votre compte
-          </a>
-        </p>
-      )}
+      <p className="mt-3 text-center text-[12px] text-muted">
+        <Lien href="/mot-de-passe-oublie" className="text-forest hover:underline">Mot de passe oublié ?</Lien>
+      </p>
       <p className="mt-5 text-center text-[13px] text-muted">
         Pas encore de compte ? <Lien href="/inscription" className="font-semibold text-forest hover:underline">Créer un compte gratuit</Lien>
       </p>
