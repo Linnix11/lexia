@@ -54,6 +54,14 @@ CREATE TABLE IF NOT EXISTS usage (
     quiz         INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (utilisateur, jour)
 );
+-- Dernier numero de compte attribue : un numero n'est jamais reutilise apres une suppression. Sinon le
+-- compte suivant heritait des limites gardees en memoire par numero (echecs de double authentification,
+-- depots de cours), constate en ligne le 2026-11-16. utilisateurs.id ne peut pas devenir AUTOINCREMENT
+-- sans recreer la table.
+CREATE TABLE IF NOT EXISTS compteurs (
+    nom          TEXT PRIMARY KEY,
+    valeur       INTEGER NOT NULL
+);
 """
 
 
@@ -191,9 +199,19 @@ class Comptes:
         email = normaliser_email(email)
         self._valider_mdp(mdp)
         maintenant = _maintenant().isoformat(timespec="seconds")
+        empreinte = hacher_mdp(mdp)
         try:
-            self._q("INSERT INTO utilisateurs (email, mdp, formule, cree_le, cgu_le) VALUES (?,?,?,?,?)",
-                    (email, hacher_mdp(mdp), FORMULE_PAR_DEFAUT, maintenant, maintenant))
+            with self._lock, self._con:
+                # Numero suivant le plus grand jamais attribue (compteur) ou existant (comptes anterieurs).
+                # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
+                # parallele dans la base.
+                cur = self._con.execute(
+                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le) VALUES ("
+                    "MAX(COALESCE((SELECT valeur FROM compteurs WHERE nom = 'utilisateurs'), 0),"
+                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?)",
+                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant))
+                self._con.execute("INSERT INTO compteurs (nom, valeur) VALUES ('utilisateurs', ?) "
+                                  "ON CONFLICT(nom) DO UPDATE SET valeur = excluded.valeur", (cur.lastrowid,))
         except sqlite3.IntegrityError:
             raise ErreurCompte("Un compte existe déjà avec cette adresse e-mail.") from None
         return self.par_email(email)

@@ -218,6 +218,25 @@ def test_formule_expiree_repasse_en_gratuit(tmp_path):
         comptes.changer_formule("a@b.fr", "platine")
 
 
+def test_numero_de_compte_jamais_reutilise(tmp_path):
+    # Un compte cree apres une suppression ne reprend pas le numero : il heritait des limites gardees en
+    # memoire par numero (echecs de double authentification), constate en ligne le 2026-11-16.
+    chemin = tmp_path / "c.db"
+    comptes = Comptes(chemin)
+    a = comptes.creer("a@b.fr", "motdepasse-solide")
+    b = comptes.creer("b@b.fr", "motdepasse-solide")
+    comptes.supprimer(b.id)
+    c = comptes.creer("c@b.fr", "motdepasse-solide")
+    assert (a.id, b.id) == (1, 2) and c.id == 3
+    comptes.supprimer(c.id)
+    assert Comptes(chemin).creer("d@b.fr", "motdepasse-solide").id == 4    # compteur conserve en base
+    # Base anterieure au compteur : on repart du plus grand numero existant.
+    comptes._q("DELETE FROM compteurs")
+    assert comptes.creer("e@b.fr", "motdepasse-solide").id == 5
+    with pytest.raises(ErreurCompte):
+        comptes.creer("e@b.fr", "motdepasse-solide")                    # doublon : message habituel
+
+
 def test_suppression_du_compte(env):
     client, comptes, _ = env
     inscrire(client)
