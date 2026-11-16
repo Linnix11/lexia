@@ -22,13 +22,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api.config import get_settings  # noqa: E402
 from api.main import _construire_embedder, _construire_reclasseur, _construire_retriever  # noqa: E402
 from api.rag import K_CHAT, Lexia, pour_secours  # noqa: E402
-from eval.cas import ROOT, charger, correspond  # noqa: E402
+from eval.cas import FICHIER, ROOT, charger, correspond  # noqa: E402
 
 
 def main() -> int:
     s = get_settings()
     lexia = Lexia(_construire_retriever(s), None, None, _construire_embedder(s), None, _construire_reclasseur(s))
-    cas = [c for c in charger() if c.sources]
+    fichier = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FICHIER
+    cas = [c for c in charger(fichier) if c.sources]
     groupes: dict[str, list] = defaultdict(list)
     echecs: list[str] = []
     durees: list[float] = []
@@ -52,7 +53,7 @@ def main() -> int:
     n = len(cas)
     lignes = [
         f"# Backtest de la recherche - {datetime.now():%Y-%m-%d %H:%M}", "",
-        f"{len(charger())} cas au total, dont {n} attendent une source. Sans reformulation par Gemini ; "
+        f"{fichier.name} : {len(charger(fichier))} cas au total, dont {n} attendent une source. Sans reformulation par Gemini ; "
         f"embeddings, reclassement et lexique actifs. Temps moyen de recherche : {sum(durees) / n:.1f} s.", "",
         "| Groupe | Cas | Source parmi les 8 extraits (Gemini) | Source parmi les 4 premiers (Groq) |",
         "|---|---|---|---|",

@@ -1,0 +1,40 @@
+# Cas pratiques de controle - version 1 (2026-11-14)
+#
+# Jeu tenu a l'ecart pendant le reglage du tri (D73) : ecrit avant de connaitre les resultats, jamais
+# utilise pour choisir un parametre. Il sert a verifier qu'une amelioration mesuree sur
+# eval/cas_pratiques.yaml vaut aussi pour des situations nouvelles.
+#
+# Meme regle d'ecriture : des faits racontes simplement, sans numero d'article ni nom de notion.
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+
+cas:
+  - {id: ctl-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241],
+     question: "En taillant sa haie, un voisin projette des cailloux qui rayent ma voiture. Peut-il être obligé de payer la réparation ?"}
+  - {id: ctl-02, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1243],
+     question: "Le cheval d’un agriculteur s’échappe et piétine le potager d’un voisin. L’agriculteur doit-il dédommager ?"}
+  - {id: ctl-03, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Un pot de fleurs posé sur un balcon tombe sur la tête d’un passant. Le propriétaire du pot est-il responsable ?"}
+  - {id: ctl-04, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137, code_civil:1112-1],
+     question: "Le vendeur d’une maison savait que la cave était régulièrement inondée et ne l’a pas dit à l’acheteur. Que peut faire l’acheteur ?"}
+  - {id: ctl-05, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1217, code_civil:1231-1, code_civil:1224],
+     question: "Un traiteur ne livre pas le repas prévu pour un mariage, le jour même. Les mariés peuvent-ils obtenir quelque chose ?"}
+  - {id: ctl-06, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1641],
+     question: "J’ai acheté une voiture d’occasion dont le moteur casse deux jours après, à cause d’une fissure qui existait déjà. Ai-je un recours contre le vendeur ?"}
+  - {id: ctl-07, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1140, code_civil:1143],
+     question: "Une entreprise en difficulté signe un contrat très désavantageux parce que son seul client menace de la quitter. Peut-elle le remettre en cause ?"}
+  - {id: ctl-08, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:371-1, code_civil:373-2],
+     question: "Après le divorce, la mère veut déménager à l’autre bout de la France avec l’enfant sans l’accord du père. En a-t-elle le droit ?"}
+  - {id: ctl-09, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:544, code_civil:545],
+     question: "La commune veut installer un poteau électrique dans mon jardin sans me demander mon avis. Peut-elle le faire ?"}
+  - {id: ctl-10, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:122-5],
+     question: "Un cambrioleur armé entre la nuit chez Marc, qui le repousse violemment. Marc peut-il être poursuivi ?"}
+  - {id: ctl-11, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:311-1],
+     question: "Un client glisse discrètement un parfum dans son sac et sort du magasin sans payer. Quelle infraction a-t-il commise ?"}
+  - {id: ctl-12, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:313-1],
+     question: "Un faux site internet encaisse des paiements pour des billets de concert qui n’existent pas. De quoi son auteur est-il coupable ?"}
+  - {id: ctl-13, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1232-1, code_travail:L1235-3],
+     question: "Une employée est mise à la porte parce que son patron trouve qu’elle « ne sourit pas assez ». Peut-elle contester ?"}
+  - {id: ctl-14, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1153-1],
+     question: "Un manager fait des avances insistantes à une collaboratrice qui les refuse. Que dit la loi ?"}
+  - {id: ctl-15, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: [code_justice_administrative:L521-2, code_justice_administrative:L521-1],
+     question: "La préfecture refuse de renouveler un titre de séjour et l’étudiant risque d’être expulsé avant ses examens. Peut-il agir vite devant un juge ?"}

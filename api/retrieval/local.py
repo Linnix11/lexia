@@ -13,9 +13,11 @@ from pathlib import Path
 
 import numpy as np
 
+from api import lexique
 from api.references import extraire
 from api.textes import SOURCES_CASSATION, cibles_article, meme_loi
-from api.retrieval.base import (SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler, construire_groupe,
+from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler,
+                                construire_groupe,
                                 groupes, jeton_source, paires, termes)
 
 N_CANDIDATS = 50
@@ -66,6 +68,20 @@ class LocalRetriever:
         for src, vig in self._meta_vec.values():
             if vig != 0:
                 self._vectorises[src] = self._vectorises.get(src, 0) + 1
+        # articles de principe du lexique, version en vigueur et vectorisee, avec leurs vecteurs (D73)
+        self._principes: list[tuple[str, str]] = []
+        self._vecs_principes = np.zeros((0, 0), dtype=np.float32)
+        if self._ids:
+            rang = {pid: i for i, pid in enumerate(self._ids)}
+            arts = sorted({a for _, liste in lexique.NOTIONS for a in liste})
+            for src, num in arts:
+                for (pid,) in self._q("SELECT id FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1",
+                                      (src, num)):
+                    if pid in rang:
+                        self._principes.append((pid, src))
+            if self._principes:
+                self._vecs_principes = np.asarray(self._vecs[[rang[pid] for pid, _ in self._principes]],
+                                                  dtype=np.float32)
 
     def couverture(self, sources: tuple[str, ...] | None) -> float:
         srcs = sources or tuple(self._totaux)
@@ -237,8 +253,23 @@ class LocalRetriever:
             if complement.vecteur_reformulation is not None and vectoriel:
                 classements["vecteur_reformulation"] = self._par_ids(
                     self._vectoriel(complement.vecteur_reformulation, sources))
+        suggestions = self._suggestions(complement, sources)
+        principes = [] if suggestions or reclasseur is None or not vectoriel \
+            else self._principes_proches(query_vector, sources)
         return construire_groupe(classements, k, question=question, reclasseur=reclasseur,
-                                 suggestions=self._suggestions(complement, sources))
+                                 suggestions=suggestions, principes=principes)
+
+    def _principes_proches(self, vecteur, sources) -> list[dict]:
+        """Les N_PRINCIPES articles de principe de ces sources les plus proches de la question par le sens."""
+        sel = [i for i, (_, src) in enumerate(self._principes) if src in sources]
+        if vecteur is None or not sel:
+            return []
+        q = np.asarray(vecteur, dtype=np.float32)
+        if self._vecs_principes.shape[1] != q.shape[0]:
+            return []
+        q /= np.linalg.norm(q) or 1.0
+        sims = self._vecs_principes[sel] @ q
+        return [p for i in np.argsort(-sims)[:N_PRINCIPES] if (p := self.get(self._principes[sel[int(i)]][0]))]
 
     def search(self, question, *, sources, k, query_vector=None, complement: Complement | None = None,
                reclasseur: Reclasseur | None = None):

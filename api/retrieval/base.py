@@ -16,6 +16,11 @@ MAX_PAR_DOCUMENT = 1  # evite qu'une seule decision occupe tous les resultats
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
 SEUIL_COUVERTURE = 0.9
 N_RECLASSEMENT = 10  # candidats relus par le modele de reclassement, par groupe de sources (D47)
+# Articles de principe (lexique) proches de la question par le sens, ajoutes a la fenetre du reclassement
+# quand le lexique ne reconnait aucune notion : un cas pratique raconte sans vocabulaire juridique
+# ne les faisait jamais remonter. Gardes seulement si le reclassement les juge pertinents (D73).
+N_PRINCIPES = 4
+SEUIL_PRINCIPE = 0.10
 
 
 def jeton_source(source_id: str) -> str:
@@ -133,10 +138,12 @@ def assembler(refs: list["Hit"], textes: list["Hit"], juris: list["Hit"], k: int
 
 def construire_groupe(classements: dict[str, list[tuple[str, dict]]], k: int, *,
                       question: str = "", suggestions: list[dict] | None = None,
-                      reclasseur: Reclasseur | None = None) -> list[Hit]:
+                      reclasseur: Reclasseur | None = None,
+                      principes: list[dict] | None = None) -> list[Hit]:
     """Fusionne des classements (RRF), reclasse eventuellement, place les suggestions en tete.
 
     classements : nom -> [(id, passage)], ex. {"lexical": ..., "vecteur": ..., "lexical_reformulation": ...}
+    principes : articles de principe candidats, relus par le reclassement en plus de sa fenetre (D73)
     """
     par_id: dict[str, dict] = {}
     via: dict[str, set[str]] = {}
@@ -148,7 +155,15 @@ def construire_groupe(classements: dict[str, list[tuple[str, dict]]], k: int, *,
     scores = fusion_rrf(*[[pid for pid, _ in liste] for liste in classements.values()])
     hits = [Hit(par_id[pid], sc, via[pid]) for pid, sc in sorted(scores.items(), key=lambda x: -x[1])]
     if reclasseur is not None and hits:
-        hits = reclasseur.reordonner(question, hits[:N_RECLASSEMENT]) + hits[N_RECLASSEMENT:]
+        # seuls les articles absents de la fenetre y sont ajoutes, et seuls ceux-la peuvent etre ecartes :
+        # un article deja trouve par la recherche garde sa place (tr-13, art. 51 de la Charte des Nations unies)
+        fenetre = {h.passage["id"] for h in hits[:N_RECLASSEMENT]}
+        ajouts = [p for p in principes or [] if p["id"] not in fenetre]
+        ids_a = {p["id"] for p in ajouts}
+        hits = [h for h in hits if h.passage["id"] not in ids_a]
+        hits = reclasseur.reordonner(question, [Hit(p, 0.0, {"principe"}) for p in ajouts] + hits[:N_RECLASSEMENT]) \
+            + hits[N_RECLASSEMENT:]
+        hits = [h for h in hits if h.passage["id"] not in ids_a or h.score >= SEUIL_PRINCIPE]
     # Lois et ordonnances non codifiees apres les codes et la Constitution : des milliers d'« article 5 » ou
     # « article 11 » de lois diverses evincaient les articles de principe (backtest du 2026-11-12). Une loi
     # citee dans la question passe toujours en tete (recherche par reference, hors de ce groupe).

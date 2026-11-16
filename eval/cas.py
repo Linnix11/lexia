@@ -12,7 +12,8 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 FICHIER = ROOT / "eval" / "cas.yaml"
 # Textes hors codes cites directement par leur identifiant de source
-AUTRES_TEXTES = ("ddhc_1789", "preambule_1946", "livre_procedures_fiscales")
+AUTRES_TEXTES = ("ddhc_1789", "preambule_1946", "livre_procedures_fiscales",
+                 "tue", "tfue", "charte_droits_fondamentaux_ue", "cedh", "charte_onu")
 
 
 @dataclass

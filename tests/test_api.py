@@ -474,6 +474,43 @@ def test_construire_groupe_reclasse_puis_place_les_suggestions():
     assert rec.appels == 1 and "suggestion" in hits[0].via and "reclasse" in hits[1].via
 
 
+class ReclasseurNotes:
+    model = "notes"
+
+    def __init__(self, notes):
+        self.notes, self.lus = notes, []
+
+    def reordonner(self, question, hits):
+        self.lus = [h.passage["id"] for h in hits]
+        notes = sorted(((self.notes.get(h.passage["id"], 0.5), h) for h in hits), key=lambda x: -x[0])
+        return [Hit(h.passage, n, h.via | {"reclasse"}) for n, h in notes]
+
+
+def test_construire_groupe_relit_les_articles_de_principe_et_ecarte_les_hors_sujet():
+    p = lambda i: {"id": f"p{i}", "texte": "", "meta": {}}  # noqa: E731
+    rec = ReclasseurNotes({"a1": 0.05, "a2": 0.05, "p1": 0.2})
+    # a1, deja trouve par le plein texte, n'est relu qu'une fois et garde sa place malgre sa note
+    hits = construire_groupe({"lexical": [(f"p{i}", p(i)) for i in range(3)] + [("a1", p("x") | {"id": "a1"})]}, 10,
+                             question="q", reclasseur=rec, principes=[{"id": "a1", "texte": "", "meta": {}},
+                                                                      {"id": "a2", "texte": "", "meta": {}}])
+    assert sorted(rec.lus) == ["a1", "a2", "p0", "p1", "p2"]
+    assert [h.passage["id"] for h in hits] == ["p0", "p2", "p1", "a1"]   # a2, ajoute et note sous le seuil, est ecarte
+    # sans reclassement, les articles de principe ne sont pas ajoutes
+    sans = construire_groupe({"lexical": [("p0", p(0))]}, 10, principes=[{"id": "a1", "texte": "", "meta": {}}])
+    assert [h.passage["id"] for h in sans] == ["p0"]
+
+
+def test_principes_proches_restreints_aux_sources_du_groupe():
+    import numpy as np
+    r = LocalRetriever.__new__(LocalRetriever)
+    r._principes = [("civ:1", "code_civil"), ("pen:1", "code_penal"), ("civ:2", "code_civil")]
+    r._vecs_principes = np.array([[1, 0], [1, 0], [0, 1]], dtype=np.float32)
+    r.get = lambda pid: {"id": pid}
+    assert [p["id"] for p in r._principes_proches([1.0, 0.1], ("code_civil",))] == ["civ:1", "civ:2"]
+    assert r._principes_proches([1.0, 0.0, 0.0], ("code_civil",)) == []      # dimension differente
+    assert r._principes_proches(None, ("code_civil",)) == []
+
+
 def test_mode_methode_accepte_une_explication_sans_source():
     from api.citations import valider_reponse
     table = {"S1": {"id": "code_civil:x", "numero": "1103", "texte": "", "entete": ""}}

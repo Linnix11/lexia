@@ -1,0 +1,23 @@
+# Questions sur les traites - version 1 (2026-11-14)
+#
+# Droit de l'Union, Convention europeenne des droits de l'homme et Charte des Nations unies (sources ajoutees
+# en D72) : questions de cours et faits racontes simplement, melanges. Sert a verifier que le tri (D73)
+# ne fait pas reculer ces matieres. STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+#
+#   python -m eval.backtest_recherche eval/cas_traites.yaml
+
+cas:
+  - {id: tr-01, matiere: droit_europeen, attendu: [reponse], sources: [cedh:8], question: "Que protège le droit au respect de la vie privée et familiale dans la Convention européenne ?"}
+  - {id: tr-02, matiere: droit_europeen, attendu: [reponse], sources: [cedh:6], question: "Qu'est-ce que le droit à un procès équitable ?"}
+  - {id: tr-03, matiere: droit_europeen, attendu: [reponse], sources: [cedh:3], question: "Des détenus sont enfermés à six dans une cellule de 9 m² sans chauffage. Un recours devant la Cour de Strasbourg est-il possible ?"}
+  - {id: tr-04, matiere: droit_europeen, attendu: [reponse], sources: [cedh:10], question: "Un journaliste est condamné pour avoir critiqué un ministre dans un article. Ses droits fondamentaux sont-ils atteints ?"}
+  - {id: tr-05, matiere: droit_europeen, attendu: [reponse], sources: [tfue:267], question: "Comment un juge national peut-il interroger la Cour de justice de l'Union sur l'interprétation d'un texte européen ?"}
+  - {id: tr-06, matiere: droit_europeen, attendu: [reponse], sources: [tfue:101], question: "Trois fabricants de ciment se mettent d'accord pour fixer ensemble leurs prix de vente en Europe. Est-ce permis ?"}
+  - {id: tr-07, matiere: droit_europeen, attendu: [reponse], sources: [tfue:102], question: "Qu'est-ce qu'un abus de position dominante en droit de l'Union ?"}
+  - {id: tr-08, matiere: droit_europeen, attendu: [reponse], sources: [tfue:34], question: "Un État membre interdit l'importation de bières fabriquées dans un autre pays de l'Union. Est-ce conforme au droit européen ?"}
+  - {id: tr-09, matiere: droit_europeen, attendu: [reponse], sources: [tfue:45], question: "Un Portugais peut-il venir travailler en France dans les mêmes conditions qu'un Français ?"}
+  - {id: tr-10, matiere: droit_europeen, attendu: [reponse], sources: [tue:50], question: "Comment un État peut-il quitter l'Union européenne ?"}
+  - {id: tr-11, matiere: droit_europeen, attendu: [reponse], sources: [tue:6, charte_droits_fondamentaux_ue:47], question: "Quelle valeur juridique a la Charte des droits fondamentaux de l'Union ?"}
+  - {id: tr-12, matiere: droit_europeen, attendu: [reponse], sources: [charte_droits_fondamentaux_ue:47], question: "Le droit de l'Union garantit-il un recours effectif devant un tribunal ?"}
+  - {id: tr-13, matiere: droit_international, attendu: [reponse], sources: [charte_onu:51], question: "Un État attaqué militairement par son voisin peut-il riposter par les armes ?"}
+  - {id: tr-14, matiere: droit_international, attendu: [reponse], sources: [charte_onu:2], question: "Le droit international interdit-il à un État de menacer un autre de la force ?"}

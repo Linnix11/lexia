@@ -1,0 +1,82 @@
+# Cas pratiques en langage courant - version 1 (2026-11-14)
+#
+# Pourquoi ce fichier : eval/cas.yaml est fait a 96 % de questions de cours formulees avec le vocabulaire
+# juridique (« Qu'est-ce que le dol ? »). La recherche y trouve la source attendue dans 187 cas sur 187,
+# mais elle echouait sur les situations racontees simplement, sans numero ni terme technique
+# (« Leo brise la vitrine d'un commercant... »), qui sont la matiere meme du cas pratique.
+#
+# Regle d'ecriture : des faits, pas de numero d'article, pas de nom de notion quand un etudiant ne le
+# donnerait pas. Les sources attendues sont les articles de principe ; une seule suffit (comme dans cas.yaml).
+#
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT. Articles verifies presents dans le corpus le 2026-11-14.
+
+cas:
+  # ===================================================================== RESPONSABILITE CIVILE
+  - {id: cp-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241, code_civil:1242],
+     question: "Léo brise la vitrine d’un commerçant en jouant au ballon dans la rue. Le commerçant peut-il obtenir réparation ?"}
+  - {id: cp-02, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Un enfant de dix ans casse la vitre d’un voisin avec son ballon. Ses parents doivent-ils payer les dégâts ?"}
+  - {id: cp-03, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1243],
+     question: "Le chien de Paul a mordu un passant dans un parc. Paul doit-il indemniser la victime ?"}
+  - {id: cp-04, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241],
+     question: "Par inattention, un cycliste renverse un piéton qui se casse le bras. Le piéton peut-il demander des dommages et intérêts ?"}
+  - {id: cp-05, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Un salarié d’une entreprise de livraison blesse quelqu’un pendant sa tournée. Qui la victime peut-elle poursuivre ?"}
+  - {id: cp-06, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1244],
+     question: "Des tuiles mal entretenues tombent du toit d’une maison et abîment une voiture garée devant. Le propriétaire est-il responsable ?"}
+  - {id: cp-07, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+     question: "Une cliente glisse sur une flaque d’huile dans un supermarché et se blesse. Peut-elle se retourner contre le magasin ?"}
+
+  # ===================================================================== CONTRATS
+  - {id: cp-08, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137],
+     question: "Paul a vendu sa voiture à Marie en lui cachant qu’elle avait été gravement accidentée. Marie peut-elle faire annuler la vente ?"}
+  - {id: cp-09, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1132],
+     question: "Un collectionneur achète un tableau en croyant qu’il est d’un peintre célèbre, mais c’est une copie. Peut-il revenir sur l’achat ?"}
+  - {id: cp-10, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1140],
+     question: "Un homme a signé un contrat après avoir été menacé de voir sa famille agressée. Le contrat est-il valable ?"}
+  - {id: cp-11, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1217, code_civil:1224, code_civil:1231-1],
+     question: "Un artisan a été payé pour refaire une cuisine mais ne vient jamais faire les travaux. Que peut faire le client ?"}
+  - {id: cp-12, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1219],
+     question: "Le fournisseur ne livre pas la marchandise commandée. L’acheteur peut-il refuser de payer en attendant ?"}
+  - {id: cp-13, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1728, code_civil:1224, code_civil:1741],
+     question: "Un locataire ne paie plus son loyer depuis trois mois. Que peut faire le propriétaire ?"}
+  - {id: cp-14, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1641, code_civil:1645],
+     question: "Une machine à laver achetée neuve tombe en panne au bout d’une semaine à cause d’un défaut de fabrication. L’acheteur a-t-il un recours ?"}
+  - {id: cp-15, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1599],
+     question: "Quelqu’un vend un vélo qui ne lui appartient pas. La vente est-elle valable ?"}
+  - {id: cp-16, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1146, code_civil:1148],
+     question: "Un adolescent de quinze ans achète seul un ordinateur très cher. Ses parents peuvent-ils faire annuler l’achat ?"}
+  - {id: cp-17, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1302, code_civil:1302-1],
+     question: "Par erreur, j’ai fait deux fois le même virement à un fournisseur. Puis-je récupérer la somme versée en trop ?"}
+
+  # ===================================================================== FAMILLE ET BIENS
+  - {id: cp-18, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:371-2, code_civil:373-2-2],
+     question: "Après la séparation, le père ne verse plus rien pour l’entretien de son enfant. Que peut faire la mère ?"}
+  - {id: cp-19, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:229, code_civil:230, code_civil:237],
+     question: "Deux époux ne s’entendent plus et veulent se séparer définitivement. Quelles possibilités ont-ils ?"}
+  - {id: cp-20, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:2272, code_civil:2261],
+     question: "Une famille cultive depuis quarante ans un terrain qui ne lui appartient pas, sans que personne ne réclame. Peut-elle en devenir propriétaire ?"}
+  - {id: cp-21, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:682, code_civil:637],
+     question: "Mon terrain n’a aucun accès à la route. Puis-je passer chez mon voisin pour y accéder ?"}
+  - {id: cp-22, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:673],
+     question: "Les branches de l’arbre du voisin dépassent largement au-dessus de mon jardin. Puis-je l’obliger à les couper ?"}
+
+  # ===================================================================== PENAL
+  - {id: cp-23, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:122-5],
+     question: "Agressé dans la rue, Hugo frappe son agresseur qui est blessé. Hugo risque-t-il d’être condamné ?"}
+  - {id: cp-24, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:311-1],
+     question: "Une personne prend un portefeuille oublié sur une table de café et le garde. Est-ce une infraction ?"}
+  - {id: cp-25, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:313-1],
+     question: "Un homme se fait passer pour un plombier pour se faire remettre de l’argent par des personnes âgées. Qu’encourt-il ?"}
+  - {id: cp-26, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:314-1],
+     question: "Un trésorier d’association utilise l’argent de l’association pour ses vacances. Est-il pénalement responsable ?"}
+  - {id: cp-27, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:121-7],
+     question: "Un ami prête sa voiture en sachant qu’elle servira à un cambriolage. Peut-il être poursuivi ?"}
+
+  # ===================================================================== SOCIAL ET ADMINISTRATIF
+  - {id: cp-28, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1232-1],
+     question: "Un salarié est renvoyé du jour au lendemain sans qu’on lui dise pourquoi. Le licenciement est-il régulier ?"}
+  - {id: cp-29, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1152-1],
+     question: "Une salariée subit chaque jour des humiliations et des reproches injustifiés de son chef. Que peut-elle invoquer ?"}
+  - {id: cp-30, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: [code_justice_administrative:L521-2],
+     question: "La mairie interdit une manifestation prévue après-demain, sans raison sérieuse. Les organisateurs peuvent-ils saisir un juge en urgence ?"}
