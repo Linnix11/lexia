@@ -125,3 +125,15 @@ def test_le_secours_recoit_aussi_une_decision():
     extraits = [p("code_civil", 1), p("code_civil", 2), p("code_civil", 3), p("code_civil", 4), p("judilibre", 5), p("judilibre", 6)]
     assert [x["id"] for x in pour_secours(extraits)] == ["code_civil1", "code_civil2", "code_civil3", "judilibre5"]
     assert [x["id"] for x in pour_secours(extraits[:4])] == ["code_civil1", "code_civil2", "code_civil3", "code_civil4"]
+
+
+def test_le_secours_recoit_1130_et_1131_avec_le_vice_du_consentement():
+    from api.rag import pour_secours
+    art = lambda n: {"id": n, "source_id": "code_civil", "numero": n, "type": "article", "meta": {"en_vigueur": True}}  # noqa: E731
+    dec = lambda i: {"id": f"d{i}", "source_id": "judilibre", "type": "motifs"}  # noqa: E731
+    # cas pratique cp-08 en ligne : le dol (1137) est le 3e texte, 1130 et 1131 le suivent
+    extraits = [art("1641"), art("1644"), art("1137"), art("1130"), art("1131"), art("1643"), dec(1), dec(2)]
+    assert [x["id"] for x in pour_secours(extraits)] == ["1641", "1644", "1137", "1130", "1131", "d1"]
+    # vice du consentement hors des extraits gardes : rien n'est ajoute
+    extraits = [art("1641"), art("1644"), art("1643"), art("1137"), art("1130"), art("1131"), dec(1)]
+    assert [x["id"] for x in pour_secours(extraits)] == ["1641", "1644", "1643", "d1"]

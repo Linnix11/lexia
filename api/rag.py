@@ -119,7 +119,16 @@ def pour_secours(passages: list[dict], k: int = K_SECOURS) -> list[dict]:
             break
         if i not in garde:
             garde.append(i)
+    # 1130 et 1131 suivent un vice du consentement garde, en plus des k extraits (deux articles courts) :
+    # sans eux, le secours ne peut pas dire que le contrat est annulable (cas pratique cp-08, 2026-11-16).
+    if any(_civil_en_vigueur(passages[i]) and passages[i].get("numero") in VICES_DU_CONSENTEMENT for i in garde):
+        garde += [i for i, p in enumerate(passages)
+                  if i not in garde and _civil_en_vigueur(p) and p.get("numero") in REGLES_COMMUNES_VICES]
     return [passages[i] for i in sorted(garde)]
+
+
+def _civil_en_vigueur(p: dict) -> bool:
+    return p["source_id"] == "code_civil" and bool(en_vigueur_aujourdhui(p.get("meta") or {}, "code_civil"))
 
 
 class Disjoncteur:
@@ -229,16 +238,13 @@ class Lexia:
 
     def _regles_communes_vices(self, passages: list[dict]) -> list[dict]:
         """Articles 1130 et 1131 places juste apres le premier vice du consentement en vigueur trouve."""
-        def civil_en_vigueur(p: dict) -> bool:
-            return p["source_id"] == "code_civil" and bool(en_vigueur_aujourdhui(p.get("meta") or {}, "code_civil"))
-
         rang = next((i for i, p in enumerate(passages)
-                     if civil_en_vigueur(p) and p.get("numero") in VICES_DU_CONSENTEMENT), None)
+                     if _civil_en_vigueur(p) and p.get("numero") in VICES_DU_CONSENTEMENT), None)
         if rang is None:
             return passages
-        presents = {p.get("numero") for p in passages if civil_en_vigueur(p)}
+        presents = {p.get("numero") for p in passages if _civil_en_vigueur(p)}
         ajouts = [v for n in REGLES_COMMUNES_VICES if n not in presents
-                  if (v := next((v for v in self.retriever.versions("code_civil", n) if civil_en_vigueur(v)), None))]
+                  if (v := next((v for v in self.retriever.versions("code_civil", n) if _civil_en_vigueur(v)), None))]
         return passages[:rang + 1] + ajouts + passages[rang + 1:]
 
     def extraits(self, texte: str, matiere: str | None, k: int, cours_ids: list[int] | None = None,
