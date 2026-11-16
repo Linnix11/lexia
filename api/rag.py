@@ -28,6 +28,11 @@ AVERTISSEMENT = (
 K_CHAT = 8
 MAX_SUGGESTIONS = 4  # articles ajoutes sans recherche (lexique, concordance, reformulation)
 K_SECOURS = 4  # extraits envoyes au modele de secours (quota Groq gratuit : ~8 000 jetons par minute)
+# Erreur, dol et violence (Code civil, art. 1132 a 1144) partagent la condition (vice determinant, art. 1130)
+# et la sanction (nullite relative, art. 1131), que la recherche ne ramenait pas : sur un cas de dol, la
+# reponse ne pouvait pas dire que le contrat est annulable (cas pratique cp-08, 2026-11-16).
+VICES_DU_CONSENTEMENT = frozenset(str(n) for n in range(1132, 1145))
+REGLES_COMMUNES_VICES = ("1130", "1131")
 log = logging.getLogger("lexia.rag")
 # La reformulation (appel Gemini) tourne pendant la vectorisation de la question ; au-dela du delai,
 # la recherche part sans elle (le resultat tardif est abandonne).
@@ -209,6 +214,8 @@ class Lexia:
                 if v is not None and v["id"] not in vus:
                     passages.insert(rang, v)
                     rang += 1
+        if sources is None or "code_civil" in sources:
+            passages = self._regles_communes_vices(passages)
         infos = {
             "recherche": "hybride" if any("vecteur" in h.via for h in hits) else "lexicale",
             "reformulation": reformule,
@@ -219,6 +226,20 @@ class Lexia:
         if anciens:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
         return passages, infos
+
+    def _regles_communes_vices(self, passages: list[dict]) -> list[dict]:
+        """Articles 1130 et 1131 places juste apres le premier vice du consentement en vigueur trouve."""
+        def civil_en_vigueur(p: dict) -> bool:
+            return p["source_id"] == "code_civil" and bool(en_vigueur_aujourdhui(p.get("meta") or {}, "code_civil"))
+
+        rang = next((i for i, p in enumerate(passages)
+                     if civil_en_vigueur(p) and p.get("numero") in VICES_DU_CONSENTEMENT), None)
+        if rang is None:
+            return passages
+        presents = {p.get("numero") for p in passages if civil_en_vigueur(p)}
+        ajouts = [v for n in REGLES_COMMUNES_VICES if n not in presents
+                  if (v := next((v for v in self.retriever.versions("code_civil", n) if civil_en_vigueur(v)), None))]
+        return passages[:rang + 1] + ajouts + passages[rang + 1:]
 
     def extraits(self, texte: str, matiere: str | None, k: int, cours_ids: list[int] | None = None,
                  avec_officiel: bool = True, uid: int | None = None) -> tuple[list[dict], dict]:

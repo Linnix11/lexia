@@ -180,6 +180,34 @@ def test_article_777_seulement_pour_les_successions(retriever_reel, question, pr
     assert present in numeros and (absent is None or absent not in numeros), numeros
 
 
+@reel
+@pytest.mark.parametrize("question", [
+    "Qu'est-ce que la réticence dolosive ?",
+    "Un contrat signé sous la violence est-il valable ?",
+])
+def test_vice_du_consentement_suivi_de_ses_regles_communes(retriever_reel, question):
+    from api.rag import K_CHAT
+    passages, _ = Lexia(retriever_reel, llm=None).rechercher(question, "droit_des_contrats", K_CHAT)
+    numeros = [p.get("numero") for p in passages if p["source_id"] == CC]
+    assert numeros.count("1130") == 1 and numeros.count("1131") == 1, numeros
+
+
+def test_regles_communes_apres_le_premier_vice_en_vigueur_sans_doublon():
+    art = lambda n, vig=True: {"id": f"cc:{n}:{vig}", "source_id": CC, "numero": n, "meta": {"en_vigueur": vig}}  # noqa: E731
+
+    class Versions:
+        def versions(self, s, n):
+            return [art(n, False), art(n)]
+
+    lx = Lexia(Versions(), llm=None)
+    ordre = lambda ps: [(p["numero"], p["meta"]["en_vigueur"]) for p in ps]  # noqa: E731
+    # ancien article 1134 (force obligatoire, abroge en 2016) : numero dans la plage, mais pas en vigueur
+    assert ordre(lx._regles_communes_vices([art("1134", False)])) == [("1134", False)]
+    # 1131 deja present : seul 1130 est ajoute, juste apres le dol
+    ps = lx._regles_communes_vices([art("1641"), art("1137"), art("1131")])
+    assert ordre(ps) == [("1641", True), ("1137", True), ("1130", True), ("1131", True)]
+
+
 # --- droit penal, social, administratif (lexique etendu le 2026-11-12) ---------------------------
 
 @reel
