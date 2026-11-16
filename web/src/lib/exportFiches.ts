@@ -13,7 +13,7 @@ function bloc(titre: string, items: Element[], sources: FicheSource[]): string[]
   if (!items.length) return []
   const lignes = [`## ${titre}`, '']
   items.forEach((it, i) => {
-    if (it.rubrique && it.rubrique !== items[i - 1]?.rubrique) lignes.push(`### ${it.rubrique}`, '')
+    if (it.rubrique && it.rubrique !== items[i - 1]?.rubrique) lignes.push(...(i > 0 ? [''] : []), `### ${it.rubrique}`, '')
     const refs = it.sources.map((id) => numeroSource(sources, id)).filter((n) => n > 0).map((n) => `[${n}]`).join(' ')
     lignes.push(`- ${it.texte}${refs ? ` ${refs}` : ''}`)
   })
