@@ -95,3 +95,26 @@ def test_pas_de_relance_apres_une_premiere_reponse_lente(env, monkeypatch):  # n
     q = "Le fils de mes voisins a tagué mon garage : l'article 1240 du code civil me permet-il de réclamer réparation ?"
     data = client.post("/chat", json={"question": q}).json()
     assert data["statut"] == "hors_champ" and len(llm.prompts) == 1
+
+
+SANS_SOURCE = {"statut": "reponse", "titre": "Méthode", "droit_positif": [], "message": "", "points_incertains": [],
+               "explication": [{"texte": "Qualifiez les faits, puis appliquez la règle.", "sources": [],
+                                "rubrique": "Majeure"}]}
+
+
+def test_methode_sans_source_relancee_une_fois(env):  # noqa: F811
+    """Le secours rendait une methode sans source alors que les articles etaient dans les extraits."""
+    from api.prompts import NOTE_RELANCE_SOURCES
+    client, llm, _ = env
+    llm.reponses += [SANS_SOURCE, REPONSE]
+    data = client.post("/chat", json={"question": "article 1240 : mon voisin a cassé ma vitre", "mode": "cas_pratique"}).json()
+    assert len(llm.prompts) == 2 and llm.prompts[1].endswith(NOTE_RELANCE_SOURCES)
+    assert data["droit_positif"] and data["droit_positif"][0]["sources"]
+
+
+def test_une_seule_relance_par_question(env):  # noqa: F811
+    client, llm, _ = env
+    llm.reponses += [REFUS, SANS_SOURCE, REPONSE]       # hors champ, puis sans source : pas de troisieme appel
+    q = "Le fils de mes voisins a tagué mon garage : que dit l'article 1240 du code civil ?"
+    client.post("/chat", json={"question": q, "mode": "cas_pratique"})
+    assert len(llm.prompts) == 2

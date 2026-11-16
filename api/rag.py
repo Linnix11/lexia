@@ -134,6 +134,12 @@ def _civil_en_vigueur(p: dict) -> bool:
     return p["source_id"] == "code_civil" and bool(en_vigueur_aujourdhui(p.get("meta") or {}, "code_civil"))
 
 
+def _cite_un_extrait(brut: dict) -> bool:
+    """Vrai si au moins un element de la reponse brute du modele cite un extrait."""
+    return any((e or {}).get("sources") for k in ("droit_positif", "explication", "points_incertains")
+               for e in brut.get(k) or [])
+
+
 class Disjoncteur:
     """Apres `seuil` echecs d'affilee du modele principal, on passe directement au secours pendant `pause` secondes.
 
@@ -349,6 +355,10 @@ class Lexia:
                 # de repondre. Pas de relance apres une premiere generation lente (secours, 503 en serie) : la
                 # reponse depasserait les 120 s de nginx, l'etudiant aurait une erreur et un quota decompte.
                 brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_HORS_CHAMP)
+            elif (mode in prompts.MODES_METHODE and passages and brut.get("statut") == "reponse"
+                  and not _cite_un_extrait(brut) and time.monotonic() - debut < DELAI_MAX_RELANCE):
+                # Une seule relance au total par question (meme limite de duree que ci-dessus).
+                brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_SOURCES)
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode)

@@ -32,6 +32,15 @@ NOTE_RELANCE_HORS_CHAMP = (
     "\"points_incertains\"."
 )
 
+# Mode methode : le modele de secours (Qwen) rendait parfois une methode sans aucune source alors que les
+# articles applicables etaient dans les extraits (cas pratique « poteau dans mon jardin », 544 et 545 recus,
+# rien cite ; 16 novembre 2026). Relance une fois, sans imposer de citer un extrait hors sujet.
+NOTE_RELANCE_SOURCES = (
+    "\n\nNote : ta réponse ne cite aucun extrait. Si un extrait énonce une règle applicable à ces faits, "
+    "énonce-la dans \"droit_positif\" en le citant, et cite-le dans la majeure et la mineure. Si aucun "
+    "extrait ne s'applique, garde la méthode sans source et dis-le dans \"points_incertains\"."
+)
+
 MODES = {
     "expliquer": (
         "Mode : expliquer un concept. Donne la définition, la règle, ses conditions, ses exceptions "
