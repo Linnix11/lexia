@@ -27,15 +27,16 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
   )
 }
 
-// Chaque source n'est citee qu'a sa premiere mention dans la reponse : le modele la recite a chaque
-// paragraphe, et [S1] revenait jusqu'a 6 fois. La liste « Sources utilisees » les reprend toutes.
-function premieresCitations(blocs: Element[][]): string[][][] {
+// Dans un bloc, chaque source n'est citee qu'a sa premiere mention : le modele la recite a chaque
+// paragraphe, et [S1] revenait jusqu'a 6 fois. Chaque bloc garde ses propres pastilles.
+function premieresCitations(items: Element[]): string[][] {
   const vues = new Set<string>()
-  return blocs.map((items) => items.map((it) => it.sources.filter((id) => !vues.has(id) && !!vues.add(id))))
+  return items.map((it) => it.sources.filter((id) => !vues.has(id) && !!vues.add(id)))
 }
 
-function Bloc({ titre, items, citations, sources, ton }: { titre: string; items: Element[]; citations: string[][]; sources: FicheSource[]; ton: 'droit' | 'neutre' | 'attention' }) {
+function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[]; sources: FicheSource[]; ton: 'droit' | 'neutre' | 'attention' }) {
   if (!items.length) return null
+  const citations = premieresCitations(items)
   const couleur = ton === 'droit' ? 'text-forest' : ton === 'attention' ? 'text-[#8a6537]' : 'text-muted'
   return (
     <div className="mt-3.5">
@@ -134,15 +135,14 @@ export function Reponse({ message, actions = true }: { message: Message; actions
   const r = message.reponse!
   const [titreDroit, titreExplication, titreAttention] = infosMode(message.mode).blocs
   const retires = r.controle.elements_retires + r.controle.citations_retirees
-  const [citDroit, citExplication, citAttention] = premieresCitations([r.droit_positif, r.explication, r.points_incertains])
   return (
     <article className="min-w-0 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 break-words">
       {r.statut === 'reponse' ? (
         <>
           {r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
-          <Bloc titre={titreDroit} items={r.droit_positif} citations={citDroit} sources={r.sources} ton="droit" />
-          <Bloc titre={titreExplication} items={r.explication} citations={citExplication} sources={r.sources} ton="neutre" />
-          <Bloc titre={titreAttention} items={r.points_incertains} citations={citAttention} sources={r.sources} ton="attention" />
+          <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
+          <Bloc titre={titreExplication} items={r.explication} sources={r.sources} ton="neutre" />
+          <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
           <ListeSources sources={r.sources} />
         </>
       ) : (

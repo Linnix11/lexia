@@ -80,7 +80,7 @@ describe('Assistant', () => {
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
   })
 
-  it('affiche chaque source une seule fois dans la reponse, a sa premiere mention', async () => {
+  it('affiche chaque source une seule fois par bloc, a sa premiere mention', async () => {
     const r = REPONSE.droit_positif[0]
     reponseChat = {
       ...REPONSE,
@@ -90,7 +90,8 @@ describe('Assistant', () => {
       points_incertains: [{ texte: 'Un doute.', sources: [r.sources[0]] }],
     }
     await poser('Que dit l’article 1240 ?')
-    expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(1)
+    // cinq mentions de S1 (2 droit positif, 2 explication, 1 point incertain) : une pastille par bloc
+    expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(3)
   })
 
   it('propose les six semestres et envoie le semestre choisi', async () => {
