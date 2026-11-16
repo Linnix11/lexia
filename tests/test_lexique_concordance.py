@@ -46,6 +46,28 @@ def test_lexique_sans_faux_positif(question, exclu):
     assert exclu not in lexique.suggestions(question)
 
 
+@pytest.mark.parametrize("question", [
+    "Paul a vendu sa voiture à Marie en lui cachant qu’elle avait été gravement accidentée. Marie peut-elle faire annuler la vente ?",
+    "Le vendeur a menti sur le kilométrage du véhicule. L'acheteur peut-il agir ?",
+    "Elle a signé le contrat sans qu'on lui dise que le local était insalubre, le bailleur le savait. Que faire ?",
+    "Le cédant a dissimulé les dettes de la société lors de la cession des parts.",
+    "Il a acheté un terrain que le vendeur savait inconstructible, sans le lui dire.",
+    "Le bail est signé ; le propriétaire cache une fuite d'eau au locataire.",
+])
+def test_lexique_reconnait_la_reticence_racontee(question):
+    assert lexique.suggestions(question)[:2] == [(CC, "1137"), (CC, "1112-1")]
+
+
+@pytest.mark.parametrize("question", [
+    "L'acheteur découvre un vice caché sur la machine vendue. Quel recours ?",   # garantie, pas dol
+    "Il cache de l'argent volé dans sa cave.",                                     # aucun contrat
+    "Le locataire a caché une clé sous le paillasson.",
+    "Le vendeur répond-il d'un vice caché à l'acheteur après la vente ?",
+])
+def test_lexique_reticence_sans_faux_positif(question):
+    assert (CC, "1137") not in lexique.suggestions(question)
+
+
 def test_lexique_plafonne():
     q = "force obligatoire, bonne foi dans le contrat, vices du consentement, dol, violence, lésion"
     assert len(lexique.suggestions(q)) == lexique.MAX_LEXIQUE

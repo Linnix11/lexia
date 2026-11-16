@@ -24,6 +24,14 @@ DDHC, P46, CSI = "ddhc_1789", "preambule_1946", "code_securite_interieure"
 CGI, LPF, CJF = "code_general_impots", "livre_procedures_fiscales", "code_juridictions_financieres"
 CASF, CPEN, CEXP = "code_action_sociale_familles", "code_penitentiaire", "code_expropriation"
 MAX_LEXIQUE = 4
+_SILENCE = (r"(?:\bcach(?:ant|ait|aient|er)\b|\b(?:a|avait|ont|avaient|lui|leur|il|elle) cache\b|dissimul"
+            r"|(?<!vice )(?<!defaut )\bcache (?:que|qu|l.|le|la|les|une?|des|son|sa|ses|a|aux?)\b"
+            r"|\bmensong|\bmenti\b|\bmentant\b|\bment\b"
+            r"|sans (?:le |l.)?(?:lui |leur )?(?:dire|signaler|preciser|indiquer|reveler|mentionner|avertir|informer)"
+            r"|sans qu.on (?:le |l.)?(?:lui |leur )?(?:dise|signale|precise|indique|revele|mentionne|avertisse|informe)"
+            r"|ne (?:l.)?(?:lui |leur )?(?:a|avait) (?:pas|jamais|rien) (?:dit|signale|precise|indique|revele|mentionne)"
+            r"|sous silence)")
+_CONTRAT = r"(?:\bvend|\bvente|\bachet|\bachat|\bacquere|contrat|\bsign|\bcede|\bcession|\bbail\b|\blou)"
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # --- introduction au droit -------------------------------------------------
@@ -83,6 +91,10 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
      ((CC, "777"),)),
     # Dol : definition, sanction (nullite relative), dol d'un tiers, erreur provoquee par dol.
     (r"reticence dolosive", ((CC, "1137"), (CC, "1112-1"))),
+    # Reticence ou mensonge racontes sans le mot « dol » (cas pratique) : « en lui cachant que la voiture
+    # avait ete accidentee », « le vendeur a menti », « sans lui dire »... pres d'une vente ou d'un contrat.
+    # « vice cache » n'est pas vise : seules les formes verbales de « cacher » le sont.
+    (_SILENCE + r".{0,80}" + _CONTRAT + "|" + _CONTRAT + r".{0,80}" + _SILENCE, ((CC, "1137"), (CC, "1112-1"))),
     (r"\bdol\b|\bdolosi", ((CC, "1137"), (CC, "1131"), (CC, "1138"), (CC, "1139"))),
     (r"\berreur.{0,30}(?:nullite|contrat)", ((CC, "1132"),)),
     (r"\blesion", ((CC, "1168"),)),
