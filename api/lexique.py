@@ -122,6 +122,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"dommages(?: |-)et(?: |-)interets", ((CC, "1231-1"),)),
     (r"capacite (?:de|a) contracter|incapacite.{0,30}(?:mineur|contracter)|mineurs? non emancipes?", ((CC, "1145"), (CC, "1146"), (CC, "1148"))),
     (r"obligations? du (?:preneur|locataire)", ((CC, "1728"),)),
+    (r"obligations? du bailleur|obligations? du loueur", ((CC, "1719"), (CC, "1720"))),
     # --- responsabilite et quasi-contrats ---------------------------------------
     (r"responsabilite (?:civile )?(?:pour faute|du fait personnel|delictuelle)|faute.{0,40}(?:dommage|responsab)", ((CC, "1240"), (CC, "1241"))),
     (r"fait des choses|fait d.autrui|\bparents\b.{0,40}(?:responsab|enfants?)", ((CC, "1242"),)),
@@ -145,6 +146,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bcomplic", ((CP, "121-7"), (CP, "121-6"))),
     (r"responsabilite penale des personnes morales|personnes? morales?.{0,30}penalement", ((CP, "121-2"),)),
     (r"homicide involontaire", ((CP, "221-6"), (CP, "121-3"))),
+    (r"blessures? involontaires?", ((CP, "222-19"), (CP, "121-3"))),
     (r"element (?:moral|intentionnel)|faute d.imprudence|delits? non intentionnels?|intention (?:coupable|de commettre)", ((CP, "121-3"),)),
     (r"\bmeurtre", ((CP, "221-1"),)),
     (r"\bassassinat", ((CP, "221-3"),)),
@@ -166,6 +168,7 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"discrimination.{0,40}(?:travail|salari|embauche|emploi|recrutement)|(?:travail|salari|embauche|emploi|recrutement).{0,40}discrimination",
      ((CT, "L1132-1"),)),
     (r"duree legale du travail|35 heures|trente-cinq heures", ((CT, "L3121-27"),)),
+    (r"heures? supplementaires?", ((CT, "L3121-28"), (CT, "L3121-36"))),
     (r"\bsmic\b|salaire minimum", ((CT, "L3231-2"),)),
     (r"comite social et economique|\bcse\b", ((CT, "L2311-2"),)),
     (r"\bgrev(?:e|iste)", ((CT, "L2511-1"),)),
@@ -244,8 +247,11 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"(?:salarie|employe|prepose|livreur|chauffeur|ouvrier|apprenti)\w*.{0,120}" + _DOMMAGE
      + r"|" + _DOMMAGE + r".{0,120}(?:son employeur|l.entreprise|la (?:societe|compagnie))", ((CC, "1242"),)),
     (r"(?:glisse|trebuch)\w* (?:sur|dans)\b.{0,80}(?:magasin|supermarche|escalier|flaque|chantier|piscine|sol)"
-     r"|\b(?:pots?|objets?|panneaux?|echelles?|branches?)\b.{0,60}tomb", ((CC, "1242"),)),
-    (r"\b(?:chiens?|chats?|chevaux|cheval|vaches?|taureaux?|moutons?|chevres?)\b.{0,80}"
+     r"|\b(?:pots?|objets?|panneaux?|echelles?|branches?)\b.{0,60}tomb|(?:fait|laisse|faisant|laissant) tomber",
+     ((CC, "1242"), (CC, "1240"))),
+    # « en voulant eviter un chien, un conducteur blesse un pieton » : l'animal n'est pas la cause du dommage
+    (r"(?<!eviter un )(?<!eviter une )(?<!eviter le )(?<!eviter la )(?<!esquiver un )(?<!esquiver une )"
+     r"\b(?:chiens?|chats?|chevaux|cheval|vaches?|taureaux?|moutons?|chevres?)\b.{0,80}"
      r"(?:mord|griff|bless|attaqu|pietin|renvers|echapp|devor)|\bmordu\b|\bmorsures?\b", ((CC, "1243"),)),
     (r"\b(?:tuiles?|toit|toiture|murs?|balcon|facade|cheminee|batiment|immeuble|gouttiere)\b.{0,80}"
      r"(?:tomb|effondr|ecroul|s.est detache)", ((CC, "1244"),)),
@@ -263,6 +269,11 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"ne (?:livre|vient|fait|execute|termine|rembourse|honore)\w* (?:pas|jamais|plus|rien)"
      r"|n.(?:a|ont) (?:jamais|pas) (?:livre|fait|execute|termine|effectue|realise)|abandonn\w* (?:le )?chantier"
      r"|jamais (?:livre|venu|fait|realise)", ((CC, "1217"), (CC, "1231-1"), (CC, "1224"), (CC, "1221"))),
+    (r"(?:acompte|avance|paye|payee|regle|verse|encaiss|commande)\w*.{0,120}(?:n.(?:a|ont|avait) (?:jamais|pas) \w+|annul\w*|abandonn)"
+     r"|n.(?:a|ont|avait) jamais \w+.{0,120}(?:acompte|avance|paye|commande)", ((CC, "1217"), (CC, "1229"), (CC, "1231-1"))),
+    (r"(?:proprietaire|bailleur|bailleresse|loueur)\w*.{0,120}(?:repar|travaux|fuite|chauffage|insalubr|humid|ne fait rien)"
+     r"|(?:locataire|\bloue|location|logement loue).{0,120}(?:ne (?:repare|fait)|refuse de repar|en panne|fuite|insalubr|humid)",
+     ((CC, "1719"), (CC, "1720"))),
     # garantie des vices caches : un bien achete qui casse ou tombe en panne a cause d'un defaut anterieur
     (r"(?:achet|achat|vend|vendu|vente|livr|neuf|d.occasion)\w*.{0,150}(?:tombe\w* en panne|ne (?:fonctionne|marche|demarre|s.allume)\w* plus"
      r"|\bcass|\bcede|\bdefaut|fissure|\bvices?\b(?! du consentement)|termites?|merule|amiante|infiltr|moisi|rouill|\brong)"
@@ -294,16 +305,27 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"se (?:fait|faisant|faisait) passer pour|faux (?:site|plombier|policier|agent|conseiller|profil|annonce|billets?)"
      r"|fausse (?:qualite|identite|annonce|facture)|arnaqu|manoeuvres? frauduleuses?", ((CP, "313-1"),)),
     (r"(?:utilise|detourn|depens|vire|empoch|puise)\w*.{0,100}(?:argent|fonds|caisse|sommes?).{0,100}"
-     r"(?:confie|association|employeur|clients?)", ((CP, "314-1"),)),
+     r"(?:confie|association|employeur|clients?)"
+     r"|(?:garde\w* pour (?:lui|elle|soi|eux)|conserv\w*|devait (?:reverser|rendre|restituer|remettre)|ne (?:reverse|rend|restitue)\w* pas)"
+     r".{0,100}(?:argent|fonds|sommes?|ventes|recettes|caisse|loyers|cotisations)"
+     r"|(?:argent|fonds|sommes?|recettes).{0,100}(?:devait (?:reverser|rendre|restituer|remettre))", ((CP, "314-1"),)),
     (r"(?:prete|fourni|donne|aide|procure|conduit|guette|fait le guet)\w*.{0,120}(?:sachant|savait|connaissant).{0,120}"
      r"(?:cambriol|vol|crime|delit|infraction|agression|meurtre|braquage)", ((CP, "121-7"), (CP, "121-6"))),
+    (r"(?:imprudence|inattention|maladresse|distrait|negligen|embardee|par accident|sans le vouloir|involontairement)\w*.{0,120}"
+     r"(?:bless|\btue\b|mort|deced)|(?:bless|renvers|percut)\w*.{0,120}(?:penalement|pour imprudence)",
+     ((CP, "222-19"), (CP, "121-3"))),
     # Travail
     (r"renvoy|mis\w* a la porte|congedi|licencie\w*.{0,80}(?:sans|parce|pour avoir|au motif|car\b|du jour au lendemain)",
      ((CT, "L1232-1"), (CT, "L1235-3"))),
     (r"(?:humili|brimad|denigr|insult|rabaiss|reproches? (?:injustifi|incessant|permanent))\w*.{0,120}"
      r"(?:chef|manager|employeur|superieur|collegue|travail|salari)"
      r"|(?:chef|manager|employeur|superieur|collegue)\w*.{0,120}(?:humili|brimad|denigr|insult|rabaiss)", ((CT, "L1152-1"),)),
+    (r"heures? (?:de travail )?en plus|(?:travail|temps) en plus|au.dela de (?:35|trente-cinq) heures"
+     r"|\b(?:3[6-9]|[4-6]\d) heures (?:par|chaque|toutes les) semaine", ((CT, "L3121-28"), (CT, "L3121-36"))),
     (r"\bavances\b|propositions? (?:sexuelles?|deplacees?)|gestes? deplaces?|remarques? (?:sexistes|sexuelles)", ((CT, "L1153-1"),)),
+    (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|rectorat|universite))"
+     r".*(?:sans (?:aucune |la moindre |donner |indiquer |la |une )?(?:explication|raison|motif|justification)|non motive|pas motive)",
+     (("code_relations_public_administration", "L211-2"), (CJA, "R421-1"))),
     # Administratif : une decision publique et une demande d'urgence
     (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|universite))"
      r".*(?:en urgence|d.urgence|rapidement|\bvite\b|sans attendre|suspension)", ((CJA, "L521-2"), (CJA, "L521-1"))),

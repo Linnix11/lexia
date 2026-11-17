@@ -1,0 +1,39 @@
+# Cas pratiques de controle, quatrieme jeu - version 1 (2026-11-17)
+#
+# Ecrit avant les regles de la D83 (chute d'objet pendant des travaux, acompte d'un travail jamais fait, obligations
+# du bailleur, detournement, blessure involontaire, heures supplementaires, decision non motivee), jamais utilise
+# pour les regler : ces regles sont ecrites a partir des echecs du troisieme jeu, qui n'est donc plus independant.
+# Memes regles d'ecriture : des faits, sans numero d'article ni nom de notion.
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+
+cas:
+  - {id: ctl4-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241, code_civil:1242],
+     question: "Un peintre en bâtiment laisse tomber un pot de peinture du troisième étage sur une voiture garée en bas. Qui paie la carrosserie ?"}
+  - {id: ctl4-02, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1241],
+     question: "Pendant une fête, un invité casse par maladresse un vase de grande valeur chez son hôte. L’hôte peut-il se faire rembourser ?"}
+  - {id: ctl4-03, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1217, code_civil:1229, code_civil:1231-1],
+     question: "Un traiteur a encaissé la moitié du prix d’un buffet puis annule la prestation la veille. Le client peut-il récupérer les sommes versées ?"}
+  - {id: ctl4-04, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1719, code_civil:1720],
+     question: "La propriétaire d’un appartement loué ne fait rien malgré une fuite du toit qui inonde la chambre. Quelles sont ses obligations ?"}
+  - {id: ctl4-05, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1641, code_civil:1644],
+     question: "Le réfrigérateur acheté neuf ne refroidit plus après deux semaines. Le vendeur doit-il le changer ?"}
+  - {id: ctl4-06, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1140],
+     question: "Une jeune femme signe un contrat sous la menace de voir des photos intimes publiées. Le contrat est-il valable ?"}
+  - {id: ctl4-07, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:371-4],
+     question: "Une grand-mère ne peut plus voir ses petits-enfants depuis que sa fille s’est fâchée avec elle. Peut-elle agir ?"}
+  - {id: ctl4-08, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:682],
+     question: "Le chemin qui traverse le terrain de mon voisin est le seul moyen de rejoindre ma maison depuis la route. Mon voisin peut-il le fermer ?"}
+  - {id: ctl4-09, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:673],
+     question: "Les racines du chêne du voisin soulèvent ma terrasse. Puis-je les couper moi-même ?"}
+  - {id: ctl4-10, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:311-1, code_penal:314-1],
+     question: "Un salarié emporte chez lui des ordinateurs de l’entreprise et les revend. Quelle infraction commet-il ?"}
+  - {id: ctl4-11, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:121-3, code_penal:222-19],
+     question: "Un chauffeur de bus distrait par son téléphone renverse et blesse gravement un cycliste. Quelle est sa responsabilité pénale ?"}
+  - {id: ctl4-12, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:313-1],
+     question: "Une femme se présente comme infirmière pour obtenir les codes de carte bancaire de personnes âgées. Qu’encourt-elle ?"}
+  - {id: ctl4-13, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L3121-28, code_travail:L3121-36],
+     question: "Un salarié travaille 45 heures par semaine depuis des mois sans être payé pour le temps en plus. A-t-il droit à quelque chose ?"}
+  - {id: ctl4-14, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1132-1],
+     question: "Un employeur refuse d’embaucher une candidate parce qu’elle porte le voile. Est-ce permis ?"}
+  - {id: ctl4-15, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: [code_relations_public_administration:L211-2, code_justice_administrative:R421-1],
+     question: "Une commune refuse un permis de construire sans donner la moindre raison. Le demandeur peut-il contester ?"}

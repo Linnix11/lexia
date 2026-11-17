@@ -96,6 +96,13 @@ def test_lexique_reticence_sans_faux_positif(question):
     ("Le père veut que son fils vienne vivre chez lui après le divorce ; la mère refuse.", (CC, "373-2")),
     ("Un agriculteur stocke son fourrage sur le champ du voisin sans lui en parler ni demander son autorisation.", (CC, "544")),
     ("La mairie va démolir mon kiosque demain : puis-je saisir le juge très vite ?", ("code_justice_administrative", "L521-2")),
+    ("Le couvreur laisse tomber une tuile sur le capot d'une voiture garée.", (CC, "1242")),
+    ("J'ai versé un acompte à un menuisier qui n'a jamais posé les fenêtres.", (CC, "1229")),
+    ("Le bailleur refuse de faire les travaux alors que le logement est insalubre.", (CC, "1719")),
+    ("La trésorière conserve pour elle les cotisations qu'elle devait reverser au club.", ("code_penal", "314-1")),
+    ("Par inattention, une cycliste renverse un enfant qui est blessé.", ("code_penal", "222-19")),
+    ("Il fait 50 heures chaque semaine et n'est payé que pour 35.", ("code_travail", "L3121-28")),
+    ("Le rectorat a refusé ma mutation sans aucune justification.", ("code_relations_public_administration", "L211-2")),
 ])
 def test_lexique_reconnait_les_situations(question, attendu):
     assert attendu in lexique.suggestions(question)
@@ -110,6 +117,9 @@ def test_lexique_reconnait_les_situations(question, attendu):
     ("Un enfant de dix ans casse la vitre d'un voisin avec son ballon.", (CC, "1641")),            # pas de vente
     ("Qu'est-ce qu'un vice du consentement dans la vente ?", (CC, "1641")),
     ("J'ai planté un pommier dans mon jardin, quelles distances respecter ?", (CC, "544")),
+    ("Le salarié travaille 35 heures par semaine.", ("code_travail", "L3121-28")),
+    ("En voulant éviter un chien sur la route, une conductrice blesse un piéton.", (CC, "1243")),
+    ("Mon voisin m'a expliqué la raison de son refus.", ("code_relations_public_administration", "L211-2")),
 ])
 def test_lexique_situations_sans_faux_positif(question, exclu):
     assert exclu not in lexique.suggestions(question)
