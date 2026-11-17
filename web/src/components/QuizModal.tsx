@@ -60,6 +60,9 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
   const [nombre, setNombre] = useState(parametres?.nombre ?? 5)
   const [format, setFormat] = useState<FormatQuiz>(parametres?.format ?? 'qcm')
   const [mat, setMat] = useState<string | null>(matiereInitiale ?? parametres?.matiere ?? null)
+  // Un questionnaire est affiche : le formulaire se replie en une ligne pour laisser la place a l'exercice
+  // (audit du 2026-11-16, point 10). Il reste ouvert si l'on arrive avec un nouveau theme a travailler.
+  const [reglages, setReglages] = useState(!quiz?.quiz_id || themeDemande !== undefined)
 
   const generer = () => {
     if (theme.trim().length < 3) {
@@ -67,6 +70,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
       return
     }
     genererQuiz({ theme: theme.trim(), nombre, format, matiere: mat })
+    setReglages(false)
   }
   const corriger = corrigerQuiz
 
@@ -90,6 +94,18 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
             className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">✕</button>
         </div>
 
+        {!reglages && quiz?.quiz_id && etat !== 'generation' && (
+          <div className="mt-4 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[9px] bg-[#f6f4ee] px-3 py-2 text-[11px] text-muted">
+            <span>
+              {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''} · {FORMATS.find((f) => f.id === quiz.format)?.label}
+              {parametres?.matiere ? ` · ${matieres.find((m) => m.id === parametres.matiere)?.libelle ?? ''}` : ''}
+            </span>
+            <button type="button" onClick={() => setReglages(true)} className="font-semibold text-forest hover:underline">
+              Nouveau questionnaire…
+            </button>
+          </div>
+        )}
+        {(reglages || !quiz?.quiz_id || etat === 'generation') && (
         <form className="mt-5 mb-3.5 grid gap-[9px] tab:grid-cols-[1fr_110px_150px]"
           onSubmit={(e) => { e.preventDefault(); generer() }}>
           <label className="grid gap-1.5 text-[11px] text-muted">
@@ -122,6 +138,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
             </button>
           </div>
         </form>
+        )}
 
         {erreur && <p role="alert" className="mb-3 rounded-lg bg-cream px-3 py-2 text-[12px] text-[#746347]">{erreur}</p>}
 

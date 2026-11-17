@@ -429,4 +429,40 @@ describe('Audit du 16 novembre 2026', () => {
     expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/app')
   })
+
+  it('questionnaire lance : le formulaire se replie en une ligne, rouvrable (point 10)', async () => {
+    const QUIZ = { quiz_id: 'qz-2', format: 'qcm', theme: 'la faute', demande: 1, obtenu: 1, message: '', avertissement: '',
+      questions: [{ index: 0, question: 'Quel article ?', choix: ['1240', '1103'] }], sources: REPONSE.sources }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => (url.endsWith('/quiz') ? repondre(QUIZ) : base(url, init)))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'S’entraîner' }))
+    fireEvent.change(screen.getByLabelText('Thème'), { target: { value: 'la faute' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Générer le questionnaire/ }))
+    })
+    expect(await screen.findByRole('radio', { name: '1240' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Thème')).not.toBeInTheDocument()
+    expect(screen.getByText(/1 question · QCM · Droit civil/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Nouveau questionnaire…' }))
+    expect(screen.getByLabelText('Thème')).toHaveValue('la faute')
+  })
+
+  it('bibliotheque : annales en tete, filtrees sur la matiere en cours (point 13)', async () => {
+    const annale = (id: number, matiere: string, libelle: string) => ({ id, titre: `Sujet ${libelle}`, matiere, libelle_matiere: libelle,
+      niveau: 'L1', annee: 2025, universite: 'Université test', session: '', url: 'https://exemple.fr/sujet', corrige: false, ajoute_le: '2026-11-01' })
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => (url.endsWith('/annales')
+      ? repondre({ niveaux: ['L1'], annales: [annale(1, 'droit_civil', 'Droit civil'), annale(2, 'droit_penal', 'Droit pénal')] })
+      : base(url, init)))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Poser une question' }))   // matiere en cours : droit civil
+    fireEvent.click(screen.getByRole('button', { name: /Bibliothèque/ }))
+    expect(await screen.findByText('Sujet Droit civil')).toBeInTheDocument()
+    expect(screen.queryByText('Sujet Droit pénal')).not.toBeInTheDocument()
+    const titres = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(titres.indexOf('Annales d’examens')).toBeLessThan(titres.indexOf('Sources de confiance'))
+  })
 })
