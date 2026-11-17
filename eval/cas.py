@@ -66,6 +66,11 @@ def correspond(ref: str, passage: dict) -> bool:
         return passage["source_id"] == genre and passage.get("numero") == valeur
     if genre == "constitution":
         return passage["source_id"] == "constitution_1958" and passage.get("numero") == valeur
+    if genre == "cass":   # arret de la Cour de cassation par numero de pourvoi (« cass:89-15231 »)
+        meta = passage.get("meta") or {}
+        voulu = valeur.replace(".", "").replace("-", "")
+        return passage["source_id"] in ("judilibre", "cass_criminelle", "cass_sociale", "cass_commerciale") and any(
+            n.replace(".", "").replace("-", "") == voulu for n in meta.get("numeros_pourvoi") or [])
     if genre == "cc":
         num, nature = valeur.split()
         meta = passage.get("meta") or {}

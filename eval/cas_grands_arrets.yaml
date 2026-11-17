@@ -1,0 +1,21 @@
+# Grands arrets de la Cour de cassation anterieurs a 2000 - version 1 (2026-11-17)
+#
+# Arrets de 1960 a 1999, repris par leur seul sommaire officiel (D82). Numeros de pourvoi verifies dans
+# l'archive DILA CASS (meta.numeros_pourvoi). Questions formulees comme un etudiant, avec ou sans le nom
+# de l'arret. STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+#
+#   python -m eval.backtest_recherche eval/cas_grands_arrets.yaml
+
+cas:
+  - {id: ga-01, matiere: droit_civil, attendu: [reponse], sources: ["cass:89-15231"], question: "Que décide l'arrêt Blieck sur la responsabilité générale du fait d'autrui ?"}
+  - {id: ga-02, matiere: droit_civil, attendu: [reponse], sources: ["cass:89-15231"], question: "Une association qui organise le mode de vie de personnes handicapées répond-elle des dommages qu'elles causent ?"}
+  - {id: ga-03, matiere: droit_civil, attendu: [reponse], sources: ["cass:94-21111"], question: "Que juge l'arrêt Bertrand de 1997 sur la responsabilité des parents ?"}
+  - {id: ga-04, matiere: droit_civil, attendu: [reponse], sources: ["cass:94-21111"], question: "Les parents peuvent-ils s'exonérer de leur responsabilité du fait de leur enfant mineur en prouvant qu'ils n'ont commis aucune faute ?"}
+  - {id: ga-05, matiere: droit_des_contrats, attendu: [reponse], sources: ["cass:93-18632"], question: "Que décide l'arrêt Chronopost sur la clause limitative de responsabilité ?"}
+  - {id: ga-06, matiere: droit_des_contrats, attendu: [reponse], sources: ["cass:93-18632"], question: "Une clause limitative de responsabilité qui contredit l'obligation essentielle du contrat est-elle valable ?"}
+  - {id: ga-07, matiere: null, attendu: [reponse], sources: ["cass:73-13556"], question: "Que juge l'arrêt Jacques Vabre de 1975 sur le traité et la loi postérieure ?"}
+  - {id: ga-08, matiere: droit_civil, attendu: [reponse], sources: ["cass:80-14994"], question: "Que décide l'arrêt Gabillet sur la garde d'une chose par un jeune enfant ?"}
+  - {id: ga-09, matiere: droit_civil, attendu: [reponse], sources: ["cass:79-16612"], question: "Que juge l'arrêt Fullenwarth sur la responsabilité des père et mère ?"}
+  - {id: ga-10, matiere: droit_civil, attendu: [reponse], sources: ["cass:80-93481", "cass:80-93031"], question: "Faut-il qu'un enfant ait du discernement pour commettre une faute civile (arrêts Derguini et Lemaire) ?"}
+  - {id: ga-11, matiere: droit_civil, attendu: [reponse], sources: ["cass:81-12850"], question: "Que décide l'arrêt Desmares de 1982 sur l'exonération partielle du gardien par la faute de la victime ?"}
+  - {id: ga-12, matiere: droit_des_contrats, attendu: [reponse], sources: ["cass:91-15578", "cass:91-15999", "cass:91-19653", "cass:93-13688"], question: "Que décide l'Assemblée plénière le 1er décembre 1995 sur la détermination du prix dans les contrats-cadres ?"}
