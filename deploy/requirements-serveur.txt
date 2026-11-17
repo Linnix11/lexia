@@ -13,3 +13,5 @@ sentence-transformers==6.2.0
 pypdf==7.0.1
 # Chiffrement des secrets gardes en base (api/coffre.py)
 cryptography==50.0.2
+# Mise a jour nocturne du corpus (D78) : ingest.run importe aussi la source HTML de la Constitution
+beautifulsoup4==4.13.5
