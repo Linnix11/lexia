@@ -103,6 +103,12 @@ def test_lexique_reticence_sans_faux_positif(question):
     ("Par inattention, une cycliste renverse un enfant qui est blessé.", ("code_penal", "222-19")),
     ("Il fait 50 heures chaque semaine et n'est payé que pour 35.", ("code_travail", "L3121-28")),
     ("Le rectorat a refusé ma mutation sans aucune justification.", ("code_relations_public_administration", "L211-2")),
+    ("Mon locataire se plaint d'infiltrations et le propriétaire ne fait rien.", (CC, "1719")),
+    ("Mes beaux-parents m'empêchent de voir mon grand-père depuis des mois.", (CC, "371-4")),
+    ("Un caissier repart le soir avec du matériel de l'entreprise.", ("code_penal", "311-1")),
+    ("Un homme prétend être policier pour se faire remettre les bijoux d'une passante.", ("code_penal", "313-1")),
+    ("Le salarié a été licencié en raison de son origine.", ("code_travail", "L1132-1")),
+    ("La préfecture a rejeté ma demande sans me donner la moindre explication.", ("code_relations_public_administration", "L211-2")),
 ])
 def test_lexique_reconnait_les_situations(question, attendu):
     assert attendu in lexique.suggestions(question)
@@ -119,6 +125,7 @@ def test_lexique_reconnait_les_situations(question, attendu):
     ("J'ai planté un pommier dans mon jardin, quelles distances respecter ?", (CC, "544")),
     ("Le salarié travaille 35 heures par semaine.", ("code_travail", "L3121-28")),
     ("En voulant éviter un chien sur la route, une conductrice blesse un piéton.", (CC, "1243")),
+    ("Un client glisse un parfum dans son sac et sort sans payer.", ("code_penal", "314-1")),       # vol simple
     ("Mon voisin m'a expliqué la raison de son refus.", ("code_relations_public_administration", "L211-2")),
 ])
 def test_lexique_situations_sans_faux_positif(question, exclu):

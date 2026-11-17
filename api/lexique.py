@@ -226,6 +226,8 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"\bfiliation", ((CC, "310-1"),)),
     (r"obligation alimentaire|\baliments\b", ((CC, "205"),)),
     (r"pension alimentaire|contribution a l.entretien", ((CC, "371-2"), (CC, "373-2-2"))),
+    (r"grands?.parents?|grand.(?:mere|pere)s?\b.{0,100}(?:petits?.enfants?|voir|visite|contact)"
+     r"|(?:voir|visite|contact)\w*.{0,60}grand.(?:mere|pere)", ((CC, "371-4"),)),
     (r"aide sociale a l.enfance|\base\b", ((CASF, "L221-1"),)),
     (r"protection de l.enfance", ((CASF, "L112-3"),)),
     # --- droit des biens (Code civil, expropriation) --------------------------------------------
@@ -266,14 +268,15 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # exception d'inexecution : suspendre sa prestation parce que l'autre partie n'execute pas la sienne
     (_SUSPENDRE + r".{0,40}(?:en attendant|tant que|jusqu.a ce)|" + _MANQUE + r".{0,150}" + _SUSPENDRE
      + r"|" + _SUSPENDRE + r".{0,150}" + _MANQUE, ((CC, "1219"), (CC, "1220"))),
+    # avant les travaux jamais faits : « la proprietaire ne fait rien malgre une fuite » releve du bailleur
+    (r"(?:proprietaire|bailleur|bailleresse|loueur)\w*.{0,120}(?:repar|travaux|fuite|chauffage|insalubr|humid|ne fait rien)"
+     r"|(?:locataire|\bloue|location|logement loue).{0,120}(?:ne (?:repare|fait)|refuse de repar|en panne|fuite|insalubr|humid)",
+     ((CC, "1719"), (CC, "1720"))),
     (r"ne (?:livre|vient|fait|execute|termine|rembourse|honore)\w* (?:pas|jamais|plus|rien)"
      r"|n.(?:a|ont) (?:jamais|pas) (?:livre|fait|execute|termine|effectue|realise)|abandonn\w* (?:le )?chantier"
      r"|jamais (?:livre|venu|fait|realise)", ((CC, "1217"), (CC, "1231-1"), (CC, "1224"), (CC, "1221"))),
     (r"(?:acompte|avance|paye|payee|regle|verse|encaiss|commande)\w*.{0,120}(?:n.(?:a|ont|avait) (?:jamais|pas) \w+|annul\w*|abandonn)"
      r"|n.(?:a|ont|avait) jamais \w+.{0,120}(?:acompte|avance|paye|commande)", ((CC, "1217"), (CC, "1229"), (CC, "1231-1"))),
-    (r"(?:proprietaire|bailleur|bailleresse|loueur)\w*.{0,120}(?:repar|travaux|fuite|chauffage|insalubr|humid|ne fait rien)"
-     r"|(?:locataire|\bloue|location|logement loue).{0,120}(?:ne (?:repare|fait)|refuse de repar|en panne|fuite|insalubr|humid)",
-     ((CC, "1719"), (CC, "1720"))),
     # garantie des vices caches : un bien achete qui casse ou tombe en panne a cause d'un defaut anterieur
     (r"(?:achet|achat|vend|vendu|vente|livr|neuf|d.occasion)\w*.{0,150}(?:tombe\w* en panne|ne (?:fonctionne|marche|demarre|s.allume)\w* plus"
      r"|\bcass|\bcede|\bdefaut|fissure|\bvices?\b(?! du consentement)|termites?|merule|amiante|infiltr|moisi|rouill|\brong)"
@@ -302,7 +305,10 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
      ((CP, "122-5"), (CP, "122-6"))),
     (r"(?:prend|pris|vole|derob|subtilis|empoch|glisse|emporte|s.empare)\w*.{0,80}"
      r"(?:portefeuille|sac|telephone|bijou|parfum|argent|objet|velo|marchandise)|sans payer|a l.etalage", ((CP, "311-1"),)),
-    (r"se (?:fait|faisant|faisait) passer pour|faux (?:site|plombier|policier|agent|conseiller|profil|annonce|billets?)"
+    # bien de l'entreprise ou d'autrui emporte : vol, ou abus de confiance s'il avait ete remis
+    (r"(?:emport|prend|pris|subtilis|derob|vole|empoch|repart\w*.{0,20}\bavec|\bpart\w*.{0,20}\bavec|emmen)\w*.{0,80}(?:de l.entreprise|de son employeur|du magasin|de la boutique"
+     r"|qui ne lui appart|d.autrui)", ((CP, "311-1"), (CP, "314-1"))),
+    (r"se (?:fait|faisant|faisait) passer pour|se present\w* comme|pretend\w* etre|en se disant|usurp\w*|faux (?:site|plombier|policier|agent|conseiller|profil|annonce|billets?)"
      r"|fausse (?:qualite|identite|annonce|facture)|arnaqu|manoeuvres? frauduleuses?", ((CP, "313-1"),)),
     (r"(?:utilise|detourn|depens|vire|empoch|puise)\w*.{0,100}(?:argent|fonds|caisse|sommes?).{0,100}"
      r"(?:confie|association|employeur|clients?)"
@@ -322,9 +328,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
      r"|(?:chef|manager|employeur|superieur|collegue)\w*.{0,120}(?:humili|brimad|denigr|insult|rabaiss)", ((CT, "L1152-1"),)),
     (r"heures? (?:de travail )?en plus|(?:travail|temps) en plus|au.dela de (?:35|trente-cinq) heures"
      r"|\b(?:3[6-9]|[4-6]\d) heures (?:par|chaque|toutes les) semaine", ((CT, "L3121-28"), (CT, "L3121-36"))),
+    (r"(?:refus\w* d.(?:embaucher|recruter|engager)|licenci\w*|sanction\w*|ecart\w*|renvoy\w*).{0,80}"
+     r"(?:parce qu|a cause d|en raison d|au motif)\w*.{0,60}(?:voile|religio|origine|couleur|\bsexe\b|enceinte|grossesse"
+     r"|handicap|\bage\b|accent|syndica|orientation sexuelle|apparence|tatou|barbe|cheveux|nationalite)", ((CT, "L1132-1"),)),
     (r"\bavances\b|propositions? (?:sexuelles?|deplacees?)|gestes? deplaces?|remarques? (?:sexistes|sexuelles)", ((CT, "L1153-1"),)),
     (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|rectorat|universite))"
-     r".*(?:sans (?:aucune |la moindre |donner |indiquer |la |une )?(?:explication|raison|motif|justification)|non motive|pas motive)",
+     r".*(?:sans (?:\w+ ){0,4}(?:explication|raison|motif|justification)|non motive|pas motive)",
      (("code_relations_public_administration", "L211-2"), (CJA, "R421-1"))),
     # Administratif : une decision publique et une demande d'urgence
     (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|universite))"
