@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
 import type { ReponseChat } from './lib/api'
@@ -74,7 +74,7 @@ describe('Assistant', () => {
     expect(screen.getByText('Droit positif')).toBeInTheDocument()
     expect(screen.getByText('Explication')).toBeInTheDocument()
     expect(screen.getByText('Conditions')).toBeInTheDocument()   // rubrique du mode affichee en sous-titre
-    expect(screen.getByRole('button', { name: '[S1]' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '[1]' })).toBeInTheDocument()
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
@@ -91,7 +91,7 @@ describe('Assistant', () => {
     }
     await poser('Que dit l’article 1240 ?')
     // cinq mentions de S1 (2 droit positif, 2 explication, 1 point incertain) : une pastille par bloc
-    expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: '[1]' })).toHaveLength(3)
   })
 
   it('propose les six semestres et envoie le semestre choisi', async () => {
@@ -112,7 +112,7 @@ describe('Assistant', () => {
 
   it('ouvre la source citee et verifie la version en vigueur', async () => {
     await poser('article 1240')
-    fireEvent.click(screen.getByRole('button', { name: '[S1]' }))
+    fireEvent.click(screen.getByRole('button', { name: '[1]' }))
     const panneau = await screen.findByRole('dialog')
     await within(panneau).findByText("Tout fait quelconque de l'homme…")
     fireEvent.click(within(panneau).getByRole('button', { name: 'Vérifier la version en vigueur' }))
@@ -261,5 +261,172 @@ describe('Favoris', () => {
     localStorage.setItem('lexia.favoris.v1', '{pas du json')
     expect(lireFavoris('etu@exemple.fr')).toEqual([])
     expect(ecrireFavoris([], 'etu@exemple.fr')).toBe(true)
+  })
+})
+
+describe('Audit du 16 novembre 2026', () => {
+  it('garde la conversation en passant par Compte, au rechargement, et l oublie a la deconnexion (points 14 et 16)', async () => {
+    await poser('article 1240')
+    fireEvent.click(screen.getByRole('link', { name: 'Mon compte' }))
+    expect(await screen.findByRole('heading', { name: 'etu@exemple.fr' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: 'Ouvrir mon espace' }))
+    expect(await screen.findByText('La responsabilité pour faute')).toBeInTheDocument()
+
+    // rechargement de l'onglet : la conversation revient
+    cleanup()
+    render(<Site />)
+    expect(await screen.findByText('La responsabilité pour faute')).toBeInTheDocument()
+    expect(Object.keys(sessionStorage).some((c) => c.includes('exemple.fr'))).toBe(false)   // pas d'adresse dans les cles
+
+    // deconnexion : plus rien dans l'onglet
+    fireEvent.click(screen.getByRole('link', { name: 'Mon compte' }))
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }))
+    })
+    expect(Object.keys(sessionStorage).filter((c) => c.startsWith('lexia.seance'))).toEqual([])
+  })
+
+  it('une reponse attendue au rechargement est signalee, pas laissee en attente', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.endsWith('/chat') ? new Promise(() => undefined)
+        : url.endsWith('/auth/session') || url.endsWith('/auth/moi') ? repondre(PROFIL) : repondre([]))
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText('Votre question'), { target: { value: 'article 1240' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    cleanup()
+    render(<Site />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('rechargée avant la réponse')
+  })
+
+  it('le questionnaire survit a la fermeture, meme pendant la generation (points 9 et 12) ; exemple de theme par matiere (point 8)', async () => {
+    let livrer: (r: Response) => void = () => undefined
+    const QUIZ = { quiz_id: 'qz-1', format: 'qcm', theme: 'la faute', demande: 1, obtenu: 1, message: '', avertissement: '',
+      questions: [{ index: 0, question: 'Quel article fonde la responsabilité pour faute ?', choix: ['1240', '1103'] }], sources: REPONSE.sources }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/quiz')) return new Promise<Response>((ok) => { livrer = ok })
+      if (url.endsWith('/quiz/correct')) return repondre({ quiz_id: 'qz-1', score: 1, total: 1, sources: REPONSE.sources,
+        resultats: [{ index: 0, statut: 'correct', explication: 'Article 1240.', sources: [], bonne_reponse: 0 }] })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'S’entraîner' }))
+    const theme = screen.getByLabelText('Thème')
+    expect(theme).toHaveAttribute('placeholder', 'Ex. la responsabilité du fait des choses')
+    fireEvent.change(theme, { target: { value: 'la faute' } })
+    fireEvent.click(screen.getByRole('button', { name: /Générer le questionnaire/ }))
+    expect(await screen.findByRole('button', { name: /Génération en cours/ })).toBeInTheDocument()
+
+    // clic hors de la fenetre pendant la generation : elle se ferme (scenario probable du point 9)...
+    fireEvent.mouseDown(screen.getByRole('dialog').parentElement!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await act(async () => {
+      livrer(new Response(JSON.stringify(QUIZ), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+    // ... mais le questionnaire n'est pas perdu
+    expect(await screen.findByText(/Votre questionnaire est prêt/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'S’entraîner' }))
+    fireEvent.click(await screen.findByRole('radio', { name: '1240' }))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Corriger mes réponses' }))
+    })
+    expect(await screen.findByText('Score : 1 / 1')).toBeInTheDocument()
+
+    // fermer puis rouvrir : la correction est toujours la
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer le questionnaire' }))
+    fireEvent.click(screen.getByRole('button', { name: 'S’entraîner' }))
+    expect(await screen.findByText('Score : 1 / 1')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '1240' })).toBeChecked()
+  })
+
+  it('fiches : la limite au navigateur est dite a l enregistrement, et elles s exportent en Markdown (point 5)', async () => {
+    let exporte: Blob | null = null
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: (b: Blob) => { exporte = b; return 'blob:fiche' }, revokeObjectURL: () => undefined }))
+    await poser('article 1240')
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
+    expect(await screen.findByRole('status')).toHaveTextContent('dans ce navigateur uniquement')
+    fireEvent.click(screen.getByRole('button', { name: /Fiches & révisions/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Exporter toutes les fiches/ }))
+    const texte = await exporte!.text()
+    expect(texte).toContain('# La responsabilité pour faute')
+    expect(texte).toContain('- Tout fait fautif causant un dommage oblige à réparer. [1]')
+    expect(texte).toContain('1. Code civil, article 1240 (Version depuis le 1er octobre 2016) : https://www.legifrance.gouv.fr/codes/article_lc/A1240')
+  })
+
+  it('les matieres du catalogue sont dites disponibles, pas suivies (point 1)', async () => {
+    render(<Site />)
+    expect(await screen.findByText('1 matière disponible')).toBeInTheDocument()
+    expect(screen.queryByText(/matières suivies/)).not.toBeInTheDocument()
+  })
+
+  it('sources numerotees 1, 2, 3 et intitules courts, dans la reponse comme dans le panneau (points 3 et 4)', async () => {
+    const long = (n: string) => `Code civil, Livre III : Des différentes manières, Titre III : Des sources d’obligations, article ${n}`
+    const s1 = { ...REPONSE.sources[0], id: 'code_civil:A1240', label: 'S1', entete: long('1240') }
+    const s4 = { ...REPONSE.sources[0], id: 'code_civil:A1241', label: 'S4', entete: long('1241') }
+    reponseChat = { ...REPONSE, sources: [s1, s4],
+      droit_positif: [{ texte: 'Règle 1.', sources: [s1.id] }, { texte: 'Règle 2.', sources: [s4.id] }] }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/sources/') ? repondre({ ...s4, texte: 'Chacun est responsable…', titre: null, meta: {} }) : base(url, init))
+    await poser('article 1240')
+    expect(screen.getByRole('button', { name: '[2]' })).toBeInTheDocument()
+    expect(screen.queryByText(/S4/)).not.toBeInTheDocument()
+    expect(screen.getByText('Code civil · article 1241')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '[2]' }))
+    const panneau = await screen.findByRole('dialog')
+    expect(await within(panneau).findByRole('heading', { name: 'Code civil · article 1241' })).toBeInTheDocument()
+    expect(within(panneau).getByText('Classement complet').closest('details')).not.toHaveAttribute('open')
+  })
+
+  it('une fiche ouverte n affiche son titre qu une fois (point 6)', async () => {
+    await poser('article 1240')
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Fiches & révisions/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^La responsabilité pour faute/ }))
+    expect(await screen.findByText('Droit positif')).toBeInTheDocument()
+    expect(screen.getAllByText('La responsabilité pour faute')).toHaveLength(1)
+  })
+
+  it('saisie multiligne : Maj + Entree passe a la ligne, Entree envoie (point 2)', async () => {
+    render(<Site />)
+    const champ = await screen.findByLabelText('Votre question')
+    expect(champ.tagName).toBe('TEXTAREA')
+    fireEvent.change(champ, { target: { value: 'Première ligne\nseconde ligne' } })
+    fireEvent.keyDown(champ, { key: 'Enter', shiftKey: true })
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)
+    await act(async () => {
+      fireEvent.keyDown(champ, { key: 'Enter' })
+    })
+    await screen.findByText('La responsabilité pour faute')
+    const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
+    expect(corps.question).toBe('Première ligne\nseconde ligne')
+  })
+
+  it('matieres : actions avant les textes officiels replies, depot en francais (point 7)', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    const textes = await screen.findByText('Textes officiels (1)')
+    expect(textes.closest('details')).not.toHaveAttribute('open')
+    const carte = textes.closest('section')!
+    const ordre = within(carte).getByRole('button', { name: 'Poser une question' }).compareDocumentPosition(textes)
+    expect(ordre & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Choisir un fichier' })).toBeInTheDocument()
+    expect(screen.getByText('Aucun fichier choisi')).toBeInTheDocument()
+    const pdf = new File(['%PDF'], 'chapitre1.pdf', { type: 'application/pdf' })
+    fireEvent.change(document.getElementById('depot-fichier')!, { target: { files: [pdf] } })
+    expect(screen.getByText('chapitre1.pdf')).toBeInTheDocument()
+  })
+
+  it('la page Compte garde la navigation de l espace etudiant (point 14)', async () => {
+    window.history.pushState({}, '', '/compte')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'etu@exemple.fr' })).toBeInTheDocument()
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
+    fireEvent.click(within(nav).getByRole('button', { name: /Fiches & révisions/ }))
+    expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/app')
   })
 })

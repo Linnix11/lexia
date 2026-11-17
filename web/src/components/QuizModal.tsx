@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { api, ApiError, type Correction, type FormatQuiz, type Quiz, type ResultatQuestion } from '../lib/api'
+import type { FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
+import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
-import { useSession } from '../state/session'
 import { ChoixCours } from './ChoixCours'
-
-type Valeur = number | boolean | string | null
 
 const FORMATS: { id: FormatQuiz; label: string }[] = [
   { id: 'qcm', label: 'QCM' },
@@ -21,6 +19,25 @@ const STATUTS: Record<ResultatQuestion['statut'], { texte: string; classe: strin
   a_verifier: { texte: 'À vérifier', classe: 'bg-chip text-muted' },
 }
 
+// Exemple de theme propre a la matiere choisie (audit du 2026-11-16, point 8).
+const EXEMPLES: Record<string, string> = {
+  introduction_au_droit: 'la hiérarchie des normes',
+  droit_constitutionnel: 'la séparation des pouvoirs',
+  droit_civil: 'la responsabilité du fait des choses',
+  droit_des_contrats: 'les vices du consentement',
+  droit_penal: 'l’élément intentionnel de l’infraction',
+  procedure_civile: 'la compétence territoriale',
+  droit_des_affaires: 'le statut du commerçant',
+  droit_social: 'la rupture conventionnelle',
+  droit_administratif: 'le recours pour excès de pouvoir',
+  libertes_fondamentales: 'le référé-liberté',
+  droit_de_la_famille: 'la filiation',
+  droit_des_biens: 'la possession',
+  droit_fiscal: 'l’impôt sur le revenu',
+  finances_publiques: 'le vote de la loi de finances',
+}
+const exempleTheme = (matiere: string | null) => `Ex. ${matiere && EXEMPLES[matiere] ? EXEMPLES[matiere] : 'les vices du consentement'}`
+
 function bonneReponse(q: Quiz['questions'][number], r: ResultatQuestion): string | null {
   if (typeof r.bonne_reponse === 'number' && q.choix) return q.choix[r.bonne_reponse]
   if (typeof r.bonne_reponse === 'boolean') return r.bonne_reponse ? 'Vrai' : 'Faux'
@@ -30,58 +47,28 @@ function bonneReponse(q: Quiz['questions'][number], r: ResultatQuestion): string
 export function QuizModal() {
   const { quizOuvert, matiere } = useApp()
   if (!quizOuvert) return null
-  // une cle par ouverture : chaque questionnaire repart d'un etat neuf
-  return <QuizContenu key={quizOuvert.id} themeInitial={quizOuvert.theme ?? ''} matiereInitiale={matiere} />
+  // une cle par ouverture : le formulaire repart du theme demande ; le dernier questionnaire, lui, est garde
+  // dans l'etat de l'application et reapparait a chaque ouverture (audit du 2026-11-16, point 12).
+  return <QuizContenu key={quizOuvert.id} themeDemande={quizOuvert.theme} matiereInitiale={matiere} />
 }
 
-function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; matiereInitiale: string | null }) {
-  const { fermerQuiz, matieres, niveau, semestre, ouvrirSource, optionsCours } = useApp()
-  const { rafraichir } = useSession()
+function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string; matiereInitiale: string | null }) {
+  const { fermerQuiz, matieres, ouvrirSource, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz } = useApp()
+  const { parametres, quiz, reponses, correction, etat, erreur } = dernierQuiz
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
-  const [theme, setTheme] = useState(themeInitial)
-  const [nombre, setNombre] = useState(5)
-  const [format, setFormat] = useState<FormatQuiz>('qcm')
-  const [mat, setMat] = useState<string | null>(matiereInitiale)
-  const [quiz, setQuiz] = useState<Quiz | null>(null)
-  const [reponses, setReponses] = useState<Record<number, Valeur>>({})
-  const [correction, setCorrection] = useState<Correction | null>(null)
-  const [etat, setEtat] = useState<'libre' | 'generation' | 'correction'>('libre')
-  const [erreur, setErreur] = useState<string | null>(null)
+  const [theme, setTheme] = useState(themeDemande ?? parametres?.theme ?? '')
+  const [nombre, setNombre] = useState(parametres?.nombre ?? 5)
+  const [format, setFormat] = useState<FormatQuiz>(parametres?.format ?? 'qcm')
+  const [mat, setMat] = useState<string | null>(matiereInitiale ?? parametres?.matiere ?? null)
 
   const generer = () => {
     if (theme.trim().length < 3) {
-      setErreur('Indiquez un thème d’au moins 3 caractères.')
+      signalerErreurQuiz('Indiquez un thème d’au moins 3 caractères.')
       return
     }
-    setEtat('generation')
-    setErreur(null)
-    setQuiz(null)
-    setCorrection(null)
-    setReponses({})
-    api
-      .quiz(theme.trim(), format, nombre, mat, niveau, semestre, optionsCours)
-      .then((q) => {
-        setQuiz(q)
-        if (!q.quiz_id) setErreur(q.message)
-      })
-      .catch((e) => setErreur(e instanceof ApiError ? e.message : 'La génération a échoué.'))
-      .finally(() => {
-        setEtat('libre')
-        void rafraichir()
-      })
+    genererQuiz({ theme: theme.trim(), nombre, format, matiere: mat })
   }
-
-  const corriger = () => {
-    if (!quiz?.quiz_id) return
-    setEtat('correction')
-    setErreur(null)
-    const liste = quiz.questions.map((q) => ({ index: q.index, valeur: reponses[q.index] ?? null }))
-    api
-      .corriger(quiz.quiz_id, liste)
-      .then(setCorrection)
-      .catch((e) => setErreur(e instanceof ApiError ? e.message : 'La correction a échoué.'))
-      .finally(() => setEtat('libre'))
-  }
+  const corriger = corrigerQuiz
 
   const sources = correction?.sources ?? quiz?.sources ?? []
   const champ = 'w-full min-w-0 rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink'
@@ -107,7 +94,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
           onSubmit={(e) => { e.preventDefault(); generer() }}>
           <label className="grid gap-1.5 text-[11px] text-muted">
             Thème
-            <input data-autofocus value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Ex. les vices du consentement" className={champ} />
+            <input data-autofocus value={theme} onChange={(e) => setTheme(e.target.value)} placeholder={exempleTheme(mat)} className={champ} />
           </label>
           <label className="grid gap-1.5 text-[11px] text-muted">
             Questions
@@ -168,21 +155,21 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
                         {quiz.format === 'qcm' && q.choix?.map((c, j) => (
                           <label key={j} className="flex items-start gap-2 text-[12px] text-[#545d56]">
                             <input type="radio" name={nom} checked={reponses[q.index] === j}
-                              onChange={() => setReponses((x) => ({ ...x, [q.index]: j }))} className="mt-0.5 accent-forest" />
+                              onChange={() => repondreQuiz(q.index, j)} className="mt-0.5 accent-forest" />
                             {c}
                           </label>
                         ))}
                         {quiz.format === 'vrai_faux' && [true, false].map((v) => (
                           <label key={String(v)} className="flex items-start gap-2 text-[12px] text-[#545d56]">
                             <input type="radio" name={nom} checked={reponses[q.index] === v}
-                              onChange={() => setReponses((x) => ({ ...x, [q.index]: v }))} className="mt-0.5 accent-forest" />
+                              onChange={() => repondreQuiz(q.index, v)} className="mt-0.5 accent-forest" />
                             {v ? 'Vrai' : 'Faux'}
                           </label>
                         ))}
                         {quiz.format === 'ouvertes' && (
                           <textarea rows={3} aria-label={`Votre réponse à la question ${q.index + 1}`}
                             value={(reponses[q.index] as string) ?? ''}
-                            onChange={(e) => setReponses((x) => ({ ...x, [q.index]: e.target.value }))}
+                            onChange={(e) => repondreQuiz(q.index, e.target.value)}
                             className={champ} maxLength={3000} />
                         )}
                       </div>
@@ -205,7 +192,7 @@ function QuizContenu({ themeInitial, matiereInitiale }: { themeInitial: string; 
                             return s ? (
                               <button key={id} type="button" onClick={() => ouvrirSource(id)}
                                 className="text-[11px] font-semibold text-forest hover:underline" title={s.entete}>
-                                [{s.label}] {s.entete.slice(0, 60)}{s.entete.length > 60 ? '…' : ''}
+                                [{numeroSource(sources, id)}] {titreCourt(s.entete).slice(0, 60)}{titreCourt(s.entete).length > 60 ? '…' : ''}
                               </button>
                             ) : null
                           })}

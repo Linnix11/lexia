@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Lien } from '../lib/router'
+import { Lien, useRouteur } from '../lib/router'
+import { BandeauEmail } from '../site/VerifierEmail'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
 import { useApp, type Vue } from '../state/contexte'
 import { useSession } from '../state/session'
@@ -15,8 +16,34 @@ const VUES: { id: Vue; label: string; ico: string }[] = [
 
 const ANNEES = ['L1', 'L2', 'L3'] as const
 
-export function Sidebar() {
+/** Cadre de l'espace etudiant (barre laterale et en-tete), partage par /app et /compte : passer par son
+ * compte ne fait plus perdre la navigation de l'espace (audit du 2026-11-16, point 14). */
+export function CadreEspace({ titre, children }: { titre?: string; children: ReactNode }) {
+  return (
+    <>
+      <BandeauEmail />
+      <div className="min-h-screen pb-[61px] tab:grid tab:grid-cols-[68px_minmax(0,1fr)] tab:pb-0 desk:grid-cols-[232px_minmax(0,1fr)]">
+        <Sidebar horsEspace={titre !== undefined} />
+        <main className="min-w-0">
+          <Topbar titre={titre} />
+          <div className="mx-auto max-w-[1300px] px-4 pt-6 pb-6 min-[361px]:px-4 tab:px-[22px] tab:pt-[29px] desk:px-[38px] desk:pt-9 desk:pb-[52px]">
+            {children}
+            <footer className="pt-5 text-[10px] leading-[1.6] text-[#5f6762] tab:flex tab:justify-between tab:gap-3.5">
+              <span className="block">Lexia · étude du droit français</span>
+              <span className="mt-1 block tab:mt-0">Les citations ouvrent la source, la date et la version utilisées.</span>
+            </footer>
+          </div>
+        </main>
+      </div>
+      <Toast />
+    </>
+  )
+}
+
+/** horsEspace : page du cadre hors de /app (Mon compte) ; un clic ramene a la vue choisie de l'espace. */
+export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
   const { vue, setVue, matieres, semestre, niveau } = useApp()
+  const { naviguer } = useRouteur()
   return (
     <aside
       className="fixed inset-x-0 bottom-0 z-30 h-[60px] border-t border-line bg-paper px-3 py-[5px]
@@ -35,12 +62,15 @@ export function Sidebar() {
         <div className="mb-2 hidden px-2.5 text-[10px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
         <ul className="flex h-full items-center justify-around tab:grid tab:h-auto tab:gap-1">
           {VUES.map((v) => {
-            const actif = vue === v.id
+            const actif = !horsEspace && vue === v.id
             return (
               <li key={v.id}>
                 <button
                   type="button"
-                  onClick={() => setVue(v.id)}
+                  onClick={() => {
+                    setVue(v.id)
+                    if (horsEspace) naviguer('/app')
+                  }}
                   aria-current={actif ? 'page' : undefined}
                   title={v.label}
                   className={`flex min-w-[42px] items-center justify-center gap-[11px] rounded-lg px-3 py-2 text-[#565f59]
@@ -61,19 +91,19 @@ export function Sidebar() {
         <div className="rounded-[10px] border border-[#dfdfd5] bg-chip p-3">
           <small className="text-[11px] text-muted">Semestre {semestre} · {niveau}</small>
           <strong className="my-1.5 block text-[13px]">Parcours droit général</strong>
-          <small className="text-[11px] text-muted">{matieres.length || 3} matières suivies</small>
+          <small className="text-[11px] text-muted">{matieres.length > 1 ? `${matieres.length} matières disponibles` : `${matieres.length} matière disponible`}</small>
         </div>
       </div>
     </aside>
   )
 }
 
-export function Topbar() {
+export function Topbar({ titre }: { titre?: string }) {
   const { vue, semestre, setSemestre } = useApp()
   const { profil } = useSession()
   const initiales = (profil?.email ?? 'ét').slice(0, 2).toUpperCase()
   const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
-  const libelle = VUES.find((v) => v.id === vue)?.label
+  const libelle = titre ?? VUES.find((v) => v.id === vue)?.label
   return (
     <header className="flex h-14 items-center justify-between border-b border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
       <div className="text-[12px] text-muted">

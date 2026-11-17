@@ -3,7 +3,8 @@ import { ApiError } from '../lib/api'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { DoubleAuthentification } from './DoubleAuthentification'
-import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
+import { CadreEspace } from '../components/Layout'
+import { Surtitre, bouton, boutonSecondaire } from './Public'
 
 function Jauge({ libelle, utilise, limite }: { libelle: string; utilise: number; limite: number }) {
   const pct = Math.min(100, Math.round((utilise / limite) * 100))
@@ -48,8 +49,8 @@ export function Compte() {
   }
 
   return (
-    <PublicLayout>
-      <Section className="max-w-[760px] py-12">
+    <CadreEspace titre="Mon compte">
+      <div className="mx-auto max-w-[760px]">
         <Surtitre>Mon compte</Surtitre>
         <h1 className="mt-2 mb-6 font-display text-[32px] font-normal">{profil.email}</h1>
 
@@ -113,7 +114,7 @@ export function Compte() {
             )}
           </section>
         </div>
-      </Section>
-    </PublicLayout>
+      </div>
+    </CadreEspace>
   )
 }

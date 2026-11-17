@@ -5,6 +5,7 @@ import { Chat } from '../components/Chat'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
+import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { MODES } from '../lib/modes'
 import { useApp } from '../state/contexte'
 
@@ -58,7 +59,7 @@ export function VueAssistant() {
       <EnTete surtitre="Assistant IA" titre="Posez votre question."
         texte="Choisissez le type d’aide : explication, fiche, cas pratique, commentaire d’arrêt ou dissertation." />
       <Card className="mx-auto flex max-w-[900px] flex-col px-4 py-[18px] tab:px-[22px] tab:pt-[21px] tab:pb-[17px]">
-        <CardHead titre="Assistant d’étude" sousTitre="Cliquez sur une référence [S1] pour lire la source" droite={corpus} />
+        <CardHead titre="Assistant d’étude" sousTitre="Cliquez sur une référence [1] pour lire la source" droite={corpus} />
         <div className="mt-4 flex flex-1 flex-col"><Chat complet /></div>
       </Card>
     </>
@@ -69,25 +70,29 @@ export function VueMatieres() {
   const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
   return (
     <>
-      <EnTete surtitre="Mes matières" titre="Matières suivies." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
+      <EnTete surtitre="Mes matières" titre="Matières disponibles." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
       <DepotCours />
       {matieres.length === 0 ? (
         <Card className="p-6 text-[12px] text-muted">Impossible de charger les matières : vérifiez que l’API Lexia est démarrée.</Card>
       ) : (
         <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
           {matieres.map((m) => (
-            <Card key={m.id} className="flex flex-col p-[19px]">
+            // Matiere, cours personnels et actions d'abord ; textes officiels replies (audit du 2026-11-16, point 7).
+            <Card key={m.id} className="flex flex-col self-start p-[19px]">
               <h2 className="font-display text-[21px]">{m.libelle}</h2>
-              <ul className="mt-3 mb-4 grid gap-1.5 text-[11px] text-muted">
-                {m.sources.map((s) => <li key={s}>· {m.noms_sources?.[s] ?? s}</li>)}
-              </ul>
-              <ListeCoursMatiere matiere={m.id} />
-              <div className="mt-auto flex flex-wrap gap-2">
+              <div className="mt-3"><ListeCoursMatiere matiere={m.id} /></div>
+              <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
                   className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>
                 <button type="button" onClick={() => { setMatiere(m.id); ouvrirQuiz() }}
                   className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
               </div>
+              <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
+                <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>
+                <ul className="mt-2 grid gap-1.5">
+                  {m.sources.map((s) => <li key={s}>· {m.noms_sources?.[s] ?? s}</li>)}
+                </ul>
+              </details>
             </Card>
           ))}
         </div>
@@ -109,7 +114,16 @@ export function VueFiches() {
   }
   return (
     <>
-      <EnTete surtitre="Fiches & révisions" titre="Vos fiches." texte="Les réponses enregistrées restent dans ce navigateur uniquement." />
+      <EnTete surtitre="Fiches & révisions" titre="Vos fiches."
+        texte="Les fiches restent dans ce navigateur uniquement : exportez-les pour les garder ailleurs ou les ouvrir sur un autre appareil." />
+      {favoris.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={() => telecharger('fiches-lexia.md', fichesEnMarkdown(favoris))}
+            className="rounded-[7px] border border-line bg-surface px-3 py-2 text-[12px] text-forest hover:border-[#9eafa3]">
+            Exporter toutes les fiches (.md)
+          </button>
+        </div>
+      )}
       <Card className="mb-[18px] p-4 tab:p-[19px]">
         <form onSubmit={creer} className="flex flex-wrap items-end gap-2">
           <label className="grid min-w-[220px] flex-1 gap-1.5 text-[11px] text-muted">
@@ -146,12 +160,17 @@ export function VueFiches() {
                       {MODES.find((m) => m.id === f.mode)?.label} · {new Date(f.enregistre_le).toLocaleDateString('fr-FR')} · {f.reponse.sources.length} source(s)
                     </span>
                   </button>
-                  <button type="button" onClick={() => basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })}
-                    className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                  <span className="flex gap-3">
+                    <button type="button" onClick={() => telecharger(nomFichier(f.reponse.titre || f.question), ficheEnMarkdown(f))}
+                      aria-label={`Exporter la fiche « ${f.reponse.titre || f.question} »`}
+                      className="text-[11px] text-forest hover:underline">Exporter</button>
+                    <button type="button" onClick={() => basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })}
+                      className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                  </span>
                 </div>
                 {ouverte === f.id && (
                   <div className="mt-3">
-                    <Reponse message={{ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse }} actions={false} />
+                    <Reponse message={{ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse }} actions={false} titre={false} />
                   </div>
                 )}
               </Card>

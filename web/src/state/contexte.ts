@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { CoursDepose, Matiere, Mode, Niveau, OptionsCours, ReponseChat } from '../lib/api'
+import type { Correction, CoursDepose, FormatQuiz, Matiere, Mode, Niveau, OptionsCours, Quiz, ReponseChat } from '../lib/api'
 import type { Favori } from '../lib/favoris'
 import type { Semestre } from '../lib/semestres'
 
@@ -13,6 +13,25 @@ export interface Message {
   reponse?: ReponseChat
   erreur?: string
   statut?: number
+}
+
+export type ValeurQuiz = number | boolean | string | null
+
+export interface ParametresQuiz {
+  theme: string
+  nombre: number
+  format: FormatQuiz
+  matiere: string | null
+}
+
+/** Dernier questionnaire : garde hors de la fenetre, pour la rouvrir (et finir une generation) sans rien perdre. */
+export interface EtatQuiz {
+  parametres: ParametresQuiz | null
+  quiz: Quiz | null
+  reponses: Record<number, ValeurQuiz>
+  correction: Correction | null
+  etat: 'libre' | 'generation' | 'correction'
+  erreur: string | null
 }
 
 export interface AppState {
@@ -46,6 +65,11 @@ export interface AppState {
   quizOuvert: { theme?: string; id: number } | null
   ouvrirQuiz: (theme?: string) => void
   fermerQuiz: () => void
+  dernierQuiz: EtatQuiz
+  genererQuiz: (p: ParametresQuiz) => void
+  repondreQuiz: (index: number, valeur: ValeurQuiz) => void
+  corrigerQuiz: () => void
+  signalerErreurQuiz: (erreur: string | null) => void
   toast: string | null
   notifier: (msg: string) => void
 }

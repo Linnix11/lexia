@@ -87,6 +87,16 @@ describe('Site', () => {
     expect(lien.getAttribute('href')).toMatch(/^mailto:contact@exemple\.fr/)
   })
 
+  it('tarifs : l introduction cite les cours deposes et l activation manuelle est dite sous le bouton (point 15)', async () => {
+    aller('/tarifs')
+    render(<Site />)
+    await screen.findByRole('heading', { name: 'Étudiant' })
+    expect(screen.getByText(/nombre de cours que vous pouvez déposer/)).toBeInTheDocument()
+    expect(screen.queryByText(/seule la quantité/)).not.toBeInTheDocument()
+    const lien = screen.getAllByRole('link', { name: 'Demander cette formule' })[0]
+    expect(lien.nextElementSibling).toHaveTextContent('activée à la main')
+  })
+
   it('inscription : validation puis acces au panel', async () => {
     aller('/inscription')
     render(<Site />)

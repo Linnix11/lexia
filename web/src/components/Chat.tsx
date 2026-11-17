@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent as ToucheReact } from 'react'
 import type { Mode } from '../lib/api'
 import { infosMode, MODES } from '../lib/modes'
 import { Lien } from '../lib/router'
@@ -53,6 +53,21 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   useEffect(() => {
     fin.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [messages.length, derniereEtat])
+
+  // Saisie multiligne (audit du 2026-11-16, point 2) : Entree envoie, Maj + Entree passe a la ligne,
+  // le champ grandit jusqu'a six lignes environ.
+  const champ = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = champ.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+  }, [texte])
+  const auClavier = (e: ToucheReact<HTMLTextAreaElement>) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    e.currentTarget.form?.requestSubmit()
+  }
 
   const soumettre = (e: FormEvent) => {
     e.preventDefault()
@@ -149,7 +164,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         <div aria-live="polite" className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'max-h-[560px] overflow-y-auto pr-1'}`}>
           {messages.map((m) => (
             <div key={m.id} className="grid min-w-0 gap-2.5">
-              <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55]">
+              <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55] whitespace-pre-line">
                 {m.question}
                 {m.mode !== 'expliquer' && (
                   <span className="ml-2 text-[10px] text-muted">· {MODES.find((x) => x.id === m.mode)?.label}</span>
@@ -191,14 +206,18 @@ export function Chat({ complet = false }: { complet?: boolean }) {
             e.target.value = ''
           }} />
         <label htmlFor={complet ? 'question-complete' : 'question'} className="sr-only">Votre question</label>
-        <input
+        <textarea
+          ref={champ}
           id={complet ? 'question-complete' : 'question'}
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
+          onKeyDown={auClavier}
+          rows={1}
           placeholder={complet ? infos.placeholder : 'Écrivez votre question de droit…'}
           autoComplete="off"
           maxLength={2000}
-          className="min-w-0 flex-1 border-0 px-2 py-[7px] text-[12px] text-ink outline-none"
+          aria-describedby={complet ? 'aide-saisie-complete' : 'aide-saisie'}
+          className="min-w-0 flex-1 resize-none self-center border-0 bg-transparent px-2 py-[7px] text-[12px] leading-[1.5] text-ink outline-none"
         />
         <button
           type="submit"
@@ -209,7 +228,10 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         </button>
       </form>
       <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[10px] text-[#5f6762]">
-        <span>Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.</span>
+        <span>
+          <span id={complet ? 'aide-saisie-complete' : 'aide-saisie'}>Entrée pour envoyer, Maj + Entrée pour aller à la ligne.</span>{' '}
+          Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.
+        </span>
         {messages.length > 0 && !occupe && (
           <button type="button" onClick={effacer} className="shrink-0 hover:text-forest">Effacer la conversation</button>
         )}

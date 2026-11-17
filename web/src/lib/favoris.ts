@@ -15,7 +15,7 @@ const ANCIENNE_CLE = 'lexia.favoris.v1'
 // L'adresse n'apparait plus dans le nom de la cle : sur un poste partage, l'etudiant suivant la lisait
 // dans les outils du navigateur (audit du 2026-11-16, point 13). Empreinte FNV-1a : pas un secret,
 // seulement une cle stable qui ne montre pas l'adresse.
-function empreinte(texte: string): string {
+export function empreinte(texte: string): string {
   let h = 0x811c9dc5
   for (let i = 0; i < texte.length; i++) {
     h ^= texte.charCodeAt(i)
