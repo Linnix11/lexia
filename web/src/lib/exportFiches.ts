@@ -27,6 +27,7 @@ export function ficheEnMarkdown(f: Favori): string {
     `Question : ${f.question}  `,
     `${infosMode(f.mode).label} · enregistrée le ${date} · Lexia`,
     '',
+    ...bloc('L’essentiel', r.reponse_directe ?? [], r.sources),
     ...bloc(b1, r.droit_positif, r.sources),
     ...bloc(b2, r.explication, r.sources),
     ...bloc(b3, r.points_incertains, r.sources),

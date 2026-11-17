@@ -35,7 +35,9 @@ function premieresCitations(items: Element[]): string[][] {
   return items.map((it) => it.sources.filter((id) => !vues.has(id) && !!vues.add(id)))
 }
 
-function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[]; sources: FicheSource[]; ton: 'droit' | 'neutre' | 'attention' }) {
+function Bloc({ titre, items, sources, ton, rubriques = true }: {
+  titre: string; items: Element[]; sources: FicheSource[]; ton: 'droit' | 'neutre' | 'attention'; rubriques?: boolean
+}) {
   if (!items.length) return null
   const citations = premieresCitations(items)
   const couleur = ton === 'droit' ? 'text-forest' : ton === 'attention' ? 'text-[#8a6537]' : 'text-muted'
@@ -46,7 +48,7 @@ function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[];
         {items.map((it, i) => (
           <li key={i} className="text-[12.5px] leading-[1.6]">
             {/* rubrique affichee a son premier element : sous-titres propres a chaque mode */}
-            {it.rubrique && it.rubrique !== items[i - 1]?.rubrique && (
+            {rubriques && it.rubrique && it.rubrique !== items[i - 1]?.rubrique && (
               <span className="mt-1.5 mb-0.5 block text-[11.5px] font-semibold text-ink">{it.rubrique}</span>
             )}
             {it.texte}
@@ -131,21 +133,51 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
   )
 }
 
+const RUBRIQUE_EXEMPLE = 'Exemple' // rubrique du mode « expliquer » (api/prompts.py, RUBRIQUES)
+
+/** Reponse directe d'abord (audit du 2026-11-16, point 3) : l'essentiel, les exemples et les points d'attention
+ * (qui portent le rappel « consultez un professionnel ») restent visibles ; droit positif, reste de l'explication
+ * et sources sont repliés. Sans reponse directe (commentaire, dissertation, fiches anterieures) : affichage complet. */
+function Developpements({ r, blocs }: { r: ReponseChat; blocs: [string, string, string] }) {
+  const [titreDroit, titreExplication, titreAttention] = blocs
+  const directe = r.reponse_directe ?? []
+  if (!directe.length)
+    return (
+      <>
+        <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
+        <Bloc titre={titreExplication} items={r.explication} sources={r.sources} ton="neutre" />
+        <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
+        <ListeSources sources={r.sources} />
+      </>
+    )
+  const exemples = r.explication.filter((e) => e.rubrique === RUBRIQUE_EXEMPLE)
+  const suite = r.explication.filter((e) => e.rubrique !== RUBRIQUE_EXEMPLE)
+  return (
+    <>
+      <Bloc titre="L’essentiel" items={directe} sources={r.sources} ton="droit" />
+      <Bloc titre={exemples.length > 1 ? 'Exemples' : 'Exemple'} items={exemples} sources={r.sources} ton="neutre" rubriques={false} />
+      <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
+      <details className="mt-3.5 border-t border-line-soft pt-2.5">
+        <summary className="cursor-pointer text-[11px] font-semibold text-forest hover:underline">Développements et sources</summary>
+        <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
+        <Bloc titre={titreExplication} items={suite} sources={r.sources} ton="neutre" />
+        <ListeSources sources={r.sources} />
+      </details>
+    </>
+  )
+}
+
 /** titre=false : la fiche ouverte dans « Fiches & révisions » affiche deja le titre dans sa carte (point 6). */
 export function Reponse({ message, actions = true, titre = true }: { message: Message; actions?: boolean; titre?: boolean }) {
   const { basculerFavori, estFavori } = useApp()
   const r = message.reponse!
-  const [titreDroit, titreExplication, titreAttention] = infosMode(message.mode).blocs
   const retires = r.controle.elements_retires + r.controle.citations_retirees
   return (
     <article className="min-w-0 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 break-words">
       {r.statut === 'reponse' ? (
         <>
           {titre && r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
-          <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
-          <Bloc titre={titreExplication} items={r.explication} sources={r.sources} ton="neutre" />
-          <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
-          <ListeSources sources={r.sources} />
+          <Developpements r={r} blocs={infosMode(message.mode).blocs} />
         </>
       ) : (
         <div className="border-l-2 border-[#c8a16d] bg-cream px-3 py-2.5 text-[12px] leading-[1.55] text-[#746347]">

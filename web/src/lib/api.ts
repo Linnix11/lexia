@@ -41,6 +41,9 @@ export interface ReponseChat {
   droit_positif: Element[]
   explication: Element[]
   points_incertains: Element[]
+  // 1 a 3 phrases sourcees affichees en tete ; absente des reponses et fiches anterieures, vide en commentaire
+  // et en dissertation (audit d'interface du 2026-11-16, point 3)
+  reponse_directe?: Element[]
   message: string
   sources: FicheSource[]
   avertissement: string

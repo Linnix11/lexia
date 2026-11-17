@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
 import type { ReponseChat } from './lib/api'
 import { ecrireFavoris, lireFavoris } from './lib/favoris'
+import { ficheEnMarkdown } from './lib/exportFiches'
 
 const REPONSE: ReponseChat = {
   reponse_id: 'r-123',
@@ -464,5 +465,52 @@ describe('Audit du 16 novembre 2026', () => {
     expect(screen.queryByText('Sujet Droit pénal')).not.toBeInTheDocument()
     const titres = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(titres.indexOf('Annales d’examens')).toBeLessThan(titres.indexOf('Sources de confiance'))
+  })
+})
+
+describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
+  const s2 = { ...REPONSE.sources[0], id: 'code_civil:A1241', label: 'S2', entete: 'Code civil, article 1241' }
+  const AVEC_DIRECTE: ReponseChat = {
+    ...REPONSE,
+    sources: [REPONSE.sources[0], s2],
+    reponse_directe: [{ texte: 'On répare le dommage causé par sa faute.', sources: ['code_civil:A1240'] }],
+    explication: [
+      { texte: 'Il faut une faute, un dommage et un lien de causalité.', sources: [], rubrique: 'Conditions' },
+      { texte: 'Un cycliste renverse un piéton par imprudence.', sources: ['code_civil:A1241'], rubrique: 'Exemple' },
+    ],
+    points_incertains: [{ texte: 'Analyse générale : consultez un professionnel du droit.', sources: [] }],
+  }
+
+  it('l essentiel, l exemple et les points d attention d abord ; developpements et sources replies', async () => {
+    reponseChat = AVEC_DIRECTE
+    await poser('Que dit l’article 1240 ?')
+    expect(screen.getByText('L’essentiel')).toBeInTheDocument()
+    expect(screen.getByText('On répare le dommage causé par sa faute.')).toBeInTheDocument()
+    const exemple = screen.getByText('Un cycliste renverse un piéton par imprudence.')
+    expect(exemple.closest('details')).toBeNull()
+    expect(screen.getByText(/consultez un professionnel/).closest('details')).toBeNull()
+    const repli = screen.getByText('Développements et sources').closest('details')!
+    expect(repli).not.toHaveAttribute('open')
+    expect(within(repli).getByText('Droit positif')).toBeInTheDocument()
+    expect(within(repli).getByText('Conditions')).toBeInTheDocument()
+    expect(within(repli).getByText('Sources utilisées')).toBeInTheDocument()
+    expect(within(repli).queryByText(/Un cycliste/)).not.toBeInTheDocument()   // l'exemple n'est pas repete
+    // numerotation commune : la source de l'exemple garde son numero
+    expect(within(exemple.closest('li')!).getByRole('button', { name: '[2]' })).toBeInTheDocument()
+  })
+
+  it('sans reponse directe (commentaire, fiche anterieure) : affichage complet, rien de replie', async () => {
+    await poser('Que dit l’article 1240 ?')
+    expect(screen.queryByText('L’essentiel')).not.toBeInTheDocument()
+    expect(screen.queryByText('Développements et sources')).not.toBeInTheDocument()
+    expect(screen.getByText('Droit positif').closest('details')).toBeNull()
+  })
+
+  it('l export Markdown commence par l essentiel', () => {
+    const md = ficheEnMarkdown({ id: 'f1', question: 'Q ?', mode: 'expliquer', enregistre_le: '2026-11-17T10:00:00Z',
+      reponse: AVEC_DIRECTE })
+    expect(md.indexOf('## L’essentiel')).toBeGreaterThan(0)
+    expect(md.indexOf('## L’essentiel')).toBeLessThan(md.indexOf('## Droit positif'))
+    expect(md).toContain('- On répare le dommage causé par sa faute. [1]')
   })
 })
