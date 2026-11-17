@@ -41,9 +41,10 @@ LEXIA_SERVEUR=root@IP_DU_VPS LEXIA_DOMAINE=lexia.mondomaine.fr deploy/publier.sh
 ```
 
 Le script :
+0. vérifie, avant tout, que rien de non commité ne partirait en production et que le commit publié contient la version déjà en ligne (fichier `VERSION` du serveur) : une copie plus ancienne effacerait le travail publié entre-temps par une autre session. `LEXIA_FORCER=1` passe outre ces deux vérifications. Plusieurs sessions travaillant dans le même dépôt, publiez de préférence depuis une copie propre : `git worktree add --detach <dossier> <commit>` ;
 1. lance les tests (API et front) ;
 2. compile le front (`web/dist`) ;
-3. envoie le code et le front avec rsync. L'index de recherche du serveur est gardé tel quel, puisqu'il est mis à jour chaque nuit (voir « Mise à jour du corpus »). `LEXIA_AVEC_INDEX=1` envoie à la place celui du Mac (4 Go) ;
+3. prend le verrou de publication du serveur (`/run/lexia-publication`) : un seul envoi à la fois, les autres attendent 30 minutes au plus ; il est rendu à la fin, même en cas d'échec. Puis il envoie le code et le front avec rsync. L'index de recherche du serveur est gardé tel quel, puisqu'il est mis à jour chaque nuit (voir « Mise à jour du corpus »). `LEXIA_AVEC_INDEX=1` envoie à la place celui du Mac (4 Go) ;
 4. installe les dépendances Python (PyTorch en version CPU) ;
 5. installe le service systemd et la configuration nginx, puis redémarre le service ;
 6. attend que `/api/sante` réponde.

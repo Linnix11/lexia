@@ -13,6 +13,11 @@ DOMAINE="${LEXIA_DOMAINE:-}"
 APP=/opt/lexia
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$RACINE"
+# Garde-fous entre sessions (deploy/garde_publication.sh) : arbre commite, pas de retour en arriere sur
+# la version en ligne, un seul envoi a la fois. Verifies des le depart pour echouer avant les tests.
+source deploy/garde_publication.sh
+arbre_propre
+contient_le_serveur
 
 echo "== Tests"
 .venv/bin/python -m pytest -q
@@ -34,6 +39,11 @@ else
   EXCLURE_INDEX+=(--exclude 'data/index')
   echo "  index du serveur conserve"
 fi
+
+echo "== Verrou de publication"
+prendre_verrou
+trap rendre_verrou EXIT
+contient_le_serveur   # une autre session a pu publier pendant nos tests
 
 echo "== Version"
 git rev-parse --short HEAD > VERSION 2>/dev/null && echo "  $(cat VERSION)" || echo "inconnue" > VERSION

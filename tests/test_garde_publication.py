@@ -1,0 +1,83 @@
+"""Garde-fous de publication (deploy/garde_publication.sh) : arbre commite, pas de retour en arriere sur la
+version en ligne, un seul envoi a la fois. Le serveur est simule : « ssh » execute la commande en local."""
+
+import os
+import subprocess
+from pathlib import Path
+
+GARDE = Path(__file__).resolve().parent.parent / "deploy" / "garde_publication.sh"
+
+
+def git(depot, *args):
+    return subprocess.run(["git", "-C", str(depot), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def preparer(tmp_path):
+    depot = tmp_path / "depot"
+    depot.mkdir()
+    git(depot, "init", "-q")
+    git(depot, "config", "user.email", "t@t")
+    git(depot, "config", "user.name", "t")
+    (depot / "a.py").write_text("1\n")
+    git(depot, "add", "a.py")
+    git(depot, "commit", "-qm", "un")
+    serveur = tmp_path / "serveur"
+    serveur.mkdir()
+    faux = tmp_path / "bin"
+    faux.mkdir()
+    (faux / "ssh").write_text('#!/usr/bin/env bash\nshift\nexec bash -c "$*"\n')   # ssh <serveur> <commande>
+    (faux / "ssh").chmod(0o755)
+    env = os.environ | {"PATH": f"{faux}:{os.environ['PATH']}", "SERVEUR": "faux", "APP": str(serveur),
+                        "LEXIA_VERROU": str(tmp_path / "verrou"), "LEXIA_PAUSE_VERROU": "0"}
+    return depot, serveur, env
+
+
+def lancer(depot, env, script, **plus):
+    return subprocess.run(["bash", "-c", f"set -euo pipefail; source '{GARDE}'; {script}"], cwd=depot,
+                          env=env | plus, capture_output=True, text=True)
+
+
+def test_arbre_modifie_refuse_sauf_dossiers_non_envoyes(tmp_path):
+    depot, _, env = preparer(tmp_path)
+    assert lancer(depot, env, "arbre_propre").returncode == 0
+    (depot / "tests").mkdir()
+    (depot / "tests" / "t.py").write_text("x")                 # jamais envoye : sans effet
+    assert lancer(depot, env, "arbre_propre").returncode == 0
+    (depot / "a.py").write_text("2\n")                         # modifie, non commite
+    r = lancer(depot, env, "arbre_propre")
+    assert r.returncode == 1 and "a.py" in r.stderr
+    assert lancer(depot, env, "arbre_propre", LEXIA_FORCER="1").returncode == 0
+
+
+def test_pas_de_retour_en_arriere_sur_la_version_en_ligne(tmp_path):
+    depot, serveur, env = preparer(tmp_path)
+    assert lancer(depot, env, "contient_le_serveur").returncode == 0        # pas de VERSION : premier envoi
+    ancien = git(depot, "rev-parse", "--short", "HEAD")
+    (depot / "a.py").write_text("2\n")
+    git(depot, "commit", "-qam", "deux")
+    recent = git(depot, "rev-parse", "--short", "HEAD")
+    (serveur / "VERSION").write_text(f"{ancien}+abcdef1 (essai)\n")         # ancienne version en ligne : ok
+    assert lancer(depot, env, "contient_le_serveur").returncode == 0
+    (serveur / "VERSION").write_text(recent + "\n")
+    git(depot, "checkout", "-q", ancien)                                    # publier l'ancien commit : refus
+    r = lancer(depot, env, "contient_le_serveur")
+    assert r.returncode == 1 and "ne contient pas" in r.stderr
+    assert lancer(depot, env, "contient_le_serveur", LEXIA_FORCER="1").returncode == 0
+    (serveur / "VERSION").write_text("0123456789abc\n")                     # commit inconnu du depot : refus
+    assert lancer(depot, env, "contient_le_serveur").returncode == 1
+
+
+def test_un_seul_envoi_a_la_fois(tmp_path):
+    depot, _, env = preparer(tmp_path)
+    verrou = tmp_path / "verrou"
+    r = lancer(depot, env, 'prendre_verrou; echo "jeton=$JETON_VERROU"')
+    assert r.returncode == 0 and (verrou / "qui").exists()
+    # une seconde publication attend puis renonce ; elle ne libere pas le verrou d'une autre
+    r = lancer(depot, env, "prendre_verrou", LEXIA_ATTENTE_VERROU="0")
+    assert r.returncode == 1 and "tient le verrou" in r.stderr
+    assert lancer(depot, env, 'JETON_VERROU=autre-1-1; rendre_verrou').returncode == 0 and verrou.exists()
+    # le titulaire le libere, puis un nouvel envoi peut le prendre
+    jeton = (verrou / "qui").read_text().split()[0]
+    assert lancer(depot, env, f"JETON_VERROU={jeton}; rendre_verrou").returncode == 0 and not verrou.exists()
+    r = lancer(depot, env, "prendre_verrou; rendre_verrou")
+    assert r.returncode == 0 and not verrou.exists()
