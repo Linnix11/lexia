@@ -1,5 +1,5 @@
 // Cours deposes par l'etudiant : depot (PDF, Word, texte) et liste par matiere.
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
 import { ACCEPT, formatAccepte, sansExtension } from '../lib/fichiers'
@@ -15,6 +15,7 @@ export function DepotCours() {
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const plein = coursMax > 0 && mesCours.length >= coursMax
+  const choix = useRef<HTMLInputElement>(null)
 
   const deposer = async (e: FormEvent) => {
     e.preventDefault()
@@ -30,7 +31,7 @@ export function DepotCours() {
       notifier('Cours déposé : Lexia le prépare pour vos révisions.')
       setFichier(null)
       setTitre('')
-      ;(e.target as HTMLFormElement).reset()
+      if (choix.current) choix.current.value = ''
       rafraichirCours()
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Le dépôt a échoué.')
@@ -46,10 +47,19 @@ export function DepotCours() {
         sousTitre="PDF, Word ou texte, 20 Mo au plus. Votre cours reste privé : vous seul pouvez l’utiliser."
         droite={coursMax > 0 ? <span className="text-[11px] text-muted">{mesCours.length} / {coursMax} cours</span> : undefined} />
       <form onSubmit={deposer} className="mt-3.5 flex flex-wrap items-end gap-2">
-        <label className="grid min-w-[200px] flex-1 gap-1.5 text-[11px] text-muted">
-          Fichier
-          <input type="file" accept={ACCEPT} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} className={champ} />
-        </label>
+        {/* Champ natif masque : son bouton s'affichait en anglais selon le navigateur (« Choose File »). */}
+        <div className="grid min-w-[200px] flex-1 gap-1.5 text-[11px] text-muted">
+          <span id="depot-fichier-libelle">Fichier</span>
+          <input ref={choix} id="depot-fichier" type="file" accept={ACCEPT} className="sr-only" tabIndex={-1} aria-hidden
+            onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
+          <span className="flex items-center gap-2.5 rounded-[7px] border border-line bg-white px-[5px] py-[4px] text-[12px] text-ink">
+            <button type="button" onClick={() => choix.current?.click()} aria-describedby="depot-fichier-nom"
+              className="shrink-0 rounded-[6px] border border-line bg-chip px-2.5 py-1 text-[12px] text-forest hover:border-[#9eafa3]">
+              Choisir un fichier
+            </button>
+            <span id="depot-fichier-nom" className="min-w-0 truncate text-muted">{fichier ? fichier.name : 'Aucun fichier choisi'}</span>
+          </span>
+        </div>
         <label className="grid gap-1.5 text-[11px] text-muted">
           Matière
           <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ}>

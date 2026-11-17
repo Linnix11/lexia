@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
 import { infosMode, symbole } from '../lib/modes'
+import { numeroSource, titreCourt } from '../lib/sources'
 import { useApp, type Message } from '../state/contexte'
 
 function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) {
@@ -19,7 +20,7 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
             title={s.entete}
             className="rounded border-b border-[#b2c2b7] px-0.5 text-[11px] font-semibold text-forest hover:bg-mint"
           >
-            [{s.label ?? 'source'}]
+            [{numeroSource(sources, id)}]
           </button>
         )
       })}
@@ -41,7 +42,7 @@ function Bloc({ titre, items, sources, ton }: { titre: string; items: Element[];
   return (
     <div className="mt-3.5">
       <h4 className={`mb-1.5 text-[10px] font-bold tracking-[1.4px] uppercase ${couleur}`}>{titre}</h4>
-      <ul className="grid gap-1.5">
+      <ul className="grid max-w-[75ch] gap-1.5">
         {items.map((it, i) => (
           <li key={i} className="text-[12.5px] leading-[1.6]">
             {/* rubrique affichee a son premier element : sous-titres propres a chaque mode */}
@@ -63,8 +64,8 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
   return (
     <div className="mt-4 border-t border-line-soft pt-3">
       <h4 className="mb-1 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
-      <ul>
-        {sources.map((s) => (
+      <ul className="max-w-[75ch]">
+        {sources.map((s, i) => (
           <li key={s.id}>
             <button
               type="button"
@@ -75,8 +76,8 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
                 {symbole(s)}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] leading-[1.35] font-semibold">
-                  <span className="text-forest">[{s.label}]</span> {s.entete}
+                <span className="block text-[11px] leading-[1.35] font-semibold" title={s.entete}>
+                  <span className="text-forest">[{i + 1}]</span> {titreCourt(s.entete)}
                 </span>
                 <span className="mt-0.5 block text-[10px] break-words text-muted">{s.version}</span>
               </span>
@@ -130,7 +131,8 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
   )
 }
 
-export function Reponse({ message, actions = true }: { message: Message; actions?: boolean }) {
+/** titre=false : la fiche ouverte dans « Fiches & révisions » affiche deja le titre dans sa carte (point 6). */
+export function Reponse({ message, actions = true, titre = true }: { message: Message; actions?: boolean; titre?: boolean }) {
   const { basculerFavori, estFavori } = useApp()
   const r = message.reponse!
   const [titreDroit, titreExplication, titreAttention] = infosMode(message.mode).blocs
@@ -139,7 +141,7 @@ export function Reponse({ message, actions = true }: { message: Message; actions
     <article className="min-w-0 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 break-words">
       {r.statut === 'reponse' ? (
         <>
-          {r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
+          {titre && r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
           <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
           <Bloc titre={titreExplication} items={r.explication} sources={r.sources} ton="neutre" />
           <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />

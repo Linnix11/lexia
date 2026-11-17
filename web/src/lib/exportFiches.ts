@@ -3,11 +3,7 @@
 import type { Element, FicheSource } from './api'
 import type { Favori } from './favoris'
 import { infosMode } from './modes'
-
-/** Numero d'affichage continu (1, 2, 3...) dans l'ordre de la liste des sources de la reponse. */
-export function numeroSource(sources: FicheSource[], id: string): number {
-  return sources.findIndex((s) => s.id === id) + 1
-}
+import { numeroSource } from './sources'
 
 function bloc(titre: string, items: Element[], sources: FicheSource[]): string[] {
   if (!items.length) return []

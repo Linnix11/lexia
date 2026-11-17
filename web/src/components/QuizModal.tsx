@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
+import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
 import { ChoixCours } from './ChoixCours'
@@ -191,7 +192,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
                             return s ? (
                               <button key={id} type="button" onClick={() => ouvrirSource(id)}
                                 className="text-[11px] font-semibold text-forest hover:underline" title={s.entete}>
-                                [{s.label}] {s.entete.slice(0, 60)}{s.entete.length > 60 ? '…' : ''}
+                                [{numeroSource(sources, id)}] {titreCourt(s.entete).slice(0, 60)}{titreCourt(s.entete).length > 60 ? '…' : ''}
                               </button>
                             ) : null
                           })}

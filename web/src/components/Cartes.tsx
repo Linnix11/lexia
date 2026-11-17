@@ -10,7 +10,7 @@ const OFFICIELLES = [
   { sym: '◈', nom: 'Conseil constitutionnel', desc: 'Constitution, décisions DC et QPC', url: 'https://www.conseil-constitutionnel.fr/les-decisions' },
 ]
 
-const fleche = 'text-[14px] text-[#9aa19a] hover:text-forest'
+const fleche = 'text-[14px] text-muted hover:text-forest' // #9aa19a ne donnait que 2,62:1 sur la carte
 
 export function CarteSources() {
   return (

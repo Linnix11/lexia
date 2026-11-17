@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError, type SourceComplete, type Vigueur } from '../lib/api'
+import { titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
 
@@ -62,8 +63,15 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
               {source ? NATURE[source.type] ?? 'Source' : 'Source'}
             </div>
             <h2 id="source-titre" className="mt-1 font-display text-[19px] leading-snug">
-              {source?.entete ?? 'Chargement…'}
+              {source ? titreCourt(source.entete) : 'Chargement…'}
             </h2>
+            {/* Statut d'abord, classement complet replie (audit du 2026-11-16, point 4) */}
+            {source && (
+              <p className="mt-1 text-[11px] text-muted">
+                {source.version}
+                {source.en_vigueur === false && <span className="ml-1.5 rounded-full bg-cream px-2 py-0.5 text-[#8a6537]">ancienne version</span>}
+              </p>
+            )}
           </div>
           <button type="button" onClick={fermer} aria-label="Fermer la source"
             className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">
@@ -80,12 +88,15 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
           )}
           {source && (
             <>
-              {source.titre && source.titre !== source.entete && (
-                <p className="mb-3 text-[11px] leading-[1.45] text-muted">{source.titre}</p>
-              )}
               <div className="text-[13px] leading-[1.7] whitespace-pre-line">{source.texte}</div>
+              {(titreCourt(source.entete) !== source.entete || (source.titre && source.titre !== source.entete)) && (
+                <details className="mt-5 text-[11px] leading-[1.45] text-muted">
+                  <summary className="cursor-pointer text-forest">Classement complet</summary>
+                  <p className="mt-1.5">{source.entete}</p>
+                  {source.titre && source.titre !== source.entete && <p className="mt-1">{source.titre}</p>}
+                </details>
+              )}
               <dl className="mt-5 grid gap-1.5 border-t border-line-soft pt-3 text-[11px]">
-                <div className="flex gap-2"><dt className="w-[90px] shrink-0 text-muted">Version</dt><dd>{source.version}</dd></div>
                 {source.date && <div className="flex gap-2"><dt className="w-[90px] shrink-0 text-muted">Date</dt><dd>{source.date}</dd></div>}
                 {typeof source.meta.ecli === 'string' && (
                   <div className="flex gap-2"><dt className="w-[90px] shrink-0 text-muted">ECLI</dt><dd className="break-all">{source.meta.ecli}</dd></div>

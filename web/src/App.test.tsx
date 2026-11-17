@@ -74,7 +74,7 @@ describe('Assistant', () => {
     expect(screen.getByText('Droit positif')).toBeInTheDocument()
     expect(screen.getByText('Explication')).toBeInTheDocument()
     expect(screen.getByText('Conditions')).toBeInTheDocument()   // rubrique du mode affichee en sous-titre
-    expect(screen.getByRole('button', { name: '[S1]' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '[1]' })).toBeInTheDocument()
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
@@ -91,7 +91,7 @@ describe('Assistant', () => {
     }
     await poser('Que dit l’article 1240 ?')
     // cinq mentions de S1 (2 droit positif, 2 explication, 1 point incertain) : une pastille par bloc
-    expect(screen.getAllByRole('button', { name: '[S1]' })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: '[1]' })).toHaveLength(3)
   })
 
   it('propose les six semestres et envoie le semestre choisi', async () => {
@@ -112,7 +112,7 @@ describe('Assistant', () => {
 
   it('ouvre la source citee et verifie la version en vigueur', async () => {
     await poser('article 1240')
-    fireEvent.click(screen.getByRole('button', { name: '[S1]' }))
+    fireEvent.click(screen.getByRole('button', { name: '[1]' }))
     const panneau = await screen.findByRole('dialog')
     await within(panneau).findByText("Tout fait quelconque de l'homme…")
     fireEvent.click(within(panneau).getByRole('button', { name: 'Vérifier la version en vigueur' }))
@@ -360,5 +360,73 @@ describe('Audit du 16 novembre 2026', () => {
     render(<Site />)
     expect(await screen.findByText('1 matière disponible')).toBeInTheDocument()
     expect(screen.queryByText(/matières suivies/)).not.toBeInTheDocument()
+  })
+
+  it('sources numerotees 1, 2, 3 et intitules courts, dans la reponse comme dans le panneau (points 3 et 4)', async () => {
+    const long = (n: string) => `Code civil, Livre III : Des différentes manières, Titre III : Des sources d’obligations, article ${n}`
+    const s1 = { ...REPONSE.sources[0], id: 'code_civil:A1240', label: 'S1', entete: long('1240') }
+    const s4 = { ...REPONSE.sources[0], id: 'code_civil:A1241', label: 'S4', entete: long('1241') }
+    reponseChat = { ...REPONSE, sources: [s1, s4],
+      droit_positif: [{ texte: 'Règle 1.', sources: [s1.id] }, { texte: 'Règle 2.', sources: [s4.id] }] }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/sources/') ? repondre({ ...s4, texte: 'Chacun est responsable…', titre: null, meta: {} }) : base(url, init))
+    await poser('article 1240')
+    expect(screen.getByRole('button', { name: '[2]' })).toBeInTheDocument()
+    expect(screen.queryByText(/S4/)).not.toBeInTheDocument()
+    expect(screen.getByText('Code civil · article 1241')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '[2]' }))
+    const panneau = await screen.findByRole('dialog')
+    expect(await within(panneau).findByRole('heading', { name: 'Code civil · article 1241' })).toBeInTheDocument()
+    expect(within(panneau).getByText('Classement complet').closest('details')).not.toHaveAttribute('open')
+  })
+
+  it('une fiche ouverte n affiche son titre qu une fois (point 6)', async () => {
+    await poser('article 1240')
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Fiches & révisions/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^La responsabilité pour faute/ }))
+    expect(await screen.findByText('Droit positif')).toBeInTheDocument()
+    expect(screen.getAllByText('La responsabilité pour faute')).toHaveLength(1)
+  })
+
+  it('saisie multiligne : Maj + Entree passe a la ligne, Entree envoie (point 2)', async () => {
+    render(<Site />)
+    const champ = await screen.findByLabelText('Votre question')
+    expect(champ.tagName).toBe('TEXTAREA')
+    fireEvent.change(champ, { target: { value: 'Première ligne\nseconde ligne' } })
+    fireEvent.keyDown(champ, { key: 'Enter', shiftKey: true })
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)
+    await act(async () => {
+      fireEvent.keyDown(champ, { key: 'Enter' })
+    })
+    await screen.findByText('La responsabilité pour faute')
+    const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
+    expect(corps.question).toBe('Première ligne\nseconde ligne')
+  })
+
+  it('matieres : actions avant les textes officiels replies, depot en francais (point 7)', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    const textes = await screen.findByText('Textes officiels (1)')
+    expect(textes.closest('details')).not.toHaveAttribute('open')
+    const carte = textes.closest('section')!
+    const ordre = within(carte).getByRole('button', { name: 'Poser une question' }).compareDocumentPosition(textes)
+    expect(ordre & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Choisir un fichier' })).toBeInTheDocument()
+    expect(screen.getByText('Aucun fichier choisi')).toBeInTheDocument()
+    const pdf = new File(['%PDF'], 'chapitre1.pdf', { type: 'application/pdf' })
+    fireEvent.change(document.getElementById('depot-fichier')!, { target: { files: [pdf] } })
+    expect(screen.getByText('chapitre1.pdf')).toBeInTheDocument()
+  })
+
+  it('la page Compte garde la navigation de l espace etudiant (point 14)', async () => {
+    window.history.pushState({}, '', '/compte')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'etu@exemple.fr' })).toBeInTheDocument()
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
+    fireEvent.click(within(nav).getByRole('button', { name: /Fiches & révisions/ }))
+    expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/app')
   })
 })
