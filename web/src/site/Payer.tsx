@@ -3,6 +3,7 @@
 // Le numero de carte est saisi chez Stripe : il ne passe jamais par Lexia.
 import { useState } from 'react'
 import { api, ApiError, type Formule } from '../lib/api'
+import { VERSION_CGU } from '../lib/cgu'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { bouton, boutonSecondaire } from './Public'
@@ -14,6 +15,7 @@ export function Payer({ formule, principal }: { formule: Formule; principal: boo
   const { profil } = useSession()
   const [mois, setMois] = useState(1)
   const [accord, setAccord] = useState(false)
+  const [cgu, setCgu] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const style = principal ? bouton : boutonSecondaire
@@ -24,7 +26,7 @@ export function Payer({ formule, principal }: { formule: Formule; principal: boo
     setEnvoi(true)
     setErreur(null)
     try {
-      const { url } = await api.payer(formule.id, mois, accord)
+      const { url } = await api.payer(formule.id, mois, accord, VERSION_CGU)
       window.location.assign(url)
     } catch (e) {
       setErreur(e instanceof ApiError ? e.message : 'Le paiement est momentanément indisponible.')
@@ -53,7 +55,16 @@ export function Payer({ formule, principal }: { formule: Formule; principal: boo
           période déjà écoulée.
         </span>
       </label>
-      <button type="button" disabled={!accord || envoi} onClick={payer} className={style}>
+      <label htmlFor={`cgu-${formule.id}`} className="flex gap-2 text-[12px] leading-[1.5] text-muted">
+        <input id={`cgu-${formule.id}`} type="checkbox" checked={cgu} onChange={(e) => setCgu(e.target.checked)}
+          className="mt-[3px] accent-forest" />
+        <span>
+          J’ai lu et j’accepte les{' '}
+          <Lien href="/cgu" target="_blank" className="underline">conditions générales d’utilisation et de vente</Lien> du{' '}
+          {VERSION_CGU}, y compris le droit de rétractation et son formulaire.
+        </span>
+      </label>
+      <button type="button" disabled={!accord || !cgu || envoi} onClick={payer} className={style}>
         {envoi ? 'Ouverture du paiement…' : 'Payer par carte'}
       </button>
       {erreur && <p role="alert" className="text-[12px] text-[#8c4a36]">{erreur}</p>}

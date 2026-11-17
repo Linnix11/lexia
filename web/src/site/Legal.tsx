@@ -1,6 +1,7 @@
 // Pages legales. Les informations sur l'editeur viennent du .env du serveur (LEGAL_*, CONTACT_EMAIL) :
 // tant qu'une valeur manque, un encart « a completer » s'affiche. A faire relire par un juriste.
 import type { ReactNode } from 'react'
+import { VERSION_CGU } from '../lib/cgu'
 import { useSession } from '../state/session'
 import { PublicLayout, Section, Surtitre } from './Public'
 
@@ -91,7 +92,7 @@ export function MentionsLegales() {
 export function Cgu() {
   const { l, contact, paiement } = useLegal()
   return (
-    <Page titre="Conditions générales d’utilisation" maj="12 novembre 2026">
+    <Page titre="Conditions générales d’utilisation et de vente" maj={VERSION_CGU}>
       <section>
         <h2>1. Objet</h2>
         <p>
@@ -154,7 +155,26 @@ export function Cgu() {
           la consommation). Si vous demandez expressément que la formule soit activée avant la fin de ce délai, vous
           payez, en cas de rétractation, un montant proportionnel à la période déjà écoulée (article L. 221-25).
           Le remboursement intervient dans les quatorze jours suivant votre demande, par le moyen de paiement utilisé.
+          Vous pouvez utiliser le modèle ci-dessous, sans y être obligé.
         </p>
+        <div className="rounded-[8px] border border-line px-4 py-3 text-[13px]" aria-label="Modèle de formulaire de rétractation">
+          <p className="font-semibold">Modèle de formulaire de rétractation (annexe à l’article R. 221-1 du Code de la consommation)</p>
+          <p>(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)</p>
+          <p>
+            À l’attention de <V v={l?.editeur} manque="Éditeur" />, <V v={l?.adresse} manque="Adresse" />,{' '}
+            <Contact adresse={contact} /> :
+          </p>
+          <p>
+            Je/nous (*) vous notifie/notifions (*) par la présente ma/notre (*) rétractation du contrat portant sur la
+            prestation de services ci-dessous :<br />
+            Commandé le :<br />
+            Nom du (des) consommateur(s) :<br />
+            Adresse du (des) consommateur(s) :<br />
+            Signature du (des) consommateur(s) (uniquement en cas de notification du présent formulaire sur papier) :<br />
+            Date :
+          </p>
+          <p>(*) Rayez la mention inutile.</p>
+        </div>
       </section>
       <section>
         <h2>5. Cours déposés</h2>

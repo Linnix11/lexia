@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from '../Site'
+import { VERSION_CGU } from '../lib/cgu'
 
 const FORMULES = [
   { id: 'gratuit', nom: 'Gratuit', prix_mensuel_euros: 0, questions_par_jour: 10, quiz_par_jour: 2, description: 'd', avantages: ['a'] },
@@ -33,7 +34,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('Paiement en ligne', () => {
-  it('exige la demande d’accès immédiat, puis ouvre la page Stripe', async () => {
+  it('exige l’accès immédiat et l’acceptation des conditions, puis ouvre la page Stripe', async () => {
     window.history.pushState({}, '', '/tarifs')
     render(<Site />)
     const boutons = await screen.findAllByRole('button', { name: 'Payer par carte' })
@@ -41,11 +42,13 @@ describe('Paiement en ligne', () => {
     fireEvent.change(screen.getAllByLabelText('Durée')[0], { target: { value: '3' } })
     expect(screen.getByText('14,97 €')).toBeInTheDocument()
     fireEvent.click(screen.getAllByRole('checkbox')[0])
+    expect(boutons[0]).toBeDisabled()   // conditions pas encore acceptees
+    fireEvent.click(screen.getAllByRole('checkbox')[1])
     expect(boutons[0]).toBeEnabled()
     fireEvent.click(boutons[0])
     await waitFor(() => expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/cs_test_1'))
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/paiement/session'))!
-    expect(JSON.parse(appel[1].body)).toEqual({ formule: 'etudiant', mois: 3, execution_immediate: true })
+    expect(JSON.parse(appel[1].body)).toEqual({ formule: 'etudiant', mois: 3, execution_immediate: true, cgu_version: VERSION_CGU })
   })
 
   it('sans compte, invite à en créer un', async () => {
@@ -53,5 +56,14 @@ describe('Paiement en ligne', () => {
     window.history.pushState({}, '', '/tarifs')
     render(<Site />)
     expect((await screen.findAllByRole('link', { name: 'Créer un compte pour souscrire' }))[0]).toHaveAttribute('href', '/inscription')
+  })
+
+  it('les CGU donnent leur version et le formulaire type de rétractation', async () => {
+    // location est remplace par une copie dans beforeEach : on y met le chemin de la page
+    vi.stubGlobal('location', { ...window.location, pathname: '/cgu', assign })
+    render(<Site />)
+    await screen.findByRole('heading', { name: 'Conditions générales d’utilisation et de vente' })
+    await screen.findByText(new RegExp(`Dernière mise à jour : ${VERSION_CGU}`))
+    expect(await screen.findByLabelText('Modèle de formulaire de rétractation')).toHaveTextContent('Rayez la mention inutile')
   })
 })

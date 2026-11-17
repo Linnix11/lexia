@@ -41,6 +41,9 @@ API = "https://api.stripe.com/v1/checkout/sessions"
 TOLERANCE_SECONDES = 300   # tolerance par defaut des bibliotheques Stripe
 MOIS_MAX = 12
 EVENEMENTS_PAYES = ("checkout.session.completed", "checkout.session.async_payment_succeeded")
+# Version des conditions generales (date de derniere modification), acceptee avant chaque paiement et gardee
+# avec lui. A changer avec web/src/lib/cgu.ts a chaque modification des conditions.
+VERSION_CGU = "17 novembre 2026"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS paiements (
@@ -54,6 +57,7 @@ CREATE TABLE IF NOT EXISTS paiements (
     devise                 TEXT NOT NULL,
     statut                 TEXT NOT NULL DEFAULT 'ouvert',   -- ouvert | paye | ecarte
     execution_immediate_le TEXT NOT NULL,            -- demande expresse d'execution avant 14 jours
+    cgu_version            TEXT,                     -- version des conditions acceptee avant le paiement
     cree_le                TEXT NOT NULL,
     paye_le                TEXT,
     paiement_stripe        TEXT                      -- identifiant du PaymentIntent (pi_...), pour un remboursement
@@ -100,12 +104,16 @@ class Paiements:
         # shortcut: connexion et verrou de Comptes reutilises pour une transaction commune aux deux tables
         with comptes._lock, comptes._con:
             comptes._con.executescript(SCHEMA)
+            colonnes = {r[1] for r in comptes._con.execute("PRAGMA table_info(paiements)")}
+            if "cgu_version" not in colonnes:  # table creee avant l'acceptation des conditions au paiement
+                comptes._con.execute("ALTER TABLE paiements ADD COLUMN cgu_version TEXT")
 
-    def ouvrir(self, session: str, u: Utilisateur, formule: str, mois: int, montant: int) -> None:
+    def ouvrir(self, session: str, u: Utilisateur, formule: str, mois: int, montant: int,
+               cgu_version: str = VERSION_CGU) -> None:
         maintenant = datetime.now(timezone.utc).isoformat(timespec="seconds")
         self.comptes._q("INSERT INTO paiements (session, utilisateur, email, formule, mois, montant_centimes, devise, "
-                        "execution_immediate_le, cree_le) VALUES (?, ?, ?, ?, ?, ?, 'eur', ?, ?)",
-                        (session, u.id, u.email, formule, mois, montant, maintenant, maintenant))
+                        "execution_immediate_le, cgu_version, cree_le) VALUES (?, ?, ?, ?, ?, ?, 'eur', ?, ?, ?)",
+                        (session, u.id, u.email, formule, mois, montant, maintenant, cgu_version, maintenant))
 
     def encaisser(self, session: str, montant: int | None, devise: str | None, paiement_stripe: str | None) -> str:
         """Paiement confirme par Stripe : active la formule. Renvoie ce qui a ete fait (pour le journal)."""
@@ -151,6 +159,7 @@ class DemandePaiement(BaseModel):
     formule: str
     mois: int = Field(ge=1, le=MOIS_MAX)
     execution_immediate: bool
+    cgu_version: str = ""   # version des conditions acceptee (case cochee), egale a VERSION_CGU
 
 
 def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_origine, *, cle: str, secret_webhook: str,
@@ -167,6 +176,9 @@ def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_ori
             raise HTTPException(403, "Confirmez votre adresse e-mail avant de souscrire une formule.")
         if not req.execution_immediate:
             raise HTTPException(422, "Cochez la demande d'accès immédiat pour continuer.")
+        if req.cgu_version != VERSION_CGU:
+            raise HTTPException(422, "Acceptez les conditions générales en vigueur pour continuer "
+                                     "(rechargez la page si elles viennent de changer).")
         en_cours = _formule_en_cours(u)
         if en_cours and en_cours != f.id:
             raise HTTPException(409, f"Votre formule {u.formule.nom} est en cours jusqu'au {u.formule_fin} : "

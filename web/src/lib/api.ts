@@ -357,8 +357,8 @@ export const api = {
   deconnexion: () => post<void>('/auth/deconnexion', {}),
   supprimerCompte: (mot_de_passe: string) => post<void>('/auth/supprimer', { mot_de_passe }),
   /** Ouvre une session de paiement Stripe Checkout ; renvoie l'adresse de la page de paiement. */
-  payer: (formule: string, mois: number, execution_immediate: boolean) =>
-    post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate }),
+  payer: (formule: string, mois: number, execution_immediate: boolean, cgu_version: string) =>
+    post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate, cgu_version }),
   admin: {
     stats: () => requete<StatsAdmin>('/admin/stats'),
     clients: (q = '') => requete<ClientAdmin[]>(`/admin/clients?q=${encodeURIComponent(q)}`),
