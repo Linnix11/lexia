@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
-from api.auth import cle_ip, creer_routes, exiger_admin, routes_formules
+from api.auth import cle_ip, creer_routes, exiger_admin, routes_formules, verifier_origine
 from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
@@ -134,7 +134,8 @@ def _construire_reclasseur(settings: Settings):
 
 def create_app(settings: Settings | None = None, *, retriever: Retriever | None = None,
                llm: LLM | None = None, journal: Journal | None = None, embedder=None,
-               expanseur=None, reclasseur=None, comptes: Comptes | None = None, secours=None) -> FastAPI:
+               expanseur=None, reclasseur=None, comptes: Comptes | None = None, secours=None,
+               client_stripe=None) -> FastAPI:
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     journal = journal if journal is not None else Journal(settings.logs_dir)
@@ -190,6 +191,15 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)
         app.include_router(routes_annales)
         app.include_router(admin_annales, prefix="/admin")
+    paiement_actif = bool(comptes is not None and settings.stripe_secret_key and settings.stripe_webhook_secret
+                          and settings.url_publique)
+    if paiement_actif:
+        from api.paiement import Paiements, creer_routes_paiement
+
+        app.include_router(creer_routes_paiement(
+            Paiements(comptes), utilisateur_requis, verifier_origine, cle=settings.stripe_secret_key,
+            secret_webhook=settings.stripe_webhook_secret, url_publique=settings.url_publique, journal=journal,
+            client=client_stripe), prefix="/paiement")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:
@@ -264,7 +274,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     @app.get("/config")
     def config_publique():
         legal = {k: (v or None) if isinstance(v, str) else v for k, v in settings.legal.items()}
-        return {"comptes": comptes is not None, "contact_email": settings.contact_email or None, "legal": legal}
+        return {"comptes": comptes is not None, "contact_email": settings.contact_email or None, "legal": legal,
+                "paiement": paiement_actif}
 
     @app.get("/matieres")
     def matieres():

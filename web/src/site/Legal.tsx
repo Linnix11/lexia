@@ -20,7 +20,7 @@ function Contact({ adresse }: { adresse: string | null }) {
 
 function useLegal() {
   const { config } = useSession()
-  return { l: config?.legal, contact: config?.contact_email ?? null }
+  return { l: config?.legal, contact: config?.contact_email ?? null, paiement: !!config?.paiement }
 }
 
 function Page({ titre, maj, children }: { titre: string; maj: string; children: ReactNode }) {
@@ -89,7 +89,7 @@ export function MentionsLegales() {
 }
 
 export function Cgu() {
-  const { l, contact } = useLegal()
+  const { l, contact, paiement } = useLegal()
   return (
     <Page titre="Conditions générales d’utilisation" maj="12 novembre 2026">
       <section>
@@ -126,13 +126,24 @@ export function Cgu() {
           questions et de questionnaires par jour, indiqué sur la page Tarifs. Les compteurs sont remis à zéro chaque
           jour à minuit (heure de Paris).
         </p>
-        <p>
-          <strong>Souscription.</strong> Aucun paiement n’est encaissé sur le site. Une formule payante se demande par
-          e-mail (<Contact adresse={contact} />). Avant toute souscription, l’éditeur confirme par écrit la formule,
-          son prix toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}), sa durée et le mode de
-          paiement. Le contrat est conclu à la réception du paiement ; la formule est alors activée pour la durée
-          achetée, indiquée sur la page « Mon compte ».
-        </p>
+        {paiement ? (
+          <p>
+            <strong>Souscription.</strong> Depuis la page Tarifs, vous choisissez la formule et le nombre de mois ; le
+            prix total toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}) est affiché avant le
+            paiement. Le paiement se fait en une fois, par carte, sur la page sécurisée de notre prestataire Stripe :
+            l’éditeur ne voit ni ne conserve vos coordonnées bancaires. Le contrat est conclu à la confirmation du
+            paiement ; la formule est alors activée pour la durée achetée, indiquée sur la page « Mon compte ». Un
+            justificatif de paiement vous est adressé par e-mail.
+          </p>
+        ) : (
+          <p>
+            <strong>Souscription.</strong> Aucun paiement n’est encaissé sur le site. Une formule payante se demande par
+            e-mail (<Contact adresse={contact} />). Avant toute souscription, l’éditeur confirme par écrit la formule,
+            son prix toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}), sa durée et le mode de
+            paiement. Le contrat est conclu à la réception du paiement ; la formule est alors activée pour la durée
+            achetée, indiquée sur la page « Mon compte ».
+          </p>
+        )}
         <p>
           <strong>Durée, sans reconduction.</strong> Une formule payante dure le nombre de mois acheté et n’est jamais
           renouvelée automatiquement : à son échéance, le compte repasse en formule gratuite, sans démarche ni frais.
@@ -183,7 +194,7 @@ export function Cgu() {
 }
 
 export function Confidentialite() {
-  const { l, contact } = useLegal()
+  const { l, contact, paiement } = useLegal()
   return (
     <Page titre="Politique de confidentialité" maj="17 novembre 2026">
       <section>
@@ -261,6 +272,16 @@ export function Confidentialite() {
           ci-dessus){l?.groq ? <>, Groq (rédaction des réponses en secours)</> : null}
           {l?.courriel ? <>, Resend (envoi des e-mails de confirmation d’adresse et de réinitialisation du mot de passe)</> : null}.
         </p>
+        {paiement && (
+          <p>
+            Si vous payez une formule en ligne, les données saisies sur la page de paiement (carte, nom, adresse
+            e-mail) sont traitées par Stripe Payments Europe, Limited (Irlande), qui exécute le paiement. Stripe agit
+            aussi comme responsable de traitement pour ses propres obligations (lutte contre la fraude, réglementation
+            des paiements) ; Stripe, LLC (États-Unis), à qui ces données peuvent être transférées, est certifiée au
+            cadre de protection des données UE-États-Unis. L’éditeur ne reçoit que le résultat du paiement, son montant
+            et votre adresse e-mail.
+          </p>
+        )}
       </section>
       <section>
         <h2>Finalités et base légale</h2>

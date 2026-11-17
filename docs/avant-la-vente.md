@@ -92,10 +92,32 @@ avant d'adhérer.
 À faire par l'éditeur : choisir, adhérer (convention signée), puis donner le nom, l'adresse postale et le site du
 médiateur à renseigner dans `LEGAL_MEDIATEUR`. Les CGU (article 8) l'affichent alors.
 
-## 4. Paiement en ligne (aucun compte créé, rien d'intégré)
+## 4. Paiement en ligne : Stripe Checkout (choix de l'éditeur, 17 novembre 2026, D86)
 
-Aujourd'hui : paiement hors du site, puis `python -m api.admin formule <email> <formule> --jours N`. Frais relevés
-sur les grilles officielles le 17 novembre 2026, cartes de l'Espace économique européen.
+Intégré dans le code, inactif tant que les clés Stripe ne sont pas renseignées (le site garde alors la demande
+par e-mail). Fonctionnement : sur la page Tarifs, l'abonné choisit la durée (1, 2, 3, 6 ou 12 mois), coche la
+demande d'accès immédiat (droit de rétractation, article L. 221-25), puis paie sur la page de Stripe ; le webhook
+signé active la formule (prolongée si c'est la même formule encore en cours). Changer de formule payante en
+cours de période est refusé (à l'échéance seulement).
+
+À faire par l'éditeur pour l'activer :
+1. Ouvrir le compte Stripe (identité, IBAN, description du service) ; dans les réglages, activer les reçus par
+   e-mail pour les paiements réussis.
+2. Tableau de bord Stripe, Développeurs : créer un endpoint de webhook
+   `https://lexia-axionstudio.cloud/api/paiement/webhook` avec les événements `checkout.session.completed` et
+   `checkout.session.async_payment_succeeded`, puis noter son secret (`whsec_...`).
+3. Donner à la session de développement, sans les écrire dans une conversation, l'emplacement où les valeurs
+   ont été placées, ou les mettre soi-même dans `/opt/lexia/.env` : `STRIPE_SECRET_KEY` et
+   `STRIPE_WEBHOOK_SECRET` (voir `deploy/env.production.exemple`), puis redémarrer le service.
+4. Essai de bout en bout en mode test d'abord (clés `sk_test_`, carte de test de Stripe), puis en réel avec un
+   petit paiement remboursé. Vérifier aussi que Cloudflare laisse passer les appels de Stripe vers le webhook
+   (envoi d'un événement de test depuis le tableau de bord).
+
+Rétractation : rembourser depuis le tableau de bord Stripe (montant au prorata si l'accès immédiat a été
+demandé), puis `python -m api.admin formule <email> gratuit`.
+
+Comparatif ayant servi au choix. Frais relevés sur les grilles officielles le 17 novembre 2026, cartes de
+l'Espace économique européen.
 
 | | A. Stripe Checkout (paiement unique) | B. Mollie | C. Paddle (vendeur officiel, « merchant of record ») |
 |---|---|---|---|
@@ -116,9 +138,3 @@ Lemon Squeezy n'accepte plus d'inscriptions (fermeture annoncée au 31 mars 2027
 Lecture : A et B coûtent à peu près pareil ; C coûte deux à trois fois plus, et son atout principal (gérer la TVA
 européenne) ne sert pas à une micro-entreprise en franchise de TVA. Le paiement unique pour N mois correspond aux
 CGU actuelles (pas de reconduction) et évite le supplément de Stripe Billing.
-
-Ce que l'intégration demandera, une fois l'option choisie : création du compte par l'éditeur (identité, IBAN) ;
-une route FastAPI qui crée la session de paiement et une route de webhook signée qui active la formule (même
-fonction que `api.admin formule`) ; une case de consentement à l'exécution immédiate avant le paiement (droit de
-rétractation, article L. 221-25 du Code de la consommation, déjà décrit dans les CGU) ; mise à jour des CGU
-(article 4 : souscription en ligne) et du registre (T5, nouveau sous-traitant).

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
+import { Payer } from './Payer'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 const prix = (f: Formule) =>
@@ -37,6 +38,8 @@ export function Formules() {
             : <Lien href="/inscription" className={bouton}>Créer un compte</Lien>
         } else if (actuelle) {
           action = <span className={`${boutonSecondaire} cursor-default`}>Votre formule actuelle</span>
+        } else if (config?.paiement) {
+          action = <Payer formule={f} principal={miseEnAvant} />
         } else if (config?.contact_email) {
           const sujet = encodeURIComponent(`Lexia - formule ${f.nom}`)
           const corps = encodeURIComponent(`Bonjour,\n\nJe souhaite passer à la formule ${f.nom}.\nAdresse de mon compte Lexia : ${profil?.email ?? ''}\n`)
@@ -84,9 +87,11 @@ export function Tarifs() {
           Conditions de vente : <Lien href="/cgu" className="underline">conditions générales</Lien>, section 4.
         </p>
         <p className="mt-2 text-[12px] text-muted">
-          {config?.contact_email
-            ? 'Le paiement en ligne arrive bientôt : en attendant, les formules payantes sont activées sur demande.'
-            : 'Le paiement en ligne arrive bientôt.'}{' '}
+          {config?.paiement
+            ? 'Paiement par carte sur la page sécurisée de Stripe : Lexia ne voit pas vos coordonnées bancaires. La formule s’active dès la confirmation du paiement.'
+            : config?.contact_email
+              ? 'Le paiement en ligne arrive bientôt : en attendant, les formules payantes sont activées sur demande.'
+              : 'Le paiement en ligne arrive bientôt.'}{' '}
           Sans engagement.
         </p>
       </Section>

@@ -55,6 +55,9 @@ class Settings:
     # Adresse publique du site (https://...), seule base des liens envoyes par e-mail. Jamais l'en-tete Host ou
     # Origin de la requete : un domaine tiers pointe sur le serveur faisait envoyer des liens vers lui (audit 2).
     url_publique: str = ""
+    # Paiement en ligne par Stripe Checkout (D86) : actif seulement avec les deux cles et URL_PUBLIQUE
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
     # Pages legales (mentions, CGU, confidentialite) : vide = affiche « a completer »
     legal: dict = field(default_factory=dict)
 
@@ -90,6 +93,8 @@ def get_settings() -> Settings:
         admin_emails=_list("ADMIN_EMAILS"),
         inscriptions_par_ip_jour=int(os.environ.get("INSCRIPTIONS_PAR_IP_JOUR", "20")),
         url_publique=os.environ.get("URL_PUBLIQUE", "").strip().rstrip("/"),
+        stripe_secret_key=os.environ.get("STRIPE_SECRET_KEY", "").strip(),
+        stripe_webhook_secret=os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip(),
         legal={
             "editeur": os.environ.get("LEGAL_EDITEUR", ""),
             "statut": os.environ.get("LEGAL_STATUT", ""),

@@ -87,13 +87,22 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 ### T5. Facturation des formules payantes
 
 - Finalité : encaisser le prix, établir les justificatifs, tenir la comptabilité.
-- Données : nom ou adresse e-mail du client, formule, montant, date, moyen de paiement ; jamais le numéro de
-  carte chez l'éditeur (il reste chez le prestataire de paiement).
-- Destinataires : éditeur, prestataire de paiement (à choisir), administration fiscale sur demande.
+- Données chez l'éditeur (`api/paiement.py`, table `paiements`) : numéro de compte, adresse e-mail, formule,
+  nombre de mois, montant, devise, statut, date de la demande d'accès immédiat (droit de rétractation), dates de
+  création et de paiement, identifiants Stripe de la session et du paiement. Jamais le numéro de carte : il est
+  saisi sur la page de Stripe. Chez Stripe : données de carte, nom, adresse e-mail.
+- Base légale : exécution du contrat (paiement), obligation légale (comptabilité).
+- Destinataires : éditeur ; Stripe Payments Europe, Limited (Irlande), contractant pour l'Espace économique
+  européen, également responsable de traitement pour ses propres obligations (lutte contre la fraude,
+  réglementation) ; administration fiscale sur demande.
+- Transferts hors UE : Stripe, LLC (États-Unis), certifiée au cadre UE-États-Unis (liste officielle consultée le
+  17 novembre 2026).
 - Durée : 10 ans en archivage intermédiaire (obligation comptable ; référentiel CNIL « gestion des activités
   commerciales » : https://www.cnil.fr/sites/cnil/files/atoms/files/referentiel_traitements-donnees-caractere-personnel_gestion-activites-commerciales.pdf).
-- État : aujourd'hui la formule est activée à la main (`python -m api.admin formule`) après un paiement hors du
-  site. Fiche à compléter quand le prestataire de paiement sera choisi (sous-traitant, transfert éventuel).
+  La ligne de paiement est gardée après la suppression du compte (pas de suppression en cascade). Purge au-delà
+  de 10 ans : à mettre en place avant 2036.
+- État : paiement en ligne par Stripe Checkout (D86), actif dès que `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  et `URL_PUBLIQUE` sont renseignées ; sinon activation à la main (`python -m api.admin formule`).
 
 ### T6. Journaux techniques et avis
 
@@ -148,7 +157,7 @@ recommande la CNIL (https://www.cnil.fr/fr/adequation-des-etats-unis-les-premier
 | Google LLC | API Gemini (rédaction des réponses) | Questions, extraits, passages de cours | États-Unis | Certifié (actif) | Conditions de l'API Gemini et avenant sur le traitement des données : le niveau payant est requis (T2) |
 | Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types à vérifier dans l'accord de traitement de Groq (D58) ; option « Zero Data Retention » activée (D58) | Accord de traitement des données Groq : à lire et archiver |
 | Resend | E-mails de confirmation et de réinitialisation | Adresse e-mail, texte du message | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
-| Prestataire de paiement | Encaissement (à choisir) | T5 | Selon le prestataire | À vérifier au choix | À vérifier au choix |
+| Stripe Payments Europe, Limited | Paiement par carte (Stripe Checkout) | T5 | Irlande (UE) ; Stripe, LLC aux États-Unis | Stripe, LLC certifiée (actif) | Contrat de services et accord de traitement des données Stripe, acceptés à l'ouverture du compte : à archiver |
 
 Non sous-traitants : GitHub (surveillance de `/api/sante`, aucune donnée personnelle des utilisateurs).
 
@@ -167,4 +176,4 @@ de Cloudflare ; limites de débit par adresse IP ; sauvegardes en 600 ; deux aud
 3. Archiver les accords de traitement des données de Hostinger, Cloudflare, Google, Groq et Resend.
 4. Vérifier la localisation du VPS Hostinger et la rotation des journaux nginx (14 jours).
 5. Décider d'une durée pour les comptes inactifs (repère CNIL : deux ans) et pour les échanges par e-mail (T9).
-6. Compléter T5 une fois le prestataire de paiement choisi.
+6. Paiement : archiver le contrat Stripe ; mettre en place la purge des paiements de plus de 10 ans.
