@@ -1,0 +1,28 @@
+# Cas pratiques ecrits par un enseignant - MODELE A REMPLIR
+#
+# A quoi sert ce fichier : mesurer honnetement si Lexia retrouve les bons articles sur des situations qu'aucun
+# developpeur n'a lues avant d'ecrire les regles de recherche. Les quatre jeux de controle existants ont tous ete
+# ecrits par la meme personne que les regles : ils surestiment la reussite.
+#
+# Consignes pour l'enseignant (ou l'etudiant de L2-L3) qui le remplit :
+#   1. Ecrire 30 a 50 situations, reparties sur les matieres de licence, comme dans un sujet de TD ou d'examen.
+#   2. Raconter des faits, en langage courant. Ne pas citer de numero d'article ni le nom de la notion attendue
+#      (pas « dol », « vice cache », « legitime defense »...) quand un etudiant ne le donnerait pas.
+#   3. Indiquer dans « sources » le ou les articles de principe qu'un correcteur attend. Format : code_civil:1240,
+#      code_penal:122-5, code_travail:L1232-1, code_justice_administrative:L521-2. Une seule source suffit a
+#      reussir le cas.
+#   4. Ne pas regarder api/lexique.py ni les autres fichiers de eval/ avant d'avoir fini.
+#   5. matiere : une valeur parmi droit_civil, droit_des_contrats, droit_de_la_famille, droit_des_biens, droit_penal,
+#      droit_social, droit_administratif, introduction_au_droit, droit_constitutionnel (liste complete :
+#      api/matieres.py).
+#
+# Mesure, une seule fois, une fois le fichier rempli :
+#   python -m eval.backtest_recherche eval/cas_pratiques_enseignant.yaml
+#
+# Auteur : ............................   Date : ............   Niveau vise : ......
+
+cas:
+  # Exemple de forme (a remplacer) :
+  # - {id: ens-01, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
+  #    question: "Pendant une sortie scolaire, un eleve lance une pierre qui blesse un passant. Qui doit reparer ?"}
+  []
