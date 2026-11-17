@@ -189,6 +189,9 @@ reel = pytest.mark.skipif(not (INDEX_REEL / "lexia.sqlite").exists(), reason="in
 
 @pytest.fixture(scope="module")
 def retriever_reel():
+    # Copie propre (publication) : pas d'index, les tests qui en dependent sont ignores au lieu d'echouer.
+    if not (INDEX_REEL / "lexia.sqlite").exists():
+        pytest.skip("index reel absent")
     return LocalRetriever(INDEX_REEL)
 
 

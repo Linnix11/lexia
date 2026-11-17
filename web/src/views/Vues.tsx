@@ -185,11 +185,12 @@ export function VueFiches() {
 export function VueBibliotheque() {
   return (
     <>
-      <EnTete surtitre="Bibliothèque" titre="Ressources et manuels." texte="Sources officielles du corpus, annales d’examens et références à consulter en bibliothèque." />
+      <EnTete surtitre="Bibliothèque" titre="Annales et ressources." texte="Annales d’examens par matière, manuels à consulter en bibliothèque et sources officielles du corpus." />
+      {/* Annales d'abord : les sources generales figurent deja sur « Mon espace » (audit du 2026-11-16, point 13). */}
       <div className="grid items-start gap-[18px] tab:grid-cols-2">
-        <CarteSources />
-        <CarteBibliotheque complete />
         <CarteAnnales />
+        <CarteBibliotheque complete />
+        <CarteSources />
       </div>
       <p className="mt-4 text-[11px] text-muted">
         Les bibliographies recommandées par les facultés partenaires seront ajoutées ici (métadonnées et liens uniquement).

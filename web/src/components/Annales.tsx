@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, type Annale } from '../lib/api'
+import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
 /** Catalogue d'annales : liens vers les sujets publies par les facultes ou relayes par des associations (rien n'est copie). */
@@ -9,7 +10,9 @@ const RECUEIL = 'recueil'
 export function CarteAnnales() {
   const [annales, setAnnales] = useState<Annale[] | null>(null)
   const [erreur, setErreur] = useState(false)
-  const [matiere, setMatiere] = useState('')
+  // Matiere en cours dans l'espace preselectionnee quand des annales existent pour elle (audit, point 13).
+  const { matiere: matiereCourante } = useApp()
+  const [matiere, setMatiere] = useState(matiereCourante ?? '')
   const [niveau, setNiveau] = useState('')
   const [nombre, setNombre] = useState(PAR_PAGE)
 
@@ -26,9 +29,10 @@ export function CarteAnnales() {
     for (const a of annales ?? []) if (a.matiere !== RECUEIL) m.set(a.matiere, a.libelle_matiere)
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1], 'fr'))
   }, [annales])
+  const filtre = matieres.some(([id]) => id === matiere) ? matiere : ''
   const niveaux = useMemo(() => [...new Set((annales ?? []).map((a) => a.niveau))].sort(), [annales])
   // Un recueil couvre toutes les matieres de son semestre : il reste visible quel que soit le filtre.
-  const visibles = (annales ?? []).filter((a) => (!matiere || a.matiere === matiere || a.matiere === RECUEIL) && (!niveau || a.niveau === niveau))
+  const visibles = (annales ?? []).filter((a) => (!filtre || a.matiere === filtre || a.matiere === RECUEIL) && (!niveau || a.niveau === niveau))
 
   return (
     <Card className="p-[19px] tab:col-span-2">
@@ -37,7 +41,7 @@ export function CarteAnnales() {
         <div className="mt-3 flex flex-wrap gap-2">
           <label className="grid gap-1 text-[11px] text-muted">
             Matière
-            <select value={matiere} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
+            <select value={filtre} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
               <option value="">Toutes</option>
               {matieres.map(([id, lib]) => <option key={id} value={id}>{lib}</option>)}
             </select>
