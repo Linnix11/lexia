@@ -570,7 +570,12 @@ class Comptes:
             self._q("DELETE FROM sessions WHERE jeton_hash = ?", (_hash_jeton(jeton),))
 
     def purger_sessions(self) -> None:
-        self._q("DELETE FROM sessions WHERE expire_le < ?", (_maintenant().isoformat(timespec="seconds"),))
+        """Tache de nuit : sessions expirees, et traces de suppression de plus de 24 h (elles ne servent
+        qu'a ce delai ; duree annoncee dans la politique de confidentialite)."""
+        maintenant = _maintenant()
+        self._q("DELETE FROM sessions WHERE expire_le < ?", (maintenant.isoformat(timespec="seconds"),))
+        self._q("DELETE FROM suppressions WHERE supprime_le < ?",
+                ((maintenant - timedelta(days=1)).isoformat(timespec="seconds"),))
 
     # --- consommation ---------------------------------------------------------
 

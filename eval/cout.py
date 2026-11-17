@@ -9,7 +9,7 @@ Usage :
                    a confirmer sur la grille du modele utilise.
 
 Exemple :
-    python eval/cout.py logs --prix gemini-3.5-flash=PRIX_ENTREE,PRIX_SORTIE
+    python eval/cout.py logs --prix gemini-3.5-flash-lite=PRIX_ENTREE,PRIX_SORTIE
 """
 
 from __future__ import annotations

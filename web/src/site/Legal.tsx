@@ -185,7 +185,7 @@ export function Cgu() {
 export function Confidentialite() {
   const { l, contact } = useLegal()
   return (
-    <Page titre="Politique de confidentialité" maj="12 novembre 2026">
+    <Page titre="Politique de confidentialité" maj="17 novembre 2026">
       <section>
         <h2>Responsable du traitement</h2>
         <p>
@@ -198,6 +198,7 @@ export function Confidentialite() {
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création.</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
+          <li><strong>Formule payante</strong> (si vous en souscrivez une) : formule choisie, date de fin, et éléments de facturation (adresse e-mail, montant, date et moyen de paiement).</li>
           <li><strong>Cours déposés</strong> : le texte extrait de vos cours (découpé en passages, avec le numéro de page), leur titre, leur matière et le nom du fichier. Le fichier d’origine n’est pas conservé. Vos cours ne sont visibles que par vous.</li>
           <li><strong>Journaux techniques</strong> : identifiants des sources utilisées, durée de traitement, statut des réponses. Le texte de vos questions n’y est pas enregistré.</li>
           <li><strong>Retours</strong> : avis « utile / pas utile » et motif choisi dans une liste.</li>
@@ -230,39 +231,58 @@ export function Confidentialite() {
           )}{' '}
           {l?.groq && (
             <>
-              {l?.courriel ? <>{' '}Votre adresse e-mail est transmise à Resend (États-Unis) pour l’unique envoi
-              du message de confirmation d’adresse ; ni votre mot de passe ni vos questions ne lui sont communiqués.</> : null}              {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
-              exécute un modèle ouvert ; selon ses conditions, Groq ne conserve pas ces données par défaut, sauf journaux
-              de sécurité limités à 30 jours.
+              {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
+              exécute un modèle ouvert ; l’option de non-conservation des données (« Zero Data Retention ») est activée
+              dans notre compte Groq : la question n’est pas conservée après la réponse.
             </>
-          )}{' '}
+          )}
+          {l?.courriel ? <>{' '}Votre adresse e-mail est transmise à Resend (États-Unis) pour l’envoi des messages de
+          confirmation d’adresse et de réinitialisation du mot de passe ; ni votre mot de passe ni vos questions ne lui
+          sont communiqués.</> : null}{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
+        </p>
+        <p>
+          Ces transferts hors de l’Union européenne reposent sur le cadre de protection des données UE-États-Unis
+          (décision d’adéquation de la Commission européenne du 10 juillet 2023), auquel Google
+          {l?.courriel ? <>, Resend</> : null} et Cloudflare sont certifiés.
+          {l?.groq ? (
+            <>{' '}Groq n’y est pas certifié :{' '}
+            <A>[garantie du transfert (clauses contractuelles types de la Commission européenne) à vérifier dans
+            l’accord de traitement des données de Groq]</A></>
+          ) : null}
         </p>
       </section>
       <section>
         <h2>Destinataires</h2>
         <p>
           Les données ne sont ni vendues ni cédées. Elles sont traitées par l’éditeur et par ses sous-traitants :
-          Hostinger (hébergement du site et des données de compte), Google (rédaction des réponses, voir
+          Hostinger (hébergement du site et des données de compte), Cloudflare (acheminement et protection du trafic
+          entre votre navigateur et le serveur), Google (rédaction des réponses, voir
           ci-dessus){l?.groq ? <>, Groq (rédaction des réponses en secours)</> : null}
-          {l?.courriel ? <> et Resend (envoi de l’e-mail de confirmation d’adresse)</> : null}.
+          {l?.courriel ? <>, Resend (envoi des e-mails de confirmation d’adresse et de réinitialisation du mot de passe)</> : null}.
         </p>
       </section>
       <section>
         <h2>Finalités et base légale</h2>
-        <p>
-          Les données sont traitées pour fournir le service (exécution du contrat), appliquer les limites des
-          formules et assurer la sécurité du service (intérêt légitime).
-        </p>
+        <ul>
+          <li>Fournir le service : compte, réponses, cours déposés, questionnaires, e-mails de confirmation et de réinitialisation (exécution du contrat).</li>
+          <li>Appliquer les limites des formules et gérer les formules payantes (exécution du contrat).</li>
+          <li>Tenir la comptabilité des formules payantes (obligation légale).</li>
+          <li>Assurer la sécurité du service : journaux du serveur web, limites contre les abus, empreinte gardée après une suppression de compte (intérêt légitime).</li>
+          <li>Suivre la qualité et le coût du service : journaux techniques sans le texte des questions, avis « utile / pas utile » (intérêt légitime).</li>
+        </ul>
       </section>
       <section>
         <h2>Durées de conservation</h2>
         <ul>
           <li>Compte et compteurs : jusqu’à la suppression du compte.</li>
-          <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes (14 jours) peuvent en garder une copie jusqu’à leur effacement.</li>
+          <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>
           <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
-          <li>Sauvegardes de la base des comptes : 14 jours glissants.</li>
+          <li>Journaux du serveur web : 14 jours.</li>
+          <li>Après une suppression de compte depuis le site : une empreinte de l’adresse e-mail (pas l’adresse elle-même), 48 heures au plus.</li>
+          <li>Sauvegardes de la base des comptes : 14 jours glissants sur le serveur ; une copie de secours, conservée par l’éditeur hors du serveur, 60 jours glissants.</li>
+          <li>Formules payantes : pièces comptables (factures, paiements) pendant 10 ans, durée imposée par les obligations comptables.</li>
         </ul>
       </section>
       <section>
