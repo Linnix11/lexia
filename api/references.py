@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from api.grands_arrets import pourvois_cites
 from api.textes import codes_cites, lois_citees, sans_accents
 
 _NUM = r"(?:[LRDA]\.?\s?)?\d+(?:-\d+)*(?:\s(?:bis|ter|quater))?"
@@ -59,6 +60,8 @@ def extraire(texte: str) -> References:
         p = f"{m.group(1)}-{m.group(2)}.{m.group(3)}"
         if p not in pourvois:
             pourvois.append(p)
+    # Grand arret nomme (« l'arret Blieck ») : son pourvoi, que le sommaire ne relie jamais au nom (D90).
+    pourvois += [p for p in pourvois_cites(texte) if p not in pourvois]
     return References(tuple(articles), tuple(decisions), tuple(pourvois), "constitution" in sans_accents(texte),
                       codes_cites(texte), lois_citees(texte))
 
