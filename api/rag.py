@@ -100,7 +100,7 @@ def sources_citees(reponse: dict, table: dict[str, dict]) -> list[dict]:
     """Fiches des passages effectivement cites, dans l'ordre de premiere citation."""
     par_id = {p["id"]: (label, p) for label, p in table.items()}
     ordre: list[str] = []
-    for cle in ("droit_positif", "explication", "points_incertains"):
+    for cle in ("reponse_directe", "droit_positif", "explication", "points_incertains"):  # ordre d'affichage
         for it in reponse.get(cle, []):
             for pid in it["sources"]:
                 if pid not in ordre:

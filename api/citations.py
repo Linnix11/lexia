@@ -97,20 +97,24 @@ def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer")
         if not verifier_texte(message, passages, controle):
             message = ""
         return {"statut": statut, "titre": titre, "droit_positif": [], "explication": [],
-                "points_incertains": [], "message": message or _message_defaut(statut)}, controle
+                "points_incertains": [], "reponse_directe": [], "message": message or _message_defaut(statut)}, controle
 
     droit = nettoyer_elements(brut.get("droit_positif"), table, controle, exiger_source=True)
-    from api.prompts import MODES_METHODE, RUBRIQUES  # import local : prompts importe deja ce module indirectement
+    from api.prompts import MAX_REPONSE_DIRECTE, MODES_METHODE, RUBRIQUES  # import local : prompts importe deja ce module indirectement
     expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False,
                              rubriques=RUBRIQUES.get(mode, RUBRIQUES["expliquer"]))
     incert = nettoyer_elements(brut.get("points_incertains"), table, controle, exiger_source=False)
+    # Lue en premier : meme exigence que le droit positif (source valide, aucune reference inventee). Elle ne
+    # compte pas pour eviter l'abstention : la reponse doit tenir par ses developpements sources.
+    directe = nettoyer_elements(brut.get("reponse_directe"), table, controle,
+                                exiger_source=True)[:MAX_REPONSE_DIRECTE]
 
     methode_seule = mode in MODES_METHODE and bool(expl)
     if not droit and not any(e["sources"] for e in expl) and not methode_seule:
         return {"statut": "abstention", "titre": titre, "droit_positif": [], "explication": [],
-                "points_incertains": [], "message": _message_defaut("abstention")}, controle
+                "points_incertains": [], "reponse_directe": [], "message": _message_defaut("abstention")}, controle
     return {"statut": "reponse", "titre": titre, "droit_positif": droit, "explication": expl,
-            "points_incertains": incert, "message": ""}, controle
+            "points_incertains": incert, "reponse_directe": directe, "message": ""}, controle
 
 
 def _message_defaut(statut: str) -> str:
