@@ -1,5 +1,4 @@
 // « Mon compte » : activer ou desactiver la double authentification par application (codes TOTP).
-import QRCode from 'qrcode'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useSession } from '../state/session'
@@ -30,6 +29,8 @@ export function DoubleAuthentification() {
     try {
       const r = await api.deuxFacteurs.preparer()
       setSecret(r.secret)
+      // qrcode charge a la demande : seule l'activation de la double authentification s'en sert (D11)
+      const QRCode = (await import('qrcode')).default
       setQr(await QRCode.toDataURL(r.uri, { margin: 1, width: 196 }))
       setCode('')
       setEtape('scan')

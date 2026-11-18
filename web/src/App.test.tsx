@@ -5,6 +5,8 @@ import { api, type ReponseChat } from './lib/api'
 import { ecrireFavoris, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
 import css from './index.css?raw'
+import sourceSite from './Site.tsx?raw'
+import sourceDeuxFacteurs from './site/DoubleAuthentification.tsx?raw'
 
 const REPONSE: ReponseChat = {
   reponse_id: 'r-123',
@@ -538,6 +540,23 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
 })
 
 describe('Audit du 18 novembre 2026, lot D', () => {
+  it('administration et qrcode charges a la demande, hors du fichier principal (D11)', () => {
+    expect(sourceSite).not.toMatch(/^import .*'\.\/site\/Admin'/m)
+    expect(sourceSite).toContain("lazy(() => import('./site/Admin')")
+    expect(sourceDeuxFacteurs).not.toMatch(/^import .*'qrcode'/m)
+    expect(sourceDeuxFacteurs).toContain("await import('qrcode')")
+  })
+
+  it('101e fiche : refusee avec un message, la plus ancienne n est pas effacee (D10)', async () => {
+    const anciennes = Array.from({ length: 100 }, (_, i) => ({ id: `f${i}`, question: `Q${i}`, mode: 'expliquer' as const,
+      enregistre_le: '2026-11-01T10:00:00Z', reponse: { ...REPONSE, reponse_id: `f${i}` } }))
+    ecrireFavoris(anciennes, 'etu@exemple.fr')
+    await poser('article 1240')
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
+    expect(await screen.findByText(/Limite de 100 fiches atteinte/)).toBeInTheDocument()
+    expect(lireFavoris('etu@exemple.fr').map((f) => f.id)).toEqual(anciennes.map((f) => f.id))
+  })
+
   it('messages : 502, 504 et 524 traduits, delai d attente cote client (D9)', async () => {
     for (const [status, attendu] of [[502, /redémarre/], [504, /trop de temps/], [524, /trop de temps/]] as const) {
       fetchMock.mockImplementationOnce(() => Promise.resolve(new Response('<html>Bad gateway</html>', { status })))
@@ -613,7 +632,7 @@ describe('Audit du 18 novembre 2026, lot D', () => {
   })
 
   it('une erreur passagere du serveur ne deconnecte pas l etudiant (D3)', async () => {
-    const normal = fetchMock.getMockImplementation()!
+    const normal = fetchMock.getMockImplementation() as (url: string) => Promise<Response>
     let panne = false
     fetchMock.mockImplementation((url: string) =>
       panne && url.endsWith('/auth/session') ? repondre({ detail: 'Bad Gateway' }, 502) : normal(url))

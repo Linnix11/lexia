@@ -74,7 +74,7 @@ export function VueMatieres() {
       <DepotCours />
       {matieres.length === 0 ? (
         // liste vide aussi pendant le chargement (et ses essais) : pas de message d'erreur (audit du 2026-11-18, D9)
-        <Card role="status" className="p-6 text-[12px] text-muted">Chargement des matières… Si elles n’apparaissent pas, rechargez la page.</Card>
+        <Card className="p-6 text-[12px] text-muted"><p role="status">Chargement des matières… Si elles n’apparaissent pas, rechargez la page.</p></Card>
       ) : (
         <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
           {matieres.map((m) => (

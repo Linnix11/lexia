@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, type CoursDepose, type Matiere, type Mode, type OptionsCours } from '../lib/api'
-import { ecrireFavoris, lireFavoris, type Favori } from '../lib/favoris'
+import { ecrireFavoris, lireFavoris, MAX_FICHES, MESSAGE_LIMITE_FICHES, type Favori } from '../lib/favoris'
 import { ecrireSeance, lireSeance } from '../lib/seance'
 import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
 import { Ctx, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
@@ -132,6 +132,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const f: Favori = { id: m.reponse.reponse_id, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse }
       setFavoris((liste) => {
         if (liste.some((x) => x.id === f.id)) return liste
+        if (liste.length >= MAX_FICHES) {
+          notifier(MESSAGE_LIMITE_FICHES)
+          return liste
+        }
         const suivante = [f, ...liste]
         notifier(ecrireFavoris(suivante, compte) ? 'Fiche enregistrée dans ce navigateur uniquement (« Fiches & révisions »)' : "Le navigateur n'a pas pu enregistrer cette fiche.")
         return suivante
@@ -221,6 +225,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const rid = m.reponse.reponse_id
       setFavoris((liste) => {
         const existe = liste.some((f) => f.id === rid)
+        if (!existe && liste.length >= MAX_FICHES) {
+          notifier(MESSAGE_LIMITE_FICHES)
+          return liste
+        }
         const suivante = existe
           ? liste.filter((f) => f.id !== rid)
           : [{ id: rid, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse! }, ...liste]

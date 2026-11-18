@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
 
@@ -237,5 +237,26 @@ describe('Site', () => {
     aller('/nimporte-quoi')
     render(<Site />)
     expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument()
+  })
+})
+
+describe('Accueil (audit du 18 novembre 2026, D12)', () => {
+  it('la demonstration suit la presentation actuelle et les limites gratuites viennent du serveur', async () => {
+    aller('/')
+    render(<Site />)
+    const demo = await screen.findByRole('figure', { name: 'Exemple de réponse' })
+    expect(demo).not.toHaveTextContent(/\[S\d\]/)
+    expect(demo).toHaveTextContent('[1]')
+    expect(demo.textContent!.indexOf('L’essentiel')).toBeLessThan(demo.textContent!.indexOf('Développements et sources'))
+    expect(demo).not.toHaveTextContent('Droit positif')
+    expect(await screen.findByText(/Gratuit : 10 questions et 2 questionnaires par jour/)).toBeInTheDocument()
+    FORMULES[0].quiz_par_jour = 3
+    try {
+      cleanup()
+      render(<Site />)
+      expect(await screen.findByText(/Gratuit : 10 questions et 3 questionnaires par jour/)).toBeInTheDocument()
+    } finally {
+      FORMULES[0].quiz_par_jour = 2
+    }
   })
 })

@@ -56,9 +56,14 @@ export function lireFavoris(compte: string): Favori[] {
   }
 }
 
+// Au-dela, l'ajout est refuse avec un message : la plus ancienne fiche disparaissait sans prevenir au
+// rechargement (audit du 2026-11-18, D10).
+export const MAX_FICHES = 100
+export const MESSAGE_LIMITE_FICHES = `Limite de ${MAX_FICHES} fiches atteinte : exportez puis retirez des fiches pour en ajouter.`
+
 export function ecrireFavoris(liste: Favori[], compte: string): boolean {
   try {
-    localStorage.setItem(cle(compte), JSON.stringify(liste.slice(0, 100)))
+    localStorage.setItem(cle(compte), JSON.stringify(liste))
     return true
   } catch {
     return false // stockage indisponible (navigation privee, quota) : on n'interrompt rien

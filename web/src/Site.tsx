@@ -1,6 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import App from './App'
-import { Admin } from './site/Admin'
 import { Lien, RouteurProvider, useRouteur } from './lib/router'
 import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
@@ -13,6 +12,9 @@ import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
 import { SessionProvider, useSession } from './state/session'
 import { AppProvider } from './state/AppState'
 import { Signet } from './components/Logo'
+
+// Administration chargee a part : seuls les administrateurs la telechargent (audit du 2026-11-18, D11).
+const Admin = lazy(() => import('./site/Admin').then((m) => ({ default: m.Admin })))
 
 const PUBLIQUES: Record<string, () => ReactNode> = {
   '/': () => <Accueil />,
@@ -72,7 +74,7 @@ function Routes() {
   if (route === '/admin') {
     if (profil === undefined) return <Chargement />
     if (!profil) return <Redirection vers="/connexion" />
-    return profil.admin ? <Admin /> : <Introuvable />
+    return profil.admin ? <Suspense fallback={<Chargement />}><Admin /></Suspense> : <Introuvable />
   }
   if (MEMBRES[route]) {
     if (profil === undefined) return <Chargement />

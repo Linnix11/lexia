@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Formules } from './Tarifs'
@@ -20,6 +22,11 @@ export function Accueil() {
   const cible = profil ? '/app' : '/inscription'
   // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
   const supprime = new URLSearchParams(window.location.search).has('compte-supprime')
+  // Limites de la formule gratuite lues sur le serveur, pas ecrites en dur (audit du 2026-11-18, D12)
+  const [gratuit, setGratuit] = useState<Formule | null>(null)
+  useEffect(() => {
+    api.formules().then((f) => setGratuit(f.find((x) => x.id === 'gratuit') ?? null)).catch(() => undefined)
+  }, [])
   return (
     <PublicLayout>
       {supprime && (
@@ -42,21 +49,27 @@ export function Accueil() {
             <Lien href={cible} className={bouton}>{profil ? 'Ouvrir mon espace' : 'Créer un compte gratuit'}</Lien>
             <Lien href="/tarifs" className={boutonSecondaire}>Voir les formules</Lien>
           </div>
-          <p className="mt-3 text-[12px] text-muted">Gratuit : 10 questions et 2 questionnaires par jour, sans carte bancaire.</p>
+          <p className="mt-3 text-[12px] text-muted">
+            {gratuit
+              ? `Gratuit : ${gratuit.questions_par_jour} questions et ${gratuit.quiz_par_jour} questionnaires par jour, sans carte bancaire.`
+              : 'Formule gratuite, sans carte bancaire.'}
+          </p>
         </div>
 
         <figure aria-label="Exemple de réponse" className="rounded-xl border border-line bg-surface p-5 shadow-[0_12px_40px_#17241d10]">
           <div className="ml-auto max-w-[85%] rounded-[10px] bg-[#edf1eb] px-3.5 py-2.5 text-[12px]">Quelles sont les conditions de la responsabilité pour faute ?</div>
           <div className="mt-3 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 text-[12.5px] leading-[1.6]">
             <div className="font-display text-[17px]">La responsabilité pour faute</div>
-            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-forest uppercase">Droit positif</div>
-            <p>Tout fait de l’homme qui cause à autrui un dommage oblige celui par la faute duquel il est arrivé à le réparer. <span className="font-semibold text-forest">[S1]</span></p>
-            <p className="mt-1">La négligence et l’imprudence engagent aussi la responsabilité. <span className="font-semibold text-forest">[S2]</span></p>
-            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Explication</div>
-            <p>Trois conditions : un fait fautif, un dommage, un lien de causalité. <span className="font-semibold text-forest">[S1]</span></p>
+            {/* meme presentation que l'espace : l'essentiel et l'exemple d'abord, sources numerotees [1], [2] (D12) */}
+            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-forest uppercase">L’essentiel</div>
+            <p>Celui qui cause un dommage à autrui par sa faute doit le réparer : il faut une faute, un dommage et un lien de causalité. <span className="font-semibold text-forest">[1]</span></p>
+            <p className="mt-1">Une simple négligence ou imprudence suffit. <span className="font-semibold text-forest">[2]</span></p>
+            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Exemple</div>
+            <p>Un cycliste renverse un piéton par imprudence : il doit réparer le dommage subi. <span className="font-semibold text-forest">[1]</span></p>
             <div className="mt-3 border-t border-line-soft pt-2 text-[11px] text-muted">
-              <span className="text-forest">[S1]</span> Code civil, article 1240 · en vigueur depuis le 1er octobre 2016<br />
-              <span className="text-forest">[S2]</span> Code civil, article 1241 · en vigueur depuis le 1er octobre 2016
+              <span className="font-semibold text-forest">▸ Développements et sources</span><br />
+              <span className="text-forest">[1]</span> Code civil, article 1240 · en vigueur depuis le 1er octobre 2016<br />
+              <span className="text-forest">[2]</span> Code civil, article 1241 · en vigueur depuis le 1er octobre 2016
             </div>
           </div>
           <figcaption className="mt-2 text-[11px] text-muted">Exemple de présentation d’une réponse.</figcaption>
