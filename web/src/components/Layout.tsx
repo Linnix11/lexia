@@ -24,7 +24,7 @@ export function CadreEspace({ titre, children }: { titre?: string; children: Rea
   return (
     <>
       <BandeauEmail />
-      <div className="min-h-screen pb-[61px] tab:grid tab:grid-cols-[68px_minmax(0,1fr)] tab:pb-0 desk:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="min-h-screen pb-[calc(61px+env(safe-area-inset-bottom))] tab:grid tab:grid-cols-[68px_minmax(0,1fr)] tab:pb-0 desk:grid-cols-[232px_minmax(0,1fr)]">
         <Sidebar horsEspace={titre !== undefined} />
         <main className="min-w-0">
           <Topbar titre={titre} />
@@ -47,8 +47,11 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
   const { vue, setVue, matieres, semestre, niveau } = useApp()
   const { naviguer } = useRouteur()
   return (
+    // Barre du bas du mobile : hauteur et marge de la barre d'accueil de l'iPhone (env(), viewport-fit=cover),
+    // masquee pendant la saisie (index.css, data-barre-bas) ; audit mobile du 2026-11-18.
     <aside
-      className="fixed inset-x-0 bottom-0 z-30 h-[60px] border-t border-line bg-paper px-3 py-[5px]
+      data-barre-bas
+      className="fixed inset-x-0 bottom-0 z-30 h-[calc(60px+env(safe-area-inset-bottom))] border-t border-line bg-paper px-3 pt-[5px] pb-[calc(5px+env(safe-area-inset-bottom))]
                  tab:sticky tab:top-0 tab:z-auto tab:flex tab:h-screen tab:flex-col tab:items-center tab:gap-[30px] tab:border-t-0 tab:border-r tab:bg-side tab:px-[9px] tab:py-[22px]
                  desk:items-stretch desk:px-[17px] desk:py-[26px]"
     >
@@ -159,7 +162,7 @@ export function Toast() {
     <div
       role="status"
       aria-live="polite"
-      className={`pointer-events-none fixed bottom-[78px] left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[#263c31] px-4 py-[11px] text-[12px] text-white shadow-[0_8px_28px_#17241d33] transition tab:bottom-[22px]
+      className={`pointer-events-none fixed bottom-[calc(78px+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[#263c31] px-4 py-[11px] text-[12px] text-white shadow-[0_8px_28px_#17241d33] transition tab:bottom-[22px]
                   ${toast ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}
     >
       {toast}

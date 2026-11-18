@@ -66,6 +66,9 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   }, [texte])
   const auClavier = (e: ToucheReact<HTMLTextAreaElement>) => {
     if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    // Ecran tactile : pas de touche Maj sur le clavier du telephone, Entree va a la ligne et le bouton envoie
+    // (audit mobile du 2026-11-18).
+    if (window.matchMedia?.('(pointer: coarse)').matches) return
     e.preventDefault()
     e.currentTarget.form?.requestSubmit()
   }
@@ -160,7 +163,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           </div>
         </div>
       ) : (
-        <div aria-live="polite" className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'max-h-[560px] overflow-y-auto pr-1'}`}>
+        <div aria-live="polite" className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'tab:max-h-[560px] tab:overflow-y-auto tab:pr-1'}`}>
           {messages.map((m) => (
             <div key={m.id} className="grid min-w-0 gap-2.5">
               <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55] whitespace-pre-line">
@@ -230,7 +233,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
       </form>
       <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[12px] text-[#5f6762]">
         <span>
-          <span id={complet ? 'aide-saisie-complete' : 'aide-saisie'}>Entrée pour envoyer, Maj + Entrée pour aller à la ligne.</span>{' '}
+          <span id={complet ? 'aide-saisie-complete' : 'aide-saisie'} className="pointer-coarse:hidden">Entrée pour envoyer, Maj + Entrée pour aller à la ligne. </span>
           Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.
         </span>
         {messages.length > 0 && !occupe && (

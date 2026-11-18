@@ -86,7 +86,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#17241d70] p-[18px]"
       onMouseDown={(e) => e.target === e.currentTarget && fermerQuiz()}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="quiz-titre"
-        className="max-h-[90vh] w-full max-w-[640px] overflow-auto rounded-[14px] border border-line bg-surface p-[22px] shadow-[0_20px_70px_#17241d35]">
+        className="max-h-[90dvh] w-full max-w-[640px] overflow-auto rounded-[14px] border border-line bg-surface p-[22px] shadow-[0_20px_70px_#17241d35]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="quiz-titre" className="mb-1.5 font-display text-[25px] font-normal">
@@ -96,7 +96,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
             {!quiz?.quiz_id && <div className="mt-2"><ChoixCours /></div>}
           </div>
           <button type="button" onClick={fermerQuiz} aria-label="Fermer le questionnaire"
-            className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">✕</button>
+            className="grid size-11 shrink-0 place-items-center rounded-[7px] border border-line text-muted hover:text-ink">✕</button>
         </div>
 
         {!reglages && quiz?.quiz_id && etat !== 'generation' && (

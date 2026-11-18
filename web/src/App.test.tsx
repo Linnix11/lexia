@@ -672,6 +672,29 @@ describe('Audit du 18 novembre 2026, lot D', () => {
     expect(css).toMatch(/@media \(pointer: coarse\)[^}]*textarea \{\s*font-size: 16px/)
   })
 
+  it('ecran tactile : Entree va a la ligne, seul le bouton envoie (audit mobile)', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)', media: q })) as unknown as typeof window.matchMedia
+    try {
+      render(<Site />)
+      const champ = await screen.findByLabelText('Votre question')
+      fireEvent.change(champ, { target: { value: 'Première ligne' } })
+      const suivi = fireEvent.keyDown(champ, { key: 'Enter' })
+      expect(suivi).toBe(true)  // retour a la ligne laisse au navigateur
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
+  it('mobile : barre du bas au-dessus de la barre d accueil, masquee pendant la saisie (audit mobile)', async () => {
+    render(<Site />)
+    const barre = (await screen.findByRole('navigation', { name: 'Navigation principale' })).closest('aside')!
+    expect(barre).toHaveAttribute('data-barre-bas')
+    expect(barre.className).toContain('env(safe-area-inset-bottom)')
+    expect(css).toMatch(/textarea\):focus\) \[data-barre-bas\] \{\s*display: none/)
+  })
+
   it('une erreur passagere du serveur ne deconnecte pas l etudiant (D3)', async () => {
     const normal = fetchMock.getMockImplementation() as (url: string) => Promise<Response>
     let panne = false

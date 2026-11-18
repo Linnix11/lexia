@@ -18,7 +18,7 @@ const OFFICIELLES = [
     url: 'https://eur-lex.europa.eu/', textes: false, sources: [] as string[] },
 ]
 
-const fleche = 'text-[14px] text-muted hover:text-forest' // #9aa19a ne donnait que 2,62:1 sur la carte
+const fleche = '-m-3 inline-grid size-11 place-items-center text-[14px] text-muted hover:text-forest' // #9aa19a ne donnait que 2,62:1 ; zone tactile de 44 px (audit mobile)
 
 export function CarteSources() {
   const fraicheur = useFraicheur()

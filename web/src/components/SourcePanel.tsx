@@ -49,7 +49,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-[#17241d70]" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
+    <div className="fixed inset-0 z-40 flex justify-end bg-[#17241d70] pr-[env(safe-area-inset-right)]" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
       <div
         ref={ref}
         role="dialog"
@@ -74,7 +74,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
             )}
           </div>
           <button type="button" onClick={fermer} aria-label="Fermer la source"
-            className="rounded-[7px] border border-line px-2.5 py-1.5 text-muted hover:text-ink">
+            className="grid size-11 shrink-0 place-items-center rounded-[7px] border border-line text-muted hover:text-ink">
             ✕
           </button>
         </div>
@@ -120,7 +120,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
         </div>
 
         {source && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
+          <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
             <button type="button" onClick={verifier} disabled={verification}
               className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark disabled:opacity-60">
               {verification ? 'Vérification…' : 'Vérifier la version en vigueur'}

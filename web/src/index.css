@@ -32,6 +32,9 @@
   }
   body {
     @apply bg-paper font-sans text-[14px] text-ink antialiased;
+    /* iPhone a l'horizontale (viewport-fit=cover) : le contenu ne passe pas sous l'encoche */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   button {
     cursor: pointer;
@@ -63,5 +66,13 @@
   select,
   textarea {
     font-size: 16px;
+  }
+}
+
+/* Saisie sur telephone : la barre du bas se masque tant qu'un champ de texte a le focus, pour ne pas couvrir
+   le champ au-dessus du clavier (audit mobile du 2026-11-18). */
+@media (max-width: 620px) and (pointer: coarse) {
+  body:has(:is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea):focus) [data-barre-bas] {
+    display: none;
   }
 }
