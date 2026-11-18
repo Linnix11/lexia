@@ -271,3 +271,53 @@ def test_freins_oublient_les_adresses_expirees():
     f._derniere_purge = 0
     f._oublier(time.monotonic() + 16 * 60)  # la fenetre de 15 minutes est passee
     assert not f._echecs and not f._ip
+
+
+def test_compte_supprime_absent_des_octets_de_la_base(tmp_path):
+    """Audit de la base du 2026-11-18 : un compte supprime (adresse, empreinte, cours en cascade) ne doit
+    plus etre lisible dans le fichier ni dans le journal WAL, comme un cours retire (audit C7)."""
+    from pathlib import Path
+
+    from api.cours import Cours
+
+    def octets(chemin) -> bytes:
+        return b"".join(Path(f"{chemin}{s}").read_bytes() for s in ("", "-wal") if Path(f"{chemin}{s}").exists())
+
+    chemin = tmp_path / "lexia.db"
+    comptes = Comptes(chemin)
+    garde = comptes.creer("garde@b.fr", "motdepasse-solide")
+    u = comptes.creer("zorglub.parti@b.fr", "motdepasse-solide")
+    empreinte = comptes._q("SELECT mdp FROM utilisateurs WHERE id = ?", (u.id,))[0][0]
+    Cours(chemin).ajouter(u.id, "droit_civil", "Cours", "c.txt", b"La theorie Zorglubienne du contrat. " * 40, 5)
+    assert b"zorglub.parti@b.fr" in octets(chemin)
+    comptes.supprimer(u.id, garder_trace=True)
+    brut = octets(chemin)
+    assert b"zorglub.parti@b.fr" not in brut
+    assert empreinte.encode() not in brut
+    assert b"zorglubienne" not in brut.lower()  # ni le texte, ni les mots de l'index plein texte
+    assert comptes.par_id(garde.id) is not None
+
+
+
+def test_rapatriement_ignore_les_copies_manuelles(tmp_path):
+    """Une copie faite a la main dans le dossier des sauvegardes (lexia-avant-vacuum-AAAAMMJJ.db, le
+    2026-11-18) passait apres les copies datees dans le tri par nom : prise pour la plus recente, elle
+    faisait echouer le controle de fraicheur chaque jour, et n'etait jamais effacee sur le Mac."""
+    import os
+    import sqlite3
+    import subprocess
+    from datetime import date
+    from pathlib import Path
+
+    source, copies = tmp_path / "serveur", tmp_path / "mac"
+    source.mkdir()
+    jour = date.today().strftime("%Y%m%d")
+    for nom in (f"lexia-{jour}.db", f"lexia-avant-vacuum-{jour}.db"):
+        with sqlite3.connect(source / nom) as con:
+            con.execute("CREATE TABLE utilisateurs (id INTEGER)")
+    script = Path(__file__).resolve().parent.parent / "deploy" / "rapatrier_sauvegardes.sh"
+    r = subprocess.run(["bash", str(script)], capture_output=True, text=True,
+                       env={**os.environ, "LEXIA_SERVEUR": "essai", "LEXIA_SOURCE": f"{source}/",
+                            "LEXIA_COPIES": str(copies), "LEXIA_ESSAIS": "1"})
+    assert r.returncode == 0, r.stderr
+    assert sorted(p.name for p in copies.iterdir()) == [f"lexia-{jour}.db"]

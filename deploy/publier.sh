@@ -85,7 +85,9 @@ ssh "$SERVEUR" bash -s <<EOF
 set -euo pipefail
 cd $APP
 chmod 600 .env
-mkdir -p donnees sauvegardes && chmod 700 donnees sauvegardes
+mkdir -p donnees sauvegardes logs && chmod 700 donnees sauvegardes logs
+# Base, journal WAL et journaux crees en 644 avant UMask=0077 (audit de la base du 2026-11-18, D99)
+find donnees logs sauvegardes -maxdepth 1 -type f -exec chmod 600 {} +
 chown -R lexia:lexia $APP
 # Python et pip tournent en tant que lexia : root n'execute jamais du code modifiable par le service.
 runuser -u lexia -- bash -c 'test -d .venv || python3 -m venv .venv'

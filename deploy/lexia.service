@@ -24,6 +24,9 @@ Restart=on-failure
 RestartSec=5
 # Durcissement
 NoNewPrivileges=true
+# Fichiers crees par le service (base, journal WAL, journaux techniques) lisibles par lexia seul : ils etaient
+# en 644 (audit de la base du 2026-11-18, D99).
+UMask=0077
 PrivateTmp=true
 # strict : tout le disque en lecture seule pour le service, sauf les trois dossiers ci-dessous. Avec « full »,
 # /opt restait inscriptible : une faille dans la lecture d'un fichier depose pouvait reecrire le code

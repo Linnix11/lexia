@@ -6,6 +6,7 @@
 # sous le verrou d'ecriture : une purge ici pourrait perdre les lignes ecrites pendant qu'elle tourne.
 # Chemins modifiables par l'environnement pour les tests (tests/test_cours.py).
 set -euo pipefail
+umask 077  # sauvegarde.log etait en 664 (audit de la base du 2026-11-18, D99)
 horodatage() { date '+%Y-%m-%dT%H:%M:%S%z'; }  # « date -Is » n'existe pas sur macOS
 echo "$(horodatage) debut"
 RACINE=${LEXIA_RACINE:-/opt/lexia}

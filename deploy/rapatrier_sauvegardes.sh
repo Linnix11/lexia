@@ -4,7 +4,7 @@
 # A lancer sur le Mac (ou toute machine qui a la cle SSH du serveur) :
 #   LEXIA_SERVEUR=root@IP_DU_VPS deploy/rapatrier_sauvegardes.sh
 #
-# 1. rapatrie /opt/lexia/sauvegardes/lexia-*.db dans LEXIA_COPIES (defaut : ~/Lexia-sauvegardes) ;
+# 1. rapatrie les copies nocturnes /opt/lexia/sauvegardes/lexia-AAAAMMJJ.db dans LEXIA_COPIES (defaut : ~/Lexia-sauvegardes) ;
 # 2. verifie la plus recente : integrite SQLite et presence de la table des comptes (restauration testee) ;
 # 3. garde les JOURS_CONSERVES dernieres copies (defaut 60).
 #
@@ -24,17 +24,19 @@ echo "$(date -Iseconds) rapatriement depuis $LEXIA_SERVEUR"
 # unreachable » le 2026-11-16) et la copie du jour etait perdue jusqu'au lendemain.
 ESSAIS="${LEXIA_ESSAIS:-6}"
 for essai in $(seq 1 "$ESSAIS"); do
-  if rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" --include='lexia-*.db' --exclude='*' "$SOURCE" "$COPIES/"; then
+  if rsync -a -e "ssh -o BatchMode=yes -o ConnectTimeout=20" --include='lexia-[0-9]*.db' --exclude='*' "$SOURCE" "$COPIES/"; then
     break
   fi
   [ "$essai" -eq "$ESSAIS" ] && { echo "ERREUR : serveur injoignable apres $ESSAIS essais" >&2; exit 1; }
   echo "essai $essai echoue, nouvel essai dans 2 minutes"
   sleep "${LEXIA_PAUSE:-120}"
 done
+# Seules les copies datees de la tache de nuit : une copie faite a la main (lexia-avant-vacuum-AAAAMMJJ.db,
+# 2026-11-18) passait en tete du tri par nom, faisait echouer la fraicheur et n'etait jamais effacee (D99).
 chmod 600 "$COPIES"/lexia-*.db 2>/dev/null || true
 
 # la date est dans le nom (lexia-AAAAMMJJ.db) : tri par nom, plus sur que la date de modification
-DERNIERE="$(ls -1 "$COPIES"/lexia-*.db 2>/dev/null | sort | tail -1 || true)"
+DERNIERE="$(ls -1 "$COPIES"/lexia-[0-9]*.db 2>/dev/null | sort | tail -1 || true)"
 if [ -z "$DERNIERE" ]; then
   echo "ERREUR : aucune sauvegarde recue" >&2
   exit 1
@@ -62,5 +64,5 @@ fi
 echo "verifiee : $(basename "$DERNIERE") ($COMPTES comptes, integrite ok)"
 
 # Anciennes copies : seules les JOURS dernieres sont gardees
-ls -1 "$COPIES"/lexia-*.db | sort -r | tail -n +"$((JOURS + 1))" | xargs -r rm -f
+ls -1 "$COPIES"/lexia-[0-9]*.db | sort -r | tail -n +"$((JOURS + 1))" | xargs -r rm -f
 echo "$(date -Iseconds) fin : $(ls -1 "$COPIES"/lexia-*.db | wc -l | tr -d ' ') copies dans $COPIES"

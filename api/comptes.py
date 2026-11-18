@@ -199,6 +199,10 @@ class Comptes:
         self._con = sqlite3.connect(str(chemin), check_same_thread=False)
         self._con.execute("PRAGMA foreign_keys = ON")
         self._con.execute("PRAGMA journal_mode = WAL")
+        # Compte supprime (et ses cours, en cascade) ou valeur remplacee : octets mis a zero, pas seulement
+        # liberes. Sans cela l'adresse, l'empreinte et le texte des cours restaient lisibles dans le fichier
+        # (audit de la base du 2026-11-18, D99 ; meme reglage que api/cours.py, audit C7).
+        self._con.execute("PRAGMA secure_delete = ON")
         self._con.executescript(SCHEMA)
         colonnes = {r[1] for r in self._con.execute("PRAGMA table_info(utilisateurs)")}
         if "admin" not in colonnes:  # migration des bases creees avant le role admin
@@ -491,6 +495,9 @@ class Comptes:
                                   "DO UPDATE SET supprime_le = excluded.supprime_le",
                                   (_hash_jeton(forme_canonique(u.email)), _maintenant().isoformat(timespec="seconds")))
             self._con.execute("DELETE FROM utilisateurs WHERE id = ?", (uid,))
+        # anciennes versions des pages recopiees dans le journal WAL : journal vide (comme Cours.supprimer)
+        with self._lock:
+            self._con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 
     def confirmer_email(self, uid: int) -> None:
         """Adresse confirmee sans lien (compte cree sur le serveur par la commande d'administration)."""
