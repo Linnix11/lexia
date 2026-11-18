@@ -39,7 +39,8 @@ def client_connecte(app, email):
         comptes.confirmer_email(comptes.creer(email, MDP, depuis_le_site=False).id)
         assert c.post("/auth/connexion", json={"email": email, "mot_de_passe": MDP}).status_code == 200
     else:
-        r = c.post("/auth/inscription", json={"email": email, "mot_de_passe": MDP, "accepte_cgu": True})
+        r = c.post("/auth/inscription", json={"email": email, "mot_de_passe": MDP, "accepte_cgu": True,
+                                                   "prenom": "Léa", "nom": "Martin"})
         assert r.status_code == 201
     if email.startswith("chef") or email.startswith("adjoint"):
         activer_2fa(c)  # l'administration exige la double authentification
@@ -66,7 +67,8 @@ def test_adresse_admin_ne_s_inscrit_pas_depuis_le_site(env, monkeypatch):
     monkeypatch.setattr(courriel, "envoyer_verification", lambda dest, lien: None)
     app, comptes = env
     for adresse in ("chef@exemple.fr", "Chef+admin@exemple.fr"):
-        r = TestClient(app).post("/auth/inscription", json={"email": adresse, "mot_de_passe": MDP, "accepte_cgu": True})
+        r = TestClient(app).post("/auth/inscription", json={"email": adresse, "mot_de_passe": MDP, "accepte_cgu": True,
+                                                   "prenom": "Léa", "nom": "Martin"})
         assert r.status_code == 422 and "réservée" in r.json()["detail"]
     assert comptes.par_email("chef@exemple.fr") is None
 

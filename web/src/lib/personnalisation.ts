@@ -1,8 +1,9 @@
-// Touches personnelles de l'espace etudiant (D100). Rien de nouveau n'est envoye au serveur : le prenom vient du
-// profil, la derniere matiere choisie reste dans ce navigateur (une cle par compte, empreinte et non l'adresse).
+// Touches personnelles de l'espace etudiant (D100, D102). Rien de nouveau n'est envoye au serveur : le prenom vient
+// du profil, la derniere matiere choisie reste dans ce navigateur (une cle par compte, empreinte et non l'adresse).
 import { empreinte } from './favoris'
 
-export const PRENOM_MAX = 30
+export const PRENOM_MAX = 50
+export const NOM_MAX = 50
 
 /** « Bonjour » de 5 h a 18 h, « Bonsoir » ensuite. Jamais l'adresse e-mail : sans prenom, la salutation seule. */
 export function salutation(prenom: string | null | undefined, heure = new Date().getHours()): string {

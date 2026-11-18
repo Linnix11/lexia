@@ -1,6 +1,7 @@
 """Comptes etudiants : utilisateurs, sessions et consommation quotidienne (SQLite).
 
-Donnees personnelles conservees : adresse e-mail, prenom facultatif (affiche dans l'espace etudiant seulement),
+Donnees personnelles conservees : adresse e-mail, prenom et nom (demandes a l'inscription, D102 ; le prenom sert a
+saluer l'etudiant dans son espace),
 empreinte du mot de passe (scrypt, sel aleatoire), formule, date de creation, compteurs d'usage par jour. Aucune question posee n'est enregistree.
 Suppression complete du compte a la demande (supprimer). Durees de conservation (politique de confidentialite,
 docs/registre-traitements.md) : compte sans activite supprime apres deux ans, avec un e-mail d'avertissement un
@@ -103,6 +104,7 @@ COLONNES_REINIT = {
     "reinit_envoye_le": "TEXT",   # date d'envoi : limite les renvois et fixe l'expiration
 }
 DUREE_REINITIALISATION = timedelta(hours=1)
+MESSAGE_IDENTITE = "Indiquez votre prénom et votre nom."
 DELAI_ENTRE_ENVOIS = timedelta(minutes=2)
 # Comptes inactifs (audit du 2026-11-18, E5) : repere de la CNIL, deux ans sans activite, avec avertissement
 # prealable. Activite = connexion ou visite avec une session valide (actif_le, une ecriture par jour au plus).
@@ -114,10 +116,12 @@ INACTIVITE = timedelta(days=730)
 PREAVIS_INACTIVITE = timedelta(days=30)
 # Compteurs d'usage : ne servent qu'au quota du jour et aux statistiques des 30 derniers jours.
 USAGE_CONSERVE = timedelta(days=90)
-# Prenom facultatif (D100) : sert seulement a saluer l'etudiant dans son espace. Jamais envoye au modele, dans un
-# e-mail ni a l'administration ; efface avec le compte (ligne supprimee).
-COLONNES_PROFIL = {"prenom": "TEXT"}
-PRENOM_MAX = 30
+# Prenom (D100) et nom (D102) : demandes a l'inscription depuis le site, vides pour les comptes plus anciens (invites
+# a les completer dans Mon compte, sans blocage). Le prenom sert a saluer l'etudiant dans son espace. Jamais envoyes
+# au modele, dans un e-mail ni a l'administration ; effaces avec le compte (ligne supprimee).
+COLONNES_PROFIL = {"prenom": "TEXT", "nom": "TEXT"}
+PRENOM_MAX = 50
+NOM_MAX = 50
 PONCTUATION_PRENOM = set(" -'’.")
 
 
@@ -190,17 +194,25 @@ def _hash_jeton(jeton: str) -> str:
     return hashlib.sha256(jeton.encode()).hexdigest()
 
 
-def normaliser_prenom(prenom: str | None) -> str | None:
-    """Prenom saisi -> forme gardee (None : pas de prenom). Lettres, espaces, traits d'union, apostrophes et points."""
-    texte = " ".join(unicodedata.normalize("NFC", prenom or "").split())
+def _normaliser_identite(valeur: str | None, libelle: str, maximum: int) -> str | None:
+    """Prenom ou nom saisi -> forme gardee (None : vide). Lettres, espaces, traits d'union, apostrophes et points."""
+    texte = " ".join(unicodedata.normalize("NFC", valeur or "").split())
     if not texte:
         return None
-    if len(texte) > PRENOM_MAX:
-        raise ErreurCompte(f"Le prénom ne doit pas dépasser {PRENOM_MAX} caractères.")
+    if len(texte) > maximum:
+        raise ErreurCompte(f"Le {libelle} ne doit pas dépasser {maximum} caractères.")
     if not texte[0].isalpha() or any(not (c.isalpha() or c in PONCTUATION_PRENOM) for c in texte):
-        raise ErreurCompte("Le prénom ne peut contenir que des lettres, des espaces, des traits d'union, "
+        raise ErreurCompte(f"Le {libelle} ne peut contenir que des lettres, des espaces, des traits d'union, "
                            "des apostrophes et des points.")
     return texte
+
+
+def normaliser_prenom(prenom: str | None) -> str | None:
+    return _normaliser_identite(prenom, "prénom", PRENOM_MAX)
+
+
+def normaliser_nom(nom: str | None) -> str | None:
+    return _normaliser_identite(nom, "nom", NOM_MAX)
 
 
 def normaliser_email(email: str) -> str:
@@ -238,7 +250,7 @@ class Comptes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
                 if nom == "email_verifie_le":  # les comptes anterieurs restent utilisables
                     self._con.execute("UPDATE utilisateurs SET email_verifie_le = cree_le")
-        for nom, genre in COLONNES_PROFIL.items():  # migration : prenom facultatif
+        for nom, genre in COLONNES_PROFIL.items():  # migration : prenom et nom
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
         for nom, genre in COLONNES_ACTIVITE.items():  # migration : comptes inactifs
@@ -278,10 +290,12 @@ class Comptes:
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
 
-    def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None) -> Utilisateur:
-        """depuis_le_site=False : creation par la commande d'administration (adresses d'administration)."""
+    def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None,
+              nom: str | None = None) -> Utilisateur:
+        """depuis_le_site=False : creation par la commande d'administration (adresses d'administration).
+        Prenom et nom : exiges par la route d'inscription (api/auth.py), facultatifs ici."""
         email = normaliser_email(email)
-        prenom = normaliser_prenom(prenom)
+        prenom, nom = normaliser_prenom(prenom), normaliser_nom(nom)
         boite = forme_canonique(email)
         if depuis_le_site and boite in {forme_canonique(a) for a in self._admins}:
             # Une adresse d'ADMIN_EMAILS sans compte, inscrite par un tiers, devenait administrateur des que le
@@ -318,10 +332,10 @@ class Comptes:
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.
                 cur = self._con.execute(
-                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom) VALUES ("
+                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom, nom) VALUES ("
                     "MAX(COALESCE((SELECT valeur FROM compteurs WHERE nom = 'utilisateurs'), 0),"
-                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?)",
-                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom))
+                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?,?)",
+                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom, nom))
                 self._con.execute("INSERT INTO compteurs (nom, valeur) VALUES ('utilisateurs', ?) "
                                   "ON CONFLICT(nom) DO UPDATE SET valeur = excluded.valeur", (cur.lastrowid,))
         except sqlite3.IntegrityError:
@@ -336,15 +350,17 @@ class Comptes:
         rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs WHERE id = ?", (uid,))
         return self._utilisateur(rows[0] if rows else None)
 
-    def prenom(self, uid: int) -> str | None:
-        """Lu a part (pas dans Utilisateur) : l'objet compte circule jusqu'aux routes qui appellent le modele."""
-        rows = self._q("SELECT prenom FROM utilisateurs WHERE id = ?", (uid,))
-        return rows[0][0] if rows else None
+    def identite(self, uid: int) -> tuple[str | None, str | None]:
+        """(prenom, nom), lus a part (pas dans Utilisateur) : l'objet compte circule jusqu'aux routes du modele."""
+        rows = self._q("SELECT prenom, nom FROM utilisateurs WHERE id = ?", (uid,))
+        return (rows[0][0], rows[0][1]) if rows else (None, None)
 
-    def changer_prenom(self, uid: int, prenom: str | None) -> str | None:
-        prenom = normaliser_prenom(prenom)
-        self._q("UPDATE utilisateurs SET prenom = ? WHERE id = ?", (prenom, uid))
-        return prenom
+    def changer_identite(self, uid: int, prenom: str | None, nom: str | None) -> tuple[str, str]:
+        prenom, nom = normaliser_prenom(prenom), normaliser_nom(nom)
+        if not prenom or not nom:
+            raise ErreurCompte(MESSAGE_IDENTITE)
+        self._q("UPDATE utilisateurs SET prenom = ?, nom = ? WHERE id = ?", (prenom, nom, uid))
+        return prenom, nom
 
     def authentifier(self, email: str, mdp: str) -> Utilisateur | None:
         rows = self._q("SELECT id, mdp FROM utilisateurs WHERE email = ?", ((email or "").strip().lower(),))

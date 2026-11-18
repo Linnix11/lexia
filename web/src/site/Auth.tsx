@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError } from '../lib/api'
-import { PRENOM_MAX } from '../lib/personnalisation'
+import { NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { PublicLayout, bouton } from './Public'
@@ -114,7 +114,8 @@ export function Inscription() {
   const { inscription } = useSession()
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
-  const [prenom, setPrenom] = useState('') // facultatif (D100)
+  const [prenom, setPrenom] = useState('') // prenom et nom demandes a l'inscription (D102)
+  const [nom, setNom] = useState('')
   const [mdp, setMdp] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [cgu, setCgu] = useState(false)
@@ -124,22 +125,24 @@ export function Inscription() {
   const [envoi, setEnvoi] = useState(false)
 
   const erreurs = {
+    prenom: prenom.trim() ? null : 'Indiquez votre prénom.',
+    nom: nom.trim() ? null : 'Indiquez votre nom.',
     email: /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.trim()) ? null : 'Adresse e-mail invalide.',
     mdp: mdp.length >= MDP_MIN ? null : `Au moins ${MDP_MIN} caractères.`,
     confirmation: confirmation === mdp ? null : 'Les deux mots de passe ne correspondent pas.',
   }
-  const valide = !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu && age
+  const valide = !erreurs.prenom && !erreurs.nom && !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu && age
   const montre = (k: keyof typeof erreurs) => (touche[k] ? erreurs[k] : null)
   const quitter = (k: string) => () => setTouche((t) => ({ ...t, [k]: true }))
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault()
-    setTouche({ email: true, mdp: true, confirmation: true })
+    setTouche({ prenom: true, nom: true, email: true, mdp: true, confirmation: true })
     if (!valide) return
     setErreur(null)
     setEnvoi(true)
     try {
-      await inscription(email, mdp, cgu, prenom)
+      await inscription(email, mdp, cgu, prenom, nom)
       naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Inscription impossible pour le moment.')
@@ -153,17 +156,28 @@ export function Inscription() {
   return (
     <Carte titre="Créer un compte" sousTitre="Gratuit : 10 questions et 2 questionnaires par jour.">
       <form onSubmit={soumettre} className="grid gap-4" noValidate>
+        <div className="grid gap-4 min-[420px]:grid-cols-2">
+          <label className="grid content-start gap-1.5 text-[13px]">
+            Prénom
+            <input autoComplete="given-name" value={prenom} maxLength={PRENOM_MAX} onChange={(e) => setPrenom(e.target.value)}
+              onBlur={quitter('prenom')} aria-invalid={!!montre('prenom')} aria-describedby="err-prenom aide-identite" className={champ} />
+            {aide('err-prenom', montre('prenom'))}
+          </label>
+          <label className="grid content-start gap-1.5 text-[13px]">
+            Nom
+            <input autoComplete="family-name" value={nom} maxLength={NOM_MAX} onChange={(e) => setNom(e.target.value)}
+              onBlur={quitter('nom')} aria-invalid={!!montre('nom')} aria-describedby="err-nom aide-identite" className={champ} />
+            {aide('err-nom', montre('nom'))}
+          </label>
+          <span id="aide-identite" className="-mt-2 text-[12px] text-muted min-[420px]:col-span-2">
+            Votre prénom sert à vous saluer dans votre espace. Ni votre prénom ni votre nom ne sont transmis à l’IA.
+          </span>
+        </div>
         <label className="grid gap-1.5 text-[13px]">
           Adresse e-mail
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={quitter('email')}
             aria-invalid={!!montre('email')} aria-describedby="err-email" className={champ} />
           {aide('err-email', montre('email'))}
-        </label>
-        <label className="grid gap-1.5 text-[13px]">
-          <span>Prénom <span className="text-[12px] text-muted">facultatif</span></span>
-          <input autoComplete="given-name" value={prenom} maxLength={PRENOM_MAX} onChange={(e) => setPrenom(e.target.value)}
-            aria-describedby="aide-prenom" className={champ} />
-          <span id="aide-prenom" className="text-[12px] text-muted">Pour vous saluer dans votre espace. Il n’est jamais transmis à l’IA.</span>
         </label>
         <label className="grid gap-1.5 text-[13px]">
           Mot de passe <span className="text-[12px] text-muted">{MDP_MIN} caractères minimum</span>

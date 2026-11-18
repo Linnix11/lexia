@@ -56,7 +56,8 @@ def env(tmp_path):
 
 
 def inscrire(client, email="etu@exemple.fr", mdp="motdepasse-solide"):
-    return client.post("/auth/inscription", json={"email": email, "mot_de_passe": mdp, "accepte_cgu": True})
+    return client.post("/auth/inscription", json={"email": email, "mot_de_passe": mdp, "accepte_cgu": True,
+                                                  "prenom": "Léa", "nom": "Martin"})
 
 
 def test_mot_de_passe_hache():
@@ -321,56 +322,68 @@ def test_rapatriement_ignore_les_copies_manuelles(tmp_path):
                             "LEXIA_COPIES": str(copies), "LEXIA_ESSAIS": "1"})
     assert r.returncode == 0, r.stderr
     assert sorted(p.name for p in copies.iterdir()) == [f"lexia-{jour}.db"]
-# --- prenom facultatif (D100) --------------------------------------------------------------------------------
+# --- prenom (D100) et nom (D102) ----------------------------------------------------------------------------
 
-def test_prenom_a_l_inscription_puis_modifie_et_retire(env):
+def inscrire_avec(client, **identite):
+    return client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                                  "accepte_cgu": True, **identite})
+
+
+def test_prenom_et_nom_demandes_a_l_inscription(env):
     client, comptes, _ = env
-    r = client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
-                                               "accepte_cgu": True, "prenom": "  Marie-Hélène  "})
-    assert r.status_code == 201 and r.json()["prenom"] == "Marie-Hélène"
-    assert client.post("/auth/prenom", json={"prenom": "Zoë   d’Arc"}).json()["prenom"] == "Zoë d’Arc"
-    assert client.get("/auth/session").json()["prenom"] == "Zoë d’Arc"
-    assert client.post("/auth/prenom", json={"prenom": "  "}).json()["prenom"] is None
-    assert client.post("/auth/prenom", json={"prenom": None}).json()["prenom"] is None
+    for manque in ({}, {"prenom": "Léa"}, {"nom": "Martin"}, {"prenom": "  ", "nom": "Martin"}):
+        r = inscrire_avec(client, **manque)
+        assert r.status_code == 422 and "prénom et votre nom" in r.json()["detail"], manque
+    assert comptes.par_email("etu@exemple.fr") is None
+    r = inscrire_avec(client, prenom="  Marie-Hélène  ", nom="de   La Fontaine")
+    assert r.status_code == 201
+    assert (r.json()["prenom"], r.json()["nom"]) == ("Marie-Hélène", "de La Fontaine")
 
 
-def test_prenom_facultatif_et_borne(env):
+def test_prenom_et_nom_modifiables_jamais_vides(env):
     client, comptes, _ = env
-    assert inscrire(client).json()["prenom"] is None
-    for refuse in ("<script>", "Léa2", "a" * 31, "-Léa", "Léa\u0000"):
-        r = client.post("/auth/prenom", json={"prenom": refuse})
-        assert r.status_code == 422, refuse
-    assert client.post("/auth/prenom", json={"prenom": "x" * 101}).status_code == 422  # limite du schema
-    assert client.post("/auth/prenom", json={"prenom": "Léa"}, headers={"Origin": "https://pirate.exemple"}).status_code == 403
+    inscrire(client)
+    r = client.post("/auth/identite", json={"prenom": "Zoë", "nom": "d’Arc"})
+    assert r.status_code == 200 and (r.json()["prenom"], r.json()["nom"]) == ("Zoë", "d’Arc")
+    assert client.get("/auth/session").json()["nom"] == "d’Arc"
+    assert client.post("/auth/identite", json={"prenom": "Zoë", "nom": " "}).status_code == 422
+    for refuse in ("<script>", "Léa2", "a" * 51, "-Léa", "Léa\u0000"):
+        assert client.post("/auth/identite", json={"prenom": refuse, "nom": "Martin"}).status_code == 422, refuse
+        assert client.post("/auth/identite", json={"prenom": "Léa", "nom": refuse}).status_code == 422, refuse
+    assert client.post("/auth/identite", json={"prenom": "x" * 101, "nom": "M"}).status_code == 422  # schema
+    assert client.post("/auth/identite", json={"prenom": "Léa", "nom": "M"},
+                       headers={"Origin": "https://pirate.exemple"}).status_code == 403
+    assert comptes.identite(comptes.par_email("etu@exemple.fr").id) == ("Zoë", "d’Arc")
     client.post("/auth/deconnexion")
-    assert client.post("/auth/prenom", json={"prenom": "Léa"}).status_code == 401
-    assert comptes.prenom(comptes.par_email("etu@exemple.fr").id) is None
-    # inscription refusee si le prenom est invalide : aucun compte cree
-    r = client.post("/auth/inscription", json={"email": "b@exemple.fr", "mot_de_passe": "motdepasse-solide",
-                                               "accepte_cgu": True, "prenom": "<b>"})
-    assert r.status_code == 422 and comptes.par_email("b@exemple.fr") is None
+    assert client.post("/auth/identite", json={"prenom": "Léa", "nom": "M"}).status_code == 401
 
 
-def test_prenom_jamais_envoye_au_modele(env):
+def test_compte_ancien_sans_identite_reste_utilisable(env):
+    client, comptes, _ = env
+    comptes.creer("ancien@exemple.fr", "motdepasse-solide")
+    r = client.post("/auth/connexion", json={"email": "ancien@exemple.fr", "mot_de_passe": "motdepasse-solide"})
+    assert r.status_code == 200 and r.json()["prenom"] is None and r.json()["nom"] is None
+    assert client.post("/chat", json={"question": "article 1240"}).status_code == 200
+
+
+def test_prenom_et_nom_jamais_envoyes_au_modele(env):
     client, _, llm = env
     appels = []
     generer = llm.generate_json
     llm.generate_json = lambda **kw: appels.append(kw) or generer(**kw)
-    client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
-                                           "accepte_cgu": True, "prenom": "Bérénice"})
+    inscrire_avec(client, prenom="Bérénice", nom="Zorglubeau")
     assert client.post("/chat", json={"question": "article 1240"}).status_code == 200
-    assert appels and "Bérénice" not in repr(appels)
+    assert appels and "Bérénice" not in repr(appels) and "Zorglubeau" not in repr(appels)
 
 
-def test_prenom_efface_avec_le_compte(env):
+def test_prenom_et_nom_effaces_avec_le_compte(env):
     client, comptes, _ = env
-    client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
-                                           "accepte_cgu": True, "prenom": "Bérénice"})
+    inscrire_avec(client, prenom="Bérénice", nom="Zorglubeau")
     assert client.post("/auth/supprimer", json={"mot_de_passe": "motdepasse-solide"}).status_code == 204
-    assert comptes._q("SELECT count(*) FROM utilisateurs WHERE prenom IS NOT NULL")[0][0] == 0
+    assert comptes._q("SELECT count(*) FROM utilisateurs WHERE prenom IS NOT NULL OR nom IS NOT NULL")[0][0] == 0
 
 
-def test_migration_ajoute_le_prenom(tmp_path):
+def test_migration_ajoute_prenom_et_nom(tmp_path):
     import sqlite3
     chemin = tmp_path / "ancienne.db"
     con = sqlite3.connect(chemin)
@@ -381,5 +394,5 @@ def test_migration_ajoute_le_prenom(tmp_path):
     con.commit()
     con.close()
     c = Comptes(chemin)
-    assert c.prenom(1) is None
-    assert c.changer_prenom(1, "Léa") == "Léa" and c.prenom(1) == "Léa"
+    assert c.identite(1) == (None, None)
+    assert c.changer_identite(1, "Léa", "Martin") == ("Léa", "Martin") and c.identite(1) == ("Léa", "Martin")

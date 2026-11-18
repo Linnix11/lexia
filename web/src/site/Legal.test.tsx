@@ -51,11 +51,11 @@ describe('Conditions générales', () => {
 })
 
 describe('Politique de confidentialité', () => {
-  it('décrit le prénom facultatif, jamais transmis à l IA (D100)', async () => {
+  it('décrit le prénom et le nom, jamais transmis à l IA (D100, D102)', async () => {
     window.history.pushState({}, '', '/confidentialite')
     render(<Site />)
-    expect(await screen.findByText(/utilisé seulement pour vous saluer dans votre espace/)).toBeInTheDocument()
-    expect(screen.getByText(/Il n’est jamais transmis à l’intelligence artificielle/)).toBeInTheDocument()
-    expect(screen.getByText(/Prénom : jusqu’à ce que vous le retiriez/)).toBeInTheDocument()
+    expect(await screen.findByText(/Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte/)).toBeInTheDocument()
+    expect(screen.getByText(/Ils ne sont jamais transmis à l’intelligence artificielle/)).toBeInTheDocument()
+    expect(screen.getByText(/Prénom et nom : comme le compte, effacés avec lui/)).toBeInTheDocument()
   })
 })

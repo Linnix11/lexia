@@ -724,32 +724,36 @@ describe('Liens internes (D4)', () => {
   })
 })
 
-describe('Personnalisation (D100)', () => {
+describe('Personnalisation (D100, D102)', () => {
   const avecProfil = (extra: Record<string, unknown>) => {
     const normal = fetchMock.getMockImplementation() as (url: string) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre({ ...PROFIL, ...extra })
-      if (url.endsWith('/auth/prenom')) {
-        const prenom = JSON.parse(String(init?.body)).prenom
-        return repondre({ ...PROFIL, ...extra, prenom })
+      if (url.endsWith('/auth/identite')) {
+        const { prenom, nom } = JSON.parse(String(init?.body))
+        return repondre({ ...PROFIL, ...extra, prenom, nom })
       }
       return normal(url)
     })
   }
 
   it('salue par le prenom selon l heure et dit les questions restantes', async () => {
-    avecProfil({ prenom: 'Léa' })
+    avecProfil({ prenom: 'Léa', nom: 'Martin' })
     render(<Site />)
     expect(await screen.findByRole('heading', { level: 1, name: /^(Bonjour|Bonsoir), Léa\.$/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Ajoutez votre prénom et votre nom/)).not.toBeInTheDocument()
     expect(screen.getByText(/Il vous reste 7 questions aujourd’hui\./)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Mon compte' })).toHaveTextContent('L')
   })
 
-  it('sans prenom : la salutation seule, jamais l adresse e-mail', async () => {
-    avecProfil({ prenom: null })
+  it('compte ancien sans prenom : salutation seule, jamais l adresse, invitation a completer sans blocage', async () => {
+    avecProfil({ prenom: null, nom: null })
     render(<Site />)
     const titre = await screen.findByRole('heading', { level: 1, name: /^(Bonjour|Bonsoir)\.$/ })
     expect(titre).not.toHaveTextContent('etu')
+    expect(screen.getByText(/Ajoutez votre prénom et votre nom/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Compléter dans Mon compte' })).toHaveAttribute('href', '/compte')
+    expect(screen.getByLabelText('Votre question')).toBeEnabled()
   })
 
   it('un prenom avec du HTML est affiche comme du texte', async () => {
@@ -769,23 +773,22 @@ describe('Personnalisation (D100)', () => {
     expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
   })
 
-  it('Mon compte : prenom enregistre puis retire', async () => {
-    avecProfil({ prenom: null })
+  it('Mon compte : prenom et nom modifiables, jamais vides', async () => {
+    avecProfil({ prenom: null, nom: null })
     window.history.pushState({}, '', '/compte')
     render(<Site />)
-    const champ = await screen.findByLabelText('Votre prénom')
-    fireEvent.change(champ, { target: { value: 'Léa' } })
+    const prenom = await screen.findByLabelText('Prénom')
+    const enregistrer = screen.getByRole('button', { name: 'Enregistrer' })
+    fireEvent.change(prenom, { target: { value: 'Léa' } })
+    expect(enregistrer).toBeDisabled() // nom manquant
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Martin' } })
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+      fireEvent.click(enregistrer)
     })
-    expect(await screen.findByText('Prénom enregistré.')).toBeInTheDocument()
-    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/prenom'))!
-    expect(JSON.parse(String(appel[1].body))).toEqual({ prenom: 'Léa' })
-    fireEvent.change(champ, { target: { value: ' ' } })
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-    })
-    expect(await screen.findByText('Prénom retiré.')).toBeInTheDocument()
-    expect(JSON.parse(String(fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/auth/prenom'))[1][1].body))).toEqual({ prenom: null })
+    expect(await screen.findByText('Prénom et nom enregistrés.')).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/identite'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ prenom: 'Léa', nom: 'Martin' })
+    fireEvent.change(prenom, { target: { value: ' ' } })
+    expect(enregistrer).toBeDisabled()
   })
 })

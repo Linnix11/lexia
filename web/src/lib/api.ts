@@ -139,8 +139,9 @@ export interface Formule {
 
 export interface Profil {
   email: string
-  /** Prenom facultatif (D100) : affiche dans l'espace seulement, jamais envoye au modele. */
+  /** Prenom (D100) et nom (D102) : demandes a l'inscription, vides pour les comptes anciens ; jamais envoyes au modele. */
   prenom?: string | null
+  nom?: string | null
   cree_le: string
   formule: Formule
   formule_fin: string | null
@@ -399,9 +400,9 @@ export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
   session: () => requete<Profil | null>('/auth/session'),
-  inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean, prenom?: string) =>
-    post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu, prenom: prenom?.trim() || undefined }),
-  changerPrenom: (prenom: string) => post<Profil>('/auth/prenom', { prenom: prenom.trim() || null }),
+  inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean, prenom: string, nom: string) =>
+    post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu, prenom: prenom.trim(), nom: nom.trim() }),
+  changerIdentite: (prenom: string, nom: string) => post<Profil>('/auth/identite', { prenom: prenom.trim(), nom: nom.trim() }),
   connexion: (email: string, mot_de_passe: string) => post<Profil | DeuxiemeEtape>('/auth/connexion', { email, mot_de_passe }),
   connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
   verifierEmail: (jeton: string) => post<Profil | null>('/auth/email/verifier', { jeton }),

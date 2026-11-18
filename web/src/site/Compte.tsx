@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
 import { effacerFavoris } from '../lib/favoris'
-import { effacerDerniereMatiere, PRENOM_MAX } from '../lib/personnalisation'
+import { effacerDerniereMatiere, NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { DoubleAuthentification } from './DoubleAuthentification'
@@ -34,7 +34,8 @@ function Paiement() {
   const [etat, setEtat] = useState<EtatPaiement | null>(null)
   const [attente, setAttente] = useState(retour)
   const [declaration, setDeclaration] = useState(false)
-  const [nom, setNom] = useState('')
+  // pre-rempli avec le prenom et le nom du compte, modifiable (la declaration reste celle de l'etudiant)
+  const [nom, setNom] = useState(() => [profil?.prenom, profil?.nom].filter(Boolean).join(' '))
   const [choisis, setChoisis] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -151,14 +152,16 @@ function Paiement() {
   )
 }
 
-/** Prenom facultatif (D100) : modifiable, retire si le champ est vide. */
-function Prenom() {
+/** Prenom et nom (D100, D102) : modifiables, jamais vides une fois enregistres. */
+function Identite() {
   const { profil, majProfil } = useSession()
-  const [valeur, setValeur] = useState(profil?.prenom ?? '')
+  const [prenom, setPrenom] = useState(profil?.prenom ?? '')
+  const [nom, setNom] = useState(profil?.nom ?? '')
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
-  const actuel = profil?.prenom ?? ''
+  const inchange = prenom.trim() === (profil?.prenom ?? '') && nom.trim() === (profil?.nom ?? '')
+  const champ = 'max-w-[260px] rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]'
 
   const enregistrer = async (e: FormEvent) => {
     e.preventDefault()
@@ -166,10 +169,11 @@ function Prenom() {
     setMessage(null)
     setEnvoi(true)
     try {
-      const p = await api.changerPrenom(valeur)
+      const p = await api.changerIdentite(prenom, nom)
       majProfil(p)
-      setValeur(p.prenom ?? '')
-      setMessage(p.prenom ? 'Prénom enregistré.' : 'Prénom retiré.')
+      setPrenom(p.prenom ?? '')
+      setNom(p.nom ?? '')
+      setMessage('Prénom et nom enregistrés.')
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Enregistrement impossible pour le moment.')
     } finally {
@@ -179,18 +183,21 @@ function Prenom() {
 
   return (
     <section className="rounded-xl border border-line bg-surface p-5">
-      <h2 className="text-[14px] font-semibold">Prénom</h2>
+      <h2 className="text-[14px] font-semibold">Prénom et nom</h2>
       <p className="mt-1 text-[12px] leading-[1.6] text-muted">
-        Facultatif. Il sert seulement à vous saluer dans votre espace : il n’est jamais transmis à l’IA ni utilisé dans
-        les e-mails. Laissez le champ vide pour le retirer.
+        Votre prénom sert à vous saluer dans votre espace. Ni votre prénom ni votre nom ne sont transmis à l’IA ni
+        utilisés dans les e-mails.
       </p>
       <form onSubmit={enregistrer} className="mt-3 flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-[12px]">
-          Votre prénom
-          <input value={valeur} maxLength={PRENOM_MAX} autoComplete="given-name" onChange={(e) => setValeur(e.target.value)}
-            className="max-w-[260px] rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
+          Prénom
+          <input value={prenom} maxLength={PRENOM_MAX} autoComplete="given-name" onChange={(e) => setPrenom(e.target.value)} className={champ} />
         </label>
-        <button type="submit" disabled={envoi || valeur.trim() === actuel} className={`${boutonSecondaire} disabled:opacity-60`}>
+        <label className="grid gap-1 text-[12px]">
+          Nom
+          <input value={nom} maxLength={NOM_MAX} autoComplete="family-name" onChange={(e) => setNom(e.target.value)} className={champ} />
+        </label>
+        <button type="submit" disabled={envoi || inchange || !prenom.trim() || !nom.trim()} className={`${boutonSecondaire} disabled:opacity-60`}>
           {envoi ? 'Enregistrement…' : 'Enregistrer'}
         </button>
         {message && <p role="status" className="w-full text-[12px] text-forest">{message}</p>}
@@ -253,7 +260,7 @@ export function Compte() {
             <p className="mt-3 text-[12px] text-muted">Les compteurs se remettent à zéro chaque jour à minuit.</p>
           </section>
 
-          <Prenom />
+          <Identite />
 
           <DoubleAuthentification />
 
@@ -272,7 +279,7 @@ export function Compte() {
           <section className="rounded-xl border border-[#ecd9c4] bg-cream p-5">
             <h2 className="text-[14px] font-semibold text-[#5f4f37]">Supprimer mon compte</h2>
             <p className="mt-1 text-[12px] leading-[1.6] text-[#746347]">
-              Votre adresse e-mail, votre prénom, votre mot de passe, vos cours déposés et vos compteurs d’utilisation
+              Votre adresse e-mail, vos prénom et nom, votre mot de passe, vos cours déposés et vos compteurs d’utilisation
               sont effacés définitivement, ainsi que les fiches et la dernière matière enregistrées dans ce navigateur
               (celles d’un autre appareil y restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail)
               est conservée dix ans, comme toute pièce comptable.

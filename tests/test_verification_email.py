@@ -123,7 +123,7 @@ def test_le_lien_ne_suit_jamais_l_en_tete_host(env):
     """Un domaine tiers pointe sur le serveur faisait envoyer, depuis l'adresse de Lexia, des liens vers lui."""
     client, _, envoyes = env
     client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
-                                           "accepte_cgu": True},
+                                           "accepte_cgu": True, "prenom": "Léa", "nom": "Martin"},
                 headers={"Host": "pirate.example", "Origin": "https://pirate.example"})
     assert envoyes and envoyes[0][1].startswith("https://lexia.test/verifier-email#jeton=")
 

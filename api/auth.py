@@ -1,4 +1,4 @@
-"""Routes de compte : inscription, connexion, deconnexion, profil, prenom, suppression.
+"""Routes de compte : inscription, connexion, deconnexion, profil, prenom et nom, suppression.
 
 Session : cookie `lexia_session` HttpOnly, SameSite=Lax, Secure en HTTPS. Les requetes qui
 modifient l'etat sont en JSON (pas de formulaire HTML cross-site possible) et l'en-tete Origin,
@@ -21,7 +21,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from api import courriel, totp
-from api.comptes import DUREE_SESSION, Comptes, ErreurCompte, Utilisateur
+from api.comptes import (DUREE_SESSION, MESSAGE_IDENTITE, Comptes, ErreurCompte, Utilisateur, normaliser_nom,
+                         normaliser_prenom)
 from api.plans import FORMULES
 
 COOKIE = "lexia_session"
@@ -34,11 +35,14 @@ class Inscription(BaseModel):
     email: str = Field(max_length=254)
     mot_de_passe: str = Field(max_length=256)
     accepte_cgu: bool
-    prenom: str | None = Field(default=None, max_length=100)  # facultatif, limite fine dans normaliser_prenom
+    # Exiges (D102) ; limites fines dans normaliser_prenom et normaliser_nom
+    prenom: str | None = Field(default=None, max_length=100)
+    nom: str | None = Field(default=None, max_length=100)
 
 
-class Prenom(BaseModel):
-    prenom: str | None = Field(default=None, max_length=100)  # vide ou null : prenom retire
+class Identite(BaseModel):
+    prenom: str | None = Field(default=None, max_length=100)
+    nom: str | None = Field(default=None, max_length=100)
 
 
 class Connexion(BaseModel):
@@ -208,9 +212,11 @@ def verifier_origine(request: Request) -> None:
 
 def profil(comptes: Comptes, u: Utilisateur) -> dict:
     f = u.formule
+    prenom, nom = comptes.identite(u.id)
     return {
         "email": u.email,
-        "prenom": comptes.prenom(u.id),
+        "prenom": prenom,
+        "nom": nom,
         "cree_le": u.cree_le,
         "formule": f.as_dict(),
         "formule_fin": u.formule_fin if u.formule_id == f.id else None,
@@ -266,10 +272,15 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def inscription(req: Inscription, request: Request, response: Response):
         if not req.accepte_cgu:
             raise HTTPException(422, "Vous devez accepter les conditions générales d'utilisation.")
+        try:
+            if not normaliser_prenom(req.prenom) or not normaliser_nom(req.nom):
+                raise ErreurCompte(MESSAGE_IDENTITE)
+        except ErreurCompte as e:
+            raise HTTPException(422, str(e)) from None
         freins.verifier(_ip(request), "inscription")
         freins.verifier_inscription(_ip(request))
         try:
-            u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom)
+            u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom, nom=req.nom)
         except ErreurCompte as e:
             # Un refus compte dans la limite du jour : « Un compte existe deja » permettait de tester des
             # adresses sans limite (audit du 2026-11-16, point 8 ; reste possible 20 fois par jour et par IP).
@@ -464,10 +475,10 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def moi(u: Utilisateur = Depends(utilisateur_requis)):
         return profil(comptes, u)
 
-    @router.post("/prenom", dependencies=[Depends(verifier_origine)])
-    def changer_prenom(req: Prenom, u: Utilisateur = Depends(utilisateur_requis)):
+    @router.post("/identite", dependencies=[Depends(verifier_origine)])
+    def changer_identite(req: Identite, u: Utilisateur = Depends(utilisateur_requis)):
         try:
-            comptes.changer_prenom(u.id, req.prenom)
+            comptes.changer_identite(u.id, req.prenom, req.nom)
         except ErreurCompte as e:
             raise HTTPException(422, str(e)) from None
         return profil(comptes, u)

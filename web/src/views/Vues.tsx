@@ -10,6 +10,7 @@ import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
 import { MODES } from '../lib/modes'
 import { phraseQuestionsRestantes, salutation, tronquer } from '../lib/personnalisation'
+import { Lien } from '../lib/router'
 import { libelleSemestre } from '../lib/semestres'
 import { useApp } from '../state/contexte'
 import { useSession } from '../state/session'
@@ -85,6 +86,13 @@ export function VueEspace() {
         texte={`Votre espace pour comprendre le droit et progresser à votre rythme.${
           restant === null ? '' : ` ${phraseQuestionsRestantes(restant, profil!.formule.questions_par_jour)}`}`}
         droite={`${libelleMatiere} · ${libelleSemestre(semestre)}`} />
+      {profil && (!profil.prenom || !profil.nom) && (
+        // Comptes crees avant D102 : invites a completer, jamais bloques.
+        <p className="mb-[18px] rounded-xl border border-line bg-surface px-4 py-3 text-[12px] text-muted">
+          Ajoutez votre prénom et votre nom pour que Lexia vous salue par votre prénom.{' '}
+          <Lien href="/compte" className="font-semibold text-forest hover:underline">Compléter dans Mon compte</Lien>
+        </p>
+      )}
       <div className="grid items-start gap-[19px] tab:grid-cols-[minmax(0,1.2fr)_minmax(235px,.8fr)] desk:grid-cols-[minmax(0,1.65fr)_minmax(260px,.85fr)]">
         <div className="grid min-w-0 gap-[18px]">
           <Card className="flex min-w-0 flex-col px-4 py-[18px] tab:px-[22px] tab:pt-[21px] tab:pb-[17px]">
