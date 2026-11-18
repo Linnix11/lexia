@@ -161,14 +161,24 @@ export function Cgu() {
           jour à minuit (heure de Paris).
         </p>
         {paiement ? (
-          <p>
-            <strong>Souscription.</strong> Depuis la page Tarifs, vous choisissez la formule et le nombre de mois ; le
-            prix total toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}) est affiché avant le
-            paiement. Le paiement se fait en une fois, par carte, sur la page sécurisée de notre prestataire Stripe :
-            l’éditeur ne voit ni ne conserve vos coordonnées bancaires. Le contrat est conclu à la confirmation du
-            paiement ; la formule est alors activée pour la durée achetée, indiquée sur la page « Mon compte ». Un
-            justificatif de paiement vous est adressé par e-mail.
-          </p>
+          <>
+            <p>
+              <strong>Souscription.</strong> Depuis la page Tarifs, vous choisissez la formule et le nombre de mois ;
+              le prix total toutes taxes comprises ({l?.tva ? l.tva : <V manque="Mention TVA" />}) est affiché avant le
+              paiement. Le paiement se fait en une fois, par carte, sur la page sécurisée de notre prestataire Stripe :
+              l’éditeur ne voit ni ne conserve vos coordonnées bancaires. Le contrat est conclu à la confirmation du
+              paiement ; la formule est alors activée pour la durée achetée, indiquée sur la page « Mon compte ». Vous
+              recevez ensuite par e-mail la confirmation du contrat : formule, durée, prix, date de fin, version des
+              présentes conditions acceptée, date de votre demande d’accès immédiat, date limite de rétractation et
+              modèle de formulaire de rétractation (article L. 221-13 du Code de la consommation).
+            </p>
+            <p>
+              Un paiement reçu alors qu’une autre formule est déjà en cours sur votre compte, ou après la suppression
+              du compte, n’active aucune formule : il vous est remboursé intégralement et un e-mail vous en informe.
+              Si un paiement est remboursé en totalité ou contesté auprès de votre banque, la formule achetée est
+              retirée.
+            </p>
+          </>
         ) : (
           <p>
             <strong>Souscription.</strong> Aucun paiement n’est encaissé sur le site. Une formule payante se demande par
