@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
-import type { ReponseChat } from './lib/api'
+import { api, type ReponseChat } from './lib/api'
 import { ecrireFavoris, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
 import css from './index.css?raw'
@@ -538,6 +538,55 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
 })
 
 describe('Audit du 18 novembre 2026, lot D', () => {
+  it('messages : 502, 504 et 524 traduits, delai d attente cote client (D9)', async () => {
+    for (const [status, attendu] of [[502, /redémarre/], [504, /trop de temps/], [524, /trop de temps/]] as const) {
+      fetchMock.mockImplementationOnce(() => Promise.resolve(new Response('<html>Bad gateway</html>', { status })))
+      await expect(api.matieres()).rejects.toThrow(attendu)
+    }
+    await api.matieres()
+    expect(fetchMock.mock.calls.at(-1)![1].signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('matieres en cours de chargement : pas de faux message d erreur (D9)', async () => {
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/matieres') ? new Promise<Response>(() => undefined) : base(url, init))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    expect(await screen.findByText(/Chargement des matières/)).toBeInTheDocument()
+    expect(screen.queryByText(/API Lexia est démarrée/)).not.toBeInTheDocument()
+  })
+
+  it('questionnaire : limite atteinte avec lien vers les formules, remplacement confirme (D9)', async () => {
+    const QUIZ = { quiz_id: 'qz-3', format: 'qcm', theme: 'la faute', demande: 1, obtenu: 1, message: '', avertissement: '',
+      questions: [{ index: 0, question: 'Quel article ?', choix: ['1240', '1103'] }], sources: REPONSE.sources }
+    let limite = false
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => (url.endsWith('/quiz')
+      ? (limite ? repondre({ detail: 'Limite du jour atteinte.' }, 402) : repondre(QUIZ)) : base(url, init)))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'S’entraîner' }))
+    fireEvent.change(screen.getByLabelText('Thème'), { target: { value: 'la faute' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Générer le questionnaire/ }))
+    })
+    fireEvent.click(await screen.findByRole('radio', { name: '1240' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nouveau questionnaire…' }))
+    const confirmer = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    fireEvent.click(screen.getByRole('button', { name: /Générer un nouveau questionnaire/ }))
+    expect(confirmer).toHaveBeenCalled()
+    expect(screen.getByRole('radio', { name: '1240' })).toBeChecked()       // refus : rien n'est efface
+    confirmer.mockReturnValue(true)
+    limite = true
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Générer un nouveau questionnaire/ }))
+    })
+    expect(await screen.findByText('Limite du jour atteinte.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Voir les formules' })).toHaveAttribute('href', '/tarifs')
+    confirmer.mockRestore()
+  })
+
   it('accessibilite : citation nommee, Oui/Non de 24 px, avertissement lisible, bouton desactive explique (D8)', async () => {
     render(<Site />)
     const envoyer = await screen.findByRole('button', { name: /Envoyer/ })

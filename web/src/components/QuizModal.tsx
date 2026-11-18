@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Lien } from '../lib/router'
 import type { FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
@@ -54,7 +55,7 @@ export function QuizModal() {
 
 function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string; matiereInitiale: string | null }) {
   const { fermerQuiz, matieres, ouvrirSource, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz } = useApp()
-  const { parametres, quiz, reponses, correction, etat, erreur } = dernierQuiz
+  const { parametres, quiz, reponses, correction, etat, erreur, statut } = dernierQuiz
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
   const [theme, setTheme] = useState(themeDemande ?? parametres?.theme ?? '')
   const [nombre, setNombre] = useState(parametres?.nombre ?? 5)
@@ -69,6 +70,9 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
       signalerErreurQuiz('Indiquez un thème d’au moins 3 caractères.')
       return
     }
+    // le questionnaire en cours et ses reponses seraient effaces sans prevenir (audit du 2026-11-18, D9)
+    if (quiz?.quiz_id && Object.keys(reponses).length > 0
+      && !window.confirm('Remplacer le questionnaire en cours ? Vos réponses et la correction seront effacées.')) return
     genererQuiz({ theme: theme.trim(), nombre, format, matiere: mat })
     setReglages(false)
   }
@@ -140,7 +144,12 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
         </form>
         )}
 
-        {erreur && <p role="alert" className="mb-3 rounded-lg bg-cream px-3 py-2 text-[12px] text-[#746347]">{erreur}</p>}
+        {erreur && (
+          <p role="alert" className="mb-3 rounded-lg bg-cream px-3 py-2 text-[12px] text-[#746347]">
+            {erreur}
+            {statut === 402 && <> <Lien href="/tarifs" className="font-semibold text-forest hover:underline">Voir les formules</Lien></>}
+          </p>
+        )}
 
         {etat === 'generation' && (
           <div className="grid animate-pulse gap-3 border-t border-line pt-4" aria-label="Génération du questionnaire">

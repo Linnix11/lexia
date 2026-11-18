@@ -187,7 +187,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (quiz.quiz_id && !quizVisible.current) notifier('Votre questionnaire est prêt : rouvrez-le avec « S’entraîner ».')
         })
         .catch((e: unknown) => {
-          setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La génération a échoué.' }))
+          setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La génération a échoué.',
+            statut: e instanceof ApiError ? e.status : undefined }))
         })
         .finally(() => void rafraichir())
     },
@@ -207,11 +208,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .corriger(quiz.quiz_id, liste)
       .then((correction) => setDernierQuiz((d) => ({ ...d, correction, etat: 'libre' })))
       .catch((e: unknown) => {
-        setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La correction a échoué.' }))
+        setDernierQuiz((d) => ({ ...d, etat: 'libre', erreur: e instanceof ApiError ? e.message : 'La correction a échoué.',
+          statut: e instanceof ApiError ? e.status : undefined }))
       })
   }, [dernierQuiz])
 
-  const signalerErreurQuiz = useCallback((erreur: string | null) => setDernierQuiz((d) => ({ ...d, erreur })), [])
+  const signalerErreurQuiz = useCallback((erreur: string | null) => setDernierQuiz((d) => ({ ...d, erreur, statut: undefined })), [])
 
   const basculerFavori = useCallback(
     (m: Message) => {

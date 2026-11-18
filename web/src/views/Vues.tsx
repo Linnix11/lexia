@@ -73,7 +73,8 @@ export function VueMatieres() {
       <EnTete surtitre="Mes matières" titre="Matières disponibles." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
       <DepotCours />
       {matieres.length === 0 ? (
-        <Card className="p-6 text-[12px] text-muted">Impossible de charger les matières : vérifiez que l’API Lexia est démarrée.</Card>
+        // liste vide aussi pendant le chargement (et ses essais) : pas de message d'erreur (audit du 2026-11-18, D9)
+        <Card role="status" className="p-6 text-[12px] text-muted">Chargement des matières… Si elles n’apparaissent pas, rechargez la page.</Card>
       ) : (
         <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
           {matieres.map((m) => (

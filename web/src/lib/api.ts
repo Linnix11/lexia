@@ -284,17 +284,28 @@ const MESSAGES: Record<number, string> = {
   413: 'Votre texte est trop long.',
   422: 'Votre saisie est incomplète ou trop courte : vérifiez-la et réessayez.',
   429: 'Trop de requêtes : patientez une minute avant de réessayer.',
+  // Pages de nginx ou Cloudflare, sans detail JSON (audit du 2026-11-18, D9)
+  502: 'Le serveur Lexia redémarre ou est surchargé. Réessayez dans un instant.',
   503: 'Le modèle est momentanément indisponible. Réessayez dans quelques instants.',
+  504: 'Le serveur Lexia a mis trop de temps à répondre. Réessayez dans un instant.',
+  524: 'Le serveur Lexia a mis trop de temps à répondre. Réessayez dans un instant.',
 }
+
+// Au-dela, la requete est abandonnee : nginx coupe a 120 s, une page ne doit jamais attendre indefiniment.
+// Un depot de fichier, plus long sur une connexion lente, a davantage de temps (audit du 2026-11-18, D9).
+const DELAI_MS = 130_000
+const DELAI_DEPOT_MS = 600_000
 
 async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
   let r: Response
   try {
     r = await fetch(`${BASE}${chemin}`, {
+      signal: AbortSignal.timeout(init?.body instanceof Blob ? DELAI_DEPOT_MS : DELAI_MS),
       ...init,
       headers: { 'Content-Type': 'application/json', ...init?.headers },
     })
-  } catch {
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError') throw new ApiError(0, MESSAGES[504])
     throw new ApiError(0, 'Le serveur Lexia est injoignable. Vérifiez votre connexion.')
   }
   if (r.status === 204) return undefined as T

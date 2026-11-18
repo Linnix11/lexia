@@ -32,6 +32,8 @@ export interface EtatQuiz {
   correction: Correction | null
   etat: 'libre' | 'generation' | 'correction'
   erreur: string | null
+  /** Code HTTP de l'erreur (402 : limite du jour, lien vers les formules) */
+  statut?: number
 }
 
 export interface AppState {
