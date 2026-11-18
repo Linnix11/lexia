@@ -44,6 +44,9 @@ MATIERES: dict[str, Matiere] = {
     "droit_administratif": Matiere("Droit administratif", "L2", (
         "actes administratifs", "service public", "police administrative", "responsabilité administrative",
         "contrats administratifs"), ("code_relations_public_administration", "conseil_etat")),
+    "droit_europeen": Matiere("Droit européen", "L2", (
+        "droit de l'Union européenne", "institutions européennes", "TUE", "TFUE", "Charte des droits fondamentaux",
+        "marché intérieur", "renvoi préjudiciel"), ("tfue", "tue")),
     "droit_penal": Matiere("Droit pénal", "L2", (
         "droit pénal général", "droit pénal spécial", "infractions", "peines", "sciences criminelles"),
         ("code_penal", "cass_criminelle")),
@@ -68,6 +71,9 @@ MATIERES: dict[str, Matiere] = {
     "droit_administratif_des_biens": Matiere("Droit administratif des biens", "L3", (
         "domaine public", "propriétés publiques", "expropriation", "biens publics"),
         ("code_propriete_personnes_publiques", "code_expropriation")),
+    "droit_international": Matiere("Droit international", "L3", (
+        "droit international public", "droit international privé", "traités", "conflits de lois",
+        "relations internationales"), ("constitution_1958", "code_civil")),
     "libertes_fondamentales": Matiere("Libertés fondamentales", "L3", ("droits fondamentaux", "droits de l'homme"),
                                       ("ddhc_1789", "decisions_conseil_constitutionnel")),
     "droit_fiscal": Matiere("Droit fiscal", "L3", ("impôts", "fiscalité", "contentieux fiscal"),

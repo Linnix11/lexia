@@ -26,7 +26,7 @@ from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.matieres import LIBELLES, MATIERES, sources_par_matiere
-from api.textes import NOMS, SOURCES_TEXTES
+from api.textes import HORS_LEGI, NOMS, SOURCES_TEXTES
 from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
 from api.retrieval.base import Retriever
@@ -307,7 +307,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             sources = {s: {"nom": NOMS.get(s, s), "date": d, "nature": "jurisprudence"} for s, d in dernieres.items()}
             if textes:
                 sources |= {s: {"nom": NOMS[s], "date": textes, "nature": "textes"} for s in SOURCES_TEXTES
-                            if s != "constitution_1958"}   # Constitution : page du Conseil constitutionnel
+                            if s not in HORS_LEGI}   # Constitution (Conseil constitutionnel), traites (EUR-Lex)
             fraicheur_cache.update(expire=time.monotonic() + 3600, valeur={"textes": textes, "sources": sources})
         return fraicheur_cache["valeur"]
 

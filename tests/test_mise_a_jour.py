@@ -133,3 +133,27 @@ def test_amorce_additive_avec_des_lignes_calculees_sur_le_mac(tmp_path):
     civil = [json.loads(x)["id"] for x in (cache / "code_civil.jsonl").read_text().splitlines()]
     assert civil == ["n", "b", "a"]   # lignes du Mac gardees, celles de l'index ajoutees a la suite
     assert [json.loads(x)["id"] for x in (cache / "judilibre.jsonl").read_text().splitlines()] == ["c"]
+
+
+def test_traites_de_l_union_ajoutes_une_fois_cedh_et_onu_jamais(tmp_path):
+    """D98 : une source hors DILA active mais absente est telechargee une nuit ; un echec ne bloque rien ; une
+    source en attente d'autorisation (Convention EDH, Charte des Nations unies) n'est jamais lue."""
+    passages = tmp_path / "passages"
+    passages.mkdir()
+    (passages / "constitution_1958.jsonl").write_text("{}\n")
+    actives = mise_a_jour.sources_actives()
+    assert {"tue", "tfue", "charte_droits_fondamentaux_ue"} <= actives and not {"cedh", "charte_onu"} & actives
+    lus = []
+
+    def importer(s):
+        lus.append(s)
+        if s == "tfue":
+            raise RuntimeError("site indisponible")
+        (passages / f"{s}.jsonl").write_text("{}\n")
+
+    ajoutees, echecs = mise_a_jour.ajouter_nouvelles(passages, actives, importer)
+    assert ajoutees == ["charte_droits_fondamentaux_ue", "tue"] and echecs == ["tfue"]
+    assert "cedh" not in lus and "charte_onu" not in lus and "constitution_1958" not in lus
+    lus.clear()
+    assert mise_a_jour.ajouter_nouvelles(passages, actives, importer) == ([], ["tfue"])   # seul l'echec est retente
+    assert lus == ["tfue"]

@@ -33,9 +33,8 @@ def test_nouvelles_matieres_et_leurs_sources():
     assert {"code_justice_administrative", "conseil_etat"} <= set(s["contentieux_administratif"])
     assert {"code_commerce", "code_civil", "cass_commerciale"} <= set(s["droit_des_societes"])
     assert {"code_propriete_personnes_publiques", "code_expropriation"} <= set(s["droit_administratif_des_biens"])
-    # le droit pénal garde le Code de procédure pénale (D74 : pas de droit international ni européen)
+    # le droit pénal garde le Code de procédure pénale
     assert "code_procedure_penale" in s["droit_penal"]
-    assert not {"droit_europeen", "droit_international"} & set(s)
 
 
 def test_route_matieres_annee_et_sources_principales(env):  # noqa: F811

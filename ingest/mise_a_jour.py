@@ -10,7 +10,9 @@ Etapes :
      l'ancienne, ses archives quotidiennes et son extraction ;
   2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives ;
   3. reimporte les sources DILA (data/passages). Les autres (Constitution, page du Conseil constitutionnel)
-     gardent leur fichier, reconstitue depuis l'index actuel s'il manque ;
+     gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; une source hors DILA active dans
+     le registre mais absente de l'index (traites de l'Union, D98) est telechargee une fois, sans bloquer la
+     mise a jour si son site ne repond pas ;
   4. calcule les embeddings des seuls passages nouveaux ou modifies (cache data/embeddings, amorce depuis
      l'index actuel s'il est vide) ;
   5. construit data/index.nouveau et le compare a l'index actuel (garde-fous, code 1 en cas d'ecart).
@@ -33,6 +35,7 @@ from pathlib import Path
 
 import httpx
 import numpy as np
+import yaml
 
 from ingest import build_index, dila, embed, run
 
@@ -130,6 +133,29 @@ def reconstituer(index_dir: Path, passages_dir: Path, a_garder: set[str]) -> lis
     return faits
 
 
+def sources_actives() -> set[str]:
+    registre = yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))
+    return {s["id"] for s in registre["sources"] if s.get("statut") == "actif"}
+
+
+def ajouter_nouvelles(passages_dir: Path, actives: set[str], importer=None) -> tuple[list[str], list[str]]:
+    """Sources hors DILA actives sans fichier de passages (ni dans l'index, sinon reconstituer() l'a recree) :
+    telechargees une fois. Un echec n'arrete pas la mise a jour : la source sera retentee la nuit suivante.
+    Renvoie (ajoutees, en echec). Une source en attente d'autorisation (statut non actif) n'est jamais lue."""
+    importer = importer or (lambda s: run.ingest(s, Namespace(html=None)))
+    ajoutees, echecs = [], []
+    for s, m in sorted(run.SOURCES.items()):
+        if not hasattr(m, "fetch") or s not in actives or (passages_dir / f"{s}.jsonl").exists():
+            continue
+        try:
+            importer(s)
+            ajoutees.append(s)
+        except Exception as e:  # site indisponible, structure changee (ParseError)...
+            print(f"  {s} non ajoutee : {e}", file=sys.stderr)
+            echecs.append(s)
+    return ajoutees, echecs
+
+
 def amorcer_cache(index_dir: Path, cache_dir: Path) -> int:
     """Premier passage sur une machine (le serveur) : ajoute au cache les vecteurs de l'index en service
     qui y manquent (meme id, meme empreinte), pour ne calculer ensuite que les passages nouveaux ou modifies.
@@ -216,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
         run.ingest(s, Namespace(html=None))
     if refaits := reconstituer(INDEX, build_index.PASSAGES_DIR, set(sources_dila())):
         print(f"  reconstitues depuis l'index actuel : {', '.join(refaits)}")
+    ajoutees, _ = ajouter_nouvelles(build_index.PASSAGES_DIR, sources_actives())
+    if ajoutees:
+        print(f"  nouvelles sources : {', '.join(ajoutees)}")
 
     print("== Embeddings des passages nouveaux ou modifies", flush=True)
     if n := amorcer_cache(INDEX, embed.CACHE_DIR):

@@ -10,8 +10,8 @@ Constat sur ce signalement :
   était une liste plate de 14 intitulés, sans classement ni recherche. Corrigé (partie 4).
 - **Procédure pénale** était rangée sous Droit pénal (le Code de procédure pénale et la chambre criminelle sont dans
   le corpus). C'est désormais une matière à part, en L3.
-- **Droit international et européen** : retiré par décision de l'éditeur (D74). Rien n'est réintroduit ; ce qu'il
-  faudrait est décrit en partie 5, la décision revient à l'éditeur.
+- **Droit international et européen** : retiré par D74, rétabli le même jour par décision de l'éditeur (D98) avec
+  les sources dont la réutilisation est autorisée. Voir partie 5.
 
 ## 1. Maquettes consultées
 
@@ -51,7 +51,7 @@ session du 18 novembre ; ce document n'en garde que la synthèse.
 | Finances publiques | 8/8 | L2 S3-S4 | Constitution (art. 47, 47-2), CJF, LOLF (loi organique, source « lois ») ; Conseil constitutionnel | Matière Finances publiques (L2) |
 | Droit des sociétés | 8/8 | L3 S5 (droit commun) et S6 (droit spécial) ; L2 S4 à Paris 1 et Toulouse | Code civil art. 1832 s., Code de commerce livre II, CMF ; chambre commerciale | **Nouvelle matière Droit des sociétés (L3)** |
 | Droit du travail | 8/8 | L3 S5 (individuel) et S6 (collectif) | Code du travail, Préambule 1946 ; chambre sociale | Matière Droit social (L3) |
-| Libertés fondamentales | 8/8 | L3 S5 | DDHC, Préambule 1946, Constitution, CSI ; Conseil constitutionnel, Conseil d'État | Matière Libertés fondamentales (L3). La Convention EDH n'est pas citable (D74) |
+| Libertés fondamentales | 8/8 | L3 S5 | DDHC, Préambule 1946, Constitution, CSI ; Conseil constitutionnel, Conseil d'État | Matière Libertés fondamentales (L3). Charte des droits fondamentaux de l'Union (D98) ; Convention EDH en attente d'autorisation |
 | Droit fiscal | 8/8 | L3 S6 | CGI, LPF, CIBS ; Conseil d'État, chambre commerciale | Matière Droit fiscal (L3) |
 | Procédure civile, droit judiciaire privé | 8/8 | L3 S5 | CPC, COJ, CPCE ; chambres civiles | Matière Procédure civile (L3) |
 | Procédure pénale | 7/8 | L3 S6 (Assas, Bordeaux, AMU, Lille) ; L2 à Paris 1 (S3) et Toulouse (S4) | CPP, Code de la justice pénale des mineurs, Constitution art. 66, DDHC art. 9 ; chambre criminelle, Conseil constitutionnel (QPC garde à vue) | **Nouvelle matière Procédure pénale (L3)** ; reste aussi consultée depuis Droit pénal |
@@ -68,8 +68,8 @@ session du 18 novembre ; ce document n'en garde que la synthèse.
 | Fonction publique, collectivités territoriales, urbanisme | 1/8 chacune | L3, option droit public | CGFP, CGCT, Code de l'urbanisme | Dans Droit administratif |
 | Entreprises en difficulté, propriété intellectuelle | 0/8 | master 1 | Code de commerce livre VI, CPI | Sources présentes (Droit des affaires) |
 
-Matières largement enseignées et absentes de Lexia faute de sources françaises citables, conformément à D74 :
-droit international public (8/8), droit de l'Union européenne (8/8), droit international privé (3/8). Voir partie 5.
+Droit international public (8/8), droit de l'Union européenne (8/8) et droit international privé (3/8) : matières
+Droit européen (L2) et Droit international (L3) depuis D98. Voir partie 5.
 
 ## 3. Ce qui a été ajouté (D97)
 
@@ -90,38 +90,46 @@ droit international public (8/8), droit de l'Union européenne (8/8), droit inte
   signalée ; filtre par année ; champ de recherche qui lit l'intitulé, les autres intitulés des maquettes et le nom
   des sources (« procédure pénale » trouve Procédure pénale et Droit pénal, « régimes matrimoniaux » trouve Droit de
   la famille). Chaque carte montre ses sources principales.
-- Recherche sans résultat (« droit international ») : le site dit que Lexia ne couvre que le droit français.
+- Recherche sans résultat (« histoire du droit ») : le site rappelle ce que Lexia couvre (droit français et traités de
+  l'Union) et propose la matière « Toutes ».
 - Les listes de choix de matière (assistant, dépôt de cours) sont groupées par année.
 
-## 5. Droit international et européen : ce qu'il faudrait (décision de l'éditeur)
+## 5. Droit international et européen (D98)
 
-Non réintroduit. Rappel : D72 (14 novembre) avait ajouté TUE, TFUE, Charte des droits fondamentaux de l'Union,
-Convention EDH avec ses protocoles 1, 4, 6 et 7, et Charte des Nations unies (673 passages, `ingest/sources/traites.py`),
-deux matières, un lexique et 13 questions d'essai (13/13 retrouvées). D74 (16 novembre) les a retirés : Lexia ne cite
-que le droit français publié par des sources officielles françaises. Les décisions françaises qui appliquent le
-droit de l'Union ou la Convention restent dans le corpus.
+Historique : D72 (14 novembre) avait ajouté TUE, TFUE, Charte des droits fondamentaux de l'Union, Convention EDH avec
+ses protocoles 1, 4, 6 et 7, et Charte des Nations unies (673 passages, `ingest/sources/traites.py`), deux matières,
+un lexique et 14 questions d'essai. D74 (16 novembre) les a retirés : Lexia ne citait plus que le droit français. Le
+18 novembre, après ce relevé des maquettes et le retour d'une étudiante, l'éditeur a demandé de les remettre (D98).
 
 Besoin d'après les maquettes : droit de l'Union (8/8, institutionnel en L2, matériel ou contentieux en L3), droit
-international public (8/8, L2-L3), droit international privé (3/8, L3 S5), Convention EDH (aucun cours propre,
-traitée dans les libertés fondamentales et le procès).
+international public (8/8, introduction en L2, cours de fond en L3 S5), droit international privé (3/8, L3 S5),
+Convention EDH (aucun cours propre, traitée dans les libertés fondamentales et le procès).
 
-| Matière | Sources officielles | Réutilisation |
-|---|---|---|
-| Droit de l'Union | Traités consolidés (TUE, TFUE, Charte), règlements et directives : EUR-Lex et dépôt Cellar de l'Office des publications | Réutilisation EUR-Lex autorisée avec mention de la source (vérifié en D72) |
-| Jurisprudence de la CJUE | EUR-Lex (CELEX) ou curia.europa.eu | À vérifier ; non fait en D72 |
-| Convention EDH | Texte publié par la Cour européenne des droits de l'homme | Conditions du site à vérifier (D72) ; le décret de publication de 1974 n'est pas dans l'archive LEGI |
-| Jurisprudence de la Cour EDH | HUDOC | Pas de téléchargement en masse trouvé (D72) ; conditions à vérifier |
-| Droit international public | Charte des Nations unies (site de l'ONU), autres traités | Conditions du site à vérifier (D72) |
-| Droit international privé | Code civil (art. 3, 14, 15, 202-1, 309, 311-14, 370-3, en vigueur dans l'index) ; règlements européens (Rome I, Rome II, Bruxelles I bis) sur EUR-Lex | Code civil : Licence Ouverte, déjà dans le corpus ; règlements : comme le droit de l'Union |
+Conditions de réutilisation, lues le 18 novembre 2026 sur les sites officiels :
 
-Trois options pour l'éditeur :
+| Texte | Source officielle | Réutilisation | Dans Lexia |
+|---|---|---|---|
+| TUE, TFUE, Charte des droits fondamentaux de l'Union | Versions consolidées du JOUE C 202 du 7 juin 2016, dépôt Cellar de l'Office des publications (CELEX 12016M, 12016E, 12016P) | Réutilisation, y compris commerciale, avec mention de la source (décision 2011/833/UE de la Commission ; vérifiée sur eur-lex.europa.eu en D72) | **Oui** : 470 passages, matière Droit européen |
+| Convention EDH et protocoles ratifiés | Texte publié par la Cour (echr.coe.int) | « sous réserve que leur source soit mentionnée (© ECHR-CEDH) », gratuitement et pour un usage privé, d'information ou d'éducation ; tout autre usage, notamment commercial, demande une autorisation écrite préalable (echr.coe.int/fr/disclaimer) | **Non** : prête (code, registre, questions d'essai), statut « en attente d'accès » |
+| Charte des Nations unies | Page de l'ONU (un.org) | Copie autorisée « à des fins personnelles et non commerciales », sans droit de redistribuer ni de créer des ouvrages dérivés (un.org/fr/about-us/terms-of-use) | **Non** : prête, statut « en attente d'accès » |
+| Règles françaises de droit international | Constitution (art. 52 à 55, 88-1 s.), Code civil (art. 3, 14, 15, 202-1, 309, 311-14, 370-3) | Déjà dans le corpus (Conseil constitutionnel, Licence Ouverte) | **Oui** : matière Droit international |
+| Règlements européens de droit international privé (Rome I, Rome II, Bruxelles I bis...) | EUR-Lex | Comme les traités | Non : seules les versions d'origine ont la structure lue par l'import ; plusieurs ont été modifiés, il faut les versions consolidées (autre format) pour ne pas montrer un texte dépassé comme en vigueur |
+| Jurisprudence de la CJUE | EUR-Lex ou curia.europa.eu | À vérifier (curia) ; EUR-Lex comme les traités | Non : volume important, import à écrire |
+| Jurisprudence de la Cour EDH | HUDOC | Pas de téléchargement en masse trouvé (D72) ; mêmes conditions que le site de la Cour | Non |
 
-1. Garder D74 tel quel (situation actuelle).
-2. Option intermédiaire compatible avec D74 : une matière « Droit international privé » limitée aux règles françaises
-   (articles du Code civil ci-dessus et arrêts de la Cour de cassation), en signalant que les règlements européens ne
-   sont pas couverts.
-3. Revenir sur D74 : réingérer les traités de D72 (le code existe dans l'historique Git), puis vérifier les conditions
-   de la Cour EDH et de l'ONU ; ajouter ensuite la jurisprudence de la CJUE.
+Pourquoi la Convention EDH et la Charte de l'ONU ne sont pas actives : Lexia est un service payant, et ces deux sites
+réservent la copie à un usage non commercial. Pour les activer, il faut soit l'accord écrit de la Cour (formulaire du
+site) et de l'ONU, soit une autre source officielle réutilisable. Le décret n° 74-360 du 3 mai 1974, qui publie la
+Convention au Journal officiel, n'est pas dans l'archive LEGI (D72). Une fois l'accord obtenu, il suffit de passer
+leur statut à `actif` dans `registry/sources.yaml` et d'ajouter leurs noms à `api/textes.py` ; le lexique de D72 et les
+questions `eval/cas_traites_en_attente.yaml` sont prêts.
+
+Mise à jour du serveur : les traités ne viennent pas de la DILA, la mise à jour nocturne (D78) ne les connaissait
+pas. Depuis D98, elle télécharge une fois toute source active du registre qui manque (`ingest/mise_a_jour.py`,
+`ajouter_nouvelles`) : après la prochaine publication, la première nuit où la DILA publie une archive, le serveur
+télécharge les trois traités depuis Cellar, calcule leurs 470 embeddings et les met dans son index. Un échec du
+téléchargement n'arrête pas la mise à jour : il est retenté la nuit suivante. Pour ne pas attendre la nuit :
+`ssh root@2.25.3.128 lexia-mise-a-jour --forcer` après la publication.
 
 ## 6. Matières sans texte à citer (proposition, rien n'est fait)
 
@@ -130,8 +138,8 @@ idées politiques (8/8), économie (7/8), théorie et philosophie du droit (7/8)
 méthodologie (6/8), sociologie du droit (3/8). Lexia ne peut pas les traiter comme les autres : il n'y a pas de
 source officielle à citer et vérifier. Propositions :
 
-- Ne pas créer de matière, et le dire dans la recherche du site quand l'étudiant les cherche (même message que pour le
-  droit international).
+- Ne pas créer de matière, et le dire dans la recherche du site quand l'étudiant les cherche (c'est déjà le cas : le
+  message de recherche sans résultat).
 - Pour l'histoire du droit, s'appuyer sur les cours déposés par l'étudiant : la fonction existe déjà, les réponses
   citeraient alors son cours et non un texte officiel.
 - Pour la méthodologie (cas pratique, commentaire, dissertation), les modes méthode existent déjà (D54) ; on peut

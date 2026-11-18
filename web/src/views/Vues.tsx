@@ -107,9 +107,9 @@ export function VueMatieres() {
             <Card className="p-6 text-[12px] text-muted">
               <p role="status">
                 {recherche.trim() ? `Aucune matière ne correspond à « ${recherche.trim()} »` : 'Aucune matière'}
-                {annee ? ` en ${LIBELLES_ANNEES[annee]}` : ''}. Lexia ne couvre que
-                le droit français : le droit international et le droit de l’Union européenne n’y sont pas. Vous pouvez aussi poser
-                votre question avec la matière « Toutes ».
+                {annee ? ` en ${LIBELLES_ANNEES[annee]}` : ''}. Lexia couvre le droit français et les
+                traités de l’Union européenne (la Convention européenne des droits de l’homme et la Charte des Nations unies n’y
+                sont pas encore). Vous pouvez aussi poser votre question avec la matière « Toutes ».
               </p>
             </Card>
           )}

@@ -365,7 +365,8 @@ def test_b9_charte_reconnue(question):
 
 
 def test_b9_autres_chartes_non_reconnues():
-    assert codes_cites("la Charte des droits fondamentaux de l'Union") == ()
+    # depuis D98, la Charte des droits fondamentaux est dans le corpus, sous son propre nom
+    assert codes_cites("la Charte des droits fondamentaux de l'Union") == ("charte_droits_fondamentaux_ue",)
     assert codes_cites("la charte sociale européenne") == ()
 
 

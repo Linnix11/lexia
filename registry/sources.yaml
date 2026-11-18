@@ -21,6 +21,8 @@ sources:
   - finances_publiques
   - procedure_penale
   - contentieux_administratif
+  - droit_europeen
+  - droit_international
   niveaux:
   - L1
   ingestion: ingest/sources/constitution.py
@@ -43,6 +45,7 @@ sources:
   - droit_de_la_famille
   - droit_des_biens
   - droit_des_societes
+  - droit_international
   niveaux:
   - L1
   ingestion: ingest/sources/legi.py
@@ -64,6 +67,8 @@ sources:
   - droit_fiscal
   - procedure_penale
   - contentieux_administratif
+  - droit_europeen
+  - droit_international
   niveaux:
   - L1
   ingestion: ingest/sources/constit.py
@@ -85,6 +90,8 @@ sources:
   - droit_de_la_famille
   - droit_des_biens
   - droit_des_societes
+  - droit_europeen
+  - droit_international
   niveaux:
   - L1
   ingestion: ingest/sources/cass.py
@@ -888,6 +895,8 @@ sources:
   - contentieux_administratif
   - droit_des_societes
   - droit_administratif_des_biens
+  - droit_europeen
+  - droit_international
   niveaux:
   - L1
   - L2
@@ -944,6 +953,7 @@ sources:
   - droit_des_contrats
   - droit_fiscal
   - droit_des_societes
+  - droit_europeen
   niveaux:
   - L1
   - L2
@@ -967,6 +977,8 @@ sources:
   - droit_des_biens
   - contentieux_administratif
   - droit_administratif_des_biens
+  - droit_europeen
+  - droit_international
   niveaux:
   - L1
   - L2
@@ -1007,4 +1019,100 @@ sources:
   - L1
   ingestion: null
   statut: a_verifier
+  derniere_synchro: null
+- id: tue
+  nom: Traité sur l'Union européenne
+  type: texte_officiel
+  autorite: Office des publications de l'Union européenne (Cellar)
+  url: https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:12016M/TXT
+  identifiant: CELEX 12016M/TXT
+  acces: telechargement_direct
+  licence: réutilisation gratuite, source mentionnée (décision 2011/833/UE de la Commission), vérifiée sur eur-lex.europa.eu le 2026-11-14
+  frequence_maj: rare (revision des traites)
+  perimetre: version consolidée du JOUE C 202 du 7 juin 2016, traité seul (protocoles et déclarations non repris)
+  matieres:
+  - droit_europeen
+  - droit_constitutionnel
+  niveaux:
+  - L2
+  - L3
+  ingestion: ingest/sources/traites.py
+  statut: actif
+  derniere_synchro: null
+- id: tfue
+  nom: Traité sur le fonctionnement de l'Union européenne
+  type: texte_officiel
+  autorite: Office des publications de l'Union européenne (Cellar)
+  url: https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:12016E/TXT
+  identifiant: CELEX 12016E/TXT
+  acces: telechargement_direct
+  licence: réutilisation gratuite, source mentionnée (décision 2011/833/UE de la Commission), vérifiée sur eur-lex.europa.eu le 2026-11-14
+  frequence_maj: rare (revision des traites)
+  perimetre: version consolidée du JOUE C 202 du 7 juin 2016, traité seul (protocoles, annexes et déclarations non repris)
+  matieres:
+  - droit_europeen
+  - droit_des_affaires
+  niveaux:
+  - L2
+  - L3
+  ingestion: ingest/sources/traites.py
+  statut: actif
+  derniere_synchro: null
+- id: charte_droits_fondamentaux_ue
+  nom: Charte des droits fondamentaux de l'Union européenne
+  type: texte_officiel
+  autorite: Office des publications de l'Union européenne (Cellar)
+  url: https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:12016P/TXT
+  identifiant: CELEX 12016P/TXT
+  acces: telechargement_direct
+  licence: réutilisation gratuite, source mentionnée (décision 2011/833/UE de la Commission), vérifiée sur eur-lex.europa.eu le 2026-11-14
+  frequence_maj: rare (revision des traites)
+  perimetre: version du JOUE C 202 du 7 juin 2016 (explications du Praesidium non reprises)
+  matieres:
+  - droit_europeen
+  - libertes_fondamentales
+  niveaux:
+  - L2
+  - L3
+  ingestion: ingest/sources/traites.py
+  statut: actif
+  derniere_synchro: null
+- id: cedh
+  nom: Convention européenne des droits de l'homme
+  type: texte_officiel
+  autorite: Cour européenne des droits de l'homme (Conseil de l'Europe)
+  url: https://www.echr.coe.int/documents/d/echr/convention_fra
+  identifiant: STE n° 5
+  acces: telechargement_direct
+  licence: "conditions du site de la Cour (lues le 2026-11-18, echr.coe.int/fr/disclaimer) : reproduction libre « sous réserve que leur source soit mentionnée (© ECHR-CEDH) », gratuite et pour un usage privé, d'information ou d'éducation ; tout autre usage, notamment commercial, demande une autorisation écrite préalable"
+  frequence_maj: rare (revision des traites)
+  perimetre: Convention telle qu'amendée par les protocoles 11, 14 et 15, Protocole additionnel et protocoles 4, 6 et 7 ; protocoles 12 (non ratifié par la France), 13 et 16 non repris
+  matieres:
+  - libertes_fondamentales
+  - droit_europeen
+  - droit_international
+  - droit_penal
+  - procedure_civile
+  niveaux:
+  - L2
+  - L3
+  ingestion: ingest/sources/traites.py
+  statut: en_attente_acces   # usage commercial soumis a autorisation ecrite (D98)
+  derniere_synchro: null
+- id: charte_onu
+  nom: Charte des Nations unies
+  type: texte_officiel
+  autorite: Organisation des Nations unies
+  url: https://www.un.org/fr/about-us/un-charter/full-text
+  acces: telechargement_direct
+  licence: "conditions du site de l'ONU (lues le 2026-11-18, un.org/fr/about-us/terms-of-use) : copie autorisée « à des fins personnelles et non commerciales », sans droit de redistribuer ni de créer des ouvrages dérivés"
+  frequence_maj: rare (revision des traites)
+  perimetre: texte en vigueur, amendements de 1963, 1965 et 1971 compris
+  matieres:
+  - droit_international
+  niveaux:
+  - L2
+  - L3
+  ingestion: ingest/sources/traites.py
+  statut: en_attente_acces   # usage commercial soumis a autorisation ecrite (D98)
   derniere_synchro: null

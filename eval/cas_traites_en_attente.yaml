@@ -1,0 +1,12 @@
+# Questions sur la Convention EDH et la Charte des Nations unies (D72), en attente d'autorisation (D98)
+#
+# Ces deux textes ne sont pas dans le corpus : leurs sites n'autorisent la reutilisation qu'a des fins non
+# commerciales. A relancer quand leur statut passera a « actif » dans registry/sources.yaml.
+
+cas:
+  - {id: tr-01, matiere: droit_europeen, attendu: [reponse], sources: [cedh:8], question: "Que protège le droit au respect de la vie privée et familiale dans la Convention européenne ?"}
+  - {id: tr-02, matiere: droit_europeen, attendu: [reponse], sources: [cedh:6], question: "Qu'est-ce que le droit à un procès équitable ?"}
+  - {id: tr-03, matiere: droit_europeen, attendu: [reponse], sources: [cedh:3], question: "Des détenus sont enfermés à six dans une cellule de 9 m² sans chauffage. Un recours devant la Cour de Strasbourg est-il possible ?"}
+  - {id: tr-04, matiere: droit_europeen, attendu: [reponse], sources: [cedh:10], question: "Un journaliste est condamné pour avoir critiqué un ministre dans un article. Ses droits fondamentaux sont-ils atteints ?"}
+  - {id: tr-13, matiere: droit_international, attendu: [reponse], sources: [charte_onu:51], question: "Un État attaqué militairement par son voisin peut-il riposter par les armes ?"}
+  - {id: tr-14, matiere: droit_international, attendu: [reponse], sources: [charte_onu:2], question: "Le droit international interdit-il à un État de menacer un autre de la force ?"}

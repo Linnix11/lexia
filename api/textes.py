@@ -56,8 +56,8 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_electoral", "Code électoral", (r"code electoral",)),
     Texte("ddhc_1789", "Déclaration des droits de l'homme et du citoyen de 1789", ("declaration des droits de l'homme(?: et du citoyen)?", 'ddhc',)),
     Texte("preambule_1946", "Préambule de la Constitution du 27 octobre 1946", ('preambule de (?:la constitution de )?1946',)),
-    # « article 5 de la Charte » : la Charte de l'environnement, seule charte du corpus (D74) ; pas « charte des
-    # droits fondamentaux », « charte sociale »... (audit B9).
+    # « article 5 de la Charte » : la Charte de l'environnement ; pas « charte des droits fondamentaux » (reconnue
+    # sous son nom, D98), « charte sociale »... (audit B9).
     Texte("charte_environnement", "Charte de l'environnement",
           (r"charte de l'environnement", r"charte(?! (?:des|de la|du|sociale|europeenne|de l'))")),
     Texte("code_general_impots", "Code général des impôts", ('code general des impots', 'cgi',)),
@@ -73,10 +73,20 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_douanes", "Code des douanes", ("code des douanes",)),
     Texte("code_impositions_biens_services", "Code des impositions sur les biens et services",
           ("code des impositions sur les biens et services", "cibs")),
+    # Traites de l'Union (ingest/sources/traites.py, D98). « TUE » seul n'est reconnu que precede de « du » : le
+    # verbe « tue » (« Paul tue Jean ») detournerait sinon la recherche d'un article du Code penal.
+    # Convention EDH et Charte des Nations unies : en attente d'autorisation, non reconnues (registre).
+    Texte("tue", "Traité sur l'Union européenne", (r"traite sur l'union europeenne", r"du tue")),
+    Texte("tfue", "Traité sur le fonctionnement de l'Union européenne",
+          (r"traite sur le fonctionnement de l'union europeenne", r"tfue")),
+    Texte("charte_droits_fondamentaux_ue", "Charte des droits fondamentaux de l'Union européenne",
+          (r"charte des droits fondamentaux(?: de l'union europeenne)?", r"cdfue")),
     Texte("lois", "Lois et ordonnances en vigueur", ()),
 )
 
 SOURCES_TEXTES: frozenset[str] = frozenset(t.source_id for t in TEXTES)
+# Textes hors archive LEGI : leur date n'est pas celle de la derniere archive DILA (fraicheur, B7).
+HORS_LEGI = frozenset({"constitution_1958", "tue", "tfue", "charte_droits_fondamentaux_ue"})
 NOMS: dict[str, str] = {t.source_id: t.nom for t in TEXTES} | {
     "decisions_conseil_constitutionnel": "Décisions du Conseil constitutionnel",
     "judilibre": "Cour de cassation : chambres civiles, Assemblée plénière, chambre mixte",

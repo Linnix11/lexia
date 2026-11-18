@@ -25,6 +25,7 @@ CGI, LPF, CJF = "code_general_impots", "livre_procedures_fiscales", "code_juridi
 CASF, CPEN, CEXP = "code_action_sociale_familles", "code_penitentiaire", "code_expropriation"
 CJPM, CGCT, CCONSO = "code_justice_penale_mineurs", "code_collectivites_territoriales", "code_consommation"
 CCOM, CSS, CGPPP = "code_commerce", "code_securite_sociale", "code_propriete_personnes_publiques"
+TUE, TFUE, CDF = "tue", "tfue", "charte_droits_fondamentaux_ue"
 MAX_LEXIQUE = 4
 _SILENCE = (r"(?:\bcach(?:ant|ait|aient|er)\b|\b(?:a|avait|ont|avaient|lui|leur|il|elle) cache\b|dissimul"
             r"|(?<!vice )(?<!defaut )\bcache (?:que|qu|l.|le|la|les|une?|des|son|sa|ses|a|aux?)\b"
@@ -528,6 +529,54 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"rente.{0,40}(?:accident|incapacite)|incapacite permanente", ((CSS, "L434-2"),)),
     (r"prestations? familiales?|allocations? familiales?", ((CSS, "L511-1"),)),
     (r"contentieux de la securite sociale|pole social", ((CSS, "L142-1"),)),
+    # --- droit de l'Union europeenne (TUE, TFUE, Charte des droits fondamentaux ; D72, D98) -------------
+    (r"renvoi prejudiciel|question prejudicielle.{0,40}(?:cour de justice|cjue|union)", ((TFUE, "267"),)),
+    (r"abus de position dominante", ((TFUE, "102"),)),
+    (r"\bententes?\b.{0,60}(?:concurrence|entreprises)|pratiques? concertees?", ((TFUE, "101"),)),
+    (r"aides? d.etat", ((TFUE, "107"), (TFUE, "108"))),
+    (r"libre circulation des marchandises|restrictions? quantitatives?|mesures? d.effet equivalent",
+     ((TFUE, "34"), (TFUE, "36"))),
+    (r"libre circulation des travailleurs|(?:ressortissants?|citoyens?) (?:d.un (?:autre )?etat membre|europeens?|de l.union)"
+     r".{0,80}(?:travaill|emploi|embauch)|\b(?:portugais|espagnols?|italiens?|allemands?|belges?|polonais|roumains?)\b"
+     r".{0,60}(?:travailler|emploi|embauch).{0,60}(?:en france|meme(?:s)? conditions)", ((TFUE, "45"),)),
+    (r"liberte d.etablissement", ((TFUE, "49"),)),
+    (r"libre prestation (?:de|des) services", ((TFUE, "56"),)),
+    (r"libre circulation des capitaux", ((TFUE, "63"),)),
+    (r"recours en manquement|manquement d.un etat membre", ((TFUE, "258"), (TFUE, "260"))),
+    (r"annul\w* (?:d.)?(?:un |les? |des )?actes? de l.union|recours en annulation.{0,60}(?:union|europe|cour de justice|tribunal de l.union)"
+     r"|(?:union|europe|cour de justice).{0,60}recours en annulation", ((TFUE, "263"),)),
+    (r"recours en carence", ((TFUE, "265"),)),
+    (r"citoyennete (?:europeenne|de l.union)", ((TFUE, "20"), (TUE, "9"))),
+    (r"principe de subsidiarite|principe d.attribution", ((TUE, "5"),)),
+    (r"valeurs de l.union", ((TUE, "2"),)),
+    (r"retrait de l.union|\bbrexit\b|quitter l.union", ((TUE, "50"),)),
+    (r"charte des droits fondamentaux", ((TUE, "6"),)),
+    (r"actes? (?:juridiques )?de l.union|\breglements?\b.{0,30}\bdirectives?\b|effet des (?:reglements|directives)",
+     ((TFUE, "288"),)),
+    (r"procedure legislative (?:ordinaire|de l.union)", ((TFUE, "294"),)),
+    (r"competences? (?:exclusives?|partagees?) de l.union|competences de l.union", ((TFUE, "3"), (TFUE, "4"))),
+    (r"commission europeenne", ((TUE, "17"),)),
+    (r"parlement europeen", ((TUE, "14"),)),
+    (r"conseil europeen", ((TUE, "15"),)),
+    (r"conseil de l.union", ((TUE, "16"),)),
+    (r"cour de justice de l.union|\bcjue\b", ((TUE, "19"),)),
+    (r"discrimination.{0,30}nationalite|nationalite.{0,30}discrimination", ((TFUE, "18"),)),
+    (r"responsabilite (?:extracontractuelle )?de l.union", ((TFUE, "340"),)),
+    (r"primaute du droit (?:de l.union|europeen|communautaire)|participation de la france a l.union", ((CONST, "88-1"),)),
+    (r"vie privee.{0,60}(?:charte|union europeenne)", ((CDF, "7"),)),
+    # --- droit international (sources francaises : Constitution, Code civil ; D98) ---------------------
+    (r"ratifi\w* (?:des |un |les )?traites?|negocia\w* (?:des |les )?traites?|traites? (?:ratifies?|negocies?)",
+     ((CONST, "52"), (CONST, "53"))),
+    (r"traites?.{0,40}contraires? a la constitution|controle de constitutionnalite des (?:traites|engagements internationaux)",
+     ((CONST, "54"),)),
+    (r"conflits? de lois|lois? de police|statut personnel|loi applicable.{0,40}(?:etrang|international)", ((CC, "3"),)),
+    (r"competence (?:internationale|des (?:juridictions|tribunaux) francais)|privilege de juridiction|articles? 14 et 15",
+     ((CC, "14"), (CC, "15"))),
+    (r"loi applicable au divorce|divorce.{0,40}(?:etranger|international)", ((CC, "309"),)),
+    (r"loi applicable a la filiation|filiation.{0,40}(?:etranger|international)", ((CC, "311-14"),)),
+    (r"loi applicable au mariage|mariage.{0,40}(?:etranger|international)|epoux de nationalites? differentes?",
+     ((CC, "202-1"),)),
+    (r"adoption internationale|adoption.{0,40}(?:etranger|loi applicable)", ((CC, "370-3"),)),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )

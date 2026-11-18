@@ -14,6 +14,8 @@ const OFFICIELLES = [
     textes: false, sources: ['conseil_etat'] },
   { sym: '◈', nom: 'Conseil constitutionnel', desc: 'Constitution, décisions DC, QPC et L',
     url: 'https://www.conseil-constitutionnel.fr/les-decisions', textes: false, sources: ['decisions_conseil_constitutionnel'] },
+  { sym: '✦', nom: 'Union européenne', desc: 'TUE, TFUE et Charte des droits fondamentaux (version consolidée du JOUE, 7 juin 2016)',
+    url: 'https://eur-lex.europa.eu/', textes: false, sources: [] as string[] },
 ]
 
 const fleche = 'text-[14px] text-muted hover:text-forest' // #9aa19a ne donnait que 2,62:1 sur la carte

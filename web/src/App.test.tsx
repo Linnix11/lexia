@@ -474,9 +474,9 @@ describe('Audit du 16 novembre 2026', () => {
     expect(screen.getByRole('heading', { name: 'Procédure pénale' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Toutes' }))
-    fireEvent.change(recherche, { target: { value: 'droit international' } })
-    const vide = screen.getByText(/Aucune matière ne correspond à « droit international »/)
-    expect(vide).toHaveTextContent('ne couvre que le droit français')
+    fireEvent.change(recherche, { target: { value: 'histoire du droit' } })
+    const vide = screen.getByText(/Aucune matière ne correspond à « histoire du droit »/)
+    expect(vide).toHaveTextContent('Lexia couvre le droit français et les traités de l’Union européenne')
 
     // depuis la carte, l'assistant s'ouvre sur la matiere ; son choix est groupe par annee
     fireEvent.change(recherche, { target: { value: 'garde à vue' } })
