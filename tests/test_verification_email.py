@@ -34,7 +34,7 @@ def test_inscription_envoie_le_lien_et_bloque_les_questions(env):
     r = inscrire(client)
     assert r.status_code == 201 and r.json()["email_verifie"] is False
     assert len(envoyes) == 1 and envoyes[0][0] == "etu@exemple.fr"
-    assert "/verifier-email?jeton=" in envoyes[0][1]
+    assert "/verifier-email#jeton=" in envoyes[0][1]
 
     # Tant que l'adresse n'est pas confirmee, aucune question n'est possible.
     r = client.post("/chat", json={"question": "Qu'est-ce que le dol ?", "mode": "expliquer",
@@ -125,7 +125,7 @@ def test_le_lien_ne_suit_jamais_l_en_tete_host(env):
     client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
                                            "accepte_cgu": True},
                 headers={"Host": "pirate.example", "Origin": "https://pirate.example"})
-    assert envoyes and envoyes[0][1].startswith("https://lexia.test/verifier-email?jeton=")
+    assert envoyes and envoyes[0][1].startswith("https://lexia.test/verifier-email#jeton=")
 
 
 def test_sans_url_publique_aucun_lien_n_est_envoye(tmp_path, monkeypatch):
@@ -198,7 +198,7 @@ def test_mot_de_passe_oublie_de_bout_en_bout(env, monkeypatch):
     assert autre.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"}).json() == {"envoye": True}
     _attendre(liens)
     assert len(liens) == 1 and liens[0][0] == "etu@exemple.fr"
-    assert liens[0][1].startswith("https://lexia.test/nouveau-mot-de-passe?jeton=")
+    assert liens[0][1].startswith("https://lexia.test/nouveau-mot-de-passe#jeton=")
     jeton = liens[0][1].split("jeton=")[1]
     assert autre.post("/auth/mot-de-passe/nouveau", json={"jeton": jeton, "mot_de_passe": "court"}).status_code == 422
     r = autre.post("/auth/mot-de-passe/nouveau", json={"jeton": jeton, "mot_de_passe": "nouveau-mot-de-passe"})

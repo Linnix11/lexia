@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, quandSessionExpiree, type ConfigPublique, type Profil } from '../lib/api'
+import { api, ApiError, quandSessionExpiree, type ConfigPublique, type Profil } from '../lib/api'
 import { oublierSeance } from '../lib/seance'
 
 /** Resultat d'une connexion : session ouverte, ou code de l'application a saisir (jeton de l'etape 2). */
@@ -29,8 +29,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const rafraichir = useCallback(async () => {
     try {
       setProfil(await api.session())
-    } catch {
-      setProfil(null)
+    } catch (e) {
+      // Seul un 401 deconnecte : une erreur passagere (502, reseau) garde le profil (audit du 2026-11-18, D3).
+      if (e instanceof ApiError && e.status === 401) setProfil(null)
     }
   }, [])
 

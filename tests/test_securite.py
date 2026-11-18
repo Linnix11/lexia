@@ -109,8 +109,12 @@ def test_second_audit_12_corrections_simultanees_un_seul_appel_au_modele():
             return {"corrections": [{"index": 0, "evaluation": "correct", "commentaire": "Bien.",
                                      "elements_manquants": []}]}, "fake"
 
+    class Lexia:  # correction par lexia.generer (audit du 2026-11-18, D1)
+        def generer(self, *, construire, passages, **kw):
+            return (*llm.generate_json(prompt=construire(passages), **kw), passages)
+
     llm, store = LLMLent(), QuizStore()
-    service = QuizService(lexia=None, llm=llm, store=store)
+    service = QuizService(lexia=Lexia(), llm=None, store=store)
     q = {"question": "?", "elements_attendus": ["a"], "explication": "", "sources": []}
     store.ajouter(Quiz(id="q1", format="ouvertes", theme="t", questions=[q], table={}, proprietaire=7))
     resultats = []

@@ -220,23 +220,25 @@ class QuizService:
 
     def _corriger_ouvertes(self, quiz: Quiz, a_corriger, resultats) -> bool:
         """Corrige par le modele ; renvoie False si le modele n'a pas repondu (nouvel essai permis)."""
-        blocs = []
-        for i, q, texte in a_corriger:
-            labels = [lab for lab, p in quiz.table.items() if p["id"] in q["sources"]]
-            blocs.append(
-                f"<question index=\"{i}\">\n{q['question']}\nÉléments attendus : {' ; '.join(q['elements_attendus'])}\n"
-                f"Extraits : {', '.join(labels)}\n<reponse_etudiant>\n{texte}\n</reponse_etudiant>\n</question>"
-            )
         cites = {pid for _, q, _ in a_corriger for pid in q["sources"]}
         passages = [p for p in quiz.table.values() if p["id"] in cites]
-        extraits = prompts.format_extraits(list(quiz.table.values()))
+        # Extraits cites en tete : le secours n'en recoit que les premiers (pour_secours).
+        ordre = passages + [p for p in quiz.table.values() if p["id"] not in cites]
+
+        def construire(ps: list[dict]) -> str:
+            labels = {p["id"]: f"S{n}" for n, p in enumerate(ps, start=1)}
+            blocs = [
+                f"<question index=\"{i}\">\n{q['question']}\nÉléments attendus : {' ; '.join(q['elements_attendus'])}\n"
+                f"Extraits : {', '.join(labels[pid] for pid in q['sources'] if pid in labels)}\n"
+                f"<reponse_etudiant>\n{texte}\n</reponse_etudiant>\n</question>"
+                for i, q, texte in a_corriger
+            ]
+            return f"<extraits>\n{prompts.format_extraits(ps)}\n</extraits>\n\n" + "\n\n".join(blocs)
+
+        # Par lexia.generer : secours Groq et disjoncteur, comme les autres appels (audit du 2026-11-18, D1).
         try:
-            brut, _ = self.llm.generate_json(
-                system=prompts.SYSTEME_CORRECTION,
-                prompt=f"<extraits>\n{extraits}\n</extraits>\n\n" + "\n\n".join(blocs),
-                schema=prompts.SCHEMA_CORRECTION,
-                temperature=0.1,
-            )
+            brut, _, _ = self.lexia.generer(system=prompts.SYSTEME_CORRECTION, construire=construire, passages=ordre,
+                                            schema=prompts.SCHEMA_CORRECTION, temperature=0.1)
             corrections = {c.get("index"): c for c in brut.get("corrections") or []}
             appele = True
         except LLMError:

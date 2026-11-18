@@ -1,7 +1,7 @@
-// Page ouverte depuis le lien de l'e-mail de confirmation (/verifier-email?jeton=...).
+// Page ouverte depuis le lien de l'e-mail de confirmation (/verifier-email#jeton=...).
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../lib/api'
-import { Lien, useRouteur } from '../lib/router'
+import { Lien, jetonDuLien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { Carte } from './Auth'
 import { bouton, boutonSecondaire } from './Public'
@@ -9,7 +9,7 @@ import { bouton, boutonSecondaire } from './Public'
 export function VerifierEmail() {
   const { majProfil } = useSession()
   const { naviguer } = useRouteur()
-  const jeton = new URLSearchParams(window.location.search).get('jeton') ?? ''
+  const jeton = jetonDuLien()
   // 'ok' : ce navigateur est connecte au compte ; 'connexion' : adresse confirmee, mais le lien n'ouvre
   // pas de session (il contournerait le mot de passe et la double authentification).
   const [etat, setEtat] = useState<'verification' | 'ok' | 'connexion' | 'echec'>(jeton ? 'verification' : 'echec')

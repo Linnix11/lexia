@@ -1,8 +1,8 @@
 // Mot de passe oublie : demande du lien (/mot-de-passe-oublie), puis choix du nouveau mot de passe
-// depuis le lien recu par e-mail (/nouveau-mot-de-passe?jeton=...).
+// depuis le lien recu par e-mail (/nouveau-mot-de-passe#jeton=...).
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
-import { Lien } from '../lib/router'
+import { Lien, jetonDuLien } from '../lib/router'
 import { Carte, Erreur, MDP_MIN, champ } from './Auth'
 import { bouton } from './Public'
 
@@ -56,7 +56,7 @@ export function MotDePasseOublie() {
 }
 
 export function NouveauMotDePasse() {
-  const jeton = new URLSearchParams(window.location.search).get('jeton') ?? ''
+  const jeton = jetonDuLien()
   const [mdp, setMdp] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [fait, setFait] = useState(false)

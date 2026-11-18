@@ -49,3 +49,12 @@ export function Lien({ href, children, ...reste }: AnchorHTMLAttributes<HTMLAnch
     </a>
   )
 }
+
+/** Jeton d'un lien recu par e-mail. Il suit « # » pour ne jamais etre envoye au serveur, donc jamais ecrit dans
+ *  ses journaux (audit du 2026-11-18, D2). L'ancien format ?jeton= reste lu pour les e-mails deja envoyes : ces
+ *  liens expirent en 24 heures au plus, la lecture peut etre retiree apres le 2026-11-25. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function jetonDuLien(): string {
+  return new URLSearchParams(window.location.hash.slice(1)).get('jeton')
+    ?? new URLSearchParams(window.location.search).get('jeton') ?? ''
+}

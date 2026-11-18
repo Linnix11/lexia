@@ -355,7 +355,9 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if jeton is None:
             return False
         try:
-            courriel.envoyer_verification(u.email, f"{url_publique}/verifier-email?jeton={jeton}")
+            # Jeton apres « # » : jamais envoye au serveur, donc absent des journaux d'acces de nginx et uvicorn
+            # (audit du 2026-11-18, D2).
+            courriel.envoyer_verification(u.email, f"{url_publique}/verifier-email#jeton={jeton}")
         except courriel.ErreurCourriel:
             return False
         return True
@@ -426,7 +428,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
                 with verrou_renvois:
                     oublis[email].append(maintenant)
                     renvois_total.append(maintenant)
-                envois_oubli.submit(_envoyer_oubli, u.email, f"{url_publique}/nouveau-mot-de-passe?jeton={jeton}")
+                envois_oubli.submit(_envoyer_oubli, u.email, f"{url_publique}/nouveau-mot-de-passe#jeton={jeton}")
         return {"envoye": True}
 
     @router.post("/mot-de-passe/nouveau", dependencies=[Depends(verifier_origine)])

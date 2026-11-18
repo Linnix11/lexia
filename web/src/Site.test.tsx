@@ -184,7 +184,7 @@ describe('Site', () => {
   })
 
   it('le lien de l’e-mail confirme l’adresse', async () => {
-    aller('/verifier-email?jeton=j-abc')
+    aller('/verifier-email#jeton=j-abc')
     render(<Site />)
     expect(await screen.findByRole('heading', { name: 'Adresse confirmée' })).toBeInTheDocument()
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/email/verifier'))!
@@ -205,7 +205,7 @@ describe('Site', () => {
   })
 
   it('nouveau mot de passe depuis le lien de l e-mail', async () => {
-    aller('/nouveau-mot-de-passe?jeton=j-xyz')
+    aller('/nouveau-mot-de-passe#jeton=j-xyz')
     render(<Site />)
     fireEvent.change(await screen.findByLabelText(/Nouveau mot de passe/), { target: { value: 'nouveau-mot-de-passe' } })
     fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'nouveau-mot-de-passe' } })
@@ -213,6 +213,17 @@ describe('Site', () => {
     expect(await screen.findByRole('heading', { name: 'Mot de passe modifié' })).toBeInTheDocument()
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/mot-de-passe/nouveau'))!
     expect(JSON.parse(String(appel[1].body))).toEqual({ jeton: 'j-xyz', mot_de_passe: 'nouveau-mot-de-passe' })
+  })
+
+  it('ancien format ?jeton= encore lu (e-mails envoyes avant le 2026-11-18)', async () => {
+    aller('/nouveau-mot-de-passe?jeton=j-ancien')
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText(/Nouveau mot de passe/), { target: { value: 'nouveau-mot-de-passe' } })
+    fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'nouveau-mot-de-passe' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByRole('heading', { name: 'Mot de passe modifié' })).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/mot-de-passe/nouveau'))!
+    expect(JSON.parse(String(appel[1].body)).jeton).toBe('j-ancien')
   })
 
   it('lien sans jeton : message et aucun appel', async () => {

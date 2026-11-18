@@ -535,3 +535,23 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
     expect(md).toContain('- On répare le dommage causé par sa faute. [1]')
   })
 })
+
+describe('Audit du 18 novembre 2026, lot D', () => {
+  it('une erreur passagere du serveur ne deconnecte pas l etudiant (D3)', async () => {
+    const normal = fetchMock.getMockImplementation()!
+    let panne = false
+    fetchMock.mockImplementation((url: string) =>
+      panne && url.endsWith('/auth/session') ? repondre({ detail: 'Bad Gateway' }, 502) : normal(url))
+    render(<Site />)
+    await screen.findByLabelText('Votre question')
+    panne = true
+    fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'Que dit l’article 1240 ?' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    await screen.findByText('La responsabilité pour faute')
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/auth/session')).length).toBeGreaterThan(1))
+    expect(window.location.pathname).toBe('/app')
+    expect(screen.getByLabelText('Votre question')).toBeInTheDocument()
+  })
+})
