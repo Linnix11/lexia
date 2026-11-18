@@ -565,6 +565,27 @@ sources:
   ingestion: ingest/sources/codes.py
   statut: actif
   derniere_synchro: null
+- id: charte_environnement
+  nom: Charte de l'environnement (article 2 de la loi constitutionnelle n° 2005-205 du 1er mars 2005)
+  type: texte_officiel
+  autorite: DILA / Legifrance
+  url: https://echanges.dila.gouv.fr/OPENDATA/LEGI/
+  identifiant: JORFTEXT000000790249
+  acces: archive_dila
+  licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
+  frequence_maj: quotidienne (archives incrementales LEGI)
+  perimetre: preambule et articles 1er a 10, version en vigueur (audit du 2026-11-18, B9)
+  matieres:
+  - droit_constitutionnel
+  - libertes_fondamentales
+  - droit_administratif
+  niveaux:
+  - L1
+  - L2
+  - L3
+  ingestion: ingest/sources/codes.py
+  statut: actif
+  derniere_synchro: null
 - id: preambule_1946
   nom: Préambule de la Constitution du 27 octobre 1946
   type: texte_officiel

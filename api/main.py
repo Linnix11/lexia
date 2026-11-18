@@ -31,6 +31,7 @@ from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
 from api.retrieval.base import Retriever
 from api.schemas.models import ChatRequest, CorrectionRequest, FeedbackRequest, QuizRequest
+from ingest import fraicheur
 
 log = logging.getLogger("lexia")
 
@@ -278,9 +279,16 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         # (publier.sh, verifications) : en public, il disait quels modeles viser et quand le secours etait
         # seul actif (audit du 2026-11-16, point 14). Derriere nginx, request.client est la vraie adresse
         # du visiteur (uvicorn --proxy-headers, --forwarded-allow-ips 127.0.0.1).
+        # Fraicheur du corpus (audit B8) : en public, un booleen (derniere mise a jour reussie il y a moins de
+        # 36 h ; la surveillance GitHub echoue sur false) ; la date, en local seulement.
+        public = {"statut": "ok"}
+        if (frais := fraicheur.a_jour(settings.index_dir.parent)) is not None:
+            public["corpus_a_jour"] = frais
         if not request.client or request.client.host not in ("127.0.0.1", "::1"):
-            return {"statut": "ok"}
-        return {"statut": "ok", **retriever.stats(), "modeles": list(settings.gemini_models),
+            return public
+        maj = fraicheur.derniere_reussite(settings.index_dir.parent)
+        return {**public, **retriever.stats(), "corpus_mis_a_jour_le": maj.isoformat() if maj else None,
+                "modeles": list(settings.gemini_models),
                 "secours": getattr(secours, "model", None),
                 "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.ouvert() else "ferme",
                 "embeddings_modele": getattr(embedder, "model", None),

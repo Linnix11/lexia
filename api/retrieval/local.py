@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from api import lexique
-from api.references import extraire
+from api.references import extraire, variantes
 from api.textes import SOURCES_CASSATION, cibles_article, meme_loi
 from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler,
                                 construire_groupe,
@@ -31,8 +31,10 @@ class LocalRetriever:
         db = index_dir / "lexia.sqlite"
         if not db.exists():
             raise FileNotFoundError(f"Index absent : {db}. Lancer `python -m ingest.build_index`.")
-        self._con = sqlite3.connect(db, check_same_thread=False)
-        self._lock = threading.Lock()
+        # Une connexion en lecture seule par fil : un verrou unique faisait attendre toutes les questions
+        # derriere la plus lente (audit du 2026-11-18, B4).
+        self._db = db
+        self._local = threading.local()
         self._ids: list[str] = []
         self._vecs = np.zeros((0, 0), dtype=np.float32)
         vec_file, ids_file = index_dir / "vectors.npy", index_dir / "vectors_ids.json"
@@ -55,12 +57,13 @@ class LocalRetriever:
         # metadonnees minimales des passages vectorises (filtrage sans relire le JSON)
         self._meta_vec: dict[str, tuple[str, int | None]] = {}
         if self._ids:
-            with self._lock:
-                rows = self._con.execute("SELECT id, source_id, en_vigueur FROM passages").fetchall()
+            rows = self._q("SELECT id, source_id, en_vigueur FROM passages")
             known = set(self._ids)
             self._meta_vec = {r[0]: (r[1], r[2]) for r in rows if r[0] in known}
         # index anterieur sans colonne source : ancienne requete (filtre apres jointure)
         self._fts_source = any(r[1] == "source" for r in self._q("PRAGMA table_info(passages_fts)"))
+        # table des numeros de pourvoi (B4) ; index anterieur : recherche dans le JSON, plusieurs secondes
+        self._table_pourvois = bool(self._q("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'pourvois'"))
         # nombre de passages indexables (en vigueur) par source, pour mesurer la couverture
         self._totaux = dict(self._q(
             "SELECT source_id, count(*) FROM passages WHERE en_vigueur IS NULL OR en_vigueur = 1 GROUP BY source_id"))
@@ -90,9 +93,22 @@ class LocalRetriever:
 
     # --- outils SQL ----------------------------------------------------------
 
+    @property
+    def _con(self) -> sqlite3.Connection:
+        con = getattr(self._local, "con", None)
+        if con is None:
+            con = self._local.con = sqlite3.connect(f"file:{self._db}?mode=ro", uri=True)
+        return con
+
     def _q(self, sql: str, params: tuple = ()) -> list[tuple]:
-        with self._lock:
-            return self._con.execute(sql, params).fetchall()
+        return self._con.execute(sql, params).fetchall()
+
+    def _par_numero(self, src: str, num: str) -> list[dict]:
+        """Versions en vigueur d'un article (R421-1 trouve aussi R*421-1, B3)."""
+        nums = variantes(num)
+        rows = self._q(f"SELECT data FROM passages WHERE source_id = ? AND numero IN ({','.join('?' * len(nums))})"
+                       " AND (en_vigueur IS NULL OR en_vigueur = 1)", (src, *nums))
+        return [json.loads(r[0]) for r in rows]
 
     @staticmethod
     def _filtre_sql(sources: tuple[str, ...]) -> tuple[str, tuple]:
@@ -115,9 +131,7 @@ class LocalRetriever:
         for num in refs.articles:
             # Loi ou ordonnance nommee : l'article est cherche dans ce texte, pas dans les codes.
             if refs.lois and ok("lois"):
-                rows = self._q("SELECT data FROM passages WHERE source_id = 'lois' AND numero = ?"
-                               " AND (en_vigueur IS NULL OR en_vigueur = 1)", (num,))
-                trouves = [p for p in map(json.loads, (r[0] for r in rows))
+                trouves = [p for p in self._par_numero("lois", num)
                            if any(meme_loi(c, (p.get("meta") or {}).get("code") or "") for c in refs.lois)]
                 if trouves:
                     out.extend(trouves)
@@ -127,13 +141,8 @@ class LocalRetriever:
             for src in cibles_article(num, refs.codes, refs.constitution):
                 if not ok(src):
                     continue
-                rows = self._q(
-                    "SELECT data FROM passages p WHERE source_id = ? AND numero = ?"
-                    " AND (en_vigueur IS NULL OR en_vigueur = 1)",
-                    (src, num),
-                )
-                if rows:
-                    out.extend(json.loads(r[0]) for r in rows)
+                if trouves := self._par_numero(src, num):
+                    out.extend(trouves)
                     break
         for dec in refs.decisions_cc:
             num, nature = dec.split()
@@ -149,11 +158,19 @@ class LocalRetriever:
             for src in SOURCES_CASSATION:
                 if not ok(src):
                     continue
-                rows = self._q(
-                    "SELECT data FROM passages WHERE source_id = ? AND data LIKE ? ORDER BY rowid LIMIT 3",
-                    (src, f'%"{pv.replace(".", "")}"%'),
-                )
+                if self._table_pourvois:
+                    rows = self._q("SELECT p.data FROM pourvois v JOIN passages p ON p.rowid = v.passage"
+                                   " WHERE v.numero = ? AND p.source_id = ? ORDER BY p.rowid LIMIT 3",
+                                   (pv.replace(".", ""), src))
+                else:
+                    rows = self._q("SELECT data FROM passages WHERE source_id = ? AND data LIKE ? ORDER BY rowid"
+                                   " LIMIT 3", (src, f'%"{pv.replace(".", "")}"%'))
                 out.extend(json.loads(r[0]) for r in rows)
+        # Grand arret administratif nomme (« arret Blanco ») : sommaire et debut de la decision (B5).
+        for doc in refs.decisions_admin if ok("conseil_etat") else ():
+            rows = self._q("SELECT data FROM passages WHERE doc_id = ? AND source_id = 'conseil_etat'"
+                           " ORDER BY rowid LIMIT 3", (doc,))
+            out.extend(json.loads(r[0]) for r in rows)
         return out
 
     def _fts(self, requete: str, sources: tuple[str, ...]) -> list[tuple[str, dict]]:
@@ -225,9 +242,7 @@ class LocalRetriever:
         out: list[dict] = []
         for src, num in complement.suggestions:
             if src in sources:
-                rows = self._q("SELECT data FROM passages WHERE source_id = ? AND numero = ?"
-                               " AND (en_vigueur IS NULL OR en_vigueur = 1)", (src, num))
-                out.extend(json.loads(r[0]) for r in rows)
+                out.extend(self._par_numero(src, num))
         return out
 
     def _par_ids(self, ids: list[str]) -> list[tuple[str, dict]]:
@@ -299,5 +314,8 @@ class LocalRetriever:
 
     def stats(self) -> dict:
         n = self._q("SELECT count(*) FROM passages")[0][0]
-        return {"moteur": self.mode, "passages": n, "embeddings": len(self._ids),
-                "couverture": round(self.couverture(None), 3)}
+        stats = {"moteur": self.mode, "passages": n, "embeddings": len(self._ids),
+                 "couverture": round(self.couverture(None), 3)}
+        if self._q("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'fraicheur'"):
+            stats["derniere_decision"] = dict(self._q("SELECT source_id, date FROM fraicheur ORDER BY source_id"))
+        return stats

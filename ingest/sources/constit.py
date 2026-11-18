@@ -1,4 +1,4 @@
-"""Decisions du Conseil constitutionnel (DC et QPC) depuis l'archive DILA CONSTIT."""
+"""Decisions du Conseil constitutionnel (DC, QPC et L) depuis l'archive DILA CONSTIT."""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ from ingest.models import Passage
 
 SOURCE_ID = "decisions_conseil_constitutionnel"
 FONDS = "constit"
-NATURES = {"DC", "QPC"}
+# L : nature reglementaire d'une disposition de loi (art. 37 al. 2 de la Constitution), 338 decisions (audit B9).
+NATURES = {"DC", "QPC", "L"}
 
 _DISPOSITIF_RE = re.compile(r"^(LECONSEILCONSTITUTIONNEL)?D[ÉE]CIDE:?$")
 _FORMULE_RE = re.compile(r"S.EST FOND[ÉE] SUR CE QUI SUIT", re.IGNORECASE)

@@ -11,17 +11,21 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from api.grands_arrets import pourvois_cites
+from api.grands_arrets import NOMS_ADMINISTRATIFS, decisions_administratives_citees, nom_dans, pourvois_cites
 from api.textes import codes_cites, lois_citees, sans_accents
 
-_NUM = r"(?:[LRDA]\.?\s?)?\d+(?:-\d+)*(?:\s(?:bis|ter|quater))?"
+# Prefixe L, R, D, A ou LO (lois organiques), avec ou sans asterisque (R*, D* : decrets en Conseil d'Etat ou en
+# conseil des ministres) ; suffixe bis, ter... (audit du 2026-11-18, B2 et B3).
+_SUFFIXES = "bis|ter|quater|quinquies|sexies|septies|octies|nonies|decies"
+_NUM = rf"(?:L\.?\s?O\.?\s?|[LRDA]\.?\s?\*?\.?\s?)?\d+(?:-\d+)*(?:\s(?:{_SUFFIXES})\b)?"
 _ARTICLES_RE = re.compile(
     rf"\b(?:art(?:icle)?s?\.?)\s+({_NUM}(?:\s*(?:,|et|à|ou)\s*{_NUM})*)",
     re.IGNORECASE,
 )
 _NUM_RE = re.compile(_NUM, re.IGNORECASE)
 _ARTICLE_PREMIER_RE = re.compile(r"\barticle\s+(?:premier|1er)\b", re.IGNORECASE)
-_DECISION_CC_RE = re.compile(r"\b(\d{2,4}-\d{1,4})\s*(QPC|DC)\b", re.IGNORECASE)
+# « 91-166 L » (nature reglementaire, art. 37) : L majuscule seul, pas « 2005-205 l'article » (B9).
+_DECISION_CC_RE = re.compile(r"\b(\d{2,4}-\d{1,4})\s*(QPC|DC|(?-i:L)(?!['’\w]))", re.IGNORECASE)
 _POURVOI_RE = re.compile(r"\b(\d{2})[-.](\d{2})\.?(\d{3})\b")
 
 
@@ -33,14 +37,26 @@ class References:
     constitution: bool              # la question parle de la Constitution
     codes: tuple[str, ...] = ()     # codes nommes ("code_penal"...)
     lois: tuple[frozenset[str], ...] = ()  # lois / ordonnances citees, sous forme de cles (voir api.textes)
+    decisions_admin: tuple[str, ...] = ()   # grands arrets administratifs nommes, identifiant JADE (CETATEXT...)
 
     @property
     def vide(self) -> bool:
-        return not (self.articles or self.decisions_cc or self.pourvois)
+        return not (self.articles or self.decisions_cc or self.pourvois or self.decisions_admin)
 
 
 def _norm_num(n: str) -> str:
-    return re.sub(r"\s+", " ", n.replace(".", "").strip()).upper().replace("L ", "L").replace("R ", "R")
+    """Forme de comparaison : « L. 2223-1 » -> L2223-1, « R.* 421-1 » -> R421-1 (asterisque ignoree, voir
+    variantes), « L.O. 119 » -> LO119, « D45-2-1 BIS » -> D45-2-1 bis (l'index ecrit les suffixes en minuscules)."""
+    n = re.sub(r"\s+", " ", n.replace(".", "").replace("*", "").strip()).lower()
+    m = re.match(r"^(l ?o|[lrda]) ?(?=\d)", n)
+    return m.group(1).replace(" ", "").upper() + n[m.end():] if m else n
+
+
+def variantes(num: str) -> tuple[str, ...]:
+    """Numeros a chercher dans l'index pour un numero normalise : R421-1 n'y existe souvent que sous la forme
+    R*421-1 (1 058 articles en vigueur, ex. code de l'urbanisme)."""
+    m = re.match(r"^([RD])(\d.*)$", num)
+    return (num, f"{m.group(1)}*{m.group(2)}") if m else (num,)
 
 
 def extraire(texte: str) -> References:
@@ -63,13 +79,16 @@ def extraire(texte: str) -> References:
     # Grand arret nomme (« l'arret Blieck ») : son pourvoi, que le sommaire ne relie jamais au nom (D90).
     pourvois += [p for p in pourvois_cites(texte) if p not in pourvois]
     return References(tuple(articles), tuple(decisions), tuple(pourvois), "constitution" in sans_accents(texte),
-                      codes_cites(texte), lois_citees(texte))
+                      codes_cites(texte), lois_citees(texte), decisions_administratives_citees(texte))
 
 
 def _motif(n: str) -> str:
-    """'L2223-1' doit aussi reconnaitre 'L. 2223-1' et 'L 2223-1'."""
-    m = re.match(r"^([LRDA])(\d.*)$", n)
-    return rf"{m.group(1)}\.?\s?{re.escape(m.group(2))}" if m else re.escape(n)
+    """'L2223-1' doit aussi reconnaitre 'L. 2223-1' et 'L 2223-1' ; 'R421-1' aussi 'R*421-1', 'LO119' 'L.O. 119'."""
+    m = re.match(r"^(LO|[LRDA])(\d.*)$", n)
+    if not m:
+        return re.escape(n)
+    prefixe = r"L\.?\s?O" if m.group(1) == "LO" else m.group(1)
+    return rf"{prefixe}\.?\s?\*?\.?\s?{re.escape(m.group(2))}"
 
 
 def _mot(n: str, texte: str) -> bool:
@@ -98,6 +117,14 @@ def reference_couverte(ref_type: str, valeur: str, passages: list[dict]) -> bool
                 return True
             if valeur in p.get("texte", ""):
                 return True
+        elif ref_type == "decision_admin":
+            if (p.get("meta") or {}).get("id_dila") == valeur:
+                return True
+        # Grand arret designe par son nom dans un extrait (cours depose, autre decision) : la citation est
+        # couverte, meme sans son numero (audit du 2026-11-18, B6).
+        if ref_type in ("pourvoi", "decision_admin") and (nom_dans(valeur, p.get("texte", ""))
+                                                          or nom_dans(valeur, p.get("entete", ""))):
+            return True
     return False
 
 
@@ -106,4 +133,6 @@ def references_non_couvertes(texte: str, passages: list[dict]) -> list[str]:
     manquantes = [f"article {a}" for a in refs.articles if not reference_couverte("article", a, passages)]
     manquantes += [d for d in refs.decisions_cc if not reference_couverte("decision", d, passages)]
     manquantes += [f"pourvoi {p}" for p in refs.pourvois if not reference_couverte("pourvoi", p, passages)]
+    manquantes += [NOMS_ADMINISTRATIFS[d] for d in refs.decisions_admin
+                   if not reference_couverte("decision_admin", d, passages)]
     return manquantes

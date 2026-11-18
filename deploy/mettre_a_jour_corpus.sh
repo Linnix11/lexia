@@ -21,6 +21,10 @@ attendre() {
   for _ in $(seq 1 60); do curl -sf "$SANTE" >/dev/null && return 0; sleep 5; done
   return 1
 }
+# Passage reussi : date lue par /api/sante (corpus_a_jour) et la surveillance GitHub (audit B8).
+reussi() { en_lexia bash -c 'date -Is > data/mise_a_jour_reussie'; }
+# Echec : e-mail aux ADMIN_EMAILS (le 17/11/2026, un echec est passe inapercu).
+alerte() { en_lexia .venv/bin/python -m ingest.fraicheur --alerte "$(hostname) $(date -Is) : $1" || true; }
 
 echo "$(date -Is) debut"
 code=0
@@ -28,10 +32,12 @@ code=0
 en_lexia nice -n 19 ionice -c3 .venv/bin/python -m ingest.mise_a_jour "$@" || code=$?
 if [ "$code" -eq 3 ]; then
   echo "$(date -Is) rien de nouveau"
+  reussi
   exit 0
 fi
 if [ "$code" -ne 0 ]; then
   echo "$(date -Is) ERREUR ($code) : index inchange" >&2
+  alerte "ingest.mise_a_jour a echoue (code $code), index inchange"
   exit "$code"
 fi
 
@@ -39,9 +45,11 @@ en_lexia bash -c 'rm -rf data/index.precedent && mv data/index data/index.preced
 systemctl restart lexia
 if attendre; then
   echo "$(date -Is) nouvel index en service : $(curl -s "$SANTE")"
+  reussi
   exit 0
 fi
 echo "$(date -Is) ERREUR : le service ne repond plus, retour a l'index precedent" >&2
+alerte "le service ne repondait plus avec le nouvel index, retour a l'index precedent"
 en_lexia bash -c 'rm -rf data/index.echec && mv data/index data/index.echec && mv data/index.precedent data/index'
 systemctl restart lexia
 attendre && echo "$(date -Is) index precedent remis en service" || echo "$(date -Is) ERREUR : service toujours muet" >&2

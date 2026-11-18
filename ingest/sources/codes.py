@@ -269,6 +269,8 @@ class SourceLois:
             for f in dossier.rglob("LEGIARTI*.xml"):
                 p = legi.parse_article(f.read_bytes(), date_recuperation=date_recuperation, version_archive=version,
                                        source_id=SOURCE_LOIS, nom=None)
+                if texte_id == CHARTE_TEXTE and p is not None and p.numero == CHARTE_ARTICLE:
+                    continue   # Charte de l'environnement : source a part (SourceCharte)
                 if p is not None and p.meta["en_vigueur"] and p.id not in vus:
                     vus.add(p.id)
                     articles.append(p)
@@ -278,4 +280,55 @@ class SourceLois:
             raise RuntimeError(f"Seulement {n} articles de lois en vigueur : extraction incomplete ?")
 
 
-SOURCES = [SourceCode(c) for c in CODES] + [SourceLois()]
+# --- Charte de l'environnement (audit du 2026-11-18, B9) ------------------------------------------
+# Adossee a la Constitution, elle n'existe dans l'archive LEGI que comme article 2 de la loi constitutionnelle
+# n° 2005-205 du 1er mars 2005 : un seul passage de 2 900 caracteres, introuvable par « article 5 de la Charte ».
+# Elle est decoupee en preambule et articles 1er a 10, source a part ; l'article 2 de la loi n'est plus repris
+# dans « lois » (meme texte en double).
+CHARTE_SOURCE = "charte_environnement"
+CHARTE_NOM = "Charte de l'environnement"
+CHARTE_TEXTE = "JORFTEXT000000790249"  # loi constitutionnelle n° 2005-205 (verifie dans l'archive du 2026-11-08)
+CHARTE_ARTICLE = "2"
+_ART_CHARTE = re.compile(r"^Art\.\s*(\d+)(?:er)?\.?\s*[-–]\s*(.+)$", re.DOTALL)
+
+
+def decouper_charte(p: legi.Passage) -> list[legi.Passage]:
+    """Article 2 de la loi 2005-205 -> preambule (numero PREAMBULE) et articles 1 a 10 de la Charte."""
+    preambule: list[str] = []
+    articles: list[tuple[str, list[str]]] = []
+    for a in p.alineas[1:]:   # le premier : « La Charte de l'environnement de 2004 est ainsi redigee : »
+        m = _ART_CHARTE.match(a.strip())
+        if m:
+            articles.append((m.group(1), [m.group(2).strip()]))
+        elif articles:
+            articles[-1][1].append(a)
+        else:
+            preambule.append(a)
+    statut = p.entete[p.entete.index("("):] if "(" in p.entete else ""
+    out = []
+    for num, alineas in ([("PREAMBULE", preambule)] if preambule else []) + articles:
+        libelle = "préambule" if num == "PREAMBULE" else f"article {num}"
+        out.append(legi.Passage(
+            id=f"{CHARTE_SOURCE}:{p.meta['id_legi']}:{num}", source_id=CHARTE_SOURCE, type="article", numero=num,
+            titre=CHARTE_NOM, alineas=alineas, url=p.url, version=p.version, date_recuperation=p.date_recuperation,
+            meta={**p.meta, "code": CHARTE_NOM, "plan": []}, entete=f"{CHARTE_NOM}, {libelle} {statut}".strip()))
+    return out
+
+
+class SourceCharte:
+    SOURCE_ID = CHARTE_SOURCE
+
+    def collect(self, raw_dir: Path, *, date_recuperation: str) -> Iterator[legi.Passage]:
+        version = f"archive DILA LEGI du {dila.date_corpus(raw_dir, 'legi')}"
+        out: list[legi.Passage] = []
+        for f in (extraire(raw_dir) / CHARTE_TEXTE).rglob("LEGIARTI*.xml"):
+            p = legi.parse_article(f.read_bytes(), date_recuperation=date_recuperation, version_archive=version,
+                                   source_id=SOURCE_LOIS, nom=None)
+            if p is not None and p.numero == CHARTE_ARTICLE and p.meta["en_vigueur"]:
+                out += decouper_charte(p)
+        if len([p for p in out if p.numero != "PREAMBULE"]) != 10:
+            raise RuntimeError(f"Charte de l'environnement : {len(out)} passages au lieu de 11 (texte modifie ?)")
+        yield from out
+
+
+SOURCES = [SourceCode(c) for c in CODES] + [SourceLois(), SourceCharte()]

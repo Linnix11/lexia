@@ -1,6 +1,8 @@
 # Alerte de panne : interroge le site toutes les 15 minutes. Si la reponse n'est pas {"statut":"ok"}
 # apres trois essais, l'execution echoue et GitHub envoie un e-mail au proprietaire du depot (reglage par
 # defaut des notifications Actions). Aucun compte ni service supplementaire.
+# Echoue aussi si la mise a jour nocturne du corpus n'a pas reussi depuis plus de 36 h ("corpus_a_jour":false,
+# audit du 2026-11-18, B8).
 #
 # A savoir :
 # - GitHub ne garantit pas l'heure exacte des taches planifiees (retards de quelques minutes possibles).
@@ -32,6 +34,10 @@ jobs:
             reponse=$(curl -sS --max-time 20 -A "lexia-surveillance" -w ' HTTP %{http_code}' "$URL" || true)
             if echo "$reponse" | grep -q '"statut":"ok"'; then
               echo "Lexia repond : $reponse"
+              if echo "$reponse" | grep -q '"corpus_a_jour":false'; then
+                echo "::error::La mise a jour nocturne du corpus n'a pas reussi depuis plus de 36 h (journal : /var/log/lexia-mise-a-jour.log)"
+                exit 1
+              fi
               exit 0
             fi
             echo "Essai $essai : $reponse"

@@ -47,6 +47,7 @@ DATE_ARRET_COMPLET = "2000-01-01"  # avant : sommaire seul (D82)
 
 # Lien Legifrance construit a partir de l'identifiant DILA (format a confirmer en navigateur).
 URL_LEGIFRANCE = "https://www.legifrance.gouv.fr/juri/id/{id}"
+SOMMAIRE_MIN = 15  # caracteres
 
 _DEBUT_RE = re.compile(
     r"^(\d+\s*\.\s|Faits et proc[ée]dure|Attendu|Vu |Sur le |Sur les |Sur la |Sur l'|Donne acte)",
@@ -128,6 +129,8 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str, seulement: 
     som = _sommaire(root)
     if som:
         for k, bloc in enumerate(decouper_sommaire(som)):
+            if len("".join(bloc).strip()) < SOMMAIRE_MIN:
+                continue   # titre seul (« PRESSE », « CASSATION ») : rien a citer (audit B10, 38 sommaires)
             suffixe = "sommaire" if k == 0 else f"sommaire-{k + 1}"
             passages.append(Passage(id=f"{source_id}:{doc_id}:{suffixe}", type="sommaire", numero=None, alineas=bloc, **common))
     if date < DATE_ARRET_COMPLET:

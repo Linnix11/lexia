@@ -46,6 +46,13 @@ CREATE TABLE passages (
 );
 CREATE INDEX passages_num ON passages (source_id, numero);
 CREATE INDEX passages_doc ON passages (doc_id);
+-- Numeros de pourvoi des arrets de la Cour de cassation (« 89-15231 ») : la recherche d'un pourvoi cite lisait
+-- le JSON de 312 000 lignes, 4 a 6 s sur le serveur (audit du 2026-11-18, B4).
+CREATE TABLE pourvois (numero TEXT NOT NULL, passage INTEGER NOT NULL);
+CREATE INDEX pourvois_num ON pourvois (numero);
+-- Date de la decision la plus recente de chaque source de jurisprudence (audit B7 : la DILA ne publie pour
+-- CASS et CONSTIT que des archives globales espacees ; la fraicheur reelle doit se lire quelque part).
+CREATE TABLE fraicheur (source_id TEXT PRIMARY KEY, date TEXT NOT NULL);
 -- Seuls les passages en vigueur y figurent ; la colonne source porte jeton_source(source_id)
 -- pour filtrer dans l'index lui-meme, sans relire chaque ligne de passages.
 CREATE VIRTUAL TABLE passages_fts USING fts5(
@@ -78,12 +85,22 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
     con = sqlite3.connect(tmp)
     con.executescript(SCHEMA)
     empreintes: dict[str, str] = {}
+    dernieres: dict[str, str] = {}
+    doc_courant, vus_doc = None, set()   # passages d'une decision : consecutifs dans le fichier
     n = 0
     for f in sorted(passages_dir.glob("*.jsonl")):
         with f.open(encoding="utf-8") as fh:
             for line in fh:
                 p = json.loads(line)
                 p.pop("alineas", None)
+                # Meme passage repete dans une decision (citation reprise d'un moyen a l'autre) : 185 doublons
+                # qui prenaient deux places parmi les extraits (audit B10).
+                if p["type"] != "article":
+                    if (p["source_id"], doc_id(p)) != doc_courant:
+                        doc_courant, vus_doc = (p["source_id"], doc_id(p)), set()
+                    if p["empreinte"] in vus_doc:
+                        continue
+                    vus_doc.add(p["empreinte"])
                 n += 1
                 con.execute(
                     "INSERT INTO passages (rowid, id, source_id, type, numero, doc_id, en_vigueur, empreinte, data)"
@@ -91,10 +108,16 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
                     (n, p["id"], p["source_id"], p["type"], p.get("numero"), doc_id(p), en_vigueur(p),
                      p["empreinte"], json.dumps(p, ensure_ascii=False)),
                 )
+                con.executemany("INSERT INTO pourvois (numero, passage) VALUES (?,?)",
+                                ((pv, n) for pv in (p.get("meta") or {}).get("numeros_pourvoi") or ()))
                 if en_vigueur(p) != 0:
                     con.execute("INSERT INTO passages_fts (rowid, entete, texte, source) VALUES (?,?,?,?)",
                                 (n, p.get("entete", ""), p["texte"], jeton_source(p["source_id"])))
                 empreintes[p["id"]] = p["empreinte"]
+                d = str((p.get("meta") or {}).get("date") or "")
+                if d[:4].isdigit() and not d.startswith("2999") and d > dernieres.get(p["source_id"], ""):
+                    dernieres[p["source_id"]] = d   # « 2999-01-01 » : date DILA de remplacement (D60)
+    con.executemany("INSERT INTO fraicheur (source_id, date) VALUES (?,?)", dernieres.items())
     con.commit()
     con.close()
     tmp.replace(index_dir / "lexia.sqlite")

@@ -56,6 +56,10 @@ TEXTES: tuple[Texte, ...] = (
     Texte("code_electoral", "Code électoral", (r"code electoral",)),
     Texte("ddhc_1789", "Déclaration des droits de l'homme et du citoyen de 1789", ("declaration des droits de l'homme(?: et du citoyen)?", 'ddhc',)),
     Texte("preambule_1946", "Préambule de la Constitution du 27 octobre 1946", ('preambule de (?:la constitution de )?1946',)),
+    # « article 5 de la Charte » : la Charte de l'environnement, seule charte du corpus (D74) ; pas « charte des
+    # droits fondamentaux », « charte sociale »... (audit B9).
+    Texte("charte_environnement", "Charte de l'environnement",
+          (r"charte de l'environnement", r"charte(?! (?:des|de la|du|sociale|europeenne|de l'))")),
     Texte("code_general_impots", "Code général des impôts", ('code general des impots', 'cgi',)),
     Texte("livre_procedures_fiscales", "Livre des procédures fiscales", ('livre des procedures fiscales', 'lpf',)),
     Texte("code_juridictions_financieres", "Code des juridictions financières", ('code des juridictions financieres', 'cjf',)),
@@ -178,9 +182,15 @@ def en_vigueur_aujourdhui(meta: dict, source_id: str) -> bool | None:
     L'etat stocke a ete fige au moment de l'import : un article dont l'abrogation etait deja
     programmee (etat DILA ABROGE_DIFF) resterait marque « en vigueur » apres sa date de fin.
     Le corpus en compte 4 789, dont 182 s'abrogent d'ici fin 2026 et 696 en 2027 (D71).
+    Symetriquement, une version dont l'entree en vigueur etait a venir a l'import (`en_vigueur_le`, pose par
+    ingest.sources.legi) l'est des cette date, sans attendre la reconstruction de l'index (audit B8).
     """
     valeur = meta.get("en_vigueur", True if source_id == "constitution_1958" else None)
+    aujourdhui = date.today().isoformat()
+    debut = str(meta.get("en_vigueur_le") or "")
+    if valeur is False and debut and debut <= aujourdhui:
+        valeur = True
     fin = str(meta.get("date_fin") or "")
-    if valeur and fin and fin <= date.today().isoformat():
+    if valeur and fin and fin <= aujourdhui:
         return False
     return valeur
