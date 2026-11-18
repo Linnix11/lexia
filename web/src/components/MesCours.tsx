@@ -1,8 +1,8 @@
-// Cours deposes par l'etudiant : depot (PDF, Word, texte) et liste par matiere.
+// Cours deposes par l'etudiant : depot (PDF, Word, OpenDocument, PowerPoint, texte) et liste par matiere.
 import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
-import { ACCEPT, formatAccepte, sansExtension } from '../lib/fichiers'
+import { ACCEPT, FORMATS_LISIBLES, formatAccepte, sansExtension, STATUTS } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 
 const TAILLE_MAX = 20 * 1024 * 1024
@@ -27,8 +27,8 @@ export function DepotCours() {
     setEnvoi(true)
     setErreur(null)
     try {
-      await api.cours.deposer(fichier, matiere, titre.trim())
-      notifier('Cours déposé : Lexia le prépare pour vos révisions.')
+      const depose = await api.cours.deposer(fichier, matiere, titre.trim())
+      notifier(depose.avertissement ? `Cours déposé. ${depose.avertissement}` : 'Cours déposé : Lexia le prépare pour vos révisions.')
       setFichier(null)
       setTitre('')
       if (choix.current) choix.current.value = ''
@@ -44,7 +44,7 @@ export function DepotCours() {
   return (
     <Card className="mb-[18px] p-4 tab:p-[19px]">
       <CardHead titre="Déposer un cours"
-        sousTitre="PDF, Word ou texte, 20 Mo au plus. Votre cours reste privé : vous seul pouvez l’utiliser."
+        sousTitre={`${FORMATS_LISIBLES}, 20 Mo au plus. Votre cours reste privé : vous seul pouvez l’utiliser.`}
         droite={coursMax > 0 ? <span className="text-[11px] text-muted">{mesCours.length} / {coursMax} cours</span> : undefined} />
       <form onSubmit={deposer} className="mt-3.5 flex flex-wrap items-end gap-2">
         {/* Champ natif masque : son bouton s'affichait en anglais selon le navigateur (« Choose File »). */}
@@ -82,17 +82,16 @@ export function DepotCours() {
   )
 }
 
-const STATUTS = { traitement: 'en préparation…', pret: 'prêt', erreur: 'recherche par mots-clés seulement' }
 
 export function ListeCoursMatiere({ matiere }: { matiere: string }) {
-  const { mesCours, rafraichirCours, setCoursChoisi, setMatiere, setVue, coursChoisi, notifier } = useApp()
+  const { mesCours, rafraichirCours, setCoursChoisis, setMatiere, setVue, coursChoisis, notifier } = useApp()
   const liste = mesCours.filter((c) => c.matiere === matiere)
   if (liste.length === 0) return null
   const retirer = (id: number, titre: string) => {
     if (!window.confirm(`Retirer définitivement le cours « ${titre} » ?`)) return
     api.cours.supprimer(id)
       .then(() => {
-        if (coursChoisi === id) setCoursChoisi(null)
+        setCoursChoisis(coursChoisis.filter((c) => c !== id))
         notifier('Cours retiré')
         rafraichirCours()
       })
@@ -109,9 +108,10 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
               <span className="block text-[10px] text-muted">
                 {c.pages ? `${c.pages} pages · ` : ''}{STATUTS[c.statut]}
               </span>
+              {c.avertissement && <span className="block text-[10px] text-[#8c4a36]">{c.avertissement}</span>}
             </span>
             <span className="flex gap-2">
-              <button type="button" onClick={() => { setCoursChoisi(c.id); setMatiere(matiere); setVue('assistant') }}
+              <button type="button" onClick={() => { setCoursChoisis([c.id]); setMatiere(matiere); setVue('assistant') }}
                 className="text-[11px] font-semibold text-forest hover:underline">Réviser</button>
               <button type="button" onClick={() => retirer(c.id, c.titre)} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
             </span>
@@ -124,7 +124,7 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
 
 /** Depot rapide depuis l'assistant : choix de la matiere, envoi, puis le cours devient le cours de travail. */
 export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer: () => void }) {
-  const { matieres, matiere: matiereCourante, mesCours, coursMax, rafraichirCours, setCoursChoisi, notifier } = useApp()
+  const { matieres, matiere: matiereCourante, mesCours, coursMax, rafraichirCours, setCoursChoisis, notifier } = useApp()
   const acceptes = fichiers.filter(formatAccepte)
   const ignores = fichiers.length - acceptes.length
   const [matiere, setMatiere] = useState(matiereCourante ?? '')
@@ -137,7 +137,8 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
     e.preventDefault()
     if (!matiere || acceptes.length === 0) return
     const echecs: string[] = []
-    let dernier: number | null = null
+    const deposes: number[] = []
+    const avertissements: string[] = []
     for (const f of acceptes.slice(0, place)) {
       setEnvoi(f.name)
       if (f.size > TAILLE_MAX) {
@@ -146,7 +147,9 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
       }
       try {
         const titreFichier = acceptes.length === 1 ? titre.trim() : sansExtension(f.name)
-        dernier = (await api.cours.deposer(f, matiere, titreFichier)).id
+        const depose = await api.cours.deposer(f, matiere, titreFichier)
+        deposes.push(depose.id)
+        if (depose.avertissement) avertissements.push(`${f.name} : ${depose.avertissement}`)
       } catch (err) {
         echecs.push(`${f.name} : ${err instanceof ApiError ? err.message : 'le dépôt a échoué.'}`)
       }
@@ -154,11 +157,11 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
     if (acceptes.length > place) echecs.push(`${acceptes.length - place} fichier(s) non déposé(s) : limite de ${coursMax} cours atteinte.`)
     setEnvoi(null)
     rafraichirCours()
-    if (dernier !== null) {
-      setCoursChoisi(dernier)
-      notifier('Cours ajouté : posez-lui vos questions.')
+    if (deposes.length) {
+      setCoursChoisis(deposes) // tous les cours deposes deviennent les cours de travail
+      notifier(deposes.length > 1 ? 'Cours ajoutés : posez-leur vos questions.' : 'Cours ajouté : posez-lui vos questions.')
     }
-    if (echecs.length) setErreurs(echecs)
+    if (echecs.length || avertissements.length) setErreurs([...echecs, ...avertissements])
     else onFermer()
   }
 
@@ -167,7 +170,7 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
     <form onSubmit={deposer} aria-label="Ajouter un cours"
       className="mb-2.5 grid gap-2 rounded-[10px] border border-[#cfd9d1] bg-[#f6f8f3] p-3 text-[12px]">
       <p className="font-semibold">
-        {acceptes.length === 0 ? 'Aucun fichier pris en charge (PDF, Word ou texte).'
+        {acceptes.length === 0 ? `Aucun fichier pris en charge (${FORMATS_LISIBLES}).`
           : acceptes.length === 1 ? `Ajouter « ${acceptes[0].name} » à mes cours`
             : `Ajouter ${acceptes.length} fichiers à mes cours`}
         {ignores > 0 && <span className="ml-1 font-normal text-muted">({ignores} fichier(s) d’un autre format ignoré(s))</span>}

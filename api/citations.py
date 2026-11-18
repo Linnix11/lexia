@@ -80,9 +80,12 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
     return out
 
 
-def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer") -> tuple[dict, Controle]:
+def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer",
+                    cours_seul: bool = False) -> tuple[dict, Controle]:
     """mode : dans les modes methode, une explication de methode sans source est acceptee
-    (la methode n'est pas une regle de droit) ; le droit positif exige toujours une source."""
+    (la methode n'est pas une regle de droit) ; le droit positif exige toujours une source.
+    cours_seul : « Mon cours seulement » ; une explication sans source ne vient pas du cours, elle passe
+    dans les points d'attention, signalee comme telle (audit C5)."""
     controle = Controle()
     statut = brut.get("statut") if brut.get("statut") in ("reponse", "abstention", "hors_champ") else "abstention"
     message = str(brut.get("message") or "").strip()
@@ -104,6 +107,10 @@ def valider_reponse(brut: dict, table: dict[str, dict], mode: str = "expliquer")
     expl = nettoyer_elements(brut.get("explication"), table, controle, exiger_source=False,
                              rubriques=RUBRIQUES.get(mode, RUBRIQUES["expliquer"]))
     incert = nettoyer_elements(brut.get("points_incertains"), table, controle, exiger_source=False)
+    if cours_seul and mode not in MODES_METHODE:
+        hors = [e for e in expl if not e["sources"]]
+        expl = [e for e in expl if e["sources"]]
+        incert = [{"texte": f"Hors de votre cours, à vérifier : {e['texte']}", "sources": []} for e in hors] + incert
     # Lue en premier : meme exigence que le droit positif (source valide, aucune reference inventee). Elle ne
     # compte pas pour eviter l'abstention : la reponse doit tenir par ses developpements sources.
     directe = nettoyer_elements(brut.get("reponse_directe"), table, controle,

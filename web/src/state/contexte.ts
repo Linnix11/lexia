@@ -47,8 +47,8 @@ export interface AppState {
   mesCours: CoursDepose[] // cours deposes par l'etudiant
   coursMax: number // nombre maximal de cours pour sa formule
   rafraichirCours: () => void
-  coursChoisi: number | null // cours utilise par l'assistant et les questionnaires (null : textes officiels seuls)
-  setCoursChoisi: (id: number | null) => void
+  coursChoisis: number[] // cours utilises par l'assistant et les questionnaires (vide : textes officiels seuls)
+  setCoursChoisis: (ids: number[]) => void
   avecOfficiel: boolean // false : « Mon cours uniquement »
   setAvecOfficiel: (v: boolean) => void
   optionsCours: OptionsCours | undefined

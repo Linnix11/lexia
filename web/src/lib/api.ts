@@ -322,6 +322,7 @@ export interface CoursDepose {
   passages: number
   statut: 'traitement' | 'pret' | 'erreur'
   ajoute_le: string
+  avertissement?: string | null // ex. pages sans texte (scan) : leur contenu n'est pas pris en compte
 }
 
 /** Cours a utiliser pour une demande ; avec_officiel = false : « Mon cours uniquement ». */

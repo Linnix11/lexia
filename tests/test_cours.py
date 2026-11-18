@@ -68,7 +68,7 @@ def test_extraction_des_formats():
     with pytest.raises(ErreurCours, match="pas de texte"):
         extraire_texte("scan.pdf", pdf_minimal("x"))
     passages = decouper([(1, "Premier paragraphe.\n\nSecond paragraphe."), (2, "a. " * 2000)])
-    assert passages[0] == (1, "Premier paragraphe.\nSecond paragraphe.") and all(len(t) <= 3000 for _, t in passages)
+    assert passages[0] == (1, 1, "Premier paragraphe.\nSecond paragraphe.") and all(len(t) <= 3000 for *_, t in passages)
 
 
 @pytest.fixture
@@ -310,3 +310,253 @@ def test_lecture_trop_longue_refusee():
     """Un PDF dont les 1000 pages partagent un meme contenu compresse prenait 4 a 5 h : le processus est tue."""
     with pytest.raises(ErreurCours, match="trop de temps"):
         extraire_isole("c.txt", b"x" * 10, delai=0.001)
+
+
+# --- lot C de l'audit du 2026-11-18 : qualite de lecture des cours deposes --------------------------------
+
+from pathlib import Path  # noqa: E402
+
+FIXTURES = Path(__file__).parent / "fixtures" / "cours"
+
+
+def pdf_pages(textes: list[str]) -> bytes:
+    """PDF de plusieurs pages, une ligne de texte par element de la liste (decoupee sur « \\n »)."""
+    objets = [b"<< /Type /Catalog /Pages 2 0 R >>", None,
+              b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]
+    kids = []
+    for texte in textes:
+        lignes = " ".join(f"({ligne}) Tj 0 -14 Td" for ligne in texte.split("\n"))
+        flux = f"BT /F1 11 Tf 50 750 Td {lignes} ET".encode("latin-1")
+        objets.append(b"<< /Length %d >>\nstream\n" % len(flux) + flux + b"\nendstream")
+        objets.append(b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents %d 0 R "
+                      b"/Resources << /Font << /F1 3 0 R >> >> >>" % len(objets))
+        kids.append(len(objets))
+    objets[1] = b"<< /Type /Pages /Kids [%s] /Count %d >>" % (b" ".join(b"%d 0 R" % k for k in kids), len(kids))
+    sortie, positions = bytearray(b"%PDF-1.4\n"), []
+    for i, o in enumerate(objets, start=1):
+        positions.append(len(sortie))
+        sortie += b"%d 0 obj\n" % i + o + b"\nendobj\n"
+    xref = len(sortie)
+    sortie += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objets) + 1)
+    sortie += b"".join(b"%010d 00000 n \n" % p for p in positions)
+    sortie += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objets) + 1, xref)
+    return bytes(sortie)
+
+
+def _zip(membres: dict[str, str]) -> bytes:
+    tampon = io.BytesIO()
+    with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+        for nom, xml in membres.items():
+            z.writestr(nom, xml)
+    return tampon.getvalue()
+
+
+PARAGRAPHE = ("La faute civile est définie comme la violation d'une obligation préexistante, appréciée "
+              "in abstracto par référence au comportement d'une personne raisonnable placée dans les mêmes "
+              "circonstances. ")
+
+
+def test_c1_word_numerotation_notes_tabulations_et_tableaux():
+    """Cours Word de l'auditeur : plan numerote, note de bas de page, tabulation, traits d'union, tableau."""
+    texte = extraire_texte("c2.docx", (FIXTURES / "c2.docx").read_bytes())[0][1]
+    lignes = texte.split("\n")
+    assert "I. Les conditions communes" in lignes
+    assert "A. Le caractère déterminant" in lignes
+    assert "1. Le vice doit avoir été déterminant" in lignes
+    assert "II. Les vices en particulier" in lignes                      # la numerotation continue
+    assert "98-20.817" in texte                                           # note de bas de page lue
+    assert "1131Les" not in texte and "Article 1131\tLes vices" in texte  # tabulation
+    assert "non-rétroactivité" in texte and "contrepartie" in texte       # trait d'union insecable, cesure
+    assert "partie\nsont distincts" in texte                              # saut de ligne
+    assert "Dol | 1137 | Nullité relative et dommages-intérêts" in lignes  # une ligne de tableau par ligne
+
+
+def test_c1_les_definitions_de_tabulation_du_paragraphe_ne_sont_pas_du_texte():
+    xml = ('<w:document xmlns:w="x"><w:body><w:p><w:pPr><w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs></w:pPr>'
+           '<w:r><w:t>Titre</w:t></w:r></w:p></w:body></w:document>')
+    assert extraire_texte("c.docx", _zip({"word/document.xml": xml}))[0][1] == "Titre"
+
+
+def test_c9_powerpoint_et_opendocument():
+    diapo = ('<p:sld xmlns:p="p" xmlns:a="a"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>{}</a:t></a:r></a:p>'
+             '</p:txBody></p:sp></p:spTree></p:cSld></p:sld>')
+    deux_lignes = diapo.format("Le dol</a:t></a:r><a:br/><a:r><a:t>La violence")
+    pptx = _zip({"ppt/slides/slide2.xml": diapo.format("Le dol"), "ppt/slides/slide10.xml": diapo.format("La violence"),
+                 "ppt/slides/slide1.xml": diapo.format("Les vices du consentement")})
+    assert extraire_texte("c.pptx", pptx) == [(1, "Les vices du consentement"), (2, "Le dol"), (10, "La violence")]
+    assert extraire_texte("c.pptx", _zip({"ppt/slides/slide1.xml": deux_lignes})) == [(1, "Le dol\nLa violence")]
+    contenu = ('<office:document-content xmlns:office="o" xmlns:text="t"><office:body><office:text>'
+               '<text:h>I. Le dol</text:h><text:p>Article 1137<text:tab/>Le dol<text:s text:c="2"/>est'
+               '<text:note><text:note-citation>1</text:note-citation><text:note-body><text:p>Cass. com., 1994.'
+               '</text:p></text:note-body></text:note> un vice.<text:line-break/>Fin.</text:p>'
+               '</office:text></office:body></office:document-content>')
+    texte = extraire_texte("c.odt", _zip({"content.xml": contenu}))[0][1]
+    assert texte == "I. Le dol\nArticle 1137\tLe dol  est un vice.\nFin.\nNote 1 : Cass. com., 1994."
+
+
+def test_c9_texte_windows_et_bom():
+    assert extraire_texte("c.txt", (FIXTURES / "c3_cp1252.txt").read_bytes())[0][1].startswith(
+        "Le cœur du contrat : l’article 1128 – consentement, capacité, contenu …")
+    assert extraire_texte("c.txt", (FIXTURES / "c4_bom.txt").read_bytes())[0][1] == \
+        "Introduction\nLe droit pénal spécial.\n"
+    assert extraire_texte("c.txt", "Le dol".encode("utf-16"))[0][1] == "Le dol"
+
+
+def test_c2_pdf_scanne_en_grande_partie_refuse():
+    """19 pages scannees sur 20 (seul un numero de page en texte) : refuse, en disant pourquoi."""
+    with pytest.raises(ErreurCours, match="19 pages sur 20 sans texte"):
+        extraire_texte("scan.pdf", (FIXTURES / "scan.pdf").read_bytes())
+
+
+def test_c2_quelques_pages_scannees_signalees(tmp_path):
+    from api.cours import Cours
+
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    fiche = c.ajouter(u.id, "droit_civil", "Faute", "f.pdf", pdf_pages([PARAGRAPHE * 2, "3", PARAGRAPHE * 2]), 3)
+    assert fiche["avertissement"] == "Page 2 sans texte (scan ou image) : son contenu n'est pas pris en compte."
+    assert c.lister(u.id)[0]["avertissement"] == fiche["avertissement"]
+
+
+def test_c3_decoupage_sur_tout_le_texte_avec_le_plan_et_les_pages():
+    pages = [(1, "I. Le fait générateur\nA. La faute\n" + PARAGRAPHE * 9 + "La faute de l'enfant est admise depuis"),
+             (2, "1984 par l'assemblée plénière.\n" + PARAGRAPHE * 9 + "\nB. Le lien de causalité\n" + PARAGRAPHE * 3)]
+    passages = decouper(pages)
+    assert passages[0][2].startswith("[I. Le fait générateur]\nA. La faute\n")   # titre seul : pas de passage
+    phrase = [p for p in passages if "admise depuis 1984" in " ".join(p[2].split())]
+    assert phrase and phrase[0][:2] == (1, 2)                       # phrase coupee par la page : recollee
+    assert passages[1][2].startswith("[I. Le fait générateur > A. La faute]\n")   # plan rappele en tete
+    b = next(p for p in passages if "B. Le lien de causalité" in p[2])
+    assert b[2].startswith("[I. Le fait générateur]\nB. Le lien") and b[:2] == (2, 2)
+
+
+def test_c3_pages_d_un_passage_affichees_dans_l_entete(tmp_path):
+    from api.cours import Cours
+
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    c.ajouter(u.id, "droit_civil", "Long", "l.pdf", (FIXTURES / "c5_long.pdf").read_bytes(), 3)
+    trouves = c.rechercher(u.id, [c.lister(u.id)[0]["id"]], "violence", 20)
+    entetes = {p["entete"] for p in trouves}
+    assert any(", pages " in e for e in entetes), entetes
+
+
+def test_c4_cesures_et_ligatures():
+    passages = decouper([(1, "la mise en jeu de la respon-\nsabilité civile, l'eﬃcacité du contrat "
+                             "et le principe de non-\nrétroactivité."), (2, "")])
+    texte = passages[0][2]
+    assert "responsabilité civile" in texte and "efficacité" in texte and "non-rétroactivité" in texte
+
+
+def test_c4_un_mot_coupe_se_retrouve_par_la_recherche(tmp_path):
+    from api.cours import Cours
+
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    cid = c.ajouter(u.id, "droit_civil", "Faute", "c1.pdf", (FIXTURES / "c1.pdf").read_bytes(), 3)["id"]
+    assert any("responsabilité civile" in p["texte"] for p in c.rechercher(u.id, [cid], "responsabilité civile", 5))
+
+
+def test_c11_entetes_et_numeros_de_page_retires():
+    pages = extraire_texte("c1.pdf", (FIXTURES / "c1.pdf").read_bytes())
+    texte = "\n".join(p[2] for p in decouper(pages))
+    assert "Pr. Martin" not in texte                              # en-tete repete sur chaque page
+    assert not any(ligne.strip() == "2" for ligne in texte.split("\n"))   # numero de page
+    assert "Chapitre 2. La responsabilité du fait personnel" in texte
+
+
+def test_c5_mon_cours_seulement_une_explication_sans_source_est_signalee():
+    from api.citations import valider_reponse
+
+    table = {"S1": {"id": "cours:1:1", "texte": "Le dol est une manoeuvre.", "source_id": "cours_perso"}}
+    brut = {"statut": "reponse", "titre": "Le dol",
+            "droit_positif": [{"texte": "Le dol vicie le consentement.", "sources": ["S1"]}],
+            "explication": [{"texte": "La réticence dolosive est aussi un dol.", "sources": []},
+                            {"texte": "Le dol suppose une manoeuvre.", "sources": ["S1"]}],
+            "points_incertains": []}
+    reponse, _ = valider_reponse(brut, table, cours_seul=True)
+    assert [e["texte"] for e in reponse["explication"]] == ["Le dol suppose une manoeuvre."]
+    assert reponse["points_incertains"][0]["texte"].startswith("Hors de votre cours, à vérifier : La réticence")
+    reponse, _ = valider_reponse(brut, table)                      # avec les textes officiels : inchange
+    assert len(reponse["explication"]) == 2
+
+
+def test_c6_ancien_numero_du_cours_signale_dans_la_reponse(env):
+    app, _, _, _ = env
+    client = TestClient(app)
+    inscrire(client)
+    cours = ("La responsabilité du fait personnel repose sur l'article 1382 du Code civil : tout fait "
+             "quelconque de l'homme qui cause à autrui un dommage oblige à le réparer.\n\n") * 3
+    cid = deposer(client, titre="Responsabilité", contenu=cours.encode()).json()["id"]
+    r = client.post("/chat", json={"question": "Quel est le fondement de la responsabilité du fait personnel ?",
+                                   "cours": [cid], "avec_officiel": False}).json()
+    assert r["statut"] == "reponse"
+    alerte = [p for p in r["points_incertains"] if "1382" in p["texte"]]
+    assert alerte and "1240" in alerte[0]["texte"] and alerte[0]["sources"]
+
+
+def _octets(chemin) -> bytes:
+    return b"".join(Path(f"{chemin}{s}").read_bytes() for s in ("", "-wal") if Path(f"{chemin}{s}").exists())
+
+
+def test_c7_cours_retire_absent_des_octets_de_la_base_et_de_la_sauvegarde(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    from api.cours import Cours
+
+    chemin = tmp_path / "donnees" / "lexia.db"
+    chemin.parent.mkdir()
+    comptes = Comptes(chemin)
+    u = comptes.creer("a@b.fr", "motdepasse-solide")
+    c = Cours(chemin)
+    secret = "Zorglubienne"
+    garde = c.ajouter(u.id, "droit_civil", "Garde", "g.txt", b"La bonne foi contractuelle.", 5)
+    cid = c.ajouter(u.id, "droit_civil", "Secret", "s.txt",
+                    f"La theorie {secret} du consentement {secret}ment eclaire.".encode() * 40, 5)["id"]
+    assert secret.encode() in _octets(chemin)
+    c.supprimer(u.id, cid)
+    assert secret.encode() not in _octets(chemin)                  # ni la base, ni le journal WAL
+    assert secret.lower().encode() not in _octets(chemin).lower()  # ni les mots de l'index plein texte
+    assert c.fiche(u.id, garde["id"])["titre"] == "Garde"
+
+    racine = Path(__file__).resolve().parent.parent
+    sauvegardes = tmp_path / "sauvegardes"
+    r = subprocess.run(["bash", str(racine / "deploy" / "sauvegarder_comptes.sh")], capture_output=True, text=True,
+                       env={**os.environ, "LEXIA_RACINE": str(racine), "LEXIA_BASE": str(chemin),
+                            "LEXIA_SAUVEGARDES": str(sauvegardes), "LEXIA_PYTHON": sys.executable})
+    assert r.returncode == 0, r.stderr
+    copies = list(sauvegardes.glob("lexia-*.db"))
+    assert len(copies) == 1 and secret.lower().encode() not in copies[0].read_bytes().lower()
+    with sqlite3.connect(copies[0]) as s:
+        assert s.execute("SELECT count(*) FROM cours").fetchone()[0] == 1
+
+
+def test_c10_vectorisation_en_erreur_relancee_sans_redemarrage(tmp_path, monkeypatch):
+    import api.cours as cours_mod
+    from api.cours import Cours
+
+    class Embedder:
+        panne = True
+
+        def embed_documents(self, textes):
+            if self.panne:
+                raise RuntimeError("modele indisponible")
+            return [[1.0, 0.0] for _ in textes]
+
+    monkeypatch.setattr(cours_mod, "RELANCE_VECTORISATION", 0)
+    chemin = tmp_path / "t.db"
+    u = Comptes(chemin).creer("a@b.fr", "motdepasse-solide")
+    e = Embedder()
+    c = Cours(chemin, e)
+    cid = c.ajouter(u.id, "droit_civil", "Dol", "d.txt", b"Le dol est une manoeuvre.", 3)["id"]
+    c._fil.submit(lambda: None).result()
+    assert c.fiche(u.id, cid)["statut"] == "erreur"
+    e.panne = False
+    assert c.lister(u.id)[0]["statut"] == "traitement"               # relance a la consultation de la liste
+    c._fil.submit(lambda: None).result()
+    assert c.fiche(u.id, cid)["statut"] == "pret"

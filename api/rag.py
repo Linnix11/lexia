@@ -14,6 +14,7 @@ from concurrent.futures import TimeoutError as DelaiDepasse
 
 from api import conseil, concordance, lexique, prompts
 from api.citations import valider_reponse
+from api.cours import avertir_anciens_numeros
 from api.journal import Journal
 from api.llm.base import LLM, ContenuRefuse, LLMError
 from api.matieres import sources_par_matiere, sources_pour
@@ -361,8 +362,10 @@ class Lexia:
                 brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_SOURCES)
             passages = extraits_envoyes
             table = table_extraits(passages)
-            reponse, controle = valider_reponse(brut, table, mode)
+            reponse, controle = valider_reponse(brut, table, mode, cours_seul=option_cours == "seul")
         sources = sources_citees(reponse, table)
+        if avec_cours and reponse["statut"] == "reponse":  # ancien numero du Code civil dans le cours (audit C6)
+            avertir_anciens_numeros(reponse, sources, passages)
         self.journal.ecrire(
             "requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,
             statut=reponse["statut"], recherche=recherche, modele=modele,

@@ -159,7 +159,7 @@ describe('Assistant', () => {
     expect(String(envoi[0])).not.toContain('chapitre3')                     // nom et titre hors de l'adresse
     expect((envoi[1].headers as Record<string, string>)['X-Lexia-Fichier']).toBe('chapitre3.pdf')
     expect(envoi[1].body).toBe(pdf)
-    await waitFor(() => expect(screen.getByLabelText('Mon cours')).toHaveValue('7'))   // devient le cours de travail
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Chapitre 3' })).toBeChecked())   // devient le cours de travail
     expect(screen.queryByRole('form', { name: 'Ajouter un cours' })).not.toBeInTheDocument()
 
     // Glisser-deposer : le meme panneau s'ouvre ; un format non pris en charge est signale
@@ -169,6 +169,27 @@ describe('Assistant', () => {
       fireEvent.drop(zone, { dataTransfer: { types: ['Files'], files: [exe], items: [] } })
     })
     expect(await screen.findByText(/Aucun fichier pris en charge/)).toBeInTheDocument()
+  })
+
+  it('interroge plusieurs cours a la fois, y compris un cours en erreur (audit C8 et C10)', async () => {
+    const commun = { matiere: 'droit_civil', libelle_matiere: 'Droit civil', fichier: 'c.pdf', pages: 3, passages: 4,
+      ajoute_le: '2026-11-12T10:00:00+00:00' }
+    const liste = [{ ...commun, id: 7, titre: 'Les contrats', statut: 'pret' },
+      { ...commun, id: 8, titre: 'La responsabilité', statut: 'erreur', avertissement: 'Page 2 sans texte (scan ou image).' }]
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/cours') ? repondre({ cours: liste, maximum: 3, formats: ['.pdf'] }) : base(url, init))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Les contrats' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /La responsabilité \(mots-clés seulement/ }))
+    fireEvent.click(screen.getByRole('switch', { name: 'Mes cours seulement' }))
+    fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'La faute' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))!
+    expect(JSON.parse(appel[1].body as string)).toMatchObject({ cours: [7, 8], avec_officiel: false })
   })
 
   it('le mode choisi change l invite, les titres de la reponse et enregistre la fiche', async () => {

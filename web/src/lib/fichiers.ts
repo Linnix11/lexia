@@ -1,9 +1,14 @@
 // Fichiers de cours : formats acceptes et lecture d'un glisser-deposer (fichiers ou dossier).
 
-const EXTENSIONS = ['.pdf', '.docx', '.txt', '.md']
+const EXTENSIONS = ['.pdf', '.docx', '.odt', '.pptx', '.txt', '.md']
+/** Formats acceptes, en clair, pour les messages du site. */
+export const FORMATS_LISIBLES = 'PDF, Word, OpenDocument, PowerPoint ou texte'
 /** Valeur de l'attribut accept des champs de fichier : une seule liste pour tout le site. */
 export const ACCEPT = EXTENSIONS.join(',')
 export const formatAccepte = (f: File) => EXTENSIONS.some((e) => f.name.toLowerCase().endsWith(e))
+// Statut « erreur » : le calcul des vecteurs a echoue, le cours reste interrogeable par mots-cles et le
+// calcul est relance automatiquement (audit C10). Meme libelle dans la liste des cours et dans leur choix.
+export const STATUTS = { traitement: 'en préparation…', pret: 'prêt', erreur: 'mots-clés seulement, nouvel essai bientôt' }
 export const sansExtension = (nom: string) => nom.replace(/\.[^.]+$/, '')
 
 /** Fichiers deposes par glisser-deposer, y compris le contenu d'un dossier (un niveau de sous-dossiers suffit en pratique). */

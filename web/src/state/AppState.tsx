@@ -40,7 +40,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>('expliquer')
   const [coursCharges, setMesCours] = useState<CoursDepose[]>([])
   const [coursMax, setCoursMax] = useState(0)
-  const [coursChoisi, setCoursChoisi] = useState<number | null>(null)
+  const [coursChoisis, setCoursChoisis] = useState<number[]>([])
   const [avecOfficiel, setAvecOfficiel] = useState(true)
   const [matieres, setMatieres] = useState<Matiere[]>([])
   const { rafraichir, profil } = useSession()
@@ -72,7 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const liste = Array.isArray(r?.cours) ? r.cours : []
         setMesCours(liste)
         setCoursMax(r?.maximum ?? 0)
-        setCoursChoisi((c) => (c !== null && liste.some((x) => x.id === c) ? c : null))
+        setCoursChoisis((ids) => ids.filter((id) => liste.some((x) => x.id === id)))
       })
       .catch(() => setMesCours([]))
   }, [])
@@ -91,9 +91,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(t)
   }, [enTraitement, rafraichirCours])
 
+  // Plusieurs cours interrogeables ensemble (audit C8 : un seul partait jusqu'ici).
   const optionsCours = useMemo<OptionsCours | undefined>(
-    () => (coursChoisi !== null ? { cours: [coursChoisi], avec_officiel: avecOfficiel } : undefined),
-    [coursChoisi, avecOfficiel],
+    () => (coursChoisis.length ? { cours: coursChoisis, avec_officiel: avecOfficiel } : undefined),
+    [coursChoisis, avecOfficiel],
   )
 
   const notifier = useCallback((msg: string) => {
@@ -139,12 +140,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [notifier, compte],
   )
 
-  // Changer de matiere deselectionne un cours depose dans une autre matiere (sinon la question sur le droit
+  // Changer de matiere deselectionne les cours deposes dans une autre matiere (sinon la question sur le droit
   // penal partirait avec un cours de contrats).
   const choisirMatiere = useCallback(
     (id: string | null) => {
       setMatiere(id)
-      if (id) setCoursChoisi((c) => (c !== null && mesCours.find((x) => x.id === c)?.matiere !== id ? null : c))
+      if (id) setCoursChoisis((ids) => ids.filter((c) => mesCours.find((x) => x.id === c)?.matiere === id))
     },
     [mesCours],
   )
@@ -243,8 +244,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mesCours,
       coursMax,
       rafraichirCours,
-      coursChoisi,
-      setCoursChoisi,
+      coursChoisis,
+      setCoursChoisis,
       avecOfficiel,
       setAvecOfficiel,
       optionsCours,
@@ -269,7 +270,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisi, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
+    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>
