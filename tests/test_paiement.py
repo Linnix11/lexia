@@ -372,7 +372,8 @@ def test_a5_confirmation_du_contrat_par_email(env, courriels):
     assert len(courriels) == 1
     dest, sujet, texte = courriels[0]
     assert dest == "etu@exemple.fr"
-    for attendu in ("Intensif", "3 mois", "29,97", VERSION_CGU, "accès immédiat", "formulaire de rétractation",
+    for attendu in ("Intensif", "3 mois", "29,97", VERSION_CGU, "accès immédiat", "Renoncer au contrat ici",
+                    "formulaire de rétractation",
                     "Rayez la mention inutile"):
         assert attendu in texte, attendu
     payer(client, evenement("cs_test_1", 2997))   # rejoue : pas de second e-mail

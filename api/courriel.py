@@ -140,7 +140,7 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
         f"Demande d'accès immédiat : {acces_immediat_le}. Vous avez demandé que la formule commence avant la fin "
         "du délai de rétractation.\n\n"
         f"Droit de rétractation : vous pouvez vous rétracter sans motif jusqu'au {retractation_jusquau}, "
-        f"gratuitement, avec le bouton « Me rétracter » de la page Mon compte ({url_publique}/compte) ou en "
+        f"gratuitement, avec le bouton « Renoncer au contrat ici » de la page Mon compte ({url_publique}/compte) ou en "
         "renvoyant le formulaire ci-dessous. Comme vous avez demandé l'accès immédiat, vous payez la part de la "
         "période déjà écoulée et le reste vous est remboursé dans les 14 jours, par le moyen de paiement utilisé. "
         "Ce droit est perdu si la formule a été entièrement exécutée avant la fin du délai.\n\n"
