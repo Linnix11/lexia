@@ -207,12 +207,13 @@ export function Cgu() {
         {paiement && (
           <p>
             <strong>Rétractation en ligne.</strong> Vous pouvez également exercer votre droit de rétractation en
-            ligne, sur la page « Mon compte » du site, rubrique « Rétractation », affichée pendant tout le délai de
-            rétractation : bouton « Me rétracter… », puis « Confirmer ma rétractation ». La rétractation porte sur
-            les achats de moins de quatorze jours de votre compte ; la formule correspondante est retirée aussitôt.
-            Nous vous envoyons alors, dans les meilleurs délais, un accusé de réception de la rétractation sur un
-            support durable (un e-mail à l’adresse de votre compte), qui indique les formules concernées et la date
-            de la rétractation (article L. 221-21 du Code de la consommation).
+            ligne, sur la page « Mon compte » du site, avec le bouton « Renoncer au contrat ici », affiché pendant
+            tout le délai de rétractation. Vous y indiquez votre nom et votre prénom, vous choisissez le ou les achats
+            de moins de quatorze jours dont vous vous rétractez, et vous voyez l’adresse e-mail de votre compte, qui
+            recevra l’accusé de réception ; vous validez avec le bouton « Confirmer la rétractation ». La formule
+            concernée est retirée aussitôt. Nous vous envoyons alors, dans les meilleurs délais, un accusé de
+            réception de la rétractation sur un support durable (un e-mail), avec son contenu ainsi que la date et
+            l’heure de sa soumission (articles L. 221-21 et D. 221-5 du Code de la consommation).
           </p>
         )}
         <p>

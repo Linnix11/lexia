@@ -22,7 +22,8 @@ describe('Conditions générales', () => {
   it('décrivent la rétractation en ligne quand le paiement est actif', async () => {
     window.history.pushState({}, '', '/cgu')
     render(<Site />)
-    expect(await screen.findByText(/« Confirmer ma rétractation »/)).toBeInTheDocument()
+    expect(await screen.findByText(/« Renoncer au contrat ici »/)).toBeInTheDocument()
+    expect(screen.getByText(/« Confirmer la rétractation »/)).toBeInTheDocument()
   })
 
   it('sans paiement en ligne, pas de bouton de rétractation annoncé', async () => {
@@ -30,7 +31,7 @@ describe('Conditions générales', () => {
     window.history.pushState({}, '', '/cgu')
     render(<Site />)
     await screen.findByText(/Aucun paiement n’est encaissé sur le site/)
-    expect(screen.queryByText(/« Confirmer ma rétractation »/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/« Renoncer au contrat ici »/)).not.toBeInTheDocument()
   })
 
   it('donnent un lien de signalement de contenu illicite pré-rempli (DSA, art. 16)', async () => {
