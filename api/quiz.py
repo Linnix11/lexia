@@ -1,15 +1,19 @@
 """Questionnaires : generation a partir du corpus, validation, stockage temporaire et correction.
 
-Les questions sont gardees en memoire (TTL) avec leurs reponses : le client ne recoit jamais
-les bonnes reponses avant la correction. Aucune donnee personnelle n'est conservee.
+Les questions sont gardees en memoire et en base (TTL) avec leurs reponses : le client ne recoit jamais
+les bonnes reponses avant la correction. En base, 3 heures au plus : le theme saisi, les questions, le numero du
+compte qui l'a cree et la correction (sans le texte des reponses de l'etudiant).
 """
 
 from __future__ import annotations
 
+import json
+import sqlite3
 import threading
 import time
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from api import prompts
 from api.citations import Controle, labels_valides, verifier_texte
@@ -42,10 +46,19 @@ class Quiz:
 
 
 class QuizStore:
-    def __init__(self, ttl: int = TTL_SECONDES, maximum: int = MAX_QUIZ):
+    """Questionnaires en memoire (avec leur verrou), recopies en base si `chemin` est donne : un redemarrage du
+    service (publication) ne perd plus les questionnaires en cours (audit du 2026-11-18, D5)."""
+
+    def __init__(self, ttl: int = TTL_SECONDES, maximum: int = MAX_QUIZ, chemin: Path | None = None):
         self._ttl, self._max = ttl, maximum
         self._items: dict[str, Quiz] = {}
         self._lock = threading.Lock()
+        self._con = None
+        if chemin is not None:
+            self._con = sqlite3.connect(str(chemin), check_same_thread=False)
+            self._con.execute("CREATE TABLE IF NOT EXISTS questionnaires "
+                              "(id TEXT PRIMARY KEY, cree REAL NOT NULL, donnees TEXT NOT NULL)")
+            self._con.commit()
 
     def ajouter(self, quiz: Quiz) -> None:
         with self._lock:
@@ -54,16 +67,39 @@ class QuizStore:
                 plus_ancien = min(self._items.values(), key=lambda q: q.cree)
                 del self._items[plus_ancien.id]
             self._items[quiz.id] = quiz
+            self._ecrire(quiz)
+
+    def enregistrer(self, quiz: Quiz) -> None:
+        """Recopie en base un questionnaire modifie (correction faite)."""
+        with self._lock:
+            self._ecrire(quiz)
 
     def get(self, quiz_id: str) -> Quiz | None:
         with self._lock:
             self._purger()
-            return self._items.get(quiz_id)
+            quiz = self._items.get(quiz_id)
+            if quiz is None and self._con is not None:
+                ligne = self._con.execute("SELECT donnees FROM questionnaires WHERE id = ?", (quiz_id,)).fetchone()
+                if ligne:
+                    quiz = self._items[quiz_id] = Quiz(**json.loads(ligne[0]))
+            return quiz
+
+    def _ecrire(self, quiz: Quiz) -> None:
+        if self._con is None:
+            return
+        donnees = {k: getattr(quiz, k) for k in ("id", "format", "theme", "questions", "table", "cree",
+                                                  "correction", "proprietaire")}
+        self._con.execute("INSERT OR REPLACE INTO questionnaires (id, cree, donnees) VALUES (?, ?, ?)",
+                          (quiz.id, quiz.cree, json.dumps(donnees, ensure_ascii=False)))
+        self._con.commit()
 
     def _purger(self) -> None:
         limite = time.time() - self._ttl
         for k in [k for k, q in self._items.items() if q.cree < limite]:
             del self._items[k]
+        if self._con is not None:
+            self._con.execute("DELETE FROM questionnaires WHERE cree < ?", (limite,))
+            self._con.commit()
 
 
 def _valider_question(q: dict, fmt: str, table: dict[str, dict], controle: Controle) -> dict | None:
@@ -216,6 +252,7 @@ class QuizService:
         }
         if modele_appele:
             quiz.correction = res
+            self.store.enregistrer(quiz)
         return res
 
     def _corriger_ouvertes(self, quiz: Quiz, a_corriger, resultats) -> bool:

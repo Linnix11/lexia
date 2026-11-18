@@ -33,13 +33,13 @@ export function useRouteur() {
   return useContext(Ctx)
 }
 
-/** Lien interne : navigation sans recharger la page (clic du milieu / Ctrl+clic conserves). */
+/** Lien interne : navigation sans recharger la page (clic du milieu / Ctrl+clic et target="_blank" conserves). */
 export function Lien({ href, children, ...reste }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
   const { naviguer } = useRouteur()
   const surClic = (e: MouseEvent<HTMLAnchorElement>) => {
     reste.onClick?.(e)
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-    if (href.startsWith('#') || /^https?:|^mailto:/.test(href)) return
+    if (href.startsWith('#') || /^https?:|^mailto:/.test(href) || (reste.target && reste.target !== '_self')) return
     e.preventDefault()
     naviguer(href)
   }

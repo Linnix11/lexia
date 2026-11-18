@@ -12,9 +12,13 @@ WorkingDirectory=/opt/lexia
 EnvironmentFile=/opt/lexia/.env
 Environment=HF_HOME=/opt/lexia/.cache/huggingface
 Environment=TOKENIZERS_PARALLELISM=false
+# Modeles lus dans le cache, sans interroger Hugging Face : un redemarrage ne depend plus de leur site
+# (audit du 2026-11-18, D5). Nouveau serveur : HF_HUB_OFFLINE=0 dans .env pour le premier lancement
+# (le .env l'emporte sur cette ligne), puis le retirer.
+Environment=HF_HUB_OFFLINE=1
 # Un seul processus : les modeles (embeddings + reclassement, ~2 Go de RAM) ne sont charges qu'une fois.
 ExecStart=/opt/lexia/.venv/bin/uvicorn api.serveur:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
-# Le premier demarrage telecharge les modeles (~1,6 Go) : laisser le temps
+# Le premier demarrage (HF_HUB_OFFLINE=0) telecharge les modeles (~1,6 Go) : laisser le temps
 TimeoutStartSec=600
 Restart=on-failure
 RestartSec=5

@@ -49,7 +49,7 @@ Le script :
 5. installe le service systemd et la configuration nginx, puis redémarre le service ;
 6. attend que `/api/sante` réponde.
 
-**Premier lancement** : le service télécharge les modèles (~1,6 Go), compter quelques minutes.
+**Premier lancement** : ajouter `HF_HUB_OFFLINE=0` à `/opt/lexia/.env` pour que le service télécharge les modèles (~1,6 Go, compter quelques minutes), puis retirer la ligne : ensuite, le service les lit dans le cache sans interroger Hugging Face.
 
 ## 4. Renseigner le `.env` de production
 

@@ -555,3 +555,13 @@ describe('Audit du 18 novembre 2026, lot D', () => {
     expect(screen.getByLabelText('Votre question')).toBeInTheDocument()
   })
 })
+
+describe('Liens internes (D4)', () => {
+  it('un lien target="_blank" s ouvre dans un nouvel onglet, pas dans la page', async () => {
+    const { RouteurProvider, Lien } = await import('./lib/router')
+    render(<RouteurProvider><Lien href="/cgu" target="_blank">CGU</Lien></RouteurProvider>)
+    const suivi = fireEvent.click(screen.getByRole('link', { name: 'CGU' }))
+    expect(suivi).toBe(true)                       // navigation du navigateur non empechee
+    expect(window.location.pathname).toBe('/app')
+  })
+})

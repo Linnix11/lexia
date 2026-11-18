@@ -27,7 +27,7 @@ from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.matieres import LIBELLES, sources_par_matiere
 from api.textes import NOMS
-from api.quiz import QuizService
+from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
 from api.retrieval.base import Retriever
 from api.schemas.models import ChatRequest, CorrectionRequest, FeedbackRequest, QuizRequest
@@ -115,12 +115,12 @@ def _construire_expanseur(settings: Settings, journal: Journal | None = None):
     from api.expansion import Expanseur
     from api.llm.gemini import GeminiLLM
 
-    # une tentative par modele (principal puis secours) et un delai court par modele :
-    # la reformulation ne doit jamais bloquer la reponse
+    # une tentative par modele (principal puis secours), tous dans le meme delai : la recherche n'attend pas
+    # davantage, un second modele appele apres coup travaillerait pour rien (audit du 2026-11-18, D6)
     modeles = (settings.expansion_model, *settings.expansion_fallback_models)
     return Expanseur(GeminiLLM(api_key=settings.gemini_api_key, models=modeles,
                                thinking_level=settings.gemini_thinking_level,
-                               timeout=settings.expansion_timeout, tentatives=1,
+                               timeout=settings.expansion_timeout, tentatives=1, budget=settings.expansion_timeout,
                                releve=releve_jetons(journal, "reformulation")))
 
 
@@ -196,6 +196,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         def admin_requis(request: Request) -> Utilisateur:
             return exiger_admin(utilisateur_requis(request))
 
+        quiz.store = QuizStore(chemin=comptes.chemin)  # questionnaires gardes au redemarrage (audit 2026-11-18, D5)
         cours = Cours(comptes.chemin, embedder)
         lexia.cours = cours
         app.include_router(creer_routes_cours(cours, utilisateur_requis))

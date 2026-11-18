@@ -41,6 +41,9 @@ log = logging.getLogger("lexia.rag")
 # La reformulation (appel Gemini) tourne pendant la vectorisation de la question ; au-dela du delai,
 # la recherche part sans elle (le resultat tardif est abandonne).
 _REFORMULATIONS = ThreadPoolExecutor(max_workers=20, thread_name_prefix="reformulation")
+# Tous les fils occupes : la question partirait en file d'attente et ferait patienter l'etudiant tout le delai
+# pour rien ; la recherche part aussitot sans reformulation (audit du 2026-11-18, D6).
+_FILS_REFORMULATION = threading.BoundedSemaphore(20)
 CACHE_REPONSES = 500           # reponses gardees en memoire (identiques pour une meme question)
 CACHE_DUREE_S = 24 * 3600      # l'index ne change qu'a la publication, qui redemarre le service
 
@@ -203,8 +206,9 @@ class Lexia:
         futur = None
         # Disjoncteur ouvert : Gemini est en panne, la reformulation ferait attendre pour rien.
         en_panne = self.secours is not None and self.disjoncteur.ouvert()
-        if self.expanseur is not None and refs.vide and not en_panne:
+        if self.expanseur is not None and refs.vide and not en_panne and _FILS_REFORMULATION.acquire(blocking=False):
             futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
+            futur.add_done_callback(lambda _: _FILS_REFORMULATION.release())
         vecteur = self.embedder.embed_query(texte) if vectoriel else None
         complement = None
         if futur is not None:
