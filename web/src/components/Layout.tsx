@@ -104,7 +104,7 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
 export function Topbar({ titre }: { titre?: string }) {
   const { vue, semestre, setSemestre } = useApp()
   const { profil } = useSession()
-  const initiales = (profil?.email ?? 'ét').slice(0, 2).toUpperCase()
+  const initiales = (profil?.prenom?.trim() || profil?.email || 'ét').slice(0, profil?.prenom?.trim() ? 1 : 2).toUpperCase()
   const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
   const libelle = titre ?? VUES.find((v) => v.id === vue)?.label
   return (

@@ -49,3 +49,13 @@ describe('Conditions générales', () => {
     expect(await screen.findByText(/Google peut utiliser ces passages/)).toBeInTheDocument()
   })
 })
+
+describe('Politique de confidentialité', () => {
+  it('décrit le prénom facultatif, jamais transmis à l IA (D100)', async () => {
+    window.history.pushState({}, '', '/confidentialite')
+    render(<Site />)
+    expect(await screen.findByText(/utilisé seulement pour vous saluer dans votre espace/)).toBeInTheDocument()
+    expect(screen.getByText(/Il n’est jamais transmis à l’intelligence artificielle/)).toBeInTheDocument()
+    expect(screen.getByText(/Prénom : jusqu’à ce que vous le retiriez/)).toBeInTheDocument()
+  })
+})

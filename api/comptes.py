@@ -1,7 +1,7 @@
 """Comptes etudiants : utilisateurs, sessions et consommation quotidienne (SQLite).
 
-Donnees personnelles conservees : adresse e-mail, empreinte du mot de passe (scrypt, sel aleatoire),
-formule, date de creation, compteurs d'usage par jour. Aucune question posee n'est enregistree.
+Donnees personnelles conservees : adresse e-mail, prenom facultatif (affiche dans l'espace etudiant seulement),
+empreinte du mot de passe (scrypt, sel aleatoire), formule, date de creation, compteurs d'usage par jour. Aucune question posee n'est enregistree.
 Suppression complete du compte a la demande (supprimer). Durees de conservation (politique de confidentialite,
 docs/registre-traitements.md) : compte sans activite supprime apres deux ans, avec un e-mail d'avertissement un
 mois avant ; compteurs d'usage gardes 90 jours. La table paiements (api/paiement.py) n'est jamais touchee ici.
@@ -18,6 +18,7 @@ import re
 import secrets
 import sqlite3
 import threading
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -113,6 +114,11 @@ INACTIVITE = timedelta(days=730)
 PREAVIS_INACTIVITE = timedelta(days=30)
 # Compteurs d'usage : ne servent qu'au quota du jour et aux statistiques des 30 derniers jours.
 USAGE_CONSERVE = timedelta(days=90)
+# Prenom facultatif (D100) : sert seulement a saluer l'etudiant dans son espace. Jamais envoye au modele, dans un
+# e-mail ni a l'administration ; efface avec le compte (ligne supprimee).
+COLONNES_PROFIL = {"prenom": "TEXT"}
+PRENOM_MAX = 30
+PONCTUATION_PRENOM = set(" -'’.")
 
 
 @dataclass
@@ -184,6 +190,19 @@ def _hash_jeton(jeton: str) -> str:
     return hashlib.sha256(jeton.encode()).hexdigest()
 
 
+def normaliser_prenom(prenom: str | None) -> str | None:
+    """Prenom saisi -> forme gardee (None : pas de prenom). Lettres, espaces, traits d'union, apostrophes et points."""
+    texte = " ".join(unicodedata.normalize("NFC", prenom or "").split())
+    if not texte:
+        return None
+    if len(texte) > PRENOM_MAX:
+        raise ErreurCompte(f"Le prénom ne doit pas dépasser {PRENOM_MAX} caractères.")
+    if not texte[0].isalpha() or any(not (c.isalpha() or c in PONCTUATION_PRENOM) for c in texte):
+        raise ErreurCompte("Le prénom ne peut contenir que des lettres, des espaces, des traits d'union, "
+                           "des apostrophes et des points.")
+    return texte
+
+
 def normaliser_email(email: str) -> str:
     email = (email or "").strip().lower()
     if not EMAIL_RE.match(email) or len(email) > 254:
@@ -219,6 +238,9 @@ class Comptes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
                 if nom == "email_verifie_le":  # les comptes anterieurs restent utilisables
                     self._con.execute("UPDATE utilisateurs SET email_verifie_le = cree_le")
+        for nom, genre in COLONNES_PROFIL.items():  # migration : prenom facultatif
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
         for nom, genre in COLONNES_ACTIVITE.items():  # migration : comptes inactifs
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
@@ -256,9 +278,10 @@ class Comptes:
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
 
-    def creer(self, email: str, mdp: str, depuis_le_site: bool = True) -> Utilisateur:
+    def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None) -> Utilisateur:
         """depuis_le_site=False : creation par la commande d'administration (adresses d'administration)."""
         email = normaliser_email(email)
+        prenom = normaliser_prenom(prenom)
         boite = forme_canonique(email)
         if depuis_le_site and boite in {forme_canonique(a) for a in self._admins}:
             # Une adresse d'ADMIN_EMAILS sans compte, inscrite par un tiers, devenait administrateur des que le
@@ -295,10 +318,10 @@ class Comptes:
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.
                 cur = self._con.execute(
-                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le) VALUES ("
+                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom) VALUES ("
                     "MAX(COALESCE((SELECT valeur FROM compteurs WHERE nom = 'utilisateurs'), 0),"
-                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?)",
-                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant))
+                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?)",
+                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom))
                 self._con.execute("INSERT INTO compteurs (nom, valeur) VALUES ('utilisateurs', ?) "
                                   "ON CONFLICT(nom) DO UPDATE SET valeur = excluded.valeur", (cur.lastrowid,))
         except sqlite3.IntegrityError:
@@ -312,6 +335,16 @@ class Comptes:
     def par_id(self, uid: int) -> Utilisateur | None:
         rows = self._q(f"SELECT {COLONNES_U} FROM utilisateurs WHERE id = ?", (uid,))
         return self._utilisateur(rows[0] if rows else None)
+
+    def prenom(self, uid: int) -> str | None:
+        """Lu a part (pas dans Utilisateur) : l'objet compte circule jusqu'aux routes qui appellent le modele."""
+        rows = self._q("SELECT prenom FROM utilisateurs WHERE id = ?", (uid,))
+        return rows[0][0] if rows else None
+
+    def changer_prenom(self, uid: int, prenom: str | None) -> str | None:
+        prenom = normaliser_prenom(prenom)
+        self._q("UPDATE utilisateurs SET prenom = ? WHERE id = ?", (prenom, uid))
+        return prenom
 
     def authentifier(self, email: str, mdp: str) -> Utilisateur | None:
         rows = self._q("SELECT id, mdp FROM utilisateurs WHERE email = ?", ((email or "").strip().lower(),))

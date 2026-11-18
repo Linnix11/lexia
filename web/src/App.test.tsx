@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
 import { api, type ReponseChat } from './lib/api'
-import { ecrireFavoris, lireFavoris } from './lib/favoris'
+import { ecrireFavoris, empreinte, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
 import css from './index.css?raw'
 import sourceSite from './Site.tsx?raw'
@@ -698,5 +698,71 @@ describe('Liens internes (D4)', () => {
     const suivi = fireEvent.click(screen.getByRole('link', { name: 'CGU' }))
     expect(suivi).toBe(true)                       // navigation du navigateur non empechee
     expect(window.location.pathname).toBe('/app')
+  })
+})
+
+describe('Personnalisation (D100)', () => {
+  const avecProfil = (extra: Record<string, unknown>) => {
+    const normal = fetchMock.getMockImplementation() as (url: string) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre({ ...PROFIL, ...extra })
+      if (url.endsWith('/auth/prenom')) {
+        const prenom = JSON.parse(String(init?.body)).prenom
+        return repondre({ ...PROFIL, ...extra, prenom })
+      }
+      return normal(url)
+    })
+  }
+
+  it('salue par le prenom selon l heure et dit les questions restantes', async () => {
+    avecProfil({ prenom: 'Léa' })
+    render(<Site />)
+    expect(await screen.findByRole('heading', { level: 1, name: /^(Bonjour|Bonsoir), Léa\.$/ })).toBeInTheDocument()
+    expect(screen.getByText(/Il vous reste 7 questions aujourd’hui\./)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Mon compte' })).toHaveTextContent('L')
+  })
+
+  it('sans prenom : la salutation seule, jamais l adresse e-mail', async () => {
+    avecProfil({ prenom: null })
+    render(<Site />)
+    const titre = await screen.findByRole('heading', { level: 1, name: /^(Bonjour|Bonsoir)\.$/ })
+    expect(titre).not.toHaveTextContent('etu')
+  })
+
+  it('un prenom avec du HTML est affiche comme du texte', async () => {
+    avecProfil({ prenom: '<img src=x onerror=alert(1)>' })
+    render(<Site />)
+    const titre = await screen.findByRole('heading', { level: 1, name: /<img src=x/ })
+    expect(titre.querySelector('img')).toBeNull()
+  })
+
+  it('reprend la derniere matiere et propose de reprendre la derniere fiche', async () => {
+    localStorage.setItem(`lexia.matiere.v1.${empreinte('etu@exemple.fr')}`, 'droit_civil')
+    ecrireFavoris([{ id: 'r-1', question: 'La responsabilité du fait des choses', mode: 'fiche', enregistre_le: '2026-11-17T10:00:00Z', reponse: REPONSE }], 'etu@exemple.fr')
+    render(<Site />)
+    expect(await screen.findByText('Droit civil · L1 · Semestre 1')).toBeInTheDocument()
+    expect(screen.getByText('Dernière fiche : « La responsabilité du fait des choses »')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Revoir' }))
+    expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
+  })
+
+  it('Mon compte : prenom enregistre puis retire', async () => {
+    avecProfil({ prenom: null })
+    window.history.pushState({}, '', '/compte')
+    render(<Site />)
+    const champ = await screen.findByLabelText('Votre prénom')
+    fireEvent.change(champ, { target: { value: 'Léa' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    })
+    expect(await screen.findByText('Prénom enregistré.')).toBeInTheDocument()
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/prenom'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ prenom: 'Léa' })
+    fireEvent.change(champ, { target: { value: ' ' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    })
+    expect(await screen.findByText('Prénom retiré.')).toBeInTheDocument()
+    expect(JSON.parse(String(fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/auth/prenom'))[1][1].body))).toEqual({ prenom: null })
   })
 })

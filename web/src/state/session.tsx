@@ -14,7 +14,7 @@ interface Session {
   connexion: (email: string, mdp: string) => Promise<ResultatConnexion>
   terminerConnexion: (jeton: string, code: string) => Promise<void>
   majProfil: (p: Profil) => void
-  inscription: (email: string, mdp: string, cgu: boolean) => Promise<void>
+  inscription: (email: string, mdp: string, cgu: boolean, prenom?: string) => Promise<void>
   deconnexion: () => Promise<void>
   supprimer: (mdp: string) => Promise<void>
 }
@@ -60,7 +60,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     terminerConnexion: async (jeton, code) => setProfil(await api.connexionCode(jeton, code)),
     majProfil: setProfil,
-    inscription: async (email, mdp, cgu) => setProfil(await api.inscription(email, mdp, cgu)),
+    inscription: async (email, mdp, cgu, prenom) => setProfil(await api.inscription(email, mdp, cgu, prenom)),
     deconnexion: async () => {
       await api.deconnexion().catch(() => undefined)
       oublierSeance() // poste partage : la conversation et le questionnaire ne restent pas dans l'onglet

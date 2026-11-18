@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, type CoursDepose, type Matiere, type Mode, type OptionsCours } from '../lib/api'
 import { ecrireFavoris, lireFavoris, MAX_FICHES, MESSAGE_LIMITE_FICHES, type Favori } from '../lib/favoris'
+import { ecrireDerniereMatiere, lireDerniereMatiere } from '../lib/personnalisation'
 import { ecrireSeance, lireSeance } from '../lib/seance'
 import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
 import { Ctx, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
@@ -36,15 +37,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSemestreEtat(s)
     ecrireSemestre(s)
   }, [])
-  const [matiere, setMatiere] = useState<string | null>(null)
+  const { rafraichir, profil } = useSession()
+  const compte = profil?.email ?? ''
+  // Derniere matiere choisie reprise a la visite suivante (D100), gardee dans ce navigateur seulement.
+  const [matiereChoisie, setMatiere] = useState<string | null>(() => lireDerniereMatiere(compte))
   const [mode, setMode] = useState<Mode>('expliquer')
   const [coursCharges, setMesCours] = useState<CoursDepose[]>([])
   const [coursMax, setCoursMax] = useState(0)
   const [coursChoisis, setCoursChoisis] = useState<number[]>([])
   const [avecOfficiel, setAvecOfficiel] = useState(true)
   const [matieres, setMatieres] = useState<Matiere[]>([])
-  const { rafraichir, profil } = useSession()
-  const compte = profil?.email ?? ''
+  // Matiere retiree depuis (liste des matieres changee) : on repart de « Toutes ».
+  const matiere = matiereChoisie && matieres.length && !matieres.some((m) => m.id === matiereChoisie) ? null : matiereChoisie
+  useEffect(() => {
+    ecrireDerniereMatiere(compte, matiere)
+  }, [compte, matiere])
   // Le fournisseur est monte au-dessus des pages (Site.tsx) avec une cle par compte : la conversation et le
   // questionnaire survivent au passage par Compte ou Tarifs (audit du 2026-11-16, points 12 et 16).
   const [messages, setMessages] = useState<Message[]>(() => conversationReprise(compte))

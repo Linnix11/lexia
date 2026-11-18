@@ -9,7 +9,10 @@ import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../l
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
 import { MODES } from '../lib/modes'
+import { phraseQuestionsRestantes, salutation, tronquer } from '../lib/personnalisation'
+import { libelleSemestre } from '../lib/semestres'
 import { useApp } from '../state/contexte'
+import { useSession } from '../state/session'
 
 const dateDuJour = () => {
   const d = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
@@ -33,11 +36,55 @@ function EnTete({ surtitre, titre, texte, droite }: { surtitre: string; titre: s
 
 const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[10px] whitespace-nowrap text-forest">● Corpus officiel</span>
 
+/** De quoi reprendre la ou l'on s'etait arrete (D100) : questionnaire commence, dernier cours, derniere fiche. */
+function CarteReprendre() {
+  const { dernierQuiz, ouvrirQuiz, mesCours, setMatiere, setCoursChoisis, setVue, favoris } = useApp()
+  const quiz = dernierQuiz.quiz?.quiz_id && !dernierQuiz.correction ? dernierQuiz.quiz : null
+  const cours = mesCours.filter((c) => c.statut !== 'traitement').reduce<(typeof mesCours)[number] | null>(
+    (dernier, c) => (!dernier || c.ajoute_le > dernier.ajoute_le ? c : dernier), null)
+  const fiche = favoris[0] ?? null
+  if (!quiz && !cours && !fiche) return null
+  const ligne = 'flex items-center justify-between gap-3 border-t border-line-soft py-2.5 first:border-t-0 first:pt-0 last:pb-0'
+  const action = 'shrink-0 rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]'
+  return (
+    <Card className="p-[18px]">
+      <CardHead titre="Pour reprendre" />
+      <ul className="mt-3 text-[12px]">
+        {quiz && (
+          <li className={ligne}>
+            <span className="min-w-0">Questionnaire commencé : « {tronquer(quiz.theme, 50)} »</span>
+            <button type="button" onClick={() => ouvrirQuiz()} className={action}>Reprendre</button>
+          </li>
+        )}
+        {cours && (
+          <li className={ligne}>
+            <span className="min-w-0">Dernier cours déposé : « {tronquer(cours.titre, 50)} »</span>
+            <button type="button" className={action}
+              onClick={() => { setMatiere(cours.matiere); setCoursChoisis([cours.id]); setVue('assistant') }}>L’interroger</button>
+          </li>
+        )}
+        {fiche && (
+          <li className={ligne}>
+            <span className="min-w-0">Dernière fiche : « {tronquer(fiche.question, 50)} »</span>
+            <button type="button" onClick={() => setVue('fiches')} className={action}>Revoir</button>
+          </li>
+        )}
+      </ul>
+    </Card>
+  )
+}
+
 export function VueEspace() {
+  const { profil } = useSession()
+  const { matiere, matieres, semestre } = useApp()
+  const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
+  const libelleMatiere = matieres.find((m) => m.id === matiere)?.libelle ?? 'Toutes les matières'
   return (
     <>
-      <EnTete surtitre={dateDuJour()} titre="Bonjour, Étudiant·e."
-        texte="Votre espace pour comprendre le droit et progresser à votre rythme." droite="Droit français · Licence" />
+      <EnTete surtitre={dateDuJour()} titre={salutation(profil?.prenom)}
+        texte={`Votre espace pour comprendre le droit et progresser à votre rythme.${
+          restant === null ? '' : ` ${phraseQuestionsRestantes(restant, profil!.formule.questions_par_jour)}`}`}
+        droite={`${libelleMatiere} · ${libelleSemestre(semestre)}`} />
       <div className="grid items-start gap-[19px] tab:grid-cols-[minmax(0,1.2fr)_minmax(235px,.8fr)] desk:grid-cols-[minmax(0,1.65fr)_minmax(260px,.85fr)]">
         <div className="grid min-w-0 gap-[18px]">
           <Card className="flex min-w-0 flex-col px-4 py-[18px] tab:px-[22px] tab:pt-[21px] tab:pb-[17px]">
@@ -47,6 +94,7 @@ export function VueEspace() {
           <CarteOutils />
         </div>
         <div className="grid min-w-0 gap-[18px]">
+          <CarteReprendre />
           <CarteSources />
           <CarteBibliotheque />
         </div>

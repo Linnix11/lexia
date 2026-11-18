@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError } from '../lib/api'
+import { PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { PublicLayout, bouton } from './Public'
@@ -113,6 +114,7 @@ export function Inscription() {
   const { inscription } = useSession()
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
+  const [prenom, setPrenom] = useState('') // facultatif (D100)
   const [mdp, setMdp] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [cgu, setCgu] = useState(false)
@@ -137,7 +139,7 @@ export function Inscription() {
     setErreur(null)
     setEnvoi(true)
     try {
-      await inscription(email, mdp, cgu)
+      await inscription(email, mdp, cgu, prenom)
       naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Inscription impossible pour le moment.')
@@ -156,6 +158,12 @@ export function Inscription() {
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={quitter('email')}
             aria-invalid={!!montre('email')} aria-describedby="err-email" className={champ} />
           {aide('err-email', montre('email'))}
+        </label>
+        <label className="grid gap-1.5 text-[13px]">
+          <span>Prénom <span className="text-[12px] text-muted">facultatif</span></span>
+          <input autoComplete="given-name" value={prenom} maxLength={PRENOM_MAX} onChange={(e) => setPrenom(e.target.value)}
+            aria-describedby="aide-prenom" className={champ} />
+          <span id="aide-prenom" className="text-[12px] text-muted">Pour vous saluer dans votre espace. Il n’est jamais transmis à l’IA.</span>
         </label>
         <label className="grid gap-1.5 text-[13px]">
           Mot de passe <span className="text-[12px] text-muted">{MDP_MIN} caractères minimum</span>

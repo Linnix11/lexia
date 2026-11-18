@@ -1,4 +1,4 @@
-"""Routes de compte : inscription, connexion, deconnexion, profil, suppression.
+"""Routes de compte : inscription, connexion, deconnexion, profil, prenom, suppression.
 
 Session : cookie `lexia_session` HttpOnly, SameSite=Lax, Secure en HTTPS. Les requetes qui
 modifient l'etat sont en JSON (pas de formulaire HTML cross-site possible) et l'en-tete Origin,
@@ -34,6 +34,11 @@ class Inscription(BaseModel):
     email: str = Field(max_length=254)
     mot_de_passe: str = Field(max_length=256)
     accepte_cgu: bool
+    prenom: str | None = Field(default=None, max_length=100)  # facultatif, limite fine dans normaliser_prenom
+
+
+class Prenom(BaseModel):
+    prenom: str | None = Field(default=None, max_length=100)  # vide ou null : prenom retire
 
 
 class Connexion(BaseModel):
@@ -205,6 +210,7 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
     f = u.formule
     return {
         "email": u.email,
+        "prenom": comptes.prenom(u.id),
         "cree_le": u.cree_le,
         "formule": f.as_dict(),
         "formule_fin": u.formule_fin if u.formule_id == f.id else None,
@@ -263,7 +269,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         freins.verifier(_ip(request), "inscription")
         freins.verifier_inscription(_ip(request))
         try:
-            u = comptes.creer(req.email, req.mot_de_passe)
+            u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom)
         except ErreurCompte as e:
             # Un refus compte dans la limite du jour : « Un compte existe deja » permettait de tester des
             # adresses sans limite (audit du 2026-11-16, point 8 ; reste possible 20 fois par jour et par IP).
@@ -456,6 +462,14 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
 
     @router.get("/moi")
     def moi(u: Utilisateur = Depends(utilisateur_requis)):
+        return profil(comptes, u)
+
+    @router.post("/prenom", dependencies=[Depends(verifier_origine)])
+    def changer_prenom(req: Prenom, u: Utilisateur = Depends(utilisateur_requis)):
+        try:
+            comptes.changer_prenom(u.id, req.prenom)
+        except ErreurCompte as e:
+            raise HTTPException(422, str(e)) from None
         return profil(comptes, u)
 
     @router.post("/supprimer", status_code=204, dependencies=[Depends(verifier_origine)])

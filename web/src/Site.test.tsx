@@ -120,6 +120,22 @@ describe('Site', () => {
     expect(JSON.parse(String(appel[1].body))).toEqual({ email: 'etu@exemple.fr', mot_de_passe: 'motdepasse-solide', accepte_cgu: true })
   })
 
+  it('inscription : prenom facultatif envoye s il est saisi (D100)', async () => {
+    aller('/inscription')
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText('Adresse e-mail'), { target: { value: 'etu@exemple.fr' } })
+    fireEvent.change(screen.getByLabelText(/^Prénom/), { target: { value: ' Léa ' } })
+    fireEvent.change(screen.getByLabelText(/^Mot de passe/), { target: { value: 'motdepasse-solide' } })
+    fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'motdepasse-solide' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /J’accepte les conditions/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'J’ai 15 ans ou plus.' }))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }))
+    })
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/inscription'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ email: 'etu@exemple.fr', mot_de_passe: 'motdepasse-solide', accepte_cgu: true, prenom: 'Léa' })
+  })
+
   it('connexion avec double authentification : code demande apres le mot de passe', async () => {
     aller('/connexion')
     render(<Site />)

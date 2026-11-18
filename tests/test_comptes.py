@@ -321,3 +321,65 @@ def test_rapatriement_ignore_les_copies_manuelles(tmp_path):
                             "LEXIA_COPIES": str(copies), "LEXIA_ESSAIS": "1"})
     assert r.returncode == 0, r.stderr
     assert sorted(p.name for p in copies.iterdir()) == [f"lexia-{jour}.db"]
+# --- prenom facultatif (D100) --------------------------------------------------------------------------------
+
+def test_prenom_a_l_inscription_puis_modifie_et_retire(env):
+    client, comptes, _ = env
+    r = client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                               "accepte_cgu": True, "prenom": "  Marie-Hélène  "})
+    assert r.status_code == 201 and r.json()["prenom"] == "Marie-Hélène"
+    assert client.post("/auth/prenom", json={"prenom": "Zoë   d’Arc"}).json()["prenom"] == "Zoë d’Arc"
+    assert client.get("/auth/session").json()["prenom"] == "Zoë d’Arc"
+    assert client.post("/auth/prenom", json={"prenom": "  "}).json()["prenom"] is None
+    assert client.post("/auth/prenom", json={"prenom": None}).json()["prenom"] is None
+
+
+def test_prenom_facultatif_et_borne(env):
+    client, comptes, _ = env
+    assert inscrire(client).json()["prenom"] is None
+    for refuse in ("<script>", "Léa2", "a" * 31, "-Léa", "Léa\u0000"):
+        r = client.post("/auth/prenom", json={"prenom": refuse})
+        assert r.status_code == 422, refuse
+    assert client.post("/auth/prenom", json={"prenom": "x" * 101}).status_code == 422  # limite du schema
+    assert client.post("/auth/prenom", json={"prenom": "Léa"}, headers={"Origin": "https://pirate.exemple"}).status_code == 403
+    client.post("/auth/deconnexion")
+    assert client.post("/auth/prenom", json={"prenom": "Léa"}).status_code == 401
+    assert comptes.prenom(comptes.par_email("etu@exemple.fr").id) is None
+    # inscription refusee si le prenom est invalide : aucun compte cree
+    r = client.post("/auth/inscription", json={"email": "b@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                               "accepte_cgu": True, "prenom": "<b>"})
+    assert r.status_code == 422 and comptes.par_email("b@exemple.fr") is None
+
+
+def test_prenom_jamais_envoye_au_modele(env):
+    client, _, llm = env
+    appels = []
+    generer = llm.generate_json
+    llm.generate_json = lambda **kw: appels.append(kw) or generer(**kw)
+    client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                           "accepte_cgu": True, "prenom": "Bérénice"})
+    assert client.post("/chat", json={"question": "article 1240"}).status_code == 200
+    assert appels and "Bérénice" not in repr(appels)
+
+
+def test_prenom_efface_avec_le_compte(env):
+    client, comptes, _ = env
+    client.post("/auth/inscription", json={"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide",
+                                           "accepte_cgu": True, "prenom": "Bérénice"})
+    assert client.post("/auth/supprimer", json={"mot_de_passe": "motdepasse-solide"}).status_code == 204
+    assert comptes._q("SELECT count(*) FROM utilisateurs WHERE prenom IS NOT NULL")[0][0] == 0
+
+
+def test_migration_ajoute_le_prenom(tmp_path):
+    import sqlite3
+    chemin = tmp_path / "ancienne.db"
+    con = sqlite3.connect(chemin)
+    con.executescript("CREATE TABLE utilisateurs (id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, mdp TEXT NOT NULL,"
+                      " formule TEXT NOT NULL DEFAULT 'gratuit', formule_fin TEXT, cree_le TEXT NOT NULL,"
+                      " cgu_le TEXT NOT NULL);"
+                      "INSERT INTO utilisateurs (email, mdp, cree_le, cgu_le) VALUES ('a@b.fr', 'x', '2026-01-01', '2026-01-01');")
+    con.commit()
+    con.close()
+    c = Comptes(chemin)
+    assert c.prenom(1) is None
+    assert c.changer_prenom(1, "Léa") == "Léa" and c.prenom(1) == "Léa"

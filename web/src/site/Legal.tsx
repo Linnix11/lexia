@@ -381,6 +381,7 @@ export function Confidentialite() {
         <h2>Données collectées</h2>
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création, date de la dernière visite (pour supprimer les comptes inutilisés).</li>
+          <li><strong>Prénom</strong> (facultatif, si vous l’indiquez) : utilisé seulement pour vous saluer dans votre espace. Il n’est jamais transmis à l’intelligence artificielle, ni à un autre service, ni utilisé dans les e-mails. Vous pouvez le modifier ou le retirer à tout moment dans « Mon compte ».</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
           <li><strong>Formule payante</strong> (si vous en souscrivez une) : formule choisie, date de fin, et éléments de facturation (adresse e-mail, montant, date et moyen de paiement).</li>
@@ -396,7 +397,8 @@ export function Confidentialite() {
         </p>
         <p>
           Certaines données restent dans votre navigateur et ne sont pas envoyées au serveur : vos fiches
-          enregistrées et le semestre choisi (stockage local, jusqu’à ce que vous les supprimiez) ; la conversation
+          enregistrées, le semestre et la dernière matière choisis (stockage local, jusqu’à ce que vous les
+          supprimiez) ; la conversation
           en cours (30 derniers messages) et le dernier questionnaire avec sa correction (stockage de session,
           effacé à la fermeture de l’onglet, à la déconnexion et à la suppression du compte), pour ne pas les perdre
           en changeant de page. Sur un ordinateur partagé, déconnectez-vous à la fin de votre séance.
@@ -428,8 +430,9 @@ export function Confidentialite() {
             </>
           )}
           {l?.courriel ? <>{' '}Votre adresse e-mail est transmise à Resend (États-Unis) pour l’envoi des messages de
-          confirmation d’adresse et de réinitialisation du mot de passe ; ni votre mot de passe ni vos questions ne lui
-          sont communiqués.</> : null}{' '}
+          confirmation d’adresse et de réinitialisation du mot de passe ; ni votre mot de passe, ni votre prénom, ni vos
+          questions ne lui sont communiqués.</> : null}{' '}
+          Votre prénom ne fait jamais partie de ce qui est transmis.{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
         </p>
         <p>
@@ -468,6 +471,7 @@ export function Confidentialite() {
         <ul>
           <li>Fournir le service : compte, réponses, cours déposés, questionnaires, e-mails de confirmation et de réinitialisation (exécution du contrat).</li>
           <li>Appliquer les limites des formules et gérer les formules payantes (exécution du contrat).</li>
+          <li>Vous saluer par votre prénom dans votre espace, si vous l’indiquez (consentement, retiré en vidant le champ dans « Mon compte »).</li>
           <li>Tenir la comptabilité des formules payantes (obligation légale).</li>
           <li>Assurer la sécurité du service : journaux du serveur web, limites contre les abus, empreinte gardée après une suppression de compte (intérêt légitime).</li>
           <li>Suivre la qualité et le coût du service : journaux techniques sans le texte des questions, avis « utile / pas utile » (intérêt légitime).</li>
@@ -477,6 +481,7 @@ export function Confidentialite() {
         <h2>Durées de conservation</h2>
         <ul>
           <li>Compte : jusqu’à sa suppression par vous, ou après deux ans sans aucune visite ; un e-mail vous prévient un mois avant et une simple connexion garde le compte. Un compte avec une formule payante en cours n’est jamais supprimé pour ce motif.</li>
+          <li>Prénom : jusqu’à ce que vous le retiriez, ou jusqu’à la suppression du compte.</li>
           <li>Compteurs de questions et de questionnaires : 90 jours.</li>
           <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>

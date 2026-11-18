@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
 import { effacerFavoris } from '../lib/favoris'
+import { effacerDerniereMatiere, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { DoubleAuthentification } from './DoubleAuthentification'
@@ -150,6 +151,55 @@ function Paiement() {
   )
 }
 
+/** Prenom facultatif (D100) : modifiable, retire si le champ est vide. */
+function Prenom() {
+  const { profil, majProfil } = useSession()
+  const [valeur, setValeur] = useState(profil?.prenom ?? '')
+  const [message, setMessage] = useState<string | null>(null)
+  const [erreur, setErreur] = useState<string | null>(null)
+  const [envoi, setEnvoi] = useState(false)
+  const actuel = profil?.prenom ?? ''
+
+  const enregistrer = async (e: FormEvent) => {
+    e.preventDefault()
+    setErreur(null)
+    setMessage(null)
+    setEnvoi(true)
+    try {
+      const p = await api.changerPrenom(valeur)
+      majProfil(p)
+      setValeur(p.prenom ?? '')
+      setMessage(p.prenom ? 'Prénom enregistré.' : 'Prénom retiré.')
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Enregistrement impossible pour le moment.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-line bg-surface p-5">
+      <h2 className="text-[14px] font-semibold">Prénom</h2>
+      <p className="mt-1 text-[12px] leading-[1.6] text-muted">
+        Facultatif. Il sert seulement à vous saluer dans votre espace : il n’est jamais transmis à l’IA ni utilisé dans
+        les e-mails. Laissez le champ vide pour le retirer.
+      </p>
+      <form onSubmit={enregistrer} className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="grid gap-1 text-[12px]">
+          Votre prénom
+          <input value={valeur} maxLength={PRENOM_MAX} autoComplete="given-name" onChange={(e) => setValeur(e.target.value)}
+            className="max-w-[260px] rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
+        </label>
+        <button type="submit" disabled={envoi || valeur.trim() === actuel} className={`${boutonSecondaire} disabled:opacity-60`}>
+          {envoi ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+        {message && <p role="status" className="w-full text-[12px] text-forest">{message}</p>}
+        {erreur && <p role="alert" className="w-full text-[12px] text-[#8c4a36]">{erreur}</p>}
+      </form>
+    </section>
+  )
+}
+
 export function Compte() {
   const { profil, deconnexion, supprimer } = useSession()
   const { naviguer } = useRouteur()
@@ -172,6 +222,7 @@ export function Compte() {
       const email = profil.email
       await supprimer(mdp)
       effacerFavoris(email) // poste partage : les fiches du compte ne restent pas dans le navigateur
+      effacerDerniereMatiere(email)
       naviguer('/?compte-supprime=1', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Suppression impossible pour le moment.')
@@ -202,6 +253,8 @@ export function Compte() {
             <p className="mt-3 text-[12px] text-muted">Les compteurs se remettent à zéro chaque jour à minuit.</p>
           </section>
 
+          <Prenom />
+
           <DoubleAuthentification />
 
           <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-5">
@@ -219,9 +272,9 @@ export function Compte() {
           <section className="rounded-xl border border-[#ecd9c4] bg-cream p-5">
             <h2 className="text-[14px] font-semibold text-[#5f4f37]">Supprimer mon compte</h2>
             <p className="mt-1 text-[12px] leading-[1.6] text-[#746347]">
-              Votre adresse e-mail, votre mot de passe, vos cours déposés et vos compteurs d’utilisation sont effacés
-              définitivement, ainsi que les fiches enregistrées dans ce navigateur (celles d’un autre appareil y
-              restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail)
+              Votre adresse e-mail, votre prénom, votre mot de passe, vos cours déposés et vos compteurs d’utilisation
+              sont effacés définitivement, ainsi que les fiches et la dernière matière enregistrées dans ce navigateur
+              (celles d’un autre appareil y restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail)
               est conservée dix ans, comme toute pièce comptable.
             </p>
             {!suppression ? (

@@ -1,7 +1,7 @@
 # Registre des activités de traitement de Lexia
 
 Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 18 novembre 2026 (durées de
-conservation, audit du 18 novembre 2026, point E5).
+conservation, audit du 18 novembre 2026, point E5 ; prénom facultatif, D100).
 
 L'entreprise compte moins de 250 salariés, mais la dérogation de l'article 30.5 ne couvre pas les traitements
 non occasionnels : la gestion des comptes, des formules et des journaux de Lexia l'est. La CNIL recommande
@@ -23,7 +23,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 
 | N° | Traitement | Base légale | Durée de conservation |
 |---|---|---|---|
-| T1 | Comptes utilisateurs | Exécution du contrat (CGU) | Jusqu'à la suppression du compte, ou deux ans sans visite (avertissement un mois avant) |
+| T1 | Comptes utilisateurs | Exécution du contrat (CGU) ; prénom facultatif : consentement | Jusqu'à la suppression du compte, ou deux ans sans visite (avertissement un mois avant) ; prénom : jusqu'à son retrait |
 | T2 | Rédaction des réponses par un modèle de langage | Exécution du contrat | Non conservé (mémoire vive 24 h au plus) |
 | T3 | Cours déposés | Exécution du contrat | Jusqu'au retrait du cours ou à la suppression du compte |
 | T4 | Limites d'usage et formules | Exécution du contrat | Compteurs : 90 jours ; formule : comme le compte |
@@ -46,9 +46,17 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   empreintes des jetons de confirmation et de réinitialisation ; date de la dernière visite (`actif_le`, une
   écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions : empreinte du
   jeton et date d'expiration.
+- Prénom facultatif (D100, colonne `prenom`, `Comptes.changer_prenom`) : saisi à l'inscription ou dans « Mon
+  compte », 30 caractères au plus (lettres, espaces, traits d'union, apostrophes, points), modifiable et retiré en
+  vidant le champ. Seule finalité : saluer l'étudiant dans son espace. Base légale : consentement (donnée
+  facultative, retrait à tout moment). Lu à part (`Comptes.prenom`, hors de l'objet `Utilisateur` qui circule
+  jusqu'aux routes du modèle) : jamais transmis à Google ni à Groq (test `test_prenom_jamais_envoye_au_modele`),
+  jamais dans un e-mail (Resend), absent de la liste des comptes de l'administration. Effacé avec la ligne du
+  compte.
 - Dans le navigateur seulement (rien n'est envoyé au serveur, D85) : conversation en cours (30 derniers messages)
   et dernier questionnaire dans `sessionStorage`, sous une empreinte du compte, effacés à la fermeture de l'onglet,
-  à la déconnexion et à la suppression du compte ; fiches et semestre dans `localStorage`. Décrit dans la
+  à la déconnexion et à la suppression du compte ; fiches, semestre et dernière matière choisie (D100, effacée à la
+  suppression du compte) dans `localStorage`. Décrit dans la
   politique de confidentialité (« Données collectées »).
 - Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails de confirmation et de
   réinitialisation, `api/courriel.py`) ; Cloudflare (acheminement du trafic).
