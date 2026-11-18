@@ -200,7 +200,7 @@ class Lexia:
         anciens = concordance.anciens_numeros(refs)
         # Articles connus sans appel au modele : articles actuels d'un ancien numero cite, puis lexique.
         locales = list(dict.fromkeys([("code_civil", n) for ns in anciens.values() for n in ns]
-                                     + lexique.suggestions(texte)))
+                                     + lexique.suggestions(texte, sources=sources)))
         # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
         # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
         futur = None

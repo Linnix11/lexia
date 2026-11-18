@@ -25,7 +25,7 @@ from api.cours import Cours, creer_routes_cours
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
-from api.matieres import LIBELLES, sources_par_matiere
+from api.matieres import LIBELLES, MATIERES, sources_par_matiere
 from api.textes import NOMS, SOURCES_TEXTES
 from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
@@ -319,7 +319,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.get("/matieres")
     def matieres():
-        return [{"id": m, "libelle": LIBELLES.get(m, m), "sources": list(s),
+        # Annee, autres intitules et sources principales : classement et recherche du site (D97)
+        return [{"id": m, "libelle": LIBELLES.get(m, m), "annee": MATIERES[m].annee, "mots": list(MATIERES[m].mots),
+                 "principales": list(MATIERES[m].principales), "sources": list(s),
                  "noms_sources": {i: NOMS.get(i, i) for i in s}} for m, s in sources_par_matiere().items()]
 
     @app.post("/chat", dependencies=[Depends(limite)])

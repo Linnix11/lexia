@@ -7,6 +7,7 @@ import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
+import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
 import { MODES } from '../lib/modes'
 import { useApp } from '../state/contexte'
 
@@ -68,8 +69,14 @@ export function VueAssistant() {
 }
 
 export function VueMatieres() {
-  const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
+  const { matieres, setMatiere, setVue, ouvrirQuiz, niveau } = useApp()
   const fraicheur = useFraicheur()
+  const [recherche, setRecherche] = useState('')
+  const [annee, setAnnee] = useState<Annee | null>(null)
+  // Classement par annee de licence et recherche sur les intitules des maquettes et les sources (D97).
+  const groupes = grouperParAnnee(filtrerMatieres(matieres, recherche)).filter((g) => !annee || g.annee === annee)
+  const puce = (actif: boolean) => `rounded-full border px-2.5 py-1.5 text-[11px] ${
+    actif ? 'border-forest bg-mint font-semibold text-forest' : 'border-line bg-chip text-[#59615b] hover:border-[#9eafa3]'}`
   return (
     <>
       <EnTete surtitre="Mes matières" titre="Matières disponibles." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
@@ -78,32 +85,69 @@ export function VueMatieres() {
         // liste vide aussi pendant le chargement (et ses essais) : pas de message d'erreur (audit du 2026-11-18, D9)
         <Card className="p-6 text-[12px] text-muted"><p role="status">Chargement des matières… Si elles n’apparaissent pas, rechargez la page.</p></Card>
       ) : (
-        <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
-          {matieres.map((m) => (
-            // Matiere, cours personnels et actions d'abord ; textes officiels replies (audit du 2026-11-16, point 7).
-            <Card key={m.id} className="flex flex-col self-start p-[19px]">
-              <h2 className="font-display text-[21px]">{m.libelle}</h2>
-              <div className="mt-3"><ListeCoursMatiere matiere={m.id} /></div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
-                  className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>
-                <button type="button" onClick={() => { setMatiere(m.id); ouvrirQuiz() }}
-                  className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
-              </div>
-              <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
-                <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>
-                <ul className="mt-2 grid gap-1.5">
-                  {m.sources.map((s) => (
-                    <li key={s}>
-                      · {m.noms_sources?.[s] ?? s}
-                      {fraicheur?.sources[s] && <span className="text-[#7a817c]"> · {libelleFraicheur(fraicheur.sources[s])}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </details>
+        <>
+          <div className="mb-[18px] flex flex-wrap items-center gap-2">
+            <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-[7px] border border-line bg-white px-3 py-2 text-[12px] text-muted">
+              <span className="sr-only">Chercher une matière</span>
+              <span aria-hidden>⌕</span>
+              <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Chercher une matière : procédure pénale, sociétés, Code civil…"
+                className="min-w-0 flex-1 bg-transparent text-ink outline-none" />
+            </label>
+            <div role="group" aria-label="Année de licence" className="flex flex-wrap gap-1.5">
+              <button type="button" aria-pressed={annee === null} onClick={() => setAnnee(null)} className={puce(annee === null)}>Toutes</button>
+              {ANNEES.map((a) => (
+                <button key={a} type="button" aria-pressed={annee === a} onClick={() => setAnnee(annee === a ? null : a)} className={puce(annee === a)}>
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+          {groupes.length === 0 && (
+            <Card className="p-6 text-[12px] text-muted">
+              <p role="status">
+                {recherche.trim() ? `Aucune matière ne correspond à « ${recherche.trim()} »` : 'Aucune matière'}
+                {annee ? ` en ${LIBELLES_ANNEES[annee]}` : ''}. Lexia ne couvre que
+                le droit français : le droit international et le droit de l’Union européenne n’y sont pas. Vous pouvez aussi poser
+                votre question avec la matière « Toutes ».
+              </p>
             </Card>
+          )}
+          {groupes.map((g) => (
+            <section key={g.titre} aria-labelledby={`annee-${g.annee ?? 'autres'}`} className="mb-[22px]">
+              <h2 id={`annee-${g.annee ?? 'autres'}`} className="mb-2.5 text-[10px] font-bold tracking-[1.6px] text-forest uppercase">
+                {g.titre}{g.annee && g.annee === niveau ? ' · votre année' : ''}
+              </h2>
+              <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
+                {g.matieres.map((m) => (
+                  // Matiere, cours personnels et actions d'abord ; textes officiels replies (audit du 2026-11-16, point 7).
+                  <Card key={m.id} className="flex flex-col self-start p-[19px]">
+                    <h3 className="font-display text-[21px]">{m.libelle}</h3>
+                    <p className="mt-1 text-[11px] text-muted">Sources principales : {sourcesPrincipales(m).join(' · ')}</p>
+                    <div className="mt-3"><ListeCoursMatiere matiere={m.id} /></div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
+                        className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>
+                      <button type="button" onClick={() => { setMatiere(m.id); ouvrirQuiz() }}
+                        className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
+                    </div>
+                    <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
+                      <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>
+                      <ul className="mt-2 grid gap-1.5">
+                        {m.sources.map((s) => (
+                          <li key={s}>
+                            · {m.noms_sources?.[s] ?? s}
+                            {fraicheur?.sources[s] && <span className="text-[#7a817c]"> · {libelleFraicheur(fraicheur.sources[s])}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </Card>
+                ))}
+              </div>
+            </section>
           ))}
-        </div>
+        </>
       )}
     </>
   )

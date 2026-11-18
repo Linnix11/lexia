@@ -5,6 +5,7 @@
 | Fichier | Rôle |
 |---|---|
 | `cas.yaml` | Jeu de 150 cas : 40 introduction au droit, 40 droit constitutionnel, 40 droit civil, 30 pièges |
+| `cas_matieres_licence.yaml` | 51 questions de cours des matieres tirees des maquettes de licence (D97) : procedure penale, contentieux administratif, societes, droit administratif des biens, et notions rangees dans les matieres existantes |
 | `cas.py` | Chargement du jeu et correspondance avec les sources du corpus |
 | `run.py` | Exécute les cas contre le pipeline réel (recherche, Gemini, contrôle des citations) |
 | `rapport.py` | Synthèse (indicateurs, seuils, cas à examiner) et grille de relecture CSV |

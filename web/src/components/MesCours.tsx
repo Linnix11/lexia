@@ -4,6 +4,7 @@ import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
 import { ACCEPT, FORMATS_LISIBLES, formatAccepte, sansExtension, STATUTS } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
+import { OptionsMatieres } from './OptionsMatieres'
 
 const TAILLE_MAX = 20 * 1024 * 1024
 
@@ -64,7 +65,7 @@ export function DepotCours() {
           Matière
           <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ}>
             <option value="">Choisir…</option>
-            {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+            <OptionsMatieres matieres={matieres} />
           </select>
         </label>
         <label className="grid min-w-[180px] flex-1 gap-1.5 text-[11px] text-muted">
@@ -181,7 +182,7 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
             Matière
             <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ} required>
               <option value="">Choisir…</option>
-              {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+              <OptionsMatieres matieres={matieres} />
             </select>
           </label>
           {acceptes.length === 1 && (

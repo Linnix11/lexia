@@ -19,6 +19,8 @@ sources:
   - droit_administratif
   - libertes_fondamentales
   - finances_publiques
+  - procedure_penale
+  - contentieux_administratif
   niveaux:
   - L1
   ingestion: ingest/sources/constitution.py
@@ -40,6 +42,7 @@ sources:
   - droit_des_contrats
   - droit_de_la_famille
   - droit_des_biens
+  - droit_des_societes
   niveaux:
   - L1
   ingestion: ingest/sources/legi.py
@@ -59,6 +62,8 @@ sources:
   - libertes_fondamentales
   - finances_publiques
   - droit_fiscal
+  - procedure_penale
+  - contentieux_administratif
   niveaux:
   - L1
   ingestion: ingest/sources/constit.py
@@ -79,6 +84,7 @@ sources:
   - droit_des_contrats
   - droit_de_la_famille
   - droit_des_biens
+  - droit_des_societes
   niveaux:
   - L1
   ingestion: ingest/sources/cass.py
@@ -115,6 +121,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_penal
+  - procedure_penale
   niveaux:
   - L1
   - L2
@@ -134,6 +141,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_penal
+  - procedure_penale
   niveaux:
   - L1
   - L2
@@ -211,6 +219,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_des_affaires
+  - droit_des_societes
   niveaux:
   - L1
   - L2
@@ -230,6 +239,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_des_affaires
+  - droit_des_societes
   niveaux:
   - L1
   - L2
@@ -347,6 +357,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_administratif
+  - contentieux_administratif
   niveaux:
   - L1
   - L2
@@ -366,6 +377,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_administratif
+  - contentieux_administratif
   niveaux:
   - L1
   - L2
@@ -385,6 +397,8 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_administratif
+  - contentieux_administratif
+  - droit_administratif_des_biens
   niveaux:
   - L1
   - L2
@@ -404,6 +418,7 @@ sources:
   perimetre: toutes les versions d'articles, en_vigueur = false pour les versions passees
   matieres:
   - droit_administratif
+  - droit_administratif_des_biens
   niveaux:
   - L1
   - L2
@@ -558,6 +573,7 @@ sources:
   - droit_constitutionnel
   - libertes_fondamentales
   - introduction_au_droit
+  - procedure_penale
   niveaux:
   - L1
   - L2
@@ -736,6 +752,7 @@ sources:
   matieres:
   - droit_administratif
   - droit_des_biens
+  - droit_administratif_des_biens
   niveaux:
   - L1
   - L2
@@ -867,6 +884,10 @@ sources:
   - libertes_fondamentales
   - droit_de_la_famille
   - droit_des_biens
+  - procedure_penale
+  - contentieux_administratif
+  - droit_des_societes
+  - droit_administratif_des_biens
   niveaux:
   - L1
   - L2
@@ -885,6 +906,7 @@ sources:
   matieres:
   - droit_penal
   - libertes_fondamentales
+  - procedure_penale
   niveaux:
   - L1
   - L2
@@ -921,6 +943,7 @@ sources:
   - droit_des_affaires
   - droit_des_contrats
   - droit_fiscal
+  - droit_des_societes
   niveaux:
   - L1
   - L2
@@ -942,6 +965,8 @@ sources:
   - finances_publiques
   - libertes_fondamentales
   - droit_des_biens
+  - contentieux_administratif
+  - droit_administratif_des_biens
   niveaux:
   - L1
   - L2

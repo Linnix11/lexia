@@ -1,0 +1,68 @@
+# Jeu d'evaluation des matieres tirees des maquettes de licence (D97, docs/plaquettes-licence.md) - 2026-11-18
+#
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT. Questions de cours ; sources attendues verifiees dans
+# l'index (articles en vigueur). Memes champs que eval/cas.yaml.
+#
+#   .venv/bin/python eval/backtest_recherche.py eval/cas_matieres_licence.yaml
+
+cas:
+  # ===================================================================== PROCEDURE PENALE (L3)
+  - {id: pp-01, matiere: procedure_penale, question: "Qu'est-ce que l'enquête de flagrance ?", attendu: [reponse], sources: [code_procedure_penale:53]}
+  - {id: pp-02, matiere: procedure_penale, question: "Quels sont les droits de la personne placée en garde à vue ?", attendu: [reponse], sources: [code_procedure_penale:63-1, code_procedure_penale:63-3-1]}
+  - {id: pp-03, matiere: procedure_penale, question: "Qu'est-ce que le principe d'opportunité des poursuites ?", attendu: [reponse], sources: [code_procedure_penale:40-1, code_procedure_penale:40]}
+  - {id: pp-04, matiere: procedure_penale, question: "À quelles conditions une personne peut-elle être placée en détention provisoire ?", attendu: [reponse], sources: [code_procedure_penale:144, code_procedure_penale:137]}
+  - {id: pp-05, matiere: procedure_penale, question: "Quand une personne peut-elle être mise en examen ?", attendu: [reponse], sources: [code_procedure_penale:80-1]}
+  - {id: pp-06, matiere: procedure_penale, question: "Comment une victime peut-elle se constituer partie civile ?", attendu: [reponse], sources: [code_procedure_penale:85, code_procedure_penale:2]}
+  - {id: pp-07, matiere: procedure_penale, question: "Quel est le principe de la liberté de la preuve en matière pénale ?", attendu: [reponse], sources: [code_procedure_penale:427]}
+  - {id: pp-08, matiere: procedure_penale, question: "Qu'est-ce que la comparution immédiate ?", attendu: [reponse], sources: [code_procedure_penale:395]}
+  - {id: pp-09, matiere: procedure_penale, question: "Quelles sont les alternatives aux poursuites ?", attendu: [reponse], sources: [code_procedure_penale:41-1]}
+  - {id: pp-10, matiere: procedure_penale, question: "Quels principes l'article préliminaire du Code de procédure pénale pose-t-il ?", attendu: [reponse], sources: [code_procedure_penale:préliminaire]}
+  - {id: pp-11, matiere: procedure_penale, question: "Peut-on être poursuivi deux fois pour les mêmes faits après un acquittement ?", attendu: [reponse], sources: [code_procedure_penale:368, code_procedure_penale:6]}
+  - {id: pp-12, matiere: procedure_penale, question: "À partir de quel âge un mineur est-il pénalement responsable ?", attendu: [reponse], sources: [code_justice_penale_mineurs:L11-1]}
+
+  # ===================================================================== CONTENTIEUX ADMINISTRATIF (L3)
+  - {id: ca-01, matiere: contentieux_administratif, question: "Quel est le délai pour former un recours contre une décision administrative ?", attendu: [reponse], sources: [code_justice_administrative:R421-1]}
+  - {id: ca-02, matiere: contentieux_administratif, question: "Comment contester une décision implicite de rejet ?", attendu: [reponse], sources: [code_justice_administrative:R421-2]}
+  - {id: ca-03, matiere: contentieux_administratif, question: "Quelles sont les conditions du référé-suspension ?", attendu: [reponse], sources: [code_justice_administrative:L521-1]}
+  - {id: ca-04, matiere: contentieux_administratif, question: "Quel est le rôle du rapporteur public ?", attendu: [reponse], sources: [code_justice_administrative:L7]}
+  - {id: ca-05, matiere: contentieux_administratif, question: "Le juge administratif peut-il prononcer une astreinte contre l'administration ?", attendu: [reponse], sources: [code_justice_administrative:L911-3]}
+  - {id: ca-06, matiere: contentieux_administratif, question: "Qu'est-ce que le référé-provision ?", attendu: [reponse], sources: [code_justice_administrative:R541-1]}
+  - {id: ca-07, matiere: contentieux_administratif, question: "Comment le préfet peut-il déférer un acte d'une commune au tribunal administratif ?", attendu: [reponse], sources: [code_collectivites_territoriales:L2131-6]}
+  - {id: ca-08, matiere: contentieux_administratif, question: "Quel est le rôle du Conseil d'État comme juge de cassation ?", attendu: [reponse], sources: [code_justice_administrative:L111-1, code_justice_administrative:L821-1]}
+  - {id: ca-09, matiere: contentieux_administratif, question: "Un recours gracieux proroge-t-il le délai de recours contentieux ?", attendu: [reponse], sources: [code_relations_public_administration:L411-2]}
+  - {id: ca-10, matiere: contentieux_administratif, question: "Qu'est-ce que le référé précontractuel ?", attendu: [reponse], sources: [code_justice_administrative:L551-1]}
+
+  # ===================================================================== DROIT DES SOCIETES (L3)
+  - {id: soc-01, matiere: droit_des_societes, question: "Comment le Code civil définit-il la société ?", attendu: [reponse], sources: [code_civil:1832]}
+  - {id: soc-02, matiere: droit_des_societes, question: "Qu'est-ce que l'intérêt social ?", attendu: [reponse], sources: [code_civil:1833]}
+  - {id: soc-03, matiere: droit_des_societes, question: "À partir de quand une société commerciale a-t-elle la personnalité morale ?", attendu: [reponse], sources: [code_commerce:L210-6, code_civil:1842]}
+  - {id: soc-04, matiere: droit_des_societes, question: "Quelle est la responsabilité des associés d'une SARL ?", attendu: [reponse], sources: [code_commerce:L223-1]}
+  - {id: soc-05, matiere: droit_des_societes, question: "Qu'est-ce que l'abus de biens sociaux ?", attendu: [reponse], sources: [code_commerce:L241-3, code_commerce:L242-6]}
+  - {id: soc-06, matiere: droit_des_societes, question: "Qu'est-ce qu'une convention réglementée dans une société anonyme ?", attendu: [reponse], sources: [code_commerce:L225-38]}
+  - {id: soc-07, matiere: droit_des_societes, question: "Comment révoquer le gérant d'une SARL ?", attendu: [reponse], sources: [code_commerce:L223-25]}
+  - {id: soc-08, matiere: droit_des_societes, question: "Quelles sont les différentes sortes d'apports en société ?", attendu: [reponse], sources: [code_civil:1843-3]}
+  - {id: soc-09, matiere: droit_des_societes, question: "Quelles sont les causes de dissolution d'une société ?", attendu: [reponse], sources: [code_civil:1844-7]}
+  - {id: soc-10, matiere: droit_des_societes, question: "Qu'est-ce qu'une société par actions simplifiée ?", attendu: [reponse], sources: [code_commerce:L227-1]}
+
+  # ===================================================================== DROIT ADMINISTRATIF DES BIENS (L3)
+  - {id: dab-01, matiere: droit_administratif_des_biens, question: "Quels sont les critères du domaine public ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L2111-1]}
+  - {id: dab-02, matiere: droit_administratif_des_biens, question: "Pourquoi le domaine public est-il inaliénable ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L3111-1]}
+  - {id: dab-03, matiere: droit_administratif_des_biens, question: "Faut-il une autorisation pour occuper le domaine public ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L2122-1]}
+  - {id: dab-04, matiere: droit_administratif_des_biens, question: "L'occupation du domaine public est-elle gratuite ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L2125-1]}
+  - {id: dab-05, matiere: droit_administratif_des_biens, question: "Comment un bien sort-il du domaine public ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L2141-1]}
+  - {id: dab-06, matiere: droit_administratif_des_biens, question: "Qu'est-ce que le domaine privé des personnes publiques ?", attendu: [reponse], sources: [code_propriete_personnes_publiques:L2211-1]}
+  - {id: dab-07, matiere: droit_administratif_des_biens, question: "À quelle condition une expropriation est-elle possible ?", attendu: [reponse], sources: [code_expropriation:L1]}
+  - {id: dab-08, matiere: droit_administratif_des_biens, question: "Comment est fixée l'indemnité d'expropriation ?", attendu: [reponse], sources: [code_expropriation:L321-1]}
+
+  # ===================================================================== NOTIONS RANGEES DANS LES MATIERES EXISTANTES
+  - {id: conso-01, matiere: droit_des_contrats, question: "Quel est le délai de rétractation d'un contrat conclu à distance ?", attendu: [reponse], sources: [code_consommation:L221-18]}
+  - {id: conso-02, matiere: droit_des_affaires, question: "Qu'est-ce qu'une pratique commerciale trompeuse ?", attendu: [reponse], sources: [code_consommation:L121-2]}
+  - {id: conso-03, matiere: droit_des_contrats, question: "Qu'est-ce que la garantie légale de conformité ?", attendu: [reponse], sources: [code_consommation:L217-3]}
+  - {id: conso-04, matiere: droit_des_affaires, question: "Comment le Code de la consommation définit-il le consommateur ?", attendu: [reponse], sources: [code_consommation:liminaire]}
+  - {id: fam-01, matiere: droit_de_la_famille, question: "Quel est le régime matrimonial légal ?", attendu: [reponse], sources: [code_civil:1400, code_civil:1401]}
+  - {id: fam-02, matiere: droit_de_la_famille, question: "Qu'est-ce que la réserve héréditaire ?", attendu: [reponse], sources: [code_civil:912, code_civil:913]}
+  - {id: fam-03, matiere: droit_de_la_famille, question: "Quels sont les droits du conjoint survivant dans la succession ?", attendu: [reponse], sources: [code_civil:757, code_civil:756]}
+  - {id: fam-04, matiere: droit_de_la_famille, question: "Quelles sont les conditions de validité d'un testament olographe ?", attendu: [reponse], sources: [code_civil:970]}
+  - {id: fam-05, matiere: droit_de_la_famille, question: "Un époux peut-il vendre seul le logement de la famille ?", attendu: [reponse], sources: [code_civil:215]}
+  - {id: soc-sec-01, matiere: droit_social, question: "Qu'est-ce qu'un accident du travail ?", attendu: [reponse], sources: [code_securite_sociale:L411-1]}
+  - {id: soc-sec-02, matiere: droit_social, question: "Qu'est-ce que la faute inexcusable de l'employeur ?", attendu: [reponse], sources: [code_securite_sociale:L452-1]}

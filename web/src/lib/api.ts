@@ -83,6 +83,9 @@ export interface Matiere {
   libelle: string
   sources: string[]
   noms_sources?: Record<string, string>
+  annee?: string // L1, L2 ou L3 : annee ou la matiere est le plus souvent enseignee (D97)
+  mots?: string[] // autres intitules des maquettes (recherche)
+  principales?: string[] // sources montrees d'abord
 }
 
 export interface QuestionQuiz {

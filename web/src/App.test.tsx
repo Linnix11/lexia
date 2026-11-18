@@ -445,6 +445,47 @@ describe('Audit du 16 novembre 2026', () => {
     expect(screen.getByText('chapitre1.pdf')).toBeInTheDocument()
   })
 
+  it('matieres classees par annee, cherchables, avec leurs sources principales (D97)', async () => {
+    const MATIERES = [
+      { id: 'droit_constitutionnel', libelle: 'Droit constitutionnel', annee: 'L1', mots: ['Ve République'], sources: ['constitution_1958'],
+        principales: ['constitution_1958'], noms_sources: { constitution_1958: 'Constitution de 1958' } },
+      { id: 'droit_penal', libelle: 'Droit pénal', annee: 'L2', sources: ['code_penal', 'code_procedure_penale'], principales: ['code_penal'],
+        noms_sources: { code_penal: 'Code pénal', code_procedure_penale: 'Code de procédure pénale' } },
+      { id: 'procedure_penale', libelle: 'Procédure pénale', annee: 'L3', mots: ['garde à vue'],
+        sources: ['code_procedure_penale', 'cass_criminelle'], principales: ['code_procedure_penale', 'cass_criminelle'],
+        noms_sources: { code_procedure_penale: 'Code de procédure pénale', cass_criminelle: 'Cour de cassation : chambre criminelle' } },
+    ]
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => url.endsWith('/matieres') ? repondre(MATIERES) : base(url, init))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    expect(await screen.findByRole('heading', { name: 'Licence 3' })).toBeInTheDocument()
+    const carte = screen.getByRole('heading', { name: 'Procédure pénale' }).closest('section')!
+    expect(within(carte).getByText('Sources principales : Code de procédure pénale · Cour de cassation : chambre criminelle')).toBeInTheDocument()
+
+    const recherche = screen.getByRole('searchbox', { name: 'Chercher une matière' })
+    fireEvent.change(recherche, { target: { value: 'procedure penale' } })
+    expect(screen.getByRole('heading', { name: 'Procédure pénale' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Droit pénal' })).toBeInTheDocument()  // par le Code de procédure pénale
+    expect(screen.queryByRole('heading', { name: 'Droit constitutionnel' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'L3' }))
+    expect(screen.queryByRole('heading', { name: 'Droit pénal' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Procédure pénale' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toutes' }))
+    fireEvent.change(recherche, { target: { value: 'droit international' } })
+    const vide = screen.getByText(/Aucune matière ne correspond à « droit international »/)
+    expect(vide).toHaveTextContent('ne couvre que le droit français')
+
+    // depuis la carte, l'assistant s'ouvre sur la matiere ; son choix est groupe par annee
+    fireEvent.change(recherche, { target: { value: 'garde à vue' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Poser une question' }))
+    const choix = await screen.findByRole('combobox', { name: 'Matière' })
+    expect(choix).toHaveValue('procedure_penale')
+    expect([...choix.querySelectorAll('optgroup')].map((g) => g.label)).toEqual(['Licence 1', 'Licence 2', 'Licence 3'])
+  })
+
   it('la page Compte garde la navigation de l espace etudiant (point 14)', async () => {
     window.history.pushState({}, '', '/compte')
     render(<Site />)

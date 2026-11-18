@@ -7,6 +7,7 @@ import { Reponse } from './Reponse'
 import { ChoixCours } from './ChoixCours'
 import { ACCEPT, fichiersDeposes } from '../lib/fichiers'
 import { DepotRapide } from './MesCours'
+import { OptionsMatieres } from './OptionsMatieres'
 
 const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
   { label: 'Hiérarchie des normes', question: 'Explique-moi la hiérarchie des normes', mode: 'expliquer' },
@@ -126,9 +127,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
               className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[11px] text-ink"
             >
               <option value="">Toutes</option>
-              {matieres.map((m) => (
-                <option key={m.id} value={m.id}>{m.libelle}</option>
-              ))}
+              <OptionsMatieres matieres={matieres} />
             </select>
           </label>
           <p className="w-full text-[11px] text-muted" aria-live="polite">{infos.description}</p>

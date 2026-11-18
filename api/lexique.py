@@ -23,6 +23,8 @@ CPC = "code_procedure_civile"
 DDHC, P46, CSI = "ddhc_1789", "preambule_1946", "code_securite_interieure"
 CGI, LPF, CJF = "code_general_impots", "livre_procedures_fiscales", "code_juridictions_financieres"
 CASF, CPEN, CEXP = "code_action_sociale_familles", "code_penitentiaire", "code_expropriation"
+CJPM, CGCT, CCONSO = "code_justice_penale_mineurs", "code_collectivites_territoriales", "code_consommation"
+CCOM, CSS, CGPPP = "code_commerce", "code_securite_sociale", "code_propriete_personnes_publiques"
 MAX_LEXIQUE = 4
 _SILENCE = (r"(?:\bcach(?:ant|ait|aient|er)\b|\b(?:a|avait|ont|avaient|lui|leur|il|elle) cache\b|dissimul"
             r"|(?<!vice )(?<!defaut )\bcache (?:que|qu|l.|le|la|les|une?|des|son|sa|ses|a|aux?)\b"
@@ -338,6 +340,194 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # Administratif : une decision publique et une demande d'urgence
     (r"^(?=.*(?:mairie|\bmaire\b|prefe|administrati|ministre|arrete|commune|recteur|universite))"
      r".*(?:en urgence|d.urgence|rapidement|\bvite\b|sans attendre|suspension)", ((CJA, "L521-2"), (CJA, "L521-1"))),
+    # --- notions des maquettes de licence (D97, docs/plaquettes-licence.md) -----------------------------
+    # Apres les situations racontees : un cas pratique garde ses articles de principe en premier.
+    # Consommation, regimes matrimoniaux, successions et securite sociale servent les matieres existantes
+    # (contrats et affaires, famille, droit social) : rares en licence, elles n'ont pas de matiere propre.
+    # Procedure penale (Code de procedure penale, Code de la justice penale des mineurs)
+    (r"article preliminaire|principes? directeurs? (?:de la |du )?(?:procedure|proces) penal|proces penal equitable",
+     ((CPP, "préliminaire"),)),
+    (r"mise en mouvement de l.action publique|mettre en mouvement l.action publique|exercice de l.action publique",
+     ((CPP, "1"),)),
+    (r"extinction de l.action publique|action publique s.eteint", ((CPP, "6"),)),
+    (r"\baction civile\b|constitu\w* partie civile|\bpartie civile\b", ((CPP, "2"), (CPP, "85"))),
+    (r"opportunite des poursuites|classement sans suite|classe\w* sans suite", ((CPP, "40-1"), (CPP, "40"))),
+    (r"alternatives? aux poursuites|rappel a la loi|avertissement penal probatoire|mediation penale", ((CPP, "41-1"),)),
+    (r"composition penale", ((CPP, "41-2"),)),
+    (r"(?:role|pouvoirs?|missions?) du procureur de la republique", ((CPP, "41"), (CPP, "40"))),
+    (r"police judiciaire|\bopj\b", ((CPP, "14"), (CPP, "16"))),
+    (r"enquete de flagrance|enquete flagrante|(?:crimes?|delits?) flagrants?|flagrant delit", ((CPP, "53"),)),
+    (r"enquete preliminaire", ((CPP, "75"),)),
+    (r"perquisitions?|visites? domiciliaires?", ((CPP, "56"), (CPP, "76"))),
+    (r"controles? d.identite", ((CPP, "78-2"),)),
+    (r"droit (?:de se taire|au silence|de garder le silence)|avocat.{0,40}garde a vue|garde a vue.{0,40}avocat"
+     r"|droits? (?:de la personne )?(?:gardee|placee) a vue|droits? en garde a vue", ((CPP, "63-1"), (CPP, "63-3-1"))),
+    (r"juge d.instruction|instruction preparatoire|information judiciaire", ((CPP, "79"), (CPP, "81"))),
+    (r"mise en examen|mis en examen", ((CPP, "80-1"),)),
+    (r"temoin assiste", ((CPP, "113-1"),)),
+    (r"\bmandats? (?:d.arret|d.amener|de comparution|de recherche|de depot)", ((CPP, "122"),)),
+    (r"detention provisoire", ((CPP, "144"), (CPP, "137"), (CPP, "137-1"))),
+    (r"juge des libertes et de la detention|\bjld\b", ((CPP, "137-1"),)),
+    (r"controle judiciaire", ((CPP, "138"),)),
+    (r"ecoutes? telephoniques?|interceptions? (?:de )?(?:correspondances|communications)", ((CPP, "100"),)),
+    (r"geolocalisation", ((CPP, "230-32"),)),
+    (r"chambre de l.instruction", ((CPP, "191"),)),
+    (r"nullites?.{0,40}(?:penal|garde a vue|perquisition|instruction|enquete)"
+     r"|(?:garde a vue|perquisition|enquete).{0,40}nullites?", ((CPP, "171"), (CPP, "802"))),
+    (r"cour d.assises", ((CPP, "231"), (CPP, "380-1"))),
+    (r"cour criminelle", ((CPP, "380-16"),)),
+    (r"tribunal correctionnel", ((CPP, "381"),)),
+    (r"tribunal de police", ((CPP, "521"),)),
+    (r"comparution immediate", ((CPP, "395"),)),
+    (r"comparution sur reconnaissance prealable|\bcrpc\b|plaider.coupable", ((CPP, "495-7"),)),
+    (r"preuve.{0,30}(?:penal|infraction)|(?:penal|infraction).{0,30}preuve|intime conviction|loyaute de la preuve",
+     ((CPP, "427"),)),
+    (r"(?:non|ne) bis in idem|deux fois pour les memes faits|personne acquittee", ((CPP, "368"), (CPP, "6"))),
+    (r"pourvoi.{0,30}(?:penal|chambre criminelle)|cassation en matiere penale", ((CPP, "567"),)),
+    (r"application des peines|amenagements? de (?:la |sa )?peine|\bjap\b", ((CPP, "712-1"),)),
+    (r"liberation conditionnelle", ((CPP, "729"),)),
+    (r"casier judiciaire", ((CPP, "768"),)),
+    (r"criminalite organisee|criminalite et (?:la )?delinquance organisees", ((CPP, "706-73"),)),
+    (r"droits? des victimes?.{0,40}(?:penal|enquete|infraction|plainte)|victimes? d.infractions?", ((CPP, "10-2"),)),
+    (r"justice penale des mineurs|responsabilite penale des mineurs|mineurs?.{0,40}(?:discernement|mesures? educatives?)",
+     ((CJPM, "L11-1"), (CJPM, "Préliminaire"), (CJPM, "L11-3"))),
+    # Droit administratif des biens (Code general de la propriete des personnes publiques)
+    (r"domaine public (?:maritime|naturel)", ((CGPPP, "L2111-4"),)),
+    (r"(?:definition|criteres?|composition|consistance|appartenance au|delimitation) du domaine public"
+     r"|qu.est.ce que le domaine public|domanialite publique|accessoires? du domaine public", ((CGPPP, "L2111-1"), (CGPPP, "L2111-2"))),
+    (r"domaine prive (?:des personnes publiques|de l.etat|de la commune|d.une personne publique)", ((CGPPP, "L2211-1"),)),
+    (r"inalienab|imprescriptib", ((CGPPP, "L3111-1"),)),
+    (r"declassement|desaffectation|sortie du domaine public", ((CGPPP, "L2141-1"),)),
+    (r"redevances? (?:d.occupation|domaniale)|occupation.{0,40}gratuit", ((CGPPP, "L2125-1"),)),
+    (r"occup\w* (?:privative )?(?:du |le )?domaine public|autorisations? d.occupation|titre d.occupation",
+     ((CGPPP, "L2122-1"), (CGPPP, "L2122-2"), (CGPPP, "L2122-3"))),
+    (r"biens des personnes publiques|propriete des personnes publiques|proprietes publiques", ((CGPPP, "L1"), (CGPPP, "L2111-1"))),
+    # Contentieux administratif (Code de justice administrative, CRPA, CGCT)
+    (r"decision implicite|silence.{0,40}(?:vaut|valant) (?:decision de )?rejet", ((CJA, "R421-2"),)),
+    (r"recours (?:administratif )?(?:gracieux|hierarchique)", ((CRPA, "L411-2"),)),
+    (r"astreinte.{0,40}(?:administration|personne publique|juge administratif)"
+     r"|(?:administration|juge administratif).{0,40}astreinte", ((CJA, "L911-3"),)),
+    (r"execution des (?:decisions|jugements).{0,30}administrati|inexecution d.un jugement.{0,40}administrati", ((CJA, "L911-4"),)),
+    (r"competence.{0,40}tribunal administratif|tribunal administratif.{0,40}competen|role du tribunal administratif"
+     r"|juge de droit commun du contentieux administratif", ((CJA, "L211-1"), (CJA, "R312-1"))),
+    (r"cours? administratives? d.appel|appel.{0,40}(?:jugement|tribunal) administratif", ((CJA, "L211-2"), (CJA, "R811-1"))),
+    (r"conseil d.etat.{0,40}(?:cassation|juge supreme|juridiction (?:administrative )?supreme)"
+     r"|cassation.{0,40}(?:administrati|conseil d.etat)|admission des pourvois", ((CJA, "L111-1"), (CJA, "L821-1"), (CJA, "L822-1"))),
+    (r"rapporteur public|commissaire du gouvernement", ((CJA, "L7"),)),
+    (r"contradictoire.{0,40}(?:juge|juridiction|instruction|proces) administrati", ((CJA, "L5"),)),
+    (r"refere.provision", ((CJA, "R541-1"),)),
+    (r"refere.(?:expertise|instruction)", ((CJA, "R532-1"),)),
+    (r"refere.constat", ((CJA, "R531-1"),)),
+    (r"refere precontractuel", ((CJA, "L551-1"),)),
+    (r"refere contractuel", ((CJA, "L551-13"),)),
+    (r"(?:pouvoirs?|role|office) du juge des referes|procedures? d.urgence.{0,30}administrati", ((CJA, "L511-1"),)),
+    (r"moyens? (?:souleves?|releves?) d.office|moyens? d.ordre public", ((CJA, "R611-7"),)),
+    (r"tierce opposition.{0,60}administrati|administrati.{0,60}tierce opposition", ((CJA, "R832-1"),)),
+    (r"(?:ministere|representation) (?:obligatoire )?(?:d.|par un )avocat.{0,40}administrati|dispense d.avocat", ((CJA, "R431-2"),)),
+    (r"defere\w*.{0,30}prefet|prefet.{0,30}defere|controle de legalite.{0,40}(?:collectivites?|communes?|prefet)",
+     ((CGCT, "L2131-6"),)),
+    (r"(?:abroger|abrogation).{0,40}(?:reglement|acte reglementaire) illegal", ((CRPA, "L243-2"),)),
+    # Droit de la consommation (Code de la consommation)
+    (r"(?:definition|notion) (?:du |de )?(?:consommateur|non.professionnel)|qu.est.ce qu.un (?:consommateur|non.professionnel)"
+     r"|qualite de consommateur", ((CCONSO, "liminaire"),)),
+    (r"clauses? abusives?.{0,60}(?:consommat|professionnel)|(?:consommat|professionnel)\w*.{0,60}clauses? abusives?",
+     ((CCONSO, "L212-1"),)),
+    (r"(?:droit|delai) de retractation", ((CCONSO, "L221-18"),)),
+    (r"contrats? (?:conclus? )?a distance|hors etablissement|demarchage a domicile", ((CCONSO, "L221-1"), (CCONSO, "L221-18"))),
+    (r"demarchage telephonique|demarch\w* par telephone", ((CCONSO, "L223-1"),)),
+    (r"pratiques? commerciales? trompeuses?|publicite (?:mensongere|trompeuse)", ((CCONSO, "L121-2"),)),
+    (r"pratiques? commerciales? deloyales?", ((CCONSO, "L121-1"),)),
+    (r"pratiques? commerciales? agressives?", ((CCONSO, "L121-6"),)),
+    (r"abus de (?:la )?faiblesse", ((CCONSO, "L121-8"),)),
+    (r"obligation (?:generale )?(?:precontractuelle )?d.information.{0,40}(?:consommateur|professionnel)"
+     r"|(?:professionnel|consommateur).{0,40}obligation (?:generale )?(?:precontractuelle )?d.information", ((CCONSO, "L111-1"),)),
+    (r"garantie (?:legale )?de conformite|defauts? de conformite", ((CCONSO, "L217-3"), (CCONSO, "L217-5"))),
+    (r"garantie commerciale", ((CCONSO, "L217-21"),)),
+    (r"refus de vente|ventes? (?:liees|subordonnees)", ((CCONSO, "L121-11"),)),
+    (r"credit (?:a la consommation|renouvelable)|pret a la consommation", ((CCONSO, "L312-1"),)),
+    (r"credit immobilier|pret immobilier", ((CCONSO, "L313-1"),)),
+    (r"surendettement", ((CCONSO, "L711-1"),)),
+    (r"obsolescence programmee", ((CCONSO, "L441-2"),)),
+    # Droit des societes (Code civil, Code de commerce)
+    (r"contrat de societe|definition de (?:la )?societe|defini\w*(?:-\w+)? (?:la |une )?societe|qu.est.ce qu.une societe|constitution d.une societe|affectio societatis",
+     ((CC, "1832"), (CC, "1833"))),
+    (r"interet social|objet social", ((CC, "1833"),)),
+    (r"personnalite (?:morale|juridique).{0,40}societe|societes?.{0,40}personnalite (?:morale|juridique)"
+     r"|immatriculation.{0,40}societe", ((CC, "1842"), (CCOM, "L210-6"))),
+    (r"\bapports?\b.{0,30}(?:en nature|en numeraire|en industrie|associe)|apport en societe", ((CC, "1843-3"),)),
+    (r"commissaires? aux apports", ((CCOM, "L225-8"), (CCOM, "L223-9"))),
+    (r"societe a responsabilite limitee|\bsarl\b|\beurl\b", ((CCOM, "L223-1"),)),
+    (r"societe anonyme", ((CCOM, "L225-1"),)),
+    (r"societe par actions simplifiee|\bsasu?\b", ((CCOM, "L227-1"),)),
+    (r"societe en nom collectif|\bsnc\b", ((CCOM, "L221-1"),)),
+    (r"societes? civiles?", ((CC, "1845"), (CC, "1857"))),
+    (r"societe en participation", ((CC, "1871"),)),
+    (r"societe creee de fait|societe de fait", ((CC, "1873"),)),
+    (r"abus de biens sociaux", ((CCOM, "L241-3"), (CCOM, "L242-6"))),
+    (r"responsabilite (?:civile )?des (?:dirigeants|gerants|administrateurs)", ((CCOM, "L223-22"), (CCOM, "L225-251"))),
+    (r"revo\w*.{0,30}(?:gerant|dirigeant|administrateur|directeur general)", ((CCOM, "L223-25"), (CC, "1851"))),
+    (r"conventions? reglementees?", ((CCOM, "L225-38"), (CCOM, "L223-19"))),
+    (r"cessions? de parts sociales|agrement.{0,30}(?:cession|associe)", ((CCOM, "L223-14"),)),
+    (r"nullite (?:de la |d.une )?societe", ((CC, "1844-10"),)),
+    (r"dissolution (?:de la |d.une )?societe|fin de la societe", ((CC, "1844-7"),)),
+    (r"\bfiliales?\b|groupes? de societes", ((CCOM, "L233-1"),)),
+    (r"droits? des associes|participer aux decisions collectives", ((CC, "1844"),)),
+    # Regimes matrimoniaux (Code civil)
+    (r"regime (?:matrimonial )?primaire|devoirs? (?:et droits )?(?:respectifs )?des epoux", ((CC, "212"), (CC, "214"), (CC, "215"), (CC, "220"))),
+    (r"contribution aux charges du mariage", ((CC, "214"),)),
+    (r"logement (?:de la )?famill|residence de la famille", ((CC, "215"),)),
+    (r"dettes? menageres?|solidarite (?:des epoux|menagere)|entretien du menage", ((CC, "220"),)),
+    (r"participation aux acquets", ((CC, "1569"),)),
+    (r"communaute (?:reduite aux acquets|legale)|regime (?:matrimonial )?legal|regime de (?:la )?communaute", ((CC, "1400"), (CC, "1401"))),
+    (r"communaute universelle", ((CC, "1526"),)),
+    (r"biens propres", ((CC, "1405"), (CC, "1404"))),
+    (r"biens communs|presomption de communaute", ((CC, "1401"), (CC, "1402"))),
+    (r"gestion (?:concurrente|des biens communs)|pouvoirs? des epoux", ((CC, "1421"), (CC, "1424"))),
+    (r"cogestion", ((CC, "1424"),)),
+    (r"\brecompenses?\b", ((CC, "1433"), (CC, "1437"))),
+    (r"separation de biens", ((CC, "1536"),)),
+    (r"(?:changement|changer|modifier|modification) (?:de |du |leur |le )?regime matrimonial", ((CC, "1397"),)),
+    (r"contrat de mariage|conventions? matrimoniales?", ((CC, "1387"), (CC, "1394"))),
+    # Successions et liberalites (Code civil)
+    (r"ouverture de (?:la )?succession|successions? s.ouvr", ((CC, "720"),)),
+    (r"indign\w* (?:de |a )?succeder|indignite successorale", ((CC, "726"), (CC, "727"))),
+    (r"(?:conditions?|capacite|aptitude) (?:pour |a )succeder|pour succeder", ((CC, "725"),)),
+    (r"saisine (?:des )?heritiers|heritiers? (?:sont )?saisis", ((CC, "724"),)),
+    (r"pactes? sur (?:une )?succession future|succession non (?:encore )?ouverte", ((CC, "722"),)),
+    (r"ordres? (?:des )?heritiers|qui herite|devolution (?:legale|de la succession)|heritiers? (?:legaux|ab intestat)",
+     ((CC, "734"), (CC, "721"))),
+    (r"representation successorale|par representation", ((CC, "751"),)),
+    (r"conjoint survivant|droits? (?:successoraux )?du conjoint", ((CC, "756"), (CC, "757"))),
+    (r"accept\w* (?:une |la )?succession|renon\w* a (?:une |la )?succession|a concurrence de l.actif net", ((CC, "768"),)),
+    (r"reserve hereditaire|heritiers? reservataires?|quotite disponible", ((CC, "912"), (CC, "913"))),
+    (r"reduction des liberalites|action en reduction|liberalites? (?:excessives?|reductibles?)", ((CC, "920"),)),
+    (r"rapport (?:des donations|des liberalites|successoral|a (?:la )?succession)", ((CC, "843"),)),
+    (r"partage (?:de la |d.une )?succession|partage successoral", ((CC, "816"), (CC, "815"))),
+    (r"donation.partage", ((CC, "1075"),)),
+    (r"\bliberalites?\b", ((CC, "893"),)),
+    (r"donations? entre vifs|\bdonations?\b.{0,30}(?:forme|notaire|irrevocab)", ((CC, "894"), (CC, "931"))),
+    (r"testament olographe", ((CC, "970"),)),
+    (r"testament (?:authentique|par acte public)", ((CC, "971"),)),
+    (r"legs universel", ((CC, "1003"),)),
+    (r"legs a titre universel", ((CC, "1010"),)),
+    (r"legs (?:a titre )?particulier", ((CC, "1014"),)),
+    (r"\btestaments?\b", ((CC, "969"), (CC, "967"))),
+    # Droit de la securite sociale (Code de la securite sociale)
+    (r"principes? de la securite sociale|securite sociale.{0,40}(?:solidarite|fondee|objet|organisation)", ((CSS, "L111-1"),)),
+    (r"protection universelle maladie|\bpuma\b|prise en charge des frais de sante", ((CSS, "L160-1"), (CSS, "L111-2-1"))),
+    (r"affili\w*.{0,30}regime general|regime general.{0,30}(?:securite sociale|affili)", ((CSS, "L311-2"),)),
+    (r"cotisations? (?:de securite )?socia|assiette des cotisations", ((CSS, "L242-1"),)),
+    (r"\burssaf\b|recouvrement des cotisations", ((CSS, "L213-1"),)),
+    (r"indemnites? journalieres?", ((CSS, "L321-1"), (CSS, "L323-1"))),
+    (r"pension d.invalidite|assurance invalidite", ((CSS, "L341-1"),)),
+    (r"assurance vieillesse|pension de retraite", ((CSS, "L351-1"),)),
+    (r"accidents? de trajet", ((CSS, "L411-2"),)),
+    (r"accidents? du travail", ((CSS, "L411-1"), (CSS, "L451-1"))),
+    (r"maladies? professionnelles?", ((CSS, "L461-1"),)),
+    (r"faute inexcusable", ((CSS, "L452-1"),)),
+    (r"rente.{0,40}(?:accident|incapacite)|incapacite permanente", ((CSS, "L434-2"),)),
+    (r"prestations? familiales?|allocations? familiales?", ((CSS, "L511-1"),)),
+    (r"contentieux de la securite sociale|pole social", ((CSS, "L142-1"),)),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )
@@ -368,14 +558,16 @@ def normaliser(question: str) -> str:
     return sans_accents(question.lower().replace("’", "'"))
 
 
-def suggestions(question: str, maximum: int = MAX_LEXIQUE) -> list[tuple[str, str]]:
-    """Articles de principe des notions reconnues dans la question, dans l'ordre du lexique."""
+def suggestions(question: str, maximum: int = MAX_LEXIQUE,
+                sources: tuple[str, ...] | None = None) -> list[tuple[str, str]]:
+    """Articles de principe des notions reconnues dans la question, dans l'ordre du lexique.
+    `sources` : celles de la matiere choisie ; un article d'une autre source ne prend pas de place (D97)."""
     q = normaliser(question)
     out: list[tuple[str, str]] = []
     for motif, arts in _COMPILES:
         if motif.search(q):
             for a in arts:
-                if a not in out:
+                if a not in out and (sources is None or a[0] in sources):
                     out.append(a)
         if len(out) >= maximum:
             break

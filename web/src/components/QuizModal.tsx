@@ -5,6 +5,7 @@ import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
 import { ChoixCours } from './ChoixCours'
+import { OptionsMatieres } from './OptionsMatieres'
 
 const FORMATS: { id: FormatQuiz; label: string }[] = [
   { id: 'qcm', label: 'QCM' },
@@ -132,7 +133,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
             Matière
             <select value={mat ?? ''} onChange={(e) => setMat(e.target.value || null)} className={champ}>
               <option value="">Toutes les matières</option>
-              {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+              <OptionsMatieres matieres={matieres} />
             </select>
           </label>
           <div className="tab:col-span-3">
