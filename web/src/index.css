@@ -55,3 +55,13 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* iOS agrandit la page quand un champ de moins de 16 px recoit le focus (audit du 2026-11-18, D7). Hors couche,
+   cette regle l'emporte sur les classes text-[13px] des champs. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

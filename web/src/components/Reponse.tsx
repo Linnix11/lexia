@@ -18,6 +18,8 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
             type="button"
             onClick={() => ouvrirSource(id)}
             title={s.entete}
+            // nom accessible « [1] Code civil, article 1240 », pas seulement « 1 » (audit du 2026-11-18, D8)
+            aria-label={`[${numeroSource(sources, id)}] ${titreCourt(s.entete)}`}
             className="rounded border-b border-[#b2c2b7] px-0.5 text-[11px] font-semibold text-forest hover:bg-mint"
           >
             [{numeroSource(sources, id)}]
@@ -118,7 +120,7 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
         <span className="text-[10px] text-muted">Quel problème ?</span>
         {MOTIFS.map(([id, libelle]) => (
           <button key={id} type="button" onClick={() => envoyer(false, id)}
-            className="rounded-full border border-line px-2 py-0.5 text-[10px] text-[#59615b] hover:border-[#9eafa3]">
+            className="min-h-6 rounded-full border border-line px-2.5 text-[11px] text-[#59615b] hover:border-[#9eafa3]">
             {libelle}
           </button>
         ))}
@@ -127,8 +129,9 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
   return (
     <span className="flex items-center gap-1.5">
       <span className="text-[10px] text-muted">Cette réponse vous a aidé ?</span>
-      <button type="button" onClick={() => envoyer(true)} className="rounded-full border border-line px-2 py-0.5 text-[10px] hover:border-[#9eafa3]">Oui</button>
-      <button type="button" onClick={() => setEtat('motif')} className="rounded-full border border-line px-2 py-0.5 text-[10px] hover:border-[#9eafa3]">Non</button>
+      {/* cibles de 24 px au moins (WCAG 2.5.8, audit du 2026-11-18, D8) */}
+      <button type="button" onClick={() => envoyer(true)} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Oui</button>
+      <button type="button" onClick={() => setEtat('motif')} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Non</button>
     </span>
   )
 }
@@ -189,7 +192,7 @@ export function Reponse({ message, actions = true, titre = true }: { message: Me
       )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-2.5">
-        <p className="text-[10px] leading-[1.45] text-[#5f6762]">
+        <p className="text-[12px] leading-[1.45] text-[#5f6762]">
           {r.avertissement}
           {retires > 0 && ` ${retires} élément(s) non vérifiable(s) retiré(s) automatiquement.`}
           {r.controle.recherche === 'lexicale' && ' Recherche par mots-clés.'}

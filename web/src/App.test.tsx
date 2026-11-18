@@ -4,6 +4,7 @@ import Site from './Site'
 import type { ReponseChat } from './lib/api'
 import { ecrireFavoris, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
+import css from './index.css?raw'
 
 const REPONSE: ReponseChat = {
   reponse_id: 'r-123',
@@ -75,7 +76,7 @@ describe('Assistant', () => {
     expect(screen.getByText('Droit positif')).toBeInTheDocument()
     expect(screen.getByText('Explication')).toBeInTheDocument()
     expect(screen.getByText('Conditions')).toBeInTheDocument()   // rubrique du mode affichee en sous-titre
-    expect(screen.getByRole('button', { name: '[1]' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '[1] Code civil, article 1240' })).toBeInTheDocument()
     expect(screen.getByText(/1 élément\(s\) non vérifiable\(s\) retiré\(s\)/)).toBeInTheDocument()
     const corps = JSON.parse(fetchMock.mock.calls.find(([u]) => String(u).endsWith('/chat'))![1].body)
     expect(corps).toMatchObject({ question: 'Que dit l’article 1240 ?', mode: 'expliquer', niveau: 'L1', semestre: 1 })
@@ -92,7 +93,7 @@ describe('Assistant', () => {
     }
     await poser('Que dit l’article 1240 ?')
     // cinq mentions de S1 (2 droit positif, 2 explication, 1 point incertain) : une pastille par bloc
-    expect(screen.getAllByRole('button', { name: '[1]' })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: '[1] Code civil, article 1240' })).toHaveLength(3)
   })
 
   it('propose les six semestres et envoie le semestre choisi', async () => {
@@ -113,7 +114,7 @@ describe('Assistant', () => {
 
   it('ouvre la source citee et verifie la version en vigueur', async () => {
     await poser('article 1240')
-    fireEvent.click(screen.getByRole('button', { name: '[1]' }))
+    fireEvent.click(screen.getByRole('button', { name: '[1] Code civil, article 1240' }))
     const panneau = await screen.findByRole('dialog')
     await within(panneau).findByText("Tout fait quelconque de l'homme…")
     fireEvent.click(within(panneau).getByRole('button', { name: 'Vérifier la version en vigueur' }))
@@ -394,10 +395,10 @@ describe('Audit du 16 novembre 2026', () => {
     fetchMock.mockImplementation((url: string, init?: RequestInit) =>
       url.includes('/sources/') ? repondre({ ...s4, texte: 'Chacun est responsable…', titre: null, meta: {} }) : base(url, init))
     await poser('article 1240')
-    expect(screen.getByRole('button', { name: '[2]' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '[2] Code civil · article 1241' })).toBeInTheDocument()
     expect(screen.queryByText(/S4/)).not.toBeInTheDocument()
     expect(screen.getByText('Code civil · article 1241')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '[2]' }))
+    fireEvent.click(screen.getByRole('button', { name: '[2] Code civil · article 1241' }))
     const panneau = await screen.findByRole('dialog')
     expect(await within(panneau).findByRole('heading', { name: 'Code civil · article 1241' })).toBeInTheDocument()
     expect(within(panneau).getByText('Classement complet').closest('details')).not.toHaveAttribute('open')
@@ -517,7 +518,7 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
     expect(within(repli).getByText('Sources utilisées')).toBeInTheDocument()
     expect(within(repli).queryByText(/Un cycliste/)).not.toBeInTheDocument()   // l'exemple n'est pas repete
     // numerotation commune : la source de l'exemple garde son numero
-    expect(within(exemple.closest('li')!).getByRole('button', { name: '[2]' })).toBeInTheDocument()
+    expect(within(exemple.closest('li')!).getByRole('button', { name: '[2] Code civil, article 1241' })).toBeInTheDocument()
   })
 
   it('sans reponse directe (commentaire, fiche anterieure) : affichage complet, rien de replie', async () => {
@@ -537,6 +538,31 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
 })
 
 describe('Audit du 18 novembre 2026, lot D', () => {
+  it('accessibilite : citation nommee, Oui/Non de 24 px, avertissement lisible, bouton desactive explique (D8)', async () => {
+    render(<Site />)
+    const envoyer = await screen.findByRole('button', { name: /Envoyer/ })
+    expect(envoyer).toBeDisabled()
+    expect(envoyer).toHaveAccessibleDescription('Écrivez au moins 3 caractères.')
+    fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'Que dit l’article 1240 ?' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    await screen.findByText('La responsabilité pour faute')
+    expect(screen.getByRole('button', { name: '[1] Code civil, article 1240' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Oui' })).toHaveClass('min-h-6')
+    expect(screen.getByText(/Lexia est un outil d’étude|Lexia est un outil d'étude/)).toHaveClass('text-[12px]')
+  })
+
+  it('mobile : libelles visibles dans la barre du bas, questions restantes affichees, champs a 16 px (D7)', async () => {
+    render(<Site />)
+    const fiches = await screen.findByRole('button', { name: 'Fiches & révisions' })
+    expect([...fiches.querySelectorAll('span')].some((s) => s.textContent === 'Fiches' && !s.className.includes('sr-only'))).toBe(true)
+    const compte = await screen.findByTitle('Mon compte')
+    expect(compte).toHaveTextContent(/7\s*question/)
+    expect(compte.className.split(' ')).not.toContain('hidden')
+    expect(css).toMatch(/@media \(pointer: coarse\)[^}]*textarea \{\s*font-size: 16px/)
+  })
+
   it('une erreur passagere du serveur ne deconnecte pas l etudiant (D3)', async () => {
     const normal = fetchMock.getMockImplementation()!
     let panne = false

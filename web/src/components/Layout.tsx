@@ -6,12 +6,14 @@ import { useApp, type Vue } from '../state/contexte'
 import { useSession } from '../state/session'
 import { Signet } from './Logo'
 
-const VUES: { id: Vue; label: string; ico: string }[] = [
-  { id: 'espace', label: 'Mon espace', ico: '⌂' },
-  { id: 'assistant', label: 'Assistant IA', ico: '✳' },
-  { id: 'matieres', label: 'Mes matières', ico: '▤' },
-  { id: 'fiches', label: 'Fiches & révisions', ico: '▧' },
-  { id: 'bibliotheque', label: 'Bibliothèque', ico: '▥' },
+// court : libelle visible sous l'icone dans la barre du bas du mobile (audit du 2026-11-18, D7), contenu
+// dans le libelle complet qui reste le nom accessible.
+const VUES: { id: Vue; label: string; court: string; ico: string }[] = [
+  { id: 'espace', label: 'Mon espace', court: 'Espace', ico: '⌂' },
+  { id: 'assistant', label: 'Assistant IA', court: 'Assistant', ico: '✳' },
+  { id: 'matieres', label: 'Mes matières', court: 'Matières', ico: '▤' },
+  { id: 'fiches', label: 'Fiches & révisions', court: 'Fiches', ico: '▧' },
+  { id: 'bibliotheque', label: 'Bibliothèque', court: 'Biblio', ico: '▥' },
 ]
 
 const ANNEES = ['L1', 'L2', 'L3'] as const
@@ -73,11 +75,12 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
                   }}
                   aria-current={actif ? 'page' : undefined}
                   title={v.label}
-                  className={`flex min-w-[42px] items-center justify-center gap-[11px] rounded-lg px-3 py-2 text-[#565f59]
-                              tab:w-full tab:px-0 tab:py-3 desk:justify-start desk:px-2.5 desk:py-[11px] desk:text-left
+                  className={`flex min-w-[42px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[#565f59]
+                              tab:w-full tab:flex-row tab:gap-[11px] tab:px-0 tab:py-3 desk:justify-start desk:px-2.5 desk:py-[11px] desk:text-left
                               ${actif ? 'bg-sage font-semibold text-[#254a3a]' : 'hover:bg-[#e8e9e2]'}`}
                 >
                   <span aria-hidden className="text-[18px] tab:text-[16px] desk:w-[18px] desk:text-center">{v.ico}</span>
+                  <span aria-hidden className="text-[11px] leading-none tab:hidden">{v.court}</span>
                   <span className="sr-only desk:not-sr-only">{v.label}</span>
                 </button>
               </li>
@@ -134,8 +137,11 @@ export function Topbar({ titre }: { titre?: string }) {
           </Lien>
         )}
         {profil && (
-          <Lien href="/compte" title="Mon compte" className="hidden items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage tab:flex">
-            <span className="font-semibold">{restant}</span> question{(restant ?? 0) > 1 ? 's' : ''} restante{(restant ?? 0) > 1 ? 's' : ''} · {profil.formule.nom}
+          <Lien href="/compte" title="Mon compte" className="flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage">
+            {/* visible aussi sur mobile, sans le nom de la formule (audit du 2026-11-18, D7) */}
+            <span className="font-semibold">{restant}</span>
+            <span><span className="hidden tab:inline">question{(restant ?? 0) > 1 ? 's' : ''} </span>restante{(restant ?? 0) > 1 ? 's' : ''}</span>
+            <span className="hidden tab:inline">· {profil.formule.nom}</span>
           </Lien>
         )}
         <Lien href="/compte" aria-label="Mon compte" title={profil?.email}

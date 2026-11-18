@@ -222,12 +222,14 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         <button
           type="submit"
           disabled={occupe || texte.trim().length < 3}
+          // bouton desactive : la raison est dite (audit du 2026-11-18, D8)
+          title={occupe ? 'Une réponse est en cours de préparation.' : texte.trim().length < 3 ? 'Écrivez au moins 3 caractères.' : undefined}
           className="rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
         >
           {occupe ? 'Recherche…' : 'Envoyer ↗'}
         </button>
       </form>
-      <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[10px] text-[#5f6762]">
+      <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[12px] text-[#5f6762]">
         <span>
           <span id={complet ? 'aide-saisie-complete' : 'aide-saisie'}>Entrée pour envoyer, Maj + Entrée pour aller à la ligne.</span>{' '}
           Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.

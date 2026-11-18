@@ -20,5 +20,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
+    css: { include: [/index\.css/] }, // contenu reel de la feuille de style, verifie par un test (D7)
   },
 })
