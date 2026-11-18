@@ -102,8 +102,9 @@ cours de période est refusé (à l'échéance seulement). Un paiement reçu alo
 (deux onglets, formule donnée sans fin) n'active rien : il passe « à rembourser » (audit du 18 novembre 2026, lot A).
 La page de paiement expire après 30 minutes ; en ouvrir une nouvelle ferme la précédente. Après paiement, l'abonné
 reçoit par e-mail la confirmation du contrat (formule, durée, prix, version des CGU, accès immédiat, formulaire de
-rétractation). Il peut se rétracter en ligne depuis Mon compte pendant 14 jours : la formule est retirée et un
-accusé de réception lui est envoyé.
+rétractation). Il peut se rétracter en ligne depuis Mon compte pendant 14 jours (« Renoncer au contrat ici », nom et
+prénom, contrat visé, « Confirmer la rétractation ») : la formule est retirée et un accusé de réception daté lui est
+envoyé.
 
 À faire par l'éditeur pour l'activer :
 1. Ouvrir le compte Stripe (identité, IBAN, description du service) ; dans les réglages, activer les reçus par

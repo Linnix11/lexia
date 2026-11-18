@@ -149,14 +149,20 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
     _envoyer_texte(destinataire, "Confirmation de votre formule Lexia", texte)
 
 
-def envoyer_accuse_retractation(destinataire: str, *, formules: str, date: str) -> None:
-    """Accuse de reception de la retractation faite en ligne."""
+def envoyer_accuse_retractation(destinataire: str, *, nom: str, envoye_le: str, contrats: list[str]) -> None:
+    """Accuse de reception de la declaration de retractation faite en ligne : contenu, date et heure
+    (art. L. 221-21 et D. 221-5 du Code de la consommation)."""
     texte = (
         "Bonjour,\n\n"
-        f"Nous avons bien reçu le {date} votre rétractation du contrat portant sur : {formules}.\n"
-        "Votre compte est repassé à la formule à laquelle vous aviez droit avant cet achat. Le remboursement, "
-        "déduction faite de la part de la période déjà écoulée (accès immédiat demandé), vous parviendra dans les "
-        "14 jours, par le moyen de paiement utilisé.\n"
+        "Nous avons bien reçu votre déclaration de rétractation, faite en ligne sur Lexia.\n\n"
+        "Contenu de la déclaration :\n"
+        f"Nom et prénom : {nom}\n"
+        + "".join(f"Contrat : {c}\n" for c in contrats)
+        + f"Accusé de réception envoyé à : {destinataire}\n"
+        f"Envoyée le : {envoye_le}\n\n"
+        "La formule concernée est retirée de votre compte. Le remboursement, déduction faite de la part de la "
+        "période déjà écoulée (accès immédiat demandé), vous parviendra dans les 14 jours, par le moyen de "
+        "paiement utilisé.\n"
     )
     _envoyer_texte(destinataire, "Accusé de réception de votre rétractation — Lexia", texte)
 

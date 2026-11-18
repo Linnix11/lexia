@@ -24,7 +24,7 @@ const assign = vi.fn()
 beforeEach(() => {
   connecte = true
   profil = PROFIL
-  etats = [{ dernier: null, retractable: false }]
+  etats = [{ dernier: null, retractable: false, retractables: [] }]
   assign.mockReset()
   fetchMock = vi.fn((url: string) => {
     if (url.endsWith('/auth/session')) return json(connecte ? profil : null)
@@ -106,23 +106,31 @@ describe('Mon compte et paiement', () => {
   const page = (chemin: string, search = '') => vi.stubGlobal('location', { ...window.location, pathname: chemin, search, assign })
 
   it('retour de Stripe : activation en cours, puis formule active (A3)', async () => {
-    etats = [{ dernier: { statut: 'ouvert', formule: 'etudiant', mois: 1, paye_le: null }, retractable: false },
-      { dernier: { statut: 'paye', formule: 'etudiant', mois: 1, paye_le: '2026-11-18T10:00:00+00:00' }, retractable: true }]
+    etats = [{ dernier: { statut: 'ouvert', formule: 'etudiant', mois: 1, paye_le: null }, retractable: false, retractables: [] },
+      { dernier: { statut: 'paye', formule: 'etudiant', mois: 1, paye_le: '2026-11-18T10:00:00+00:00' }, retractable: false, retractables: [] }]
     page('/compte', '?paiement=ok')
     render(<Site />)
     expect(await screen.findByText(/activation de votre formule en cours/)).toBeInTheDocument()
     expect(await screen.findByText(/votre formule est active/, {}, { timeout: 4000 })).toBeInTheDocument()
   })
 
-  it('rétractation en ligne depuis Mon compte (A4)', async () => {
-    etats = [{ dernier: { statut: 'paye', formule: 'etudiant', mois: 1, paye_le: '2026-11-18T10:00:00+00:00' }, retractable: true }]
+  it('rétractation en ligne depuis Mon compte : nom, contrat, adresse de l’accusé (A4, D. 221-5)', async () => {
+    const achat = { session: 'cs_test_1', formule: 'etudiant', mois: 1, montant_centimes: 499, paye_le: '2026-11-18T10:00:00+00:00' }
+    etats = [{ dernier: { statut: 'paye', formule: 'etudiant', mois: 1, paye_le: achat.paye_le }, retractable: true, retractables: [achat] }]
     page('/compte')
     render(<Site />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Me rétracter…' }))
-    etats = [{ dernier: { statut: 'a_rembourser', formule: 'etudiant', mois: 1, paye_le: null }, retractable: false }]
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmer ma rétractation' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Renoncer au contrat ici' }))
+    expect(screen.getByLabelText(/Formule Étudiant, 1 mois, 4,99 €/)).toBeChecked()
+    expect(screen.getByText(/etu@exemple\.fr/, { selector: 'p' })).toBeInTheDocument()
+    const confirmer = screen.getByRole('button', { name: 'Confirmer la rétractation' })
+    expect(confirmer).toBeDisabled()   // nom et prenom pas encore saisis
+    fireEvent.change(screen.getByLabelText('Nom et prénom'), { target: { value: 'Camille Martin' } })
+    etats = [{ dernier: { statut: 'a_rembourser', formule: 'etudiant', mois: 1, paye_le: null }, retractable: false, retractables: [] }]
+    fireEvent.click(confirmer)
     expect(await screen.findByText(/Rétractation enregistrée/)).toBeInTheDocument()
-    expect(fetchMock.mock.calls.some(([u, i]) => String(u).endsWith('/paiement/retractation') && i?.method === 'POST')).toBe(true)
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/paiement/retractation'))!
+    expect(appel[1].method).toBe('POST')
+    expect(JSON.parse(appel[1].body)).toEqual({ nom: 'Camille Martin', sessions: ['cs_test_1'] })
   })
 
   it('suppression du compte : fiches du navigateur effacées, paiements gardés dix ans annoncés (A11)', async () => {

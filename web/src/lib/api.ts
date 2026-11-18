@@ -149,9 +149,18 @@ export interface JourStats {
 }
 
 /** Dernier paiement du compte (retour de la page Stripe) et retractation possible (moins de 14 jours). */
+export interface AchatRetractable {
+  session: string
+  formule: string
+  mois: number
+  montant_centimes: number
+  paye_le: string
+}
+
 export interface EtatPaiement {
   dernier: { statut: string; formule: string; mois: number; paye_le: string | null } | null
   retractable: boolean
+  retractables: AchatRetractable[]
 }
 
 /** Paiement qui demande une action de l'editeur (remboursement, verification dans Stripe). */
@@ -393,8 +402,8 @@ export const api = {
   payer: (formule: string, mois: number, execution_immediate: boolean, cgu_version: string) =>
     post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate, cgu_version }),
   paiementEtat: () => requete<EtatPaiement>('/paiement/etat'),
-  /** Retractation en ligne des achats de moins de 14 jours (art. L. 221-21 du Code de la consommation). */
-  retracter: () => post<{ retractes: number }>('/paiement/retractation', {}),
+  /** Declaration de retractation en ligne (art. L. 221-21 et D. 221-5 du Code de la consommation). */
+  retracter: (nom: string, sessions: string[]) => post<{ retractes: number }>('/paiement/retractation', { nom, sessions }),
   admin: {
     stats: () => requete<StatsAdmin>('/admin/stats'),
     paiements: () => requete<PaiementATraiter[]>('/paiement/a-traiter'),

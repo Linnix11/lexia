@@ -71,11 +71,12 @@ CREATE TABLE IF NOT EXISTS paiements (
     paye_le                TEXT,
     paiement_stripe        TEXT,                     -- identifiant du PaymentIntent (pi_...), pour un remboursement
     motif                  TEXT,                     -- pourquoi a rembourser, ecarte ou en litige
-    retractation_le        TEXT                      -- retractation faite en ligne (Mon compte)
+    retractation_le        TEXT,                     -- retractation faite en ligne (Mon compte) : date et heure
+    retractation_nom       TEXT                      -- nom et prenom donnes dans la declaration de retractation
 );
 """
 # Colonnes ajoutees aux tables creees avant elles
-COLONNES_AJOUTEES = ("cgu_version", "motif", "retractation_le")
+COLONNES_AJOUTEES = ("cgu_version", "motif", "retractation_le", "retractation_nom")
 
 
 class ErreurPaiement(Exception):
@@ -186,10 +187,13 @@ class Paiements:
                                "(statut = 'en_attente' AND cree_le >= ?))", (uid, _il_y_a(days=1), _il_y_a(days=14)))
 
     def etat(self, uid: int) -> dict:
-        lignes = self.comptes._q("SELECT statut, formule, mois, paye_le FROM paiements WHERE utilisateur = ? "
-                                 "ORDER BY id DESC", (uid,))
-        dernier = dict(zip(("statut", "formule", "mois", "paye_le"), lignes[0])) if lignes else None
-        return {"dernier": dernier, "retractable": any(s == "paye" and retractable(p) for s, _, _, p in lignes)}
+        """Dernier paiement du compte et achats dont on peut encore se retracter (contrats a choisir)."""
+        lignes = self._dicts("SELECT session, statut, formule, mois, montant_centimes, paye_le FROM paiements "
+                             "WHERE utilisateur = ? ORDER BY id DESC", (uid,))
+        dernier = {k: lignes[0][k] for k in ("statut", "formule", "mois", "paye_le")} if lignes else None
+        retractables = [{k: p[k] for k in ("session", "formule", "mois", "montant_centimes", "paye_le")}
+                        for p in lignes if p["statut"] == "paye" and retractable(p["paye_le"])]
+        return {"dernier": dernier, "retractable": bool(retractables), "retractables": retractables}
 
     def a_traiter(self) -> list[dict]:
         return self._dicts("SELECT session, email, formule, mois, montant_centimes, statut, motif, cree_le, paye_le, "
@@ -249,20 +253,22 @@ class Paiements:
                            (formule, ajouter_mois(depart, mois).isoformat(), uid))
             return classer("paye", None)
 
-    def retracter(self, uid: int) -> list[dict]:
-        """Retractation en ligne : chaque paiement de moins de 14 jours est annule et passe « a_rembourser »."""
+    def retracter(self, uid: int, sessions: list[str], nom: str, le: str) -> list[dict]:
+        """Declaration de retractation en ligne (D. 221-5) : chaque contrat choisi, paye depuis moins de 14 jours,
+        est annule et passe « a_rembourser »."""
         c = self.comptes
         faits = []
         with c._lock, c._con:
             for session, formule, mois, montant, paye_le in c._con.execute(
                     "SELECT session, formule, mois, montant_centimes, paye_le FROM paiements "
                     "WHERE utilisateur = ? AND statut = 'paye' ORDER BY id DESC", (uid,)).fetchall():
-                if not retractable(paye_le):
+                if session not in sessions or not retractable(paye_le):
                     continue
                 self._retirer(c._con, uid, formule, mois)
                 c._con.execute("UPDATE paiements SET statut = 'a_rembourser', motif = 'retractation', "
-                               "retractation_le = ? WHERE session = ?", (_maintenant(), session))
-                faits.append({"session": session, "formule": formule, "mois": mois, "montant_centimes": montant})
+                               "retractation_le = ?, retractation_nom = ? WHERE session = ?", (le, nom, session))
+                faits.append({"session": session, "formule": formule, "mois": mois, "montant_centimes": montant,
+                              "paye_le": paye_le})
         return faits
 
     def rembourser(self, paiement_stripe: str, complet: bool) -> str:
@@ -305,6 +311,12 @@ def _formule_en_cours(u: Utilisateur) -> str | None:
     """Formule payante encore active, avec ou sans date de fin (u.formule tient compte de l'echeance)."""
     f = u.formule
     return f.id if f.prix_mensuel_euros > 0 else None
+
+
+class DeclarationRetractation(BaseModel):
+    """Champs exiges par l'art. D. 221-5 du Code de la consommation ; l'accuse part a l'adresse du compte."""
+    nom: str = Field(max_length=200)          # nom et prenom
+    sessions: list[str] = Field(max_length=50)  # contrats vises (identifiants des paiements)
 
 
 class DemandePaiement(BaseModel):
@@ -408,17 +420,24 @@ def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_ori
         return paiements.etat(u.id)
 
     @router.post("/retractation", dependencies=[Depends(verifier_origine)])
-    def retractation(u: Utilisateur = Depends(utilisateur_requis)):
-        """Fonction de retractation en ligne (art. L. 221-21 du Code de la consommation)."""
-        faits = paiements.retracter(u.id)
+    def retractation(req: DeclarationRetractation, u: Utilisateur = Depends(utilisateur_requis)):
+        """Fonctionnalite de retractation en ligne (art. L. 221-21 et D. 221-5 du Code de la consommation)."""
+        nom = " ".join(req.nom.split())
+        if len(nom) < 2:
+            raise HTTPException(422, "Indiquez votre nom et votre prénom.")
+        if not req.sessions:
+            raise HTTPException(422, "Choisissez le contrat dont vous vous rétractez.")
+        le = _maintenant()
+        faits = paiements.retracter(u.id, req.sessions, nom, le)
         if not faits:
             raise HTTPException(409, "Aucun achat de moins de 14 jours à annuler.")
         noter(resultat="retractation", sessions=[p["session"] for p in faits])
+        envoi = datetime.fromisoformat(le).astimezone(FUSEAU)
         try:
             courriel.envoyer_accuse_retractation(
-                u.email, date=date_fr(datetime.now(FUSEAU).date()),
-                formules=", ".join(f"formule {FORMULES[p['formule']].nom}, {p['mois']} mois, "
-                                   f"{euros(p['montant_centimes'])}" for p in faits))
+                u.email, nom=nom, envoye_le=f"{date_fr(envoi.date())} à {envoi:%H:%M} (heure de Paris)",
+                contrats=[f"formule {FORMULES[p['formule']].nom}, {p['mois']} mois, {euros(p['montant_centimes'])}, "
+                          f"payée le {date_fr(_jour_paris(p['paye_le']))}" for p in faits])
         except courriel.ErreurCourriel:
             log.warning("accuse de retractation non envoye")
         return {"retractes": len(faits)}

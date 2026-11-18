@@ -284,7 +284,7 @@ def test_a2_compte_supprime_a_rembourser(env):
 
 def test_a3_etat_du_dernier_paiement(env):
     client, _, _ = env
-    assert client.get("/paiement/etat").json() == {"dernier": None, "retractable": False}
+    assert client.get("/paiement/etat").json() == {"dernier": None, "retractable": False, "retractables": []}
     demander(client, "etudiant", 2)
     assert client.get("/paiement/etat").json()["dernier"]["statut"] == "ouvert"
     payer(client, evenement("cs_test_1", 998))
@@ -292,20 +292,54 @@ def test_a3_etat_du_dernier_paiement(env):
     assert etat["dernier"]["statut"] == "paye" and etat["dernier"]["formule"] == "etudiant" and etat["retractable"]
 
 
+def retracter(client, sessions=("cs_test_1",), nom="Camille Martin"):
+    return client.post("/paiement/retractation", json={"nom": nom, "sessions": list(sessions)})
+
+
 def test_a4_retractation_en_ligne(env, courriels):
+    """Declaration de retractation en ligne (C. consom. L. 221-21, D. 221-5) : nom, contrat vise, accuse."""
     client, comptes, _ = env
     demander(client, "intensif", 2)
     payer(client, evenement("cs_test_1", 1998))
+    etat = client.get("/paiement/etat").json()
+    assert [(p["session"], p["formule"], p["montant_centimes"]) for p in etat["retractables"]] == [
+        ("cs_test_1", "intensif", 1998)]
     courriels.clear()
-    r = client.post("/paiement/retractation")
-    assert r.status_code == 200
+    assert retracter(client, nom=" ").status_code == 422          # nom et prenom obligatoires
+    assert retracter(client, sessions=()).status_code == 422      # contrat vise obligatoire
+    assert retracter(client).status_code == 200
     u = comptes.par_email("etu@exemple.fr")
     assert u.formule.id == "gratuit"
-    ligne = comptes._q("SELECT statut, motif, retractation_le FROM paiements")[0]
-    assert ligne[:2] == ("a_rembourser", "retractation") and ligne[2]
+    ligne = comptes._q("SELECT statut, motif, retractation_le, retractation_nom FROM paiements")[0]
+    assert ligne[:2] == ("a_rembourser", "retractation") and ligne[2] and ligne[3] == "Camille Martin"
     assert len(courriels) == 1 and courriels[0][0] == "etu@exemple.fr" and "rétractation" in courriels[0][1].lower()
+    texte = courriels[0][2]
+    heure = datetime.fromisoformat(ligne[2]).astimezone(FUSEAU).strftime("%H:%M")
+    for attendu in ("Camille Martin", "Intensif", "2 mois", "19,98", "etu@exemple.fr", heure):
+        assert attendu in texte, attendu
     assert client.get("/paiement/etat").json()["retractable"] is False
-    assert client.post("/paiement/retractation").status_code == 409
+    assert retracter(client).status_code == 409
+
+
+def test_a4_retractation_d_un_seul_contrat(env):
+    """Le contrat vise est choisi : un autre achat de moins de 14 jours reste en place."""
+    client, comptes, _ = env
+    for n in (1, 2):
+        demander(client, "etudiant", 1)
+        payer(client, evenement(f"cs_test_{n}", 499))
+    assert retracter(client, sessions=("cs_test_2",)).status_code == 200
+    assert (statut(comptes, "cs_test_1"), statut(comptes, "cs_test_2")) == ("paye", "a_rembourser")
+    assert comptes.par_email("etu@exemple.fr").formule_fin == ajouter_mois(datetime.now(FUSEAU).date(), 1).isoformat()
+
+
+def test_a4_retractation_d_un_autre_compte_refusee(env):
+    client, comptes, _ = env
+    demander(client)
+    payer(client, evenement("cs_test_1", 499))
+    autre = TestClient(client.app)
+    inscrire(autre, "autre@exemple.fr")
+    assert retracter(autre).status_code == 409
+    assert statut(comptes, "cs_test_1") == "paye"
 
 
 def test_a4_retractation_garde_la_periode_deja_payee(env):
@@ -316,7 +350,7 @@ def test_a4_retractation_garde_la_periode_deja_payee(env):
     comptes._q("UPDATE paiements SET paye_le = '2026-01-01T10:00:00+00:00' WHERE session = 'cs_test_1'")
     demander(client, "etudiant", 1)
     payer(client, evenement("cs_test_2", 499))
-    assert client.post("/paiement/retractation").status_code == 200
+    assert retracter(client, sessions=("cs_test_1", "cs_test_2")).status_code == 200
     attendu = ajouter_mois(datetime.now(FUSEAU).date(), 1).isoformat()
     assert comptes.par_email("etu@exemple.fr").formule_fin == attendu
     assert statut(comptes, "cs_test_1") == "paye"
@@ -327,7 +361,7 @@ def test_a4_retractation_hors_delai_refusee(env):
     demander(client)
     payer(client, evenement("cs_test_1", 499))
     comptes._q("UPDATE paiements SET paye_le = '2026-01-01T10:00:00+00:00'")
-    assert client.post("/paiement/retractation").status_code == 409
+    assert retracter(client).status_code == 409
     assert comptes.par_email("etu@exemple.fr").formule_id == "etudiant"
 
 
@@ -372,7 +406,7 @@ def test_a6_remboursement_partiel_apres_retractation(env):
     client, comptes, _ = env
     demander(client)
     payer(client, evenement("cs_test_1", 499))
-    client.post("/paiement/retractation")
+    retracter(client)
     payer(client, charge("charge.refunded", rembourse=False))
     assert statut(comptes, "cs_test_1") == "rembourse"
 

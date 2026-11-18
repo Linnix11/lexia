@@ -23,13 +23,18 @@ function Jauge({ libelle, utilise, limite }: { libelle: string; utilise: number;
   )
 }
 
+const NOMS: Record<string, string> = { etudiant: 'Étudiant', intensif: 'Intensif' }
+const prix = (centimes: number) => `${(centimes / 100).toFixed(2).replace('.', ',')} €`
+
 /** Retour de la page Stripe (/compte?paiement=ok) et retractation en ligne des achats de moins de 14 jours. */
 function Paiement() {
-  const { config, rafraichir } = useSession()
+  const { config, profil, rafraichir } = useSession()
   const [retour] = useState(() => new URLSearchParams(window.location.search).get('paiement') === 'ok')
   const [etat, setEtat] = useState<EtatPaiement | null>(null)
   const [attente, setAttente] = useState(retour)
-  const [confirmer, setConfirmer] = useState(false)
+  const [declaration, setDeclaration] = useState(false)
+  const [nom, setNom] = useState('')
+  const [choisis, setChoisis] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const actif = Boolean(config?.paiement)
@@ -72,11 +77,19 @@ function Paiement() {
     else annonce = 'Paiement reçu. La confirmation de Stripe tarde : la formule s’activera d’elle-même dans quelques minutes. Rechargez cette page plus tard.'
   }
 
-  const retracter = async () => {
+  const ouvrir = () => {
+    setChoisis(etat?.retractables.map((a) => a.session) ?? [])
+    setDeclaration(true)
+  }
+  const basculer = (session: string) =>
+    setChoisis((c) => (c.includes(session) ? c.filter((s) => s !== session) : [...c, session]))
+
+  const retracter = async (e: FormEvent) => {
+    e.preventDefault()
     setErreur(null)
     try {
-      await api.retracter()
-      setConfirmer(false)
+      await api.retracter(nom, choisis)
+      setDeclaration(false)
       setEtat(await api.paiementEtat())
       await rafraichir()
       setMessage('Rétractation enregistrée. La formule est retirée et un accusé de réception vous a été envoyé par e-mail ; le remboursement suit dans les 14 jours.')
@@ -98,13 +111,35 @@ function Paiement() {
                 formule est retirée et le paiement vous est remboursé, déduction faite de la part de la période déjà
                 écoulée (accès immédiat demandé).
               </p>
-              {!confirmer ? (
-                <button type="button" onClick={() => setConfirmer(true)} className={`${boutonSecondaire} mt-3`}>Me rétracter…</button>
+              {!declaration ? (
+                <button type="button" onClick={ouvrir} className={`${boutonSecondaire} mt-3`}>Renoncer au contrat ici</button>
               ) : (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={retracter} className={bouton}>Confirmer ma rétractation</button>
-                  <button type="button" onClick={() => setConfirmer(false)} className="px-2 py-2 text-[13px] text-muted">Annuler</button>
-                </div>
+                // Declaration de retractation en ligne : nom et prenom, contrat vise, adresse de l'accuse (D. 221-5)
+                <form onSubmit={retracter} className="mt-3 grid gap-3 text-[13px]">
+                  <label className="grid gap-1 text-[12px]">
+                    Nom et prénom
+                    <input value={nom} onChange={(e) => setNom(e.target.value)} autoComplete="name" required
+                      className="max-w-[360px] rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
+                  </label>
+                  <fieldset className="grid gap-1">
+                    <legend className="text-[12px]">Contrat dont vous vous rétractez</legend>
+                    {etat?.retractables.map((a) => (
+                      <label key={a.session} className="flex gap-2">
+                        <input type="checkbox" checked={choisis.includes(a.session)} onChange={() => basculer(a.session)}
+                          className="accent-forest" />
+                        Formule {NOMS[a.formule] ?? a.formule}, {a.mois} mois, {prix(a.montant_centimes)}, payée le{' '}
+                        {new Date(a.paye_le).toLocaleDateString('fr-FR')}
+                      </label>
+                    ))}
+                  </fieldset>
+                  <p className="text-[12px] text-muted">L’accusé de réception sera envoyé par e-mail à {profil?.email}.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="submit" disabled={nom.trim().length < 2 || choisis.length === 0} className={`${bouton} disabled:opacity-60`}>
+                      Confirmer la rétractation
+                    </button>
+                    <button type="button" onClick={() => setDeclaration(false)} className="px-2 py-2 text-[13px] text-muted">Annuler</button>
+                  </div>
+                </form>
               )}
             </>
           )}
