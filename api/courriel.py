@@ -99,3 +99,74 @@ def envoyer_reinitialisation(destinataire: str, lien: str) -> None:
         "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.</p></div>"
     )
     envoyer(destinataire, "Nouveau mot de passe — Lexia", texte, html)
+
+
+# --- vente en ligne (api/paiement.py) ---------------------------------------------------------------------
+
+FORMULAIRE_RETRACTATION = (
+    "Modèle de formulaire de rétractation (annexe à l'article R. 221-1 du Code de la consommation)\n"
+    "(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)\n"
+    "À l'attention de {vendeur} :\n"
+    "Je/nous (*) vous notifie/notifions (*) par la présente ma/notre (*) rétractation du contrat portant sur la "
+    "prestation de services ci-dessous :\n"
+    "Commandé le :\n"
+    "Nom du (des) consommateur(s) :\n"
+    "Adresse du (des) consommateur(s) :\n"
+    "Signature du (des) consommateur(s) (uniquement en cas de notification du présent formulaire sur papier) :\n"
+    "Date :\n"
+    "(*) Rayez la mention inutile.\n"
+)
+
+
+def _envoyer_texte(destinataire: str, sujet: str, texte: str) -> None:
+    """E-mail sans lien a cliquer : le HTML reprend le texte, ligne par ligne."""
+    html = ('<div style="font-family:-apple-system,Segoe UI,sans-serif;color:#202724;max-width:560px">'
+            + "<br>".join(_echapper(ligne) for ligne in texte.splitlines()) + "</div>")
+    envoyer(destinataire, sujet, texte, html)
+
+
+def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int, prix: str, fin: str,
+                                  cgu_version: str, acces_immediat_le: str, retractation_jusquau: str,
+                                  url_publique: str, vendeur: str) -> None:
+    """Confirmation du contrat sur support durable (art. L. 221-13 du Code de la consommation)."""
+    texte = (
+        "Bonjour,\n\n"
+        "Votre paiement est confirmé. Cet e-mail confirme votre contrat avec Lexia : gardez-le.\n\n"
+        f"Formule : {formule}\n"
+        f"Durée : {mois} mois, sans reconduction automatique\n"
+        f"Prix payé : {prix} TTC, en une fois\n"
+        f"Formule active jusqu'au : {fin}\n"
+        f"Conditions générales d'utilisation et de vente acceptées : version du {cgu_version} ({url_publique}/cgu)\n"
+        f"Demande d'accès immédiat : {acces_immediat_le}. Vous avez demandé que la formule commence avant la fin "
+        "du délai de rétractation.\n\n"
+        f"Droit de rétractation : vous pouvez vous rétracter sans motif jusqu'au {retractation_jusquau}, "
+        f"gratuitement, avec le bouton « Me rétracter » de la page Mon compte ({url_publique}/compte) ou en "
+        "renvoyant le formulaire ci-dessous. Comme vous avez demandé l'accès immédiat, vous payez la part de la "
+        "période déjà écoulée et le reste vous est remboursé dans les 14 jours, par le moyen de paiement utilisé. "
+        "Ce droit est perdu si la formule a été entièrement exécutée avant la fin du délai.\n\n"
+        + FORMULAIRE_RETRACTATION.format(vendeur=vendeur or "Lexia")
+    )
+    _envoyer_texte(destinataire, "Confirmation de votre formule Lexia", texte)
+
+
+def envoyer_accuse_retractation(destinataire: str, *, formules: str, date: str) -> None:
+    """Accuse de reception de la retractation faite en ligne."""
+    texte = (
+        "Bonjour,\n\n"
+        f"Nous avons bien reçu le {date} votre rétractation du contrat portant sur : {formules}.\n"
+        "Votre compte est repassé à la formule à laquelle vous aviez droit avant cet achat. Le remboursement, "
+        "déduction faite de la part de la période déjà écoulée (accès immédiat demandé), vous parviendra dans les "
+        "14 jours, par le moyen de paiement utilisé.\n"
+    )
+    _envoyer_texte(destinataire, "Accusé de réception de votre rétractation — Lexia", texte)
+
+
+def envoyer_paiement_non_active(destinataire: str, *, formule: str, prix: str) -> None:
+    """Paiement recu alors qu'une autre formule est en cours : rien n'est active, le paiement sera rembourse."""
+    texte = (
+        "Bonjour,\n\n"
+        f"Nous avons reçu votre paiement de {prix} pour la formule {formule}, mais elle n'a pas été activée : "
+        "une autre formule est déjà en cours sur votre compte, ou ce compte n'existe plus. Ce paiement vous sera "
+        "remboursé intégralement dans les 14 jours, par le moyen de paiement utilisé. Vous n'avez rien à faire.\n"
+    )
+    _envoyer_texte(destinataire, "Paiement reçu, formule non activée — Lexia", texte)

@@ -1,7 +1,7 @@
 // Souscription en ligne (D86) : choix du nombre de mois, demande expresse d'acces immediat (droit de
 // retractation, article L. 221-25 du Code de la consommation), puis page de paiement Stripe Checkout.
 // Le numero de carte est saisi chez Stripe : il ne passe jamais par Lexia.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, ApiError, type Formule } from '../lib/api'
 import { VERSION_CGU } from '../lib/cgu'
 import { Lien } from '../lib/router'
@@ -20,7 +20,22 @@ export function Payer({ formule, principal }: { formule: Formule; principal: boo
   const [erreur, setErreur] = useState<string | null>(null)
   const style = principal ? bouton : boutonSecondaire
 
+  // Retour arriere depuis la page Stripe : la page revient du cache avec le bouton encore « Ouverture… »
+  useEffect(() => {
+    const retour = () => setEnvoi(false)
+    window.addEventListener('pageshow', retour)
+    return () => window.removeEventListener('pageshow', retour)
+  }, [])
+
   if (!profil) return <Lien href="/inscription" className={style}>Créer un compte pour souscrire</Lien>
+  if (profil.email_verifie === false) {
+    return (
+      <p className="text-[12px] leading-[1.5] text-muted">
+        Confirmez d’abord votre adresse e-mail avec le lien reçu à l’inscription : la souscription est possible
+        ensuite.
+      </p>
+    )
+  }
 
   const payer = async () => {
     setEnvoi(true)
@@ -52,7 +67,8 @@ export function Payer({ formule, principal }: { formule: Formule; principal: boo
           className="mt-[3px] accent-forest" />
         <span>
           Je demande l’accès immédiat à la formule. Si je me rétracte dans les 14 jours, je paierai la part de la
-          période déjà écoulée.
+          période déjà écoulée. Je reconnais perdre mon droit de rétractation si la formule est entièrement exécutée
+          avant la fin de ce délai.
         </span>
       </label>
       <label htmlFor={`cgu-${formule.id}`} className="flex gap-2 text-[12px] leading-[1.5] text-muted">

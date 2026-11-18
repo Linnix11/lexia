@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { api, ApiError, type ActiviteAdmin, type Annale, type ClientAdmin, type NouvelleAnnale, type ServeurAdmin, type StatsAdmin } from '../lib/api'
+import { api, ApiError, type ActiviteAdmin, type Annale, type ClientAdmin, type NouvelleAnnale, type PaiementATraiter, type ServeurAdmin, type StatsAdmin } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Histogramme } from './Graphique'
@@ -69,6 +69,38 @@ function Jauge({ libelle, utilise, total }: { libelle: string; utilise: number; 
 }
 
 // --- Vue d'ensemble --------------------------------------------------------------
+
+const MOTIFS: Record<string, string> = {
+  autre_formule: 'autre formule en cours',
+  deja_sans_fin: 'formule déjà donnée sans fin',
+  compte_absent: 'compte supprimé avant le paiement',
+  montant_inattendu: 'montant différent de la demande',
+  retractation: 'rétractation (rembourser au prorata)',
+}
+
+/** Paiements a rembourser ou a verifier dans le tableau de bord Stripe (audit du 2026-11-18, A6). */
+function PaiementsATraiter() {
+  const [lignes, setLignes] = useState<PaiementATraiter[] | null>(null)
+  useEffect(() => { api.admin.paiements().then(setLignes).catch(() => setLignes(null)) }, [])
+  if (!lignes) return null
+  return (
+    <Carte titre="Paiements à traiter" className="mb-4">
+      {lignes.length === 0 ? <p className="text-[13px] text-muted">Aucun paiement à rembourser ni à vérifier.</p> : (
+        <ul className="grid gap-2 text-[13px]">
+          {lignes.map((p) => (
+            <li key={p.session} className="flex flex-wrap justify-between gap-2 border-b border-line pb-2">
+              <span>{p.email} · {NOMS_FORMULES[p.formule] ?? p.formule} {p.mois} mois · {euros(p.montant_centimes / 100)}</span>
+              <span className="text-muted">
+                {p.statut.replace('_', ' ')}{p.motif ? ` : ${MOTIFS[p.motif] ?? p.motif}` : ''} · payé le {date(p.paye_le)}
+                {p.paiement_stripe ? ` · ${p.paiement_stripe}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Carte>
+  )
+}
 
 function Apercu({ s }: { s: StatsAdmin }) {
   const a = s.activite.dernieres_24h
@@ -466,7 +498,7 @@ function Serveur({ s }: { s: ServeurAdmin }) {
 // --- Page ----------------------------------------------------------------------------
 
 export function Admin() {
-  const { profil } = useSession()
+  const { profil, config } = useSession()
   const [onglet, setOnglet] = useState<Onglet>('apercu')
   const [stats, setStats] = useState<StatsAdmin | null>(null)
   const [activite, setActivite] = useState<ActiviteAdmin | null>(null)
@@ -540,7 +572,7 @@ export function Admin() {
           : onglet === 'annales' ? <Annales />
           : !stats || !activite || !serveur ? (
             <div className="grid animate-pulse gap-3 desk:grid-cols-3" aria-label="Chargement">{[0, 1, 2].map((i) => <div key={i} className="h-28 rounded-xl bg-[#ece9e0]" />)}</div>
-          ) : onglet === 'apercu' ? <Apercu s={stats} />
+          ) : onglet === 'apercu' ? <>{config?.paiement && <PaiementsATraiter />}<Apercu s={stats} /></>
             : onglet === 'activite' ? <Activite a={activite} />
               : <Serveur s={serveur} />}
       </main>

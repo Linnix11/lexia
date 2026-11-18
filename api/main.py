@@ -199,7 +199,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         app.include_router(creer_routes_paiement(
             Paiements(comptes), utilisateur_requis, verifier_origine, cle=settings.stripe_secret_key,
             secret_webhook=settings.stripe_webhook_secret, url_publique=settings.url_publique, journal=journal,
-            client=client_stripe), prefix="/paiement")
+            client=client_stripe, admin_requis=admin_requis,
+            vendeur=", ".join(v for v in (settings.legal.get("editeur"), settings.legal.get("adresse"),
+                                          settings.contact_email) if v)), prefix="/paiement")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:

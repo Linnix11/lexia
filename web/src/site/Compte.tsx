@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { ApiError } from '../lib/api'
+import { useEffect, useState, type FormEvent } from 'react'
+import { api, ApiError, type EtatPaiement } from '../lib/api'
+import { effacerFavoris } from '../lib/favoris'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { DoubleAuthentification } from './DoubleAuthentification'
@@ -22,6 +23,98 @@ function Jauge({ libelle, utilise, limite }: { libelle: string; utilise: number;
   )
 }
 
+/** Retour de la page Stripe (/compte?paiement=ok) et retractation en ligne des achats de moins de 14 jours. */
+function Paiement() {
+  const { config, rafraichir } = useSession()
+  const [retour] = useState(() => new URLSearchParams(window.location.search).get('paiement') === 'ok')
+  const [etat, setEtat] = useState<EtatPaiement | null>(null)
+  const [attente, setAttente] = useState(retour)
+  const [confirmer, setConfirmer] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [erreur, setErreur] = useState<string | null>(null)
+  const actif = Boolean(config?.paiement)
+
+  // Au retour de Stripe, le signal de paiement arrive en general en quelques secondes : on le guette 20 s.
+  useEffect(() => {
+    if (!actif) return
+    let essais = 0
+    let minuteur: number | undefined
+    let vivant = true
+    const charger = async () => {
+      let statut: string | undefined
+      try {
+        const e = await api.paiementEtat()
+        if (!vivant) return
+        setEtat(e)
+        statut = e.dernier?.statut
+        if (retour && statut === 'paye') await rafraichir()
+      } catch {
+        /* nouvel essai ci-dessous */
+      }
+      if (!vivant) return
+      if (retour && (statut === undefined || statut === 'ouvert' || statut === 'en_attente') && ++essais < 10) {
+        minuteur = window.setTimeout(charger, 2000)
+      } else {
+        setAttente(false)
+      }
+    }
+    charger()
+    return () => { vivant = false; window.clearTimeout(minuteur) }
+  }, [actif, retour, rafraichir])
+
+  if (!actif) return null
+  const statut = etat?.dernier?.statut
+  let annonce: string | null = null
+  if (retour) {
+    if (statut === 'paye') annonce = 'Paiement reçu : votre formule est active. La confirmation du contrat vous a été envoyée par e-mail.'
+    else if (statut === 'a_rembourser' || statut === 'ecarte') annonce = 'Paiement reçu, mais la formule n’a pas pu être activée (une autre formule est en cours). Il vous sera remboursé intégralement ; un e-mail vous l’explique.'
+    else if (attente) annonce = 'Paiement reçu, activation de votre formule en cours…'
+    else annonce = 'Paiement reçu. La confirmation de Stripe tarde : la formule s’activera d’elle-même dans quelques minutes. Rechargez cette page plus tard.'
+  }
+
+  const retracter = async () => {
+    setErreur(null)
+    try {
+      await api.retracter()
+      setConfirmer(false)
+      setEtat(await api.paiementEtat())
+      await rafraichir()
+      setMessage('Rétractation enregistrée. La formule est retirée et un accusé de réception vous a été envoyé par e-mail ; le remboursement suit dans les 14 jours.')
+    } catch (e) {
+      setErreur(e instanceof ApiError ? e.message : 'Rétractation impossible pour le moment : écrivez-nous.')
+    }
+  }
+
+  return (
+    <>
+      {annonce && <p role="status" className="rounded-xl border border-forest bg-mint px-4 py-3 text-[13px] text-forest">{annonce}</p>}
+      {(etat?.retractable || message) && (
+        <section className="rounded-xl border border-line bg-surface p-5">
+          <h2 className="text-[14px] font-semibold">Rétractation</h2>
+          {message ? <p role="status" className="mt-1 text-[12px] leading-[1.6] text-forest">{message}</p> : (
+            <>
+              <p className="mt-1 text-[12px] leading-[1.6] text-muted">
+                Vous avez souscrit il y a moins de 14 jours : vous pouvez vous rétracter sans motif et sans frais. La
+                formule est retirée et le paiement vous est remboursé, déduction faite de la part de la période déjà
+                écoulée (accès immédiat demandé).
+              </p>
+              {!confirmer ? (
+                <button type="button" onClick={() => setConfirmer(true)} className={`${boutonSecondaire} mt-3`}>Me rétracter…</button>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={retracter} className={bouton}>Confirmer ma rétractation</button>
+                  <button type="button" onClick={() => setConfirmer(false)} className="px-2 py-2 text-[13px] text-muted">Annuler</button>
+                </div>
+              )}
+            </>
+          )}
+          {erreur && <p role="alert" className="mt-2 text-[12px] text-[#8c4a36]">{erreur}</p>}
+        </section>
+      )}
+    </>
+  )
+}
+
 export function Compte() {
   const { profil, deconnexion, supprimer } = useSession()
   const { naviguer } = useRouteur()
@@ -41,7 +134,9 @@ export function Compte() {
     e.preventDefault()
     setErreur(null)
     try {
+      const email = profil.email
       await supprimer(mdp)
+      effacerFavoris(email) // poste partage : les fiches du compte ne restent pas dans le navigateur
       naviguer('/?compte-supprime=1', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Suppression impossible pour le moment.')
@@ -55,6 +150,7 @@ export function Compte() {
         <h1 className="mt-2 mb-6 font-display text-[32px] font-normal">{profil.email}</h1>
 
         <div className="grid gap-4">
+          <Paiement />
           <section className="rounded-xl border border-line bg-surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -88,8 +184,10 @@ export function Compte() {
           <section className="rounded-xl border border-[#ecd9c4] bg-cream p-5">
             <h2 className="text-[14px] font-semibold text-[#5f4f37]">Supprimer mon compte</h2>
             <p className="mt-1 text-[12px] leading-[1.6] text-[#746347]">
-              Votre adresse e-mail, votre mot de passe et vos compteurs d’utilisation sont effacés définitivement.
-              Les fiches enregistrées restent dans ce navigateur jusqu’à ce que vous les retiriez.
+              Votre adresse e-mail, votre mot de passe, vos cours déposés et vos compteurs d’utilisation sont effacés
+              définitivement, ainsi que les fiches enregistrées dans ce navigateur (celles d’un autre appareil y
+              restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail)
+              est conservée dix ans, comme toute pièce comptable.
             </p>
             {!suppression ? (
               <button type="button" onClick={() => setSuppression(true)}

@@ -24,7 +24,8 @@ export function Accueil() {
     <PublicLayout>
       {supprime && (
         <p role="status" className="border-b border-line bg-mint px-4 py-3 text-center text-[13px] text-forest">
-          Votre compte et ses données ont été supprimés définitivement.
+          Votre compte et ses données ont été supprimés définitivement. Seule la trace d’un éventuel paiement est
+          conservée dix ans, comme toute pièce comptable.
         </p>
       )}
       <Section className="grid items-center gap-10 py-14 desk:grid-cols-[1.1fr_.9fr] desk:py-20">

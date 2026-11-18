@@ -148,6 +148,27 @@ export interface JourStats {
   inscriptions: number
 }
 
+/** Dernier paiement du compte (retour de la page Stripe) et retractation possible (moins de 14 jours). */
+export interface EtatPaiement {
+  dernier: { statut: string; formule: string; mois: number; paye_le: string | null } | null
+  retractable: boolean
+}
+
+/** Paiement qui demande une action de l'editeur (remboursement, verification dans Stripe). */
+export interface PaiementATraiter {
+  session: string
+  email: string
+  formule: string
+  mois: number
+  montant_centimes: number
+  statut: string
+  motif: string | null
+  cree_le: string
+  paye_le: string | null
+  retractation_le: string | null
+  paiement_stripe: string | null
+}
+
 export interface StatsAdmin {
   comptes: {
     total: number
@@ -359,8 +380,12 @@ export const api = {
   /** Ouvre une session de paiement Stripe Checkout ; renvoie l'adresse de la page de paiement. */
   payer: (formule: string, mois: number, execution_immediate: boolean, cgu_version: string) =>
     post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate, cgu_version }),
+  paiementEtat: () => requete<EtatPaiement>('/paiement/etat'),
+  /** Retractation en ligne des achats de moins de 14 jours (art. L. 221-21 du Code de la consommation). */
+  retracter: () => post<{ retractes: number }>('/paiement/retractation', {}),
   admin: {
     stats: () => requete<StatsAdmin>('/admin/stats'),
+    paiements: () => requete<PaiementATraiter[]>('/paiement/a-traiter'),
     clients: (q = '') => requete<ClientAdmin[]>(`/admin/clients?q=${encodeURIComponent(q)}`),
     formule: (id: number, formule: string, jours: number | null) =>
       post<ClientAdmin>(`/admin/clients/${id}/formule`, { formule, jours }),

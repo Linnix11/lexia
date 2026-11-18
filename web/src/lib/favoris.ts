@@ -25,6 +25,15 @@ export function empreinte(texte: string): string {
 }
 const cle = (compte: string) => `lexia.favoris.v2.${empreinte(compte.toLowerCase())}`
 
+/** Suppression du compte : les fiches de ce compte quittent aussi ce navigateur. */
+export function effacerFavoris(compte: string) {
+  try {
+    localStorage.removeItem(cle(compte))
+  } catch {
+    /* stockage indisponible : rien a effacer */
+  }
+}
+
 /** Reprend une fois des fiches rangees sous une ancienne cle, puis efface celle-ci. */
 function reprendre(ancienne: string, compte: string) {
   const valeur = localStorage.getItem(ancienne)

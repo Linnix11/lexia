@@ -98,14 +98,21 @@ Intégré dans le code, inactif tant que les clés Stripe ne sont pas renseigné
 par e-mail). Fonctionnement : sur la page Tarifs, l'abonné choisit la durée (1, 2, 3, 6 ou 12 mois), coche la
 demande d'accès immédiat (droit de rétractation, article L. 221-25), puis paie sur la page de Stripe ; le webhook
 signé active la formule (prolongée si c'est la même formule encore en cours). Changer de formule payante en
-cours de période est refusé (à l'échéance seulement).
+cours de période est refusé (à l'échéance seulement). Un paiement reçu alors qu'une autre formule est en cours
+(deux onglets, formule donnée sans fin) n'active rien : il passe « à rembourser » (audit du 18 novembre 2026, lot A).
+La page de paiement expire après 30 minutes ; en ouvrir une nouvelle ferme la précédente. Après paiement, l'abonné
+reçoit par e-mail la confirmation du contrat (formule, durée, prix, version des CGU, accès immédiat, formulaire de
+rétractation). Il peut se rétracter en ligne depuis Mon compte pendant 14 jours : la formule est retirée et un
+accusé de réception lui est envoyé.
 
 À faire par l'éditeur pour l'activer :
 1. Ouvrir le compte Stripe (identité, IBAN, description du service) ; dans les réglages, activer les reçus par
    e-mail pour les paiements réussis.
 2. Tableau de bord Stripe, Développeurs : créer un endpoint de webhook
-   `https://lexia-axionstudio.cloud/api/paiement/webhook` avec les événements `checkout.session.completed` et
-   `checkout.session.async_payment_succeeded`, puis noter son secret (`whsec_...`).
+   `https://lexia-axionstudio.cloud/api/paiement/webhook` avec les événements `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+   `checkout.session.expired`, `charge.refunded` et `charge.dispute.created`, puis noter son secret (`whsec_...`).
+   Sans les quatre derniers, les remboursements et contestations ne retirent pas la formule.
 3. Donner à la session de développement, sans les écrire dans une conversation, l'emplacement où les valeurs
    ont été placées, ou les mettre soi-même dans `/opt/lexia/.env` : `STRIPE_SECRET_KEY` et
    `STRIPE_WEBHOOK_SECRET` (voir `deploy/env.production.exemple`), puis redémarrer le service.
@@ -113,8 +120,12 @@ cours de période est refusé (à l'échéance seulement).
    petit paiement remboursé. Vérifier aussi que Cloudflare laisse passer les appels de Stripe vers le webhook
    (envoi d'un événement de test depuis le tableau de bord).
 
-Rétractation : rembourser depuis le tableau de bord Stripe (montant au prorata si l'accès immédiat a été
-demandé), puis `python -m api.admin formule <email> gratuit`.
+Paiements à traiter : la vue d'ensemble de l'administration liste les paiements « à rembourser » (rétractation,
+autre formule en cours, compte supprimé), « écartés » (montant inattendu), « remboursés en partie » et « en
+litige », avec l'identifiant `pi_...` à chercher dans Stripe. Rétractation : la formule est déjà retirée ;
+rembourser depuis le tableau de bord Stripe le montant payé moins la part de la période écoulée (accès immédiat
+demandé). Le remboursement fait passer le paiement à « remboursé ». Un remboursement complet fait hors
+rétractation, ou une contestation bancaire, retire aussi la formule.
 
 Comparatif ayant servi au choix. Frais relevés sur les grilles officielles le 17 novembre 2026, cartes de
 l'Espace économique européen.

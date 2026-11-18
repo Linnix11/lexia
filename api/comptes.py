@@ -502,10 +502,10 @@ class Comptes:
             q, z, actifs = usage.get(j, (0, 0, 0))
             serie.append({"jour": j, "questions": q, "quiz": z, "actifs": actifs, "inscriptions": inscriptions.get(j, 0)})
         payants = sum(n for f, n in par_formule.items() if f != "gratuit") - expirees
-        revenu = sum(FORMULES[f].prix_mensuel_euros * n for f, n in par_formule.items() if f in FORMULES) \
-            - sum(FORMULES[f].prix_mensuel_euros for (f,) in self._q(
-                "SELECT formule FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin < ?",
-                (aujourd_hui.isoformat(),)) if f in FORMULES)
+        # Formules en cours avec une date de fin : une formule donnee sans fin n'est pas payee (audit A9)
+        revenu = sum(FORMULES[f].prix_mensuel_euros for (f,) in self._q(
+            "SELECT formule FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin >= ?",
+            (aujourd_hui.isoformat(),)) if f in FORMULES)
         return {
             "comptes": {"total": total, "par_formule": {f: par_formule.get(f, 0) for f in FORMULES},
                         "payants_actifs": payants, "formules_expirees": expirees,
