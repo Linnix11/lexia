@@ -208,7 +208,14 @@ def _en_vigueur(r, src, num):
 
 @reel
 def test_articles_du_lexique_existent(retriever_reel):
-    absents = [(s, n) for _, arts in lexique.NOTIONS for s, n in arts if not _en_vigueur(retriever_reel, s, n)]
+    # Une source hors DILA ajoutee au registre (traites de l'Union, D98) n'entre dans un index qu'a sa prochaine
+    # reconstruction : ses articles sont alors verifies ; avant, seule une telle source peut manquer entierement.
+    from ingest import run
+    dans_l_index = {s for (s,) in retriever_reel._q("SELECT DISTINCT source_id FROM passages")}
+    cites = {s for _, arts in lexique.NOTIONS for s, _ in arts}
+    assert all(hasattr(run.SOURCES[s], "fetch") for s in cites - dans_l_index), cites - dans_l_index
+    absents = [(s, n) for _, arts in lexique.NOTIONS for s, n in arts
+               if s in dans_l_index and not _en_vigueur(retriever_reel, s, n)]
     assert absents == []
 
 
