@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
+import { libelleFraicheur, sourcesAnciennes, useFraicheur } from '../lib/fraicheur'
 import { infosMode, symbole } from '../lib/modes'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useApp, type Message } from '../state/contexte'
@@ -64,7 +65,10 @@ function Bloc({ titre, items, sources, ton, rubriques = true }: {
 
 export function ListeSources({ sources }: { sources: FicheSource[] }) {
   const { ouvrirSource } = useApp()
+  const fraicheur = useFraicheur()
   if (!sources.length) return null
+  // Source citee a jour depuis plus de 30 jours (ex. Cour de cassation, archives DILA espacees) : mention discrete.
+  const anciennes = sourcesAnciennes(fraicheur, sources.map((s) => s.source_id))
   return (
     <div className="mt-4 border-t border-line-soft pt-3">
       <h4 className="mb-1 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
@@ -92,6 +96,11 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
           </li>
         ))}
       </ul>
+      {anciennes.map((a) => (
+        <p key={a.nom} className="mt-1 text-[10px] leading-[1.4] text-muted">
+          {a.nom} : {libelleFraicheur(a)}. {a.nature === 'textes' ? 'Une modification' : 'Une décision'} plus récente peut ne pas y figurer.
+        </p>
+      ))}
     </div>
   )
 }

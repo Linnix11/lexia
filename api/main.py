@@ -26,7 +26,7 @@ from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.matieres import LIBELLES, sources_par_matiere
-from api.textes import NOMS
+from api.textes import NOMS, SOURCES_TEXTES
 from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
 from api.retrieval.base import Retriever
@@ -294,6 +294,22 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                 "embeddings_modele": getattr(embedder, "model", None),
                 "reformulation_modele": settings.expansion_model or None,
                 "reclassement_modele": getattr(reclasseur, "model", None)}
+
+    # Fraicheur des sources, affichee dans le site (audit B7) : date de la derniere archive LEGI lue pour les
+    # textes, date de la decision la plus recente pour la jurisprudence. Recalculee au plus une fois par heure.
+    fraicheur_cache: dict = {}
+
+    @app.get("/fraicheur")
+    def fraicheur_sources():
+        if fraicheur_cache.get("expire", 0) < time.monotonic():
+            textes = fraicheur.date_textes(settings.index_dir)
+            dernieres = getattr(retriever, "dernieres_decisions", dict)()
+            sources = {s: {"nom": NOMS.get(s, s), "date": d, "nature": "jurisprudence"} for s, d in dernieres.items()}
+            if textes:
+                sources |= {s: {"nom": NOMS[s], "date": textes, "nature": "textes"} for s in SOURCES_TEXTES
+                            if s != "constitution_1958"}   # Constitution : page du Conseil constitutionnel
+            fraicheur_cache.update(expire=time.monotonic() + 3600, valeur={"textes": textes, "sources": sources})
+        return fraicheur_cache["valeur"]
 
     @app.get("/config")
     def config_publique():

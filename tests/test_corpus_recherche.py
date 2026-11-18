@@ -374,3 +374,44 @@ def test_b9_decisions_l():
     assert extraire("loi n° 2005-205 l'article 2").decisions_cc == ()
     assert extraire("loi n° 2005-205 L'article 2").decisions_cc == ()
     assert "L" in constit.NATURES
+
+
+# --- B7 : fraicheur affichee dans le site ---------------------------------------------------
+
+def test_b7_date_des_textes(tmp_path):
+    assert fraicheur.date_textes(tmp_path) is None
+    (tmp_path / "archives.txt").write_text("Freemium_legi_global_20261108-140000.tar.gz\nLEGI_20261117-212708.tar.gz\n"
+                                           "JADE_20261118-212708.tar.gz\nFreemium_cass_global_20261108-140000.tar.gz\n")
+    assert fraicheur.date_textes(tmp_path) == "2026-11-17"
+
+
+def test_b7_route_publique_en_cache(tmp_path, index_b, monkeypatch):
+    from api.config import Settings
+    from api.main import create_app
+
+    (tmp_path / "index").symlink_to(index_b)
+    r = LocalRetriever(index_b)
+    appels = []
+    monkeypatch.setattr(r, "dernieres_decisions", lambda: appels.append(1) or {"judilibre": "2026-09-17"})
+    monkeypatch.setattr(fraicheur, "date_textes", lambda d: "2026-11-17")
+    app = create_app(Settings(index_dir=tmp_path / "index", logs_dir=tmp_path / "logs"), retriever=r, llm=object())
+    c = TestClient(app)
+    f = c.get("/fraicheur").json()
+    assert f["textes"] == "2026-11-17"
+    assert f["sources"]["judilibre"] == {"nom": "Cour de cassation : chambres civiles, Assemblée plénière, chambre mixte",
+                                         "date": "2026-09-17", "nature": "jurisprudence"}
+    assert f["sources"]["code_civil"] == {"nom": "Code civil", "date": "2026-11-17", "nature": "textes"}
+    assert "constitution_1958" not in f["sources"]
+    c.get("/fraicheur")
+    assert appels == [1]   # calcule une fois, puis servi depuis le cache
+
+
+def test_b7_dernieres_decisions_index_sans_table(index_b, tmp_path):
+    import shutil
+    copie = tmp_path / "ancien"
+    shutil.copytree(index_b, copie)
+    con = sqlite3.connect(copie / "lexia.sqlite")
+    con.execute("DROP TABLE fraicheur")
+    con.commit()
+    con.close()
+    assert LocalRetriever(copie).dernieres_decisions() == LocalRetriever(index_b).dernieres_decisions() != {}

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -38,6 +39,17 @@ def derniere_reussite(data_dir: Path) -> datetime | None:
     if archives.exists():
         return datetime.fromtimestamp(archives.stat().st_mtime, tz=timezone.utc)
     return None
+
+
+def date_textes(index_dir: Path) -> str | None:
+    """Date (AAAA-MM-JJ) de l'archive LEGI la plus recente lue pour construire l'index : version des codes et
+    des lois. None pour un index construit a la main (sans archives.txt)."""
+    try:
+        noms = (index_dir / "archives.txt").read_text().split()
+    except OSError:
+        return None
+    dates = [m.group(1) for n in noms if (m := re.search(r"(?:legi_global|LEGI)_(\d{8})-\d{6}", n, re.IGNORECASE))]
+    return f"{max(dates)[:4]}-{max(dates)[4:6]}-{max(dates)[6:]}" if dates else None
 
 
 def a_jour(data_dir: Path, maintenant: datetime | None = None) -> bool | None:

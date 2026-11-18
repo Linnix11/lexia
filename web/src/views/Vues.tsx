@@ -6,6 +6,7 @@ import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
+import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { MODES } from '../lib/modes'
 import { useApp } from '../state/contexte'
 
@@ -68,6 +69,7 @@ export function VueAssistant() {
 
 export function VueMatieres() {
   const { matieres, setMatiere, setVue, ouvrirQuiz } = useApp()
+  const fraicheur = useFraicheur()
   return (
     <>
       <EnTete surtitre="Mes matières" titre="Matières disponibles." texte="Chaque matière s’appuie sur des sources officielles, et sur les cours que vous déposez." />
@@ -91,7 +93,12 @@ export function VueMatieres() {
               <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
                 <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>
                 <ul className="mt-2 grid gap-1.5">
-                  {m.sources.map((s) => <li key={s}>· {m.noms_sources?.[s] ?? s}</li>)}
+                  {m.sources.map((s) => (
+                    <li key={s}>
+                      · {m.noms_sources?.[s] ?? s}
+                      {fraicheur?.sources[s] && <span className="text-[#7a817c]"> · {libelleFraicheur(fraicheur.sources[s])}</span>}
+                    </li>
+                  ))}
                 </ul>
               </details>
             </Card>

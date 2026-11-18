@@ -1,18 +1,30 @@
 import type { Mode } from '../lib/api'
+import { dateLongue, plusRecente, useFraicheur } from '../lib/fraicheur'
 import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
+// sources : identifiants de /fraicheur ; textes : date de la derniere archive LEGI (codes et lois)
 const OFFICIELLES = [
-  { sym: '§', nom: 'Légifrance', desc: '36 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais' },
+  { sym: '§', nom: 'Légifrance', desc: '36 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais',
+    textes: true, sources: [] as string[] },
   { sym: '⚖', nom: 'Cour de cassation', desc: 'Arrêts publiés depuis 2000, sommaires depuis 1960 (chambre criminelle : 1963)',
-    url: 'https://www.courdecassation.fr/acces-rapide-judilibre/donnees-ouvertes-open-data-et-api' },
-  { sym: '⚖', nom: 'Conseil d’État', desc: 'Recueil Lebon et Tribunal des conflits', url: 'https://www.conseil-etat.fr/' },
-  { sym: '◈', nom: 'Conseil constitutionnel', desc: 'Constitution, décisions DC et QPC', url: 'https://www.conseil-constitutionnel.fr/les-decisions' },
+    url: 'https://www.courdecassation.fr/acces-rapide-judilibre/donnees-ouvertes-open-data-et-api',
+    textes: false, sources: ['judilibre', 'cass_criminelle', 'cass_sociale', 'cass_commerciale'] },
+  { sym: '⚖', nom: 'Conseil d’État', desc: 'Recueil Lebon et Tribunal des conflits', url: 'https://www.conseil-etat.fr/',
+    textes: false, sources: ['conseil_etat'] },
+  { sym: '◈', nom: 'Conseil constitutionnel', desc: 'Constitution, décisions DC, QPC et L',
+    url: 'https://www.conseil-constitutionnel.fr/les-decisions', textes: false, sources: ['decisions_conseil_constitutionnel'] },
 ]
 
 const fleche = 'text-[14px] text-muted hover:text-forest' // #9aa19a ne donnait que 2,62:1 sur la carte
 
 export function CarteSources() {
+  const fraicheur = useFraicheur()
+  const aJour = (s: (typeof OFFICIELLES)[number]) => {
+    const date = s.textes ? fraicheur?.textes : plusRecente(fraicheur, s.sources)
+    if (!date) return null
+    return s.textes ? `Version du ${dateLongue(date)}` : `Décisions jusqu’au ${dateLongue(date)}`
+  }
   return (
     <Card className="p-4 tab:p-[19px]">
       <CardHead titre="Sources de confiance" sousTitre="Textes et jurisprudence consultables"
@@ -24,6 +36,7 @@ export function CarteSources() {
             <span className="min-w-0 flex-1">
               <strong className="block text-[11px] leading-[1.3] font-semibold">{s.nom}</strong>
               <small className="mt-1 block text-[10px] text-muted">{s.desc}</small>
+              {aJour(s) && <small className="mt-0.5 block text-[10px] text-forest">{aJour(s)}</small>}
             </span>
             <a className={fleche} href={s.url} target="_blank" rel="noreferrer" aria-label={`Ouvrir ${s.nom}`}>↗</a>
           </li>

@@ -316,6 +316,20 @@ class LocalRetriever:
         n = self._q("SELECT count(*) FROM passages")[0][0]
         stats = {"moteur": self.mode, "passages": n, "embeddings": len(self._ids),
                  "couverture": round(self.couverture(None), 3)}
-        if self._q("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'fraicheur'"):
-            stats["derniere_decision"] = dict(self._q("SELECT source_id, date FROM fraicheur ORDER BY source_id"))
+        if derniere := self.dernieres_decisions():
+            stats["derniere_decision"] = derniere
         return stats
+
+    def dernieres_decisions(self) -> dict[str, str]:
+        """Date de la decision la plus recente de chaque source de jurisprudence (B7), calculee une fois.
+        Table `fraicheur` de l'index ; index anterieur : lecture des sommaires et des decisions (quelques
+        secondes, une seule fois par processus)."""
+        if not hasattr(self, "_dernieres"):
+            if self._q("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'fraicheur'"):
+                rows = self._q("SELECT source_id, date FROM fraicheur ORDER BY source_id")
+            else:
+                rows = self._q(
+                    "SELECT source_id, max(json_extract(data, '$.meta.date')) FROM passages WHERE type <> 'article'"
+                    " AND json_extract(data, '$.meta.date') < '2999' GROUP BY source_id ORDER BY source_id")
+            self._dernieres = {src: d for src, d in rows if d and str(d)[:4].isdigit()}
+        return self._dernieres

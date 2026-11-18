@@ -50,6 +50,18 @@ export interface ReponseChat {
   controle: Controle
 }
 
+/** Reponse de /fraicheur : date jusqu'a laquelle chaque source est a jour (audit B7). */
+export interface FraicheurSource {
+  nom: string
+  date: string // AAAA-MM-JJ
+  nature: 'textes' | 'jurisprudence'
+}
+
+export interface Fraicheur {
+  textes: string | null
+  sources: Record<string, FraicheurSource>
+}
+
 export interface SourceComplete extends FicheSource {
   texte: string
   titre: string | null
@@ -418,6 +430,7 @@ export const api = {
     supprimerAnnale: (id: number) => post<void>(`/admin/annales/${id}/supprimer`, {}),
   },
   matieres: () => requete<Matiere[]>('/matieres'),
+  fraicheur: () => requete<Fraicheur>('/fraicheur'),
   annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number, cours?: OptionsCours) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre, ...optionsCours(cours) }),
