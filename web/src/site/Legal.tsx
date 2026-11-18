@@ -24,6 +24,23 @@ function useLegal() {
   return { l: config?.legal, contact: config?.contact_email ?? null, paiement: !!config?.paiement }
 }
 
+/** Lien de signalement d'un contenu illicite (DSA, art. 16) : e-mail pre-rempli avec les quatre elements
+ *  demandes par l'article 16, paragraphe 2. */
+function Signalement({ adresse }: { adresse: string | null }) {
+  if (!adresse) return <V manque="Adresse e-mail de contact" />
+  const corps = [
+    'Contenu signalé (titre du cours, adresse de la page, ou tout élément permettant de le retrouver) :',
+    '',
+    'Raisons pour lesquelles ce contenu est illicite :',
+    '',
+    'Nom et prénom :',
+    '',
+    'Je déclare de bonne foi que les informations et allégations de ce signalement sont exactes et complètes.',
+  ].join('\n')
+  const href = `mailto:${adresse}?subject=${encodeURIComponent('Signalement de contenu illicite')}&body=${encodeURIComponent(corps)}`
+  return <a href={href} className="underline">signaler un contenu illicite</a>
+}
+
 function Page({ titre, maj, children }: { titre: string; maj: string; children: ReactNode }) {
   return (
     <PublicLayout>
@@ -84,6 +101,11 @@ export function MentionsLegales() {
           de Google{l?.groq ? <>, ou en secours un modèle ouvert exécuté par Groq</> : null}), à partir des sources citées. Ils peuvent comporter des erreurs et ne constituent pas un avis
           juridique ni une consultation juridique.
         </p>
+        <p>
+          Les réponses, questionnaires et corrections envoyés par l’API de Lexia portent un marquage lisible par
+          machine (en-tête HTTP « X-AI-Generated: true ») qui indique qu’ils sont générés par une intelligence
+          artificielle (article 50, paragraphe 2, du règlement (UE) 2024/1689).
+        </p>
       </section>
     </Page>
   )
@@ -93,6 +115,17 @@ export function Cgu() {
   const { l, contact, paiement } = useLegal()
   return (
     <Page titre="Conditions générales d’utilisation et de vente" maj={VERSION_CGU}>
+      <section aria-label="En bref" className="rounded-[8px] border border-line px-4 py-3">
+        <p className="font-semibold">En bref</p>
+        <ul>
+          <li>Lexia vous aide à étudier le droit avec une intelligence artificielle qui peut se tromper : vérifiez toujours les sources citées.</li>
+          <li>Il faut avoir 15 ans ou plus pour créer un compte. Avant 18 ans, demandez l’accord d’un parent pour payer une formule.</li>
+          <li>Une formule payante dure le nombre de mois acheté, sans renouvellement automatique.</li>
+          <li>Vous pouvez changer d’avis pendant 14 jours après l’achat, depuis « Mon compte » ou par e-mail : vous êtes remboursé, moins la part déjà utilisée si l’accès a commencé (article 4).</li>
+          <li>Vos cours déposés ne sont visibles que par vous. Ne déposez que des documents que vous avez le droit d’utiliser.</li>
+          <li>Si nous devons limiter ou fermer votre compte, nous vous disons pourquoi et vous pouvez contester (article 6).</li>
+        </ul>
+      </section>
       <section>
         <h2>1. Objet</h2>
         <p>
@@ -115,9 +148,9 @@ export function Cgu() {
           supprimer son compte à tout moment depuis la page « Mon compte ».
         </p>
         <p>
-          La création d’un compte est réservée aux personnes âgées de 15 ans ou plus. En dessous de cet âge, le
-          consentement d’un titulaire de l’autorité parentale est nécessaire (article 45 de la loi Informatique
-          et Libertés).
+          La création d’un compte est réservée aux personnes âgées de 15 ans ou plus, qui le déclarent à
+          l’inscription. Si vous avez moins de 18 ans, la souscription d’une formule payante suppose l’accord
+          d’un titulaire de l’autorité parentale (article 1148 du Code civil).
         </p>
       </section>
       <section>
@@ -150,12 +183,47 @@ export function Cgu() {
           renouvelée automatiquement : à son échéance, le compte repasse en formule gratuite, sans démarche ni frais.
         </p>
         <p>
-          <strong>Droit de rétractation.</strong> Vous disposez de quatorze jours à compter de la souscription pour
-          vous rétracter, sans motif, par simple e-mail à <Contact adresse={contact} /> (article L. 221-18 du Code de
-          la consommation). Si vous demandez expressément que la formule soit activée avant la fin de ce délai, vous
-          payez, en cas de rétractation, un montant proportionnel à la période déjà écoulée (article L. 221-25).
-          Le remboursement intervient dans les quatorze jours suivant votre demande, par le moyen de paiement utilisé.
-          Vous pouvez utiliser le modèle ci-dessous, sans y être obligé.
+          <strong>Droit de rétractation.</strong> Vous avez le droit de vous rétracter du contrat sans donner de
+          motif dans un délai de quatorze jours. Le délai de rétractation expire quatorze jours après le jour de la
+          conclusion du contrat (articles L. 221-18 et suivants du Code de la consommation).
+        </p>
+        <p>
+          Pour exercer ce droit, vous nous notifiez votre décision de rétractation au moyen d’une déclaration dénuée
+          d’ambiguïté, par exemple par lettre envoyée par la poste à <V v={l?.editeur} manque="Éditeur" />,{' '}
+          <V v={l?.adresse} manque="Adresse" /> ou par courrier électronique à <Contact adresse={contact} />{' '}
+          (téléphone : <V v={l?.telephone} manque="Numéro de téléphone" />). Vous pouvez utiliser le modèle de
+          formulaire de rétractation ci-dessous, mais ce n’est pas obligatoire.
+        </p>
+        {paiement && (
+          <p>
+            <strong>Rétractation en ligne.</strong> Vous pouvez également exercer votre droit de rétractation en
+            ligne, sur la page « Mon compte » du site, rubrique « Rétractation », affichée pendant tout le délai de
+            rétractation : bouton « Me rétracter… », puis « Confirmer ma rétractation ». La rétractation porte sur
+            les achats de moins de quatorze jours de votre compte ; la formule correspondante est retirée aussitôt.
+            Nous vous envoyons alors, dans les meilleurs délais, un accusé de réception de la rétractation sur un
+            support durable (un e-mail à l’adresse de votre compte), qui indique les formules concernées et la date
+            de la rétractation (article L. 221-21 du Code de la consommation).
+          </p>
+        )}
+        <p>
+          Pour que le délai de rétractation soit respecté, il suffit que vous transmettiez votre communication
+          relative à l’exercice du droit de rétractation avant l’expiration du délai de rétractation.
+        </p>
+        <p>
+          <strong>Effets de la rétractation.</strong> En cas de rétractation de votre part, nous vous rembourserons
+          tous les paiements reçus de vous sans retard excessif et, en tout état de cause, au plus tard quatorze jours
+          à compter du jour où nous sommes informés de votre décision. Nous procéderons au remboursement en utilisant
+          le même moyen de paiement que celui que vous aurez utilisé pour la transaction initiale, sauf si vous
+          convenez expressément d’un moyen différent ; en tout état de cause, ce remboursement n’occasionnera pas de
+          frais pour vous (article L. 221-24).
+        </p>
+        <p>
+          Si vous avez demandé de commencer la prestation de services pendant le délai de rétractation, vous devrez
+          nous payer un montant proportionnel à ce qui vous a été fourni jusqu’au moment où vous nous avez informé de
+          votre rétractation, par rapport à l’ensemble des prestations prévues par le contrat (article L. 221-25).
+          Lors de cette demande, vous reconnaissez perdre le droit de rétractation une fois le contrat entièrement
+          exécuté (article L. 221-28, 1°) ; une formule durant au moins un mois, elle n’est jamais entièrement
+          exécutée avant la fin du délai de quatorze jours.
         </p>
         <div className="rounded-[8px] border border-line px-4 py-3 text-[13px]" aria-label="Modèle de formulaire de rétractation">
           <p className="font-semibold">Modèle de formulaire de rétractation (annexe à l’article R. 221-1 du Code de la consommation)</p>
@@ -182,23 +250,98 @@ export function Cgu() {
           Vous pouvez déposer vos propres cours (PDF, Word, texte) pour réviser avec Lexia. Vous garantissez avoir le
           droit de les utiliser : un cours reçu de votre enseignant ou de votre faculté reste son œuvre, et vous ne le
           déposez que pour votre usage personnel d’étude. Lexia n’acquiert aucun droit sur vos cours, ne les montre
-          à personne d’autre et ne les partage pas. Vous pouvez les retirer à tout moment ; ils sont aussi supprimés
-          avec votre compte. Le nombre de cours conservés dépend de votre formule (page Tarifs).
+          à aucun autre utilisateur, ne les publie pas et ne les vend pas. Vous pouvez les retirer à tout moment ;
+          ils sont aussi supprimés avec votre compte. Le nombre de cours conservés dépend de votre formule (page
+          Tarifs).
+        </p>
+        <p>
+          Quand vous interrogez Lexia sur votre cours, les seuls passages retenus pour la réponse sont transmis,
+          avec votre question, au modèle de langage qui rédige la réponse : l’API Gemini de Google
+          {l?.groq ? <>, ou Groq en secours</> : null}.{' '}
+          {l?.gemini_payant ? (
+            <>Au niveau payant utilisé par Lexia, Google n’utilise pas ces passages pour améliorer ses produits.</>
+          ) : (
+            <>
+              Au niveau gratuit actuellement utilisé, Google peut utiliser ces passages pour améliorer ses produits
+              et des relecteurs humains peuvent les lire.{' '}
+              <A>[Passage au niveau payant de Gemini à faire avant toute ouverture.]</A>
+            </>
+          )}{' '}
+          Le détail figure dans la politique de confidentialité.
         </p>
       </section>
       <section>
-        <h2>6. Usage acceptable</h2>
+        <h2>5 bis. Contenus déposés : modération et signalement</h2>
+        <p>
+          L’éditeur ne surveille pas les cours déposés et n’utilise aucun outil automatique pour les examiner. Il
+          n’en prend connaissance qu’à la suite d’un signalement ou de la demande d’une autorité. Les décisions sont
+          prises par une personne, jamais par un algorithme. Les mesures possibles sont le retrait d’un cours, puis,
+          en cas de manquements répétés ou graves, la suspension ou la fermeture du compte (article 6).
+        </p>
+        <p>
+          Toute personne peut nous <Signalement adresse={contact} /> présent sur le service, par e-mail à{' '}
+          <Contact adresse={contact} />. Le signalement indique : les raisons pour lesquelles le contenu est
+          illicite ; l’endroit exact où il se trouve (titre du cours, adresse de la page ou autre élément permettant
+          de le retrouver) ; votre nom et votre adresse e-mail ; une déclaration selon laquelle vous pensez, de bonne
+          foi, que les informations et allégations qu’il contient sont exactes et complètes. Nous accusons réception
+          du signalement, puis vous informons de notre décision et des voies de recours (article 16 du règlement
+          (UE) 2022/2065 sur les services numériques).
+        </p>
+        <p>
+          <strong>Point de contact.</strong> Pour les utilisateurs comme pour les autorités des États membres, la
+          Commission européenne et le comité européen des services numériques, le point de contact unique de Lexia
+          est l’adresse <Contact adresse={contact} />, en français ou en anglais (articles 11 et 12 du même
+          règlement). Une personne répond à chaque message.
+        </p>
+      </section>
+      <section>
+        <h2>6. Usage acceptable et suspension</h2>
         <p>
           Sont interdits : l’utilisation automatisée massive, le contournement des limites, la revente du service, la
-          réidentification des personnes citées dans les décisions de justice et toute utilisation contraire à la loi. L’éditeur peut suspendre un compte en cas de manquement.
+          réidentification des personnes citées dans les décisions de justice, le dépôt d’un contenu illicite et
+          toute utilisation contraire à la loi.
+        </p>
+        <p>
+          En cas de manquement, l’éditeur vous écrit d’abord à l’adresse de votre compte : il indique le manquement
+          reproché et la clause des présentes conditions concernée, et vous laisse huit jours pour répondre ou y
+          mettre fin. Il ne peut agir sans ce délai qu’en cas d’urgence : atteinte à la sécurité du service, contenu
+          manifestement illicite ou demande d’une autorité.
+        </p>
+        <p>
+          Toute mesure (retrait d’un cours, suspension ou fermeture du compte) vous est notifiée par e-mail, au plus
+          tard au moment où elle est prise, avec un exposé des motifs : la mesure et sa durée ; les faits sur
+          lesquels elle repose et, le cas échéant, le fait qu’elle fait suite à un signalement ; le texte de loi ou
+          la clause des présentes conditions en cause ; vos voies de recours (article 17 du règlement (UE)
+          2022/2065). Vous pouvez la contester en répondant à cet e-mail : une personne réexamine la décision. Vous
+          pouvez aussi saisir le médiateur de la consommation (article 8) ou le juge.
+        </p>
+        <p>
+          Si votre compte est fermé alors qu’une formule payante est en cours, la part du prix correspondant à la
+          période non utilisée vous est remboursée. Une suspension qui se révèle injustifiée prolonge votre formule
+          d’autant.
         </p>
       </section>
       <section>
-        <h2>7. Disponibilité et responsabilité</h2>
+        <h2>7. Conformité, disponibilité et responsabilité</h2>
         <p>
-          Le service est fourni en l’état, sans garantie de disponibilité continue. Il dépend de prestataires tiers,
-          notamment le modèle de langage utilisé pour rédiger les réponses. La responsabilité de l’éditeur ne saurait
-          être engagée du fait d’une décision prise sur la base d’une réponse du service.
+          <strong>Garantie légale de conformité.</strong> L’éditeur fournit un service conforme au contrat et à la
+          description de l’article 2 (articles L. 224-25-12 et suivants du Code de la consommation). Pendant toute la
+          durée d’une formule, il répond des défauts de conformité qui apparaissent. En cas de défaut, vous avez droit
+          à la mise en conformité du service, sans frais ; à défaut, à une réduction du prix ou à la résolution du
+          contrat, avec remboursement dans les quatorze jours (articles L. 224-25-17 à L. 224-25-23). Signalez le
+          défaut à <Contact adresse={contact} />. Ces droits s’appliquent aussi à la formule gratuite, sauf la
+          réduction du prix.
+        </p>
+        <p>
+          <strong>Disponibilité.</strong> L’éditeur s’efforce de garder le service accessible en continu. Il
+          dépend de prestataires tiers, notamment du modèle de langage qui rédige les réponses : des interruptions
+          (maintenance, panne d’un prestataire) peuvent survenir. Une interruption qui empêche durablement
+          d’utiliser une formule payante est traitée comme un défaut de conformité.
+        </p>
+        <p>
+          <strong>Usage des réponses.</strong> Les réponses sont une aide à l’étude, générée par une intelligence
+          artificielle qui peut se tromper (article 2). Ne prenez pas de décision personnelle (procès, contrat,
+          démarche) sur la seule base d’une réponse : consultez un professionnel du droit.
         </p>
       </section>
       <section>
@@ -216,7 +359,7 @@ export function Cgu() {
 export function Confidentialite() {
   const { l, contact, paiement } = useLegal()
   return (
-    <Page titre="Politique de confidentialité" maj="17 novembre 2026">
+    <Page titre="Politique de confidentialité" maj="18 novembre 2026">
       <section>
         <h2>Responsable du traitement</h2>
         <p>
@@ -226,7 +369,7 @@ export function Confidentialite() {
       <section>
         <h2>Données collectées</h2>
         <ul>
-          <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création.</li>
+          <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création, date de la dernière visite (pour supprimer les comptes inutilisés).</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
           <li><strong>Formule payante</strong> (si vous en souscrivez une) : formule choisie, date de fin, et éléments de facturation (adresse e-mail, montant, date et moyen de paiement).</li>
@@ -238,8 +381,14 @@ export function Confidentialite() {
         </ul>
         <p>
           L’adresse e-mail et le mot de passe sont nécessaires pour créer un compte ; sans eux, le service ne peut pas
-          être fourni. Vos fiches enregistrées et le semestre choisi restent dans votre navigateur (stockage local) et
-          ne sont pas envoyés au serveur.
+          être fourni.
+        </p>
+        <p>
+          Certaines données restent dans votre navigateur et ne sont pas envoyées au serveur : vos fiches
+          enregistrées et le semestre choisi (stockage local, jusqu’à ce que vous les supprimiez) ; la conversation
+          en cours (30 derniers messages) et le dernier questionnaire avec sa correction (stockage de session,
+          effacé à la fermeture de l’onglet, à la déconnexion et à la suppression du compte), pour ne pas les perdre
+          en changeant de page. Sur un ordinateur partagé, déconnectez-vous à la fin de votre séance.
         </p>
       </section>
       <section>
@@ -316,14 +465,16 @@ export function Confidentialite() {
       <section>
         <h2>Durées de conservation</h2>
         <ul>
-          <li>Compte et compteurs : jusqu’à la suppression du compte.</li>
+          <li>Compte : jusqu’à sa suppression par vous, ou après deux ans sans aucune visite ; un e-mail vous prévient un mois avant et une simple connexion garde le compte. Un compte avec une formule payante en cours n’est jamais supprimé pour ce motif.</li>
+          <li>Compteurs de questions et de questionnaires : 90 jours.</li>
           <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>
           <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
           <li>Journaux du serveur web : 14 jours.</li>
           <li>Après une suppression de compte depuis le site : une empreinte de l’adresse e-mail (pas l’adresse elle-même), 48 heures au plus.</li>
           <li>Sauvegardes de la base des comptes : 14 jours glissants sur le serveur ; une copie de secours, conservée par l’éditeur hors du serveur, 60 jours glissants.</li>
-          <li>Formules payantes : pièces comptables (factures, paiements) pendant 10 ans, durée imposée par les obligations comptables.</li>
+          <li>Formules payantes : pièces comptables (paiements, justificatifs) pendant 10 ans, durée imposée par les obligations comptables ; elles sont gardées même après la suppression du compte.</li>
+          <li>Échanges par e-mail avec l’éditeur (demandes, réclamations, exercice de vos droits) : 3 ans après le dernier échange.</li>
         </ul>
       </section>
       <section>

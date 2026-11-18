@@ -109,7 +109,9 @@ describe('Site', () => {
     expect(creer).toBeDisabled()
     fireEvent.change(screen.getByLabelText(/^Mot de passe/), { target: { value: 'motdepasse-solide' } })
     fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'motdepasse-solide' } })
-    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('checkbox', { name: /J’accepte les conditions/ }))
+    expect(creer).toBeDisabled() // age pas encore declare (CGU, article 3)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'J’ai 15 ans ou plus.' }))
     await act(async () => {
       fireEvent.click(creer)
     })

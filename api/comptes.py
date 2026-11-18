@@ -2,7 +2,9 @@
 
 Donnees personnelles conservees : adresse e-mail, empreinte du mot de passe (scrypt, sel aleatoire),
 formule, date de creation, compteurs d'usage par jour. Aucune question posee n'est enregistree.
-Suppression complete du compte a la demande (supprimer_compte).
+Suppression complete du compte a la demande (supprimer). Durees de conservation (politique de confidentialite,
+docs/registre-traitements.md) : compte sans activite supprime apres deux ans, avec un e-mail d'avertissement un
+mois avant ; compteurs d'usage gardes 90 jours. La table paiements (api/paiement.py) n'est jamais touchee ici.
 """
 
 from __future__ import annotations
@@ -10,6 +12,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
+import os
 import re
 import secrets
 import sqlite3
@@ -21,6 +25,8 @@ from zoneinfo import ZoneInfo
 
 from api import coffre, courriel, totp
 from api.plans import FORMULE_PAR_DEFAUT, FORMULES, Formule, formule
+
+log = logging.getLogger("lexia")
 
 FUSEAU = ZoneInfo("Europe/Paris")
 DUREE_SESSION = timedelta(days=30)
@@ -97,6 +103,16 @@ COLONNES_REINIT = {
 }
 DUREE_REINITIALISATION = timedelta(hours=1)
 DELAI_ENTRE_ENVOIS = timedelta(minutes=2)
+# Comptes inactifs (audit du 2026-11-18, E5) : repere de la CNIL, deux ans sans activite, avec avertissement
+# prealable. Activite = connexion ou visite avec une session valide (actif_le, une ecriture par jour au plus).
+COLONNES_ACTIVITE = {
+    "actif_le": "TEXT",           # date (Europe/Paris) de la derniere activite ; NULL = date de creation
+    "inactif_avis_le": "TEXT",    # date de l'e-mail annoncant la suppression ; remis a NULL a la visite suivante
+}
+INACTIVITE = timedelta(days=730)
+PREAVIS_INACTIVITE = timedelta(days=30)
+# Compteurs d'usage : ne servent qu'au quota du jour et aux statistiques des 30 derniers jours.
+USAGE_CONSERVE = timedelta(days=90)
 
 
 @dataclass
@@ -129,6 +145,11 @@ def _lire_date(valeur: str) -> datetime:
 
 def _jour() -> str:
     return datetime.now(FUSEAU).date().isoformat()
+
+
+def _jour_de(instant: datetime) -> str:
+    """Date (Europe/Paris) d'un instant, au format des colonnes jour et actif_le."""
+    return instant.astimezone(FUSEAU).date().isoformat()
 
 
 def hacher_mdp(mdp: str) -> str:
@@ -194,9 +215,17 @@ class Comptes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
                 if nom == "email_verifie_le":  # les comptes anterieurs restent utilisables
                     self._con.execute("UPDATE utilisateurs SET email_verifie_le = cree_le")
+        for nom, genre in COLONNES_ACTIVITE.items():  # migration : comptes inactifs
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+                if nom == "actif_le":  # comptes anterieurs : dernier jour avec un compteur, sinon la creation
+                    self._con.execute("UPDATE utilisateurs SET actif_le = COALESCE((SELECT max(jour) FROM usage "
+                                      "WHERE utilisateur = utilisateurs.id), substr(cree_le, 1, 10))")
         self._con.commit()
         self._chiffrer_secrets_en_clair()
         self._lock = threading.Lock()
+        self._dernier_entretien: str | None = None  # jour de la derniere purge quotidienne (_entretien)
+        self._lock_entretien = threading.Lock()
         # adresses declarees administrateur dans la configuration (ADMIN_EMAILS)
         self._admins = {a.strip().lower() for a in admins if a.strip()}
         # empreinte factice : meme duree de verification pour un e-mail inconnu (pas d'enumeration)
@@ -522,7 +551,8 @@ class Comptes:
                "(SELECT questions FROM usage WHERE utilisateur = u.id AND jour = ?), "
                "(SELECT quiz FROM usage WHERE utilisateur = u.id AND jour = ?), "
                "(SELECT sum(questions) FROM usage WHERE utilisateur = u.id AND jour >= ?), "
-               "(SELECT max(jour) FROM usage WHERE utilisateur = u.id AND (questions > 0 OR quiz > 0)) "
+               "COALESCE((SELECT max(jour) FROM usage WHERE utilisateur = u.id AND (questions > 0 OR quiz > 0)), "
+               "u.actif_le) "
                "FROM utilisateurs u")
         params: tuple = (jour, jour, il_y_a_30j)
         if recherche:
@@ -551,18 +581,28 @@ class Comptes:
         expire = (_maintenant() + DUREE_SESSION).isoformat(timespec="seconds")
         self._q("INSERT INTO sessions (jeton_hash, utilisateur, expire_le) VALUES (?,?,?)",
                 (_hash_jeton(jeton), uid, expire))
+        self._marquer_actif(uid)
         return jeton
+
+    def _marquer_actif(self, uid: int) -> None:
+        """Derniere activite du jour ; une visite annule l'avertissement de suppression pour inactivite."""
+        self._q("UPDATE utilisateurs SET actif_le = ?, inactif_avis_le = NULL WHERE id = ?",
+                (_jour_de(_maintenant()), uid))
 
     def session(self, jeton: str | None) -> Utilisateur | None:
         if not jeton:
             return None
-        rows = self._q("SELECT utilisateur, expire_le FROM sessions WHERE jeton_hash = ?", (_hash_jeton(jeton),))
+        rows = self._q("SELECT s.utilisateur, s.expire_le, u.actif_le FROM sessions s "
+                       "JOIN utilisateurs u ON u.id = s.utilisateur WHERE s.jeton_hash = ?", (_hash_jeton(jeton),))
         if not rows:
             return None
-        uid, expire = rows[0]
+        uid, expire, actif = rows[0]
         if expire < _maintenant().isoformat(timespec="seconds"):
             self.fermer_session(jeton)
             return None
+        if actif != _jour_de(_maintenant()):
+            self._marquer_actif(uid)
+        self._entretien_si_nouveau_jour()
         return self.par_id(uid)
 
     def fermer_session(self, jeton: str | None) -> None:
@@ -576,6 +616,92 @@ class Comptes:
         self._q("DELETE FROM sessions WHERE expire_le < ?", (maintenant.isoformat(timespec="seconds"),))
         self._q("DELETE FROM suppressions WHERE supprime_le < ?",
                 ((maintenant - timedelta(days=1)).isoformat(timespec="seconds"),))
+
+    # --- durees de conservation (taches quotidiennes) ---------------------------
+
+    def _entretien_si_nouveau_jour(self) -> None:
+        """Une fois par jour, a la premiere visite : purges ci-dessous, dans un fil a part pour ne pas faire
+        attendre la page. Tourne dans le service, qui a la configuration d'envoi des e-mails (la tache cron
+        de deploy/sauvegarder_comptes.sh ne lit pas /opt/lexia/.env)."""
+        jour = _jour_de(_maintenant())
+        if self._dernier_entretien == jour or not self._lock_entretien.acquire(blocking=False):
+            return
+        try:
+            if self._dernier_entretien == jour:
+                return
+            self._dernier_entretien = jour
+        finally:
+            self._lock_entretien.release()
+        threading.Thread(target=self._entretien, name="entretien-comptes", daemon=True).start()
+
+    def _entretien(self) -> None:
+        try:
+            self.purger_usage()
+            self.purger_inactifs()
+        except Exception:  # une purge ratee se refait le lendemain ; elle ne doit pas casser le service
+            log.exception("purge quotidienne des comptes")
+
+    def purger_usage(self) -> int:
+        """Compteurs d'usage de plus de USAGE_CONSERVE (90 jours). Renvoie le nombre de lignes effacees."""
+        limite = _jour_de(_maintenant() - USAGE_CONSERVE)
+        with self._lock, self._con:
+            return self._con.execute("DELETE FROM usage WHERE jour < ?", (limite,)).rowcount
+
+    def purger_inactifs(self) -> dict:
+        """Comptes sans activite depuis deux ans (INACTIVITE) : un e-mail les previent un mois avant
+        (PREAVIS_INACTIVITE), puis ils sont supprimes comme une suppression demandee (cours, sessions et
+        compteurs en cascade). Jamais : un administrateur, une formule payante en cours. Les paiements
+        (table paiements, sans cle etrangere) restent : ils sont gardes pour la comptabilite."""
+        maintenant = _maintenant()
+        aujourd_hui = _jour_de(maintenant)
+        seuil_avis = _jour_de(maintenant - INACTIVITE + PREAVIS_INACTIVITE)
+        seuil_suppression = _jour_de(maintenant - INACTIVITE)
+        avis_assez_ancien = _jour_de(maintenant - PREAVIS_INACTIVITE)
+        lignes = self._q(
+            "SELECT id, email, COALESCE(actif_le, substr(cree_le, 1, 10)), inactif_avis_le, email_verifie_le "
+            "FROM utilisateurs WHERE admin = 0 AND COALESCE(actif_le, substr(cree_le, 1, 10)) < ? "
+            "AND NOT (formule != ? AND (formule_fin IS NULL OR formule_fin >= ?))",
+            (seuil_avis, FORMULE_PAR_DEFAUT, aujourd_hui))
+        avertis = supprimes = 0
+        for uid, email, actif, avis, verifie in lignes:
+            if email in self._admins:
+                continue
+            # Adresse jamais confirmee : personne a prevenir (elle peut etre celle d'un tiers).
+            if actif < seuil_suppression and (verifie is None or (avis is not None and avis <= avis_assez_ancien)):
+                self.supprimer(uid)
+                supprimes += 1
+            elif avis is None and verifie is not None:
+                fin = max(_lire_date(actif + "T12:00:00") + INACTIVITE, maintenant + PREAVIS_INACTIVITE)
+                if self._avertir_inactif(email, fin.astimezone(FUSEAU).date()):
+                    self._q("UPDATE utilisateurs SET inactif_avis_le = ? WHERE id = ?", (aujourd_hui, uid))
+                    avertis += 1
+        if avertis or supprimes:
+            log.info("comptes inactifs : %d avertis, %d supprimes", avertis, supprimes)
+        return {"avertis": avertis, "supprimes": supprimes}
+
+    @staticmethod
+    def _avertir_inactif(email: str, fin) -> bool:
+        """E-mail d'avertissement. Faux si l'envoi echoue (nouvel essai le lendemain). Sans envoi configure
+        (developpement), vrai : aucun moyen de prevenir, le delai d'un mois court quand meme."""
+        if not courriel.configure():
+            return True
+        date_fin = f"{fin.day:02d}/{fin.month:02d}/{fin.year}"
+        url = os.environ.get("URL_PUBLIQUE", "").strip().rstrip("/")
+        lien = f"{url}/connexion" if url else ""
+        texte = (
+            "Bonjour,\n\n"
+            "Votre compte Lexia n'a pas été utilisé depuis bientôt deux ans. Pour ne pas garder vos données "
+            f"inutilement, il sera supprimé le {date_fin}, avec vos cours déposés.\n\n"
+            "Pour le garder, il suffit de vous connecter avant cette date"
+            + (f" : {lien}" if lien else ".") + "\n\n"
+            "Les justificatifs d'un éventuel paiement sont conservés pour la comptabilité, comme l'exige la loi.\n"
+        )
+        html = "".join(f"<p>{courriel._echapper(ligne)}</p>" for ligne in texte.strip().split("\n\n"))
+        try:
+            courriel.envoyer(email, f"Votre compte Lexia sera supprimé le {date_fin}", texte, html)
+        except courriel.ErreurCourriel:
+            return False
+        return True
 
     # --- consommation ---------------------------------------------------------
 

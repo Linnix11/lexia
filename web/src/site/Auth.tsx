@@ -116,6 +116,7 @@ export function Inscription() {
   const [mdp, setMdp] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [cgu, setCgu] = useState(false)
+  const [age, setAge] = useState(false) // CGU, article 3 : compte reserve aux 15 ans et plus
   const [touche, setTouche] = useState<Record<string, boolean>>({})
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
@@ -125,7 +126,7 @@ export function Inscription() {
     mdp: mdp.length >= MDP_MIN ? null : `Au moins ${MDP_MIN} caractères.`,
     confirmation: confirmation === mdp ? null : 'Les deux mots de passe ne correspondent pas.',
   }
-  const valide = !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu
+  const valide = !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu && age
   const montre = (k: keyof typeof erreurs) => (touche[k] ? erreurs[k] : null)
   const quitter = (k: string) => () => setTouche((t) => ({ ...t, [k]: true }))
 
@@ -167,6 +168,10 @@ export function Inscription() {
           <input type="password" autoComplete="new-password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)}
             onBlur={quitter('confirmation')} aria-invalid={!!montre('confirmation')} aria-describedby="err-conf" className={champ} />
           {aide('err-conf', montre('confirmation'))}
+        </label>
+        <label className="flex items-start gap-2 text-[13px] leading-[1.5]">
+          <input type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} className="mt-1 accent-forest" />
+          <span>J’ai 15 ans ou plus.</span>
         </label>
         <label className="flex items-start gap-2 text-[13px] leading-[1.5]">
           <input type="checkbox" checked={cgu} onChange={(e) => setCgu(e.target.checked)} className="mt-1 accent-forest" />

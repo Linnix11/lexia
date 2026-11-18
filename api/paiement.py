@@ -45,7 +45,7 @@ MOIS_MAX = 12
 EVENEMENTS_PAYES = ("checkout.session.completed", "checkout.session.async_payment_succeeded")
 # Version des conditions generales (date de derniere modification), acceptee avant chaque paiement et gardee
 # avec lui. A changer avec web/src/lib/cgu.ts a chaque modification des conditions.
-VERSION_CGU = "17 novembre 2026"
+VERSION_CGU = "18 novembre 2026"
 DUREE_SESSION = 31 * 60     # page de paiement valable 30 min (minimum de Stripe) + 1 min de marge d'horloge
 SESSIONS_PAR_JOUR = 10      # pages de paiement ouvertes par compte en 24 h
 DELAI_RETRACTATION = 14     # jours (art. L. 221-18 du Code de la consommation)

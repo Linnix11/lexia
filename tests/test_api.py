@@ -213,6 +213,9 @@ def test_chat_valide_et_filtre_les_citations(env):
     assert data["sources"][0]["id"] == "code_civil:LEGIARTI000032041571"
     assert data["sources"][0]["label"] == "S1"
     assert data["avertissement"]
+    # AI Act art. 50.2 : texte genere marque de facon lisible par machine ; pas les autres routes
+    assert r.headers["X-AI-Generated"] == "true"
+    assert "X-AI-Generated" not in client.get("/matieres").headers
     # la question n'apparait pas dans les journaux
     journal = (logs / "requetes.jsonl").read_text()
     assert "1240 du code civil ?" not in journal and data["reponse_id"] in journal

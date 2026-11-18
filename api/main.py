@@ -164,6 +164,19 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                        allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
+    # AI Act, art. 50.2 (marquage lisible par machine des textes generes ; echeance du 2 decembre 2026 pour un
+    # systeme deja en ligne, reglement 2026/1744) : en-tete sur les reponses redigees par le modele. Moyen a
+    # confirmer quand le code de bonne pratique de la Commission sera fixe (audit du 2026-11-18, E7).
+    routes_generees = {"/chat", "/quiz", "/quiz/correct"}
+
+    @app.middleware("http")
+    async def marquer_contenu_genere(request: Request, call_next):
+        reponse = await call_next(request)
+        route = request.scope.get("route")
+        if reponse.status_code == 200 and getattr(route, "path", None) in routes_generees:
+            reponse.headers["X-AI-Generated"] = "true"
+        return reponse
+
     # --- comptes et quotas -------------------------------------------------------
     if settings.comptes_actifs and comptes is None:
         if not coffre.cle_configuree():

@@ -1,6 +1,7 @@
 # Registre des activités de traitement de Lexia
 
-Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 17 novembre 2026.
+Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 18 novembre 2026 (durées de
+conservation, audit du 18 novembre 2026, point E5).
 
 L'entreprise compte moins de 250 salariés, mais la dérogation de l'article 30.5 ne couvre pas les traitements
 non occasionnels : la gestion des comptes, des formules et des journaux de Lexia l'est. La CNIL recommande
@@ -22,15 +23,15 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 
 | N° | Traitement | Base légale | Durée de conservation |
 |---|---|---|---|
-| T1 | Comptes utilisateurs | Exécution du contrat (CGU) | Jusqu'à la suppression du compte |
+| T1 | Comptes utilisateurs | Exécution du contrat (CGU) | Jusqu'à la suppression du compte, ou deux ans sans visite (avertissement un mois avant) |
 | T2 | Rédaction des réponses par un modèle de langage | Exécution du contrat | Non conservé (mémoire vive 24 h au plus) |
 | T3 | Cours déposés | Exécution du contrat | Jusqu'au retrait du cours ou à la suppression du compte |
-| T4 | Limites d'usage et formules | Exécution du contrat | Jusqu'à la suppression du compte |
-| T5 | Facturation des formules payantes | Obligation légale (comptabilité) | 10 ans |
+| T4 | Limites d'usage et formules | Exécution du contrat | Compteurs : 90 jours ; formule : comme le compte |
+| T5 | Facturation des formules payantes | Obligation légale (comptabilité) | 10 ans (6 ans si activité libérale, à confirmer) |
 | T6 | Journaux techniques et avis | Intérêt légitime | 12 mois |
 | T7 | Sécurité du service | Intérêt légitime | 14 jours (serveur web), 48 h (empreinte après suppression) |
 | T8 | Sauvegardes | Intérêt légitime (continuité du service) | 14 jours sur le serveur, 60 jours hors serveur |
-| T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | À fixer par l'éditeur |
+| T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | 3 ans après le dernier échange (à appliquer par l'éditeur dans sa boîte) |
 
 ## Fiches
 
@@ -42,15 +43,26 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Données (`api/comptes.py`, table `utilisateurs`) : adresse e-mail ; empreinte scrypt du mot de passe ; formule
   et date de fin ; dates de création, d'acceptation des CGU et de confirmation de l'adresse ; indicateur
   administrateur ; secret de double authentification chiffré (`CLE_SECRETS`) et empreintes des codes de secours ;
-  empreintes des jetons de confirmation et de réinitialisation. Sessions : empreinte du jeton et date d'expiration.
+  empreintes des jetons de confirmation et de réinitialisation ; date de la dernière visite (`actif_le`, une
+  écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions : empreinte du
+  jeton et date d'expiration.
+- Dans le navigateur seulement (rien n'est envoyé au serveur, D85) : conversation en cours (30 derniers messages)
+  et dernier questionnaire dans `sessionStorage`, sous une empreinte du compte, effacés à la fermeture de l'onglet,
+  à la déconnexion et à la suppression du compte ; fiches et semestre dans `localStorage`. Décrit dans la
+  politique de confidentialité (« Données collectées »).
 - Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails de confirmation et de
   réinitialisation, `api/courriel.py`) ; Cloudflare (acheminement du trafic).
 - Transferts hors UE : Resend et Cloudflare, États-Unis (voir « Sous-traitants »).
-- Durée : jusqu'à la suppression du compte (depuis « Mon compte » ou par l'éditeur). Sessions : 30 jours au plus,
-  purgées chaque nuit (`deploy/sauvegarder_comptes.sh`).
-- Point d'attention : aucune suppression des comptes inactifs. La CNIL juge proportionné un délai de deux ans
-  d'inactivité, avec avertissement préalable, pour un compte que l'utilisateur n'a pas supprimé
-  (https://www.cnil.fr/sites/cnil/files/atoms/files/guide_durees_de_conservation.pdf). À décider par l'éditeur.
+- Durée : jusqu'à la suppression du compte (depuis « Mon compte » ou par l'éditeur), ou deux ans sans aucune
+  visite : la CNIL juge proportionné ce délai, avec avertissement préalable
+  (https://www.cnil.fr/sites/cnil/files/atoms/files/guide_durees_de_conservation.pdf). Mise en œuvre
+  (`Comptes.purger_inactifs`, tests `tests/test_rgpd.py`) : e-mail d'avertissement après 23 mois sans visite,
+  suppression au plus tôt un mois après cet e-mail et après deux ans d'inactivité ; une visite annule
+  l'avertissement ; jamais pour un administrateur ni une formule payante en cours ; une adresse jamais confirmée
+  n'est pas prévenue (elle peut appartenir à un tiers). La suppression emporte cours, sessions et compteurs, pas
+  les paiements (T5). Tâche lancée une fois par jour par le service lui-même, à la première visite (il a la
+  configuration d'envoi des e-mails). Sessions : 30 jours au plus, purgées chaque nuit
+  (`deploy/sauvegarder_comptes.sh`).
 
 ### T2. Rédaction des réponses, fiches et questionnaires
 
@@ -80,9 +92,8 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Finalité : appliquer les quotas de la formule (questions, questionnaires, cours) et gérer la formule payante.
 - Données : compteurs du jour par compte (table `usage`), formule et date de fin, journal des actions des
   administrateurs (`logs/admin.jsonl` : numéro de l'administrateur, numéro du compte, formule, durée).
-- Durée : compteurs jusqu'à la suppression du compte ; journal administrateur 12 mois (T6).
-- Point d'attention : l'historique des compteurs quotidiens n'est utile que pour le jour en cours et les
-  statistiques ; une purge au-delà d'une durée courte réduirait les données gardées. À décider.
+- Durée : compteurs 90 jours (`USAGE_CONSERVE`, `Comptes.purger_usage`) : ils ne servent qu'au quota du jour et
+  aux statistiques des 30 derniers jours ; journal administrateur 12 mois (T6).
 
 ### T5. Facturation des formules payantes
 
@@ -99,6 +110,10 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   17 novembre 2026).
 - Durée : 10 ans en archivage intermédiaire (obligation comptable ; référentiel CNIL « gestion des activités
   commerciales » : https://www.cnil.fr/sites/cnil/files/atoms/files/referentiel_traitements-donnees-caractere-personnel_gestion-activites-commerciales.pdf).
+  Fondement vérifié dans LEGI le 18 novembre 2026 : C. com., art. L. 123-22 (documents comptables et pièces
+  justificatives, dix ans), qui vise les commerçants. Si l'activité est déclarée en libéral (BNC), seule
+  s'applique a priori la durée fiscale de six ans (LPF, art. L. 102 B) : à confirmer par l'éditeur avec son
+  expert-comptable ou un avocat, puis ajuster la politique de confidentialité.
   La ligne de paiement est gardée après la suppression du compte (pas de suppression en cascade). Purge au-delà
   de 10 ans : à mettre en place avant 2036.
 - État : paiement en ligne par Stripe Checkout (D86), actif dès que `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
@@ -141,8 +156,10 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Finalité : répondre aux demandes de formule payante, aux réclamations et aux demandes d'exercice des droits.
 - Données : adresse e-mail, contenu des messages.
 - Destinataire : fournisseur de la boîte `CONTACT_EMAIL` (à renseigner ici avec sa localisation).
-- Durée : à fixer. Repère CNIL pour un prospect : trois ans après le dernier contact ; pour une demande d'exercice
-  des droits, la durée de prescription utile à la preuve.
+- Durée : 3 ans après le dernier échange (repère CNIL pour un prospect), annoncée dans la politique de
+  confidentialité. Rien d'automatique : l'éditeur trie sa boîte au moins une fois par an. Les signalements de
+  contenu illicite (CGU, article 5 bis) et les échanges sur une mesure de suspension (article 6) suivent la même
+  durée. À faire valider : une durée plus longue pour la preuve d'une réponse à une demande d'exercice des droits.
 
 ## Sous-traitants (article 28)
 
@@ -175,5 +192,6 @@ de Cloudflare ; limites de débit par adresse IP ; sauvegardes en 600 ; deux aud
    types) ; à défaut, retirer `GROQ_API_KEY`.
 3. Archiver les accords de traitement des données de Hostinger, Cloudflare, Google, Groq et Resend.
 4. Vérifier la localisation du VPS Hostinger et la rotation des journaux nginx (14 jours).
-5. Décider d'une durée pour les comptes inactifs (repère CNIL : deux ans) et pour les échanges par e-mail (T9).
-6. Paiement : archiver le contrat Stripe ; mettre en place la purge des paiements de plus de 10 ans.
+5. Appliquer la durée des échanges par e-mail (T9, 3 ans) dans la boîte `CONTACT_EMAIL`.
+6. Paiement : archiver le contrat Stripe ; confirmer 10 ans ou 6 ans (T5) ; mettre en place la purge des
+   paiements au-delà de cette durée.
