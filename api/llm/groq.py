@@ -17,6 +17,7 @@ import time
 import httpx
 
 from api.llm.base import LLMError
+from api.llm.forme import conforme
 from api.llm.gemini import MAX_JETONS_SORTIE
 
 log = logging.getLogger("lexia.llm")
@@ -84,6 +85,6 @@ class GroqLLM:
             brut = json.loads(texte)
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
             raise LLMError(f"groq {model}: reponse illisible ({type(e).__name__})") from None
-        if not isinstance(brut, dict):
-            raise LLMError(f"groq {model}: JSON inattendu")
+        if not isinstance(brut, dict) or not conforme(brut, schema):
+            raise LLMError(f"groq {model}: reponse hors du schema")
         return brut, f"groq/{model}"

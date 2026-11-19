@@ -14,6 +14,7 @@ import time
 import httpx
 
 from api.llm.base import ContenuRefuse, LLMError
+from api.llm.forme import conforme
 
 log = logging.getLogger("lexia.llm")
 BASE = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -126,6 +127,9 @@ class GeminiLLM:
                         if isinstance(e, ContenuRefuse):
                             refus += 1
                             exclus.add(model)  # la meme question serait bloquee au second tour
+                        continue
+                    if not conforme(resultat, schema):
+                        erreurs.append(f"{model}: reponse hors du schema")
                         continue
                     return resultat, model
                 erreurs.append(f"{model}: HTTP {r.status_code}")

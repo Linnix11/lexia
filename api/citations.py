@@ -63,7 +63,10 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
     passages = list(table.values())
     out: list[dict] = []
     for it in items or []:
-        texte = str((it or {}).get("texte", "")).strip()
+        if not isinstance(it, dict):   # forme deja controlee dans api/llm/forme.py ; filet si un appelant l'oublie
+            controle.elements_retires += 1
+            continue
+        texte = str(it.get("texte", "")).strip()
         dans_texte = [lab for m in _LABELS_DANS_TEXTE.finditer(texte) for lab in _LABEL_RE.findall(m.group(0).upper())]
         texte = _LABELS_DANS_TEXTE.sub("", texte).strip()
         if not texte:

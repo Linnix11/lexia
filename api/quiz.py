@@ -103,6 +103,8 @@ class QuizStore:
 
 
 def _valider_question(q: dict, fmt: str, table: dict[str, dict], controle: Controle) -> dict | None:
+    if not isinstance(q, dict):   # forme deja controlee dans api/llm/forme.py ; filet si un appelant l'oublie
+        return None
     passages = list(table.values())
     sources = labels_valides(q.get("sources"), table, controle)
     if not sources:
