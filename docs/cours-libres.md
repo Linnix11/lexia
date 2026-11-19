@@ -142,48 +142,57 @@ Avec `--hors-ligne`, elle réutilise ce qui est déjà téléchargé. La mise à
 
 | Source | État | Détail |
 |---|---|---|
-| service-public.gouv.fr (phase 2) | **Récupéré : 781 fiches pratiques, 6 498 passages** | Archive XML Particuliers du 2026-11-19 ; fiches mises à jour entre le 2022-01-27 et le 2026-11-18 |
+| service-public.gouv.fr (phase 2) | **Récupéré : 1 149 fiches pratiques, 10 508 passages** | Archives XML du 2026-11-19 : volet Particuliers (781 fiches) et volet Entreprendre (368 fiches, ajouté le même jour) ; fiches mises à jour entre le 2021-04-02 et le 2026-11-18 |
 | vie-publique.fr (phase 1) | **Bloqué** | Licence relue sur le site rétabli le 2026-11-19 : Licence Ouverte 2.0, inchangée (source « Vie publique », date, sans modification). Mais le site refuse les clients automatiques (protection anti-robots : page JavaScript et cookies, robots.txt lui-même illisible sans navigateur) et ne publie aucun export de ses fiches. Contourner cette protection est exclu |
 | Wikiversité, Wikilivres (phase 3) | **Non retenu** | Décision de l'éditeur. L'ingestion sait les lire (liste `WIKI` vide), mais l'API Wikimedia exigerait un contact dans le User-Agent (`WIKIMEDIA_CONTACT`) |
 
-Pour vie-publique.fr, demander à la DILA un export des fiches (formulaire de contact du site ou DILA, Département de
-l'édition et du débat public).
+Pour vie-publique.fr : demande d'export à la DILA prête à envoyer, `docs/demande-export-vie-publique.md`.
 
 Fiches de service-public.gouv.fr :
 - seules les fiches pratiques sont reprises, pas les questions-réponses ;
-- elles sont rangées par sous-thème, parfois par dossier : table `SP_MATIERES` de `ingest/cours_recuperes.py` ;
+- volet Particuliers : rangé par sous-thème, parfois par dossier (table `SP_MATIERES` de
+  `ingest/cours_recuperes.py`) ;
+- volet Entreprendre : rangé par thème et dossier (`SPE_MATIERES`). Pour les dossiers mélangés (« Étapes de vie »,
+  « Formes juridiques », règles comptables), la matière se lit dans le titre (`SPE_TITRES`), dans cet ordre :
+  - fiches sans contenu juridique écartées (business plan, étude de marché, diagnostic, recherche de
+    financements...) ;
+  - fiscalité ;
+  - cotisations sociales ;
+  - sociétés ;
+  - sinon droit des affaires.
+- non repris du volet Entreprendre : Environnement, Secteurs d'activité, aides publiques ;
+- une fiche publiée dans les deux volets n'est reprise qu'une fois, avec la version Particuliers ;
 - le texte est repris sans modification, chapitre par chapitre, avec les textes de référence cités par la fiche ;
 - la mise en forme, les liens, les simulateurs et les blocs pratiques (adresses, services en ligne) ne sont pas
   repris, et c'est indiqué sur chaque fiche.
 
-| Matière | Fiches | Passages |
-|---|---|---|
-| Contentieux administratif | 12 | 138 |
-| Droit administratif | 10 | 83 |
-| Droit administratif des biens | 6 | 62 |
-| Droit civil | 14 | 104 |
-| Droit constitutionnel | 13 | 88 |
-| Droit de la famille | 73 | 669 |
-| Droit des biens | 38 | 383 |
-| Droit des contrats | 116 | 1 193 |
-| Droit fiscal | 80 | 512 |
-| Droit pénal | 54 | 523 |
-| Droit social | 282 | 1 913 |
-| Introduction au droit | 12 | 161 |
-| Libertés fondamentales | 9 | 112 |
-| Procédure civile | 31 | 200 |
-| Procédure pénale | 31 | 357 |
-| **Total** | **781** | **6 498** |
+| Matière | Particuliers | Entreprendre | Fiches | Passages |
+|---|---|---|---|---|
+| Contentieux administratif | 12 | 0 | 12 | 138 |
+| Droit administratif | 10 | 12 | 22 | 223 |
+| Droit administratif des biens | 6 | 0 | 6 | 62 |
+| Droit civil | 14 | 0 | 14 | 104 |
+| Droit constitutionnel | 13 | 0 | 13 | 88 |
+| Droit de la famille | 73 | 0 | 73 | 669 |
+| Droit des affaires | 0 | 138 | 138 | 1 424 |
+| Droit des biens | 38 | 0 | 38 | 383 |
+| Droit des contrats | 116 | 12 | 128 | 1 294 |
+| Droit des sociétés | 0 | 62 | 62 | 889 |
+| Droit fiscal | 80 | 82 | 162 | 1 291 |
+| Droit pénal | 54 | 0 | 54 | 523 |
+| Droit social | 282 | 62 | 344 | 2 590 |
+| Introduction au droit | 12 | 0 | 12 | 161 |
+| Libertés fondamentales | 9 | 0 | 9 | 112 |
+| Procédure civile | 31 | 0 | 31 | 200 |
+| Procédure pénale | 31 | 0 | 31 | 357 |
+| **Total** | **781** | **368** | **1 149** | **10 508** |
 
-Aucune fiche pour Droit des affaires, Droit des sociétés, Droit européen, Droit international, Finances publiques :
-- les deux premières relèvent du volet Entreprendre de service-public.gouv.fr, qui n'est pas encore repris (jeu
-  « Fiches pratiques et ressources Entreprendre », même licence) ;
-- les trois autres n'ont pas de sous-thème qui leur corresponde.
+Aucune fiche pour Droit européen, Droit international et Finances publiques : aucun thème de service-public.gouv.fr
+ne leur correspond.
 
 Reste à faire :
 - publier : copier le catalogue et les passages sur le serveur, ou y lancer la commande (la nuit suivante le fait) ;
-- demander l'export de vie-publique.fr à la DILA ;
-- reprendre le volet Entreprendre de service-public.gouv.fr si l'éditeur le souhaite.
+- envoyer à la DILA la demande d'export de vie-publique.fr.
 
 ### Page « Cours récupérés » (construite le 2026-11-19)
 
@@ -245,7 +254,13 @@ les réponses**.
   demanderait une nouvelle décision.
 
 Reconstruction du 2026-11-19 sur le Mac, à côté de l'index en service (laissé intact), avec les passages du
-dépôt principal et ceux des fiches :
+dépôt principal et ceux des fiches. Les chiffres ci-dessous datent de la première reconstruction (volet
+Particuliers seul). Après l'ajout du volet Entreprendre, la seconde reconstruction donne :
+- 926 481 passages (10 508 de fiches) ;
+- aucun écart au contrôle de la mise à jour nocturne ;
+- aucun passage de fiche dans les extraits de 30 recherches de réponses (affaires, sociétés, travail, famille).
+
+Première reconstruction :
 - 922 471 passages, soit 916 158 dans l'index du 17 novembre, plus les 6 498 des fiches, moins 185. Ces 185
   passages (chambre criminelle 172, Conseil d'État 11, chambres commerciale et sociale 1 chacune) viennent des
   fichiers de la DILA modifiés depuis le 17 novembre, pas de ce changement.

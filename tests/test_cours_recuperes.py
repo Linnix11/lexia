@@ -235,3 +235,33 @@ def test_embeddings_sautent_les_fiches(tmp_path, monkeypatch):
     monkeypatch.setattr(embed, "run", lambda s, emb, limite: vus.append(s) or 0)
     embed.main(["--all"])
     assert vus == ["code_civil"]
+
+
+@pytest.mark.parametrize("theme, dossier, titre, attendu", [
+    ("Fonctionnement de l'entreprise", "Formes juridiques", "Société anonyme (SA) : ce qu'il faut savoir", "droit_des_societes"),
+    ("Fonctionnement de l'entreprise", "Formes juridiques", "Micro-entrepreneur : ce qu'il faut savoir", "droit_des_affaires"),
+    ("Fonctionnement de l'entreprise", "Litiges commerciaux", "Arbitrage", "droit_des_affaires"),
+    ("Étapes de vie", "Je crée", "Fiscalité de la société anonyme (SA) : ce qu'il faut savoir", "droit_fiscal"),
+    ("Étapes de vie", "Je clos", "Conséquences fiscales de la cessation d'activité", "droit_fiscal"),
+    ("Étapes de vie", "Je crée", "Cotisations sociales d'une SAS : ce qu'il faut savoir", "droit_social"),
+    ("Étapes de vie", "Je transmets", "Cession du fonds de commerce à un tiers", "droit_des_affaires"),
+    ("Étapes de vie", "Je crée", "Projet de création d'entreprise : comment concevoir un business plan", ""),
+    ("Baux", "Bail commercial", "Renouvellement du bail commercial", "droit_des_affaires"),
+    ("Pratiques commerciales", "Marchés publics", "Exécuter le marché public", "droit_administratif"),
+    ("Ressources humaines", "Licenciement", "Licenciement pour motif économique", "droit_social"),
+    ("Ressources humaines", "Aides à l'embauche", "Aide à l'embauche d'un jeune", ""),
+    ("Environnement", "Publicité", "Publicité extérieure", ""),
+])
+def test_matiere_des_fiches_entreprendre(theme, dossier, titre, attendu):
+    from ingest.cours_recuperes import matiere_entreprendre
+    assert matiere_entreprendre(theme, dossier, titre) == attendu
+
+
+def test_fiche_entreprendre_lien_vers_son_site():
+    from ingest.cours_recuperes import fiche_service_public
+    xml = (FICHE_SP.replace("<SousThemePere ID=\"N1\">Couple</SousThemePere>".encode(), b"")
+           .replace("<DossierPere ID=\"N2\"><Titre>Mariage</Titre></DossierPere>".encode(),
+                    "<Theme><Titre>Baux</Titre></Theme><DossierPere><Titre>Bail commercial</Titre></DossierPere>".encode()))
+    c = fiche_service_public(xml, entreprendre=True)
+    assert c["matiere"] == "droit_des_affaires" and c["source_url"] == "https://entreprendre.service-public.gouv.fr/"
+    assert c["source"] == "Service Public / DILA" and c["licence"] == "etalab-2.0"

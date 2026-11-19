@@ -57,6 +57,10 @@ PAUSE_WIKI = 2.0  # secondes entre deux requetes a l'API Wikimedia
 
 SP_ZIP_URL = "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip"
 SP_ZIP = RAW / "service_public" / "vosdroits-latest.zip"
+# Volet Entreprendre (entreprendre.service-public.gouv.fr), meme schema 3.5 et meme licence (data.gouv.fr :
+# « Fiches pratiques et ressources Entreprendre - Service-Public.gouv.fr », Licence Ouverte).
+SPE_ZIP_URL = "https://lecomarquage.service-public.gouv.fr/vdd/3.5/pro/zip/vosdroits-latest.zip"
+SPE_ZIP = RAW / "service_public" / "entreprendre-latest.zip"
 SP_MODIFICATIONS = ("Texte repris sans modification ; mise en forme, liens, simulateurs et blocs pratiques "
                     "(adresses, services en ligne) non repris.")
 DC = "{http://purl.org/dc/elements/1.1/}"
@@ -108,6 +112,50 @@ SP_MATIERES: dict[tuple[str, str | None], str] = {
     ("Citoyenneté", "Élections"): "droit_constitutionnel",
     ("Fichiers et protection de la vie privée", None): "libertes_fondamentales",
 }
+
+# Entreprendre : (theme, dossier ou None pour tout le theme) -> matiere ; "titre" : selon le titre (SPE_TITRES).
+# Non repris : Environnement, Secteurs d'activite, aides publiques, business plan et etudes de marche.
+SPE_MATIERES: dict[tuple[str, str | None], str] = {
+    ("Baux", "Bail commercial"): "droit_des_affaires",
+    ("Baux", "Bail professionnel"): "droit_des_contrats",
+    ("Baux", "Bail rural"): "droit_des_contrats",
+    ("Baux", "Baux de courte durée et saisonniers"): "droit_des_contrats",
+    ("Comptabilité - Facturation", None): "titre",
+    ("Difficultés financières", None): "droit_des_affaires",
+    ("Financement", "Garanties de financement"): "droit_des_affaires",
+    ("Financement", "Modes de financement"): "droit_des_affaires",
+    ("Fiscalité", None): "droit_fiscal",
+    ("Fonctionnement de l'entreprise", "Litiges commerciaux"): "droit_des_affaires",
+    ("Fonctionnement de l'entreprise", None): "titre",
+    ("Étapes de vie", None): "titre",
+    ("Pratiques commerciales", "Marchés publics"): "droit_administratif",
+    ("Pratiques commerciales", "Franchise"): "droit_des_affaires",
+    ("Pratiques commerciales", "Location-gérance"): "droit_des_affaires",
+    ("Pratiques commerciales", "Conditions de vente - Prix"): "droit_des_affaires",
+    ("Pratiques commerciales", "Méthodes de vente"): "droit_des_affaires",
+    ("Pratiques commerciales", "Commerce en ligne"): "droit_des_affaires",
+    ("Ressources humaines", "Aides à l'embauche"): "",
+    ("Ressources humaines", None): "droit_social",
+}
+# Dossiers melanges (« Je cree », « Formes juridiques »...) : la matiere se lit dans le titre, dans cet ordre.
+SPE_TITRES: tuple[tuple[str, str], ...] = (
+    (r"business plan|étude de marché|idée de business|compétences pour créer|acteurs de l.accompagnement|"
+     r"services nécessaires|tableau de bord|tester son projet|recherche de financements|valoriser|diagnostic|"
+     r"définir son projet|sélectionner une entreprise|trouver et sélectionner|anticiper et préparer", ""),
+    (r"fiscal", "droit_fiscal"),
+    (r"cotisations sociales|protection sociale|micro-social", "droit_social"),
+    (r"soci[ée]t[ée]|\bSAS\b|\bSASU\b|\bSARL\b|\bEURL\b|\bSA\b|\bSCI\b|\bSC[MP]\b|\bSEL|\bSN?C|\bSCA\b|Scop|GIE|"
+     r"statuts|capital|parts sociales|actions|dissolution|dirigeant|capitaux propres", "droit_des_societes"),
+    (r".", "droit_des_affaires"),
+)
+
+
+def matiere_entreprendre(theme: str, dossier: str, titre: str) -> str:
+    m = SPE_MATIERES.get((theme, dossier), SPE_MATIERES.get((theme, None), ""))
+    if m != "titre":
+        return m
+    return next(mat for motif, mat in SPE_TITRES if re.search(motif, titre, re.IGNORECASE))
+
 
 # Blocs repris tels quels, precedes de leur libelle sur le site.
 SP_ENCADRES = {"ANoter": "À noter", "ASavoir": "À savoir", "Attention": "Attention", "Rappel": "Rappel",
@@ -167,14 +215,17 @@ def _rendre(el: ET.Element, lignes: list[str]) -> None:
             _rendre(enfant, lignes)
 
 
-def fiche_service_public(xml: bytes) -> dict | None:
-    """Entree du catalogue pour une fiche pratique retenue, None sinon."""
+def fiche_service_public(xml: bytes, entreprendre: bool = False) -> dict | None:
+    """Entree du catalogue pour une fiche pratique retenue, None sinon (Particuliers, ou Entreprendre)."""
     r = ET.fromstring(xml)
     if r.findtext(DC + "type") != "Fiche pratique" or r.get("type") != "Fiche d'information conditionnée":
         return None
     sous_theme = r.findtext("SousThemePere") or ""
     dossier = r.findtext("DossierPere/Titre") or ""
-    matiere = SP_MATIERES.get((sous_theme, dossier)) or SP_MATIERES.get((sous_theme, None))
+    if entreprendre:
+        matiere = matiere_entreprendre(r.findtext("Theme/Titre") or "", dossier, r.findtext(DC + "title") or "")
+    else:
+        matiere = SP_MATIERES.get((sous_theme, dossier)) or SP_MATIERES.get((sous_theme, None))
     if not matiere:
         return None
     sections: list[dict] = []
@@ -208,7 +259,7 @@ def fiche_service_public(xml: bytes) -> dict | None:
         "matiere": matiere,
         "auteur": r.findtext(DC + "creator") or "Direction de l'information légale et administrative",
         "source": "Service Public / DILA",
-        "source_url": "https://www.service-public.gouv.fr/",
+        "source_url": "https://entreprendre.service-public.gouv.fr/" if entreprendre else "https://www.service-public.gouv.fr/",
         "url_original": r.get("spUrl", ""),
         "licence": "etalab-2.0",
         "mis_a_jour": date,
@@ -217,24 +268,34 @@ def fiche_service_public(xml: bytes) -> dict | None:
     }
 
 
-def service_public(client: httpx.Client | None) -> list[dict]:
-    if client is not None and (not SP_ZIP.exists() or time.time() - SP_ZIP.stat().st_mtime > 20 * 3600):
-        SP_ZIP.parent.mkdir(parents=True, exist_ok=True)
-        tmp = SP_ZIP.with_suffix(".tmp")
-        with client.stream("GET", SP_ZIP_URL) as r:
+def _archive(client: httpx.Client | None, url: str, cible: Path) -> bool:
+    """Telecharge l'archive si elle date de plus de 20 h ; False si elle manque (hors ligne ou echec)."""
+    if client is not None and (not cible.exists() or time.time() - cible.stat().st_mtime > 20 * 3600):
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cible.with_suffix(".tmp")
+        with client.stream("GET", url) as r:
             r.raise_for_status()
             with tmp.open("wb") as f:
                 for bloc in r.iter_bytes():
                     f.write(bloc)
-        tmp.replace(SP_ZIP)
-    if not SP_ZIP.exists():
-        print("service-public : archive absente (mode hors ligne)", file=sys.stderr)
-        return []
+        tmp.replace(cible)
+    if not cible.exists():
+        print(f"service-public : {cible.name} absente (mode hors ligne)", file=sys.stderr)
+        return False
+    return True
+
+
+def service_public(client: httpx.Client | None) -> list[dict]:
+    """Particuliers puis Entreprendre. Une fiche publiee dans les deux garde l'identifiant de la premiere
+    (meme fiche de la DILA) ; `ecrire` ne garde qu'une entree par identifiant."""
     out = []
-    with zipfile.ZipFile(SP_ZIP) as z:
-        for nom in z.namelist():
-            if re.fullmatch(r"F\d+\.xml", nom) and (c := fiche_service_public(z.read(nom))):
-                out.append(c)
+    for url, cible, entreprendre in ((SP_ZIP_URL, SP_ZIP, False), (SPE_ZIP_URL, SPE_ZIP, True)):
+        if not _archive(client, url, cible):
+            continue
+        with zipfile.ZipFile(cible) as z:
+            for nom in z.namelist():
+                if re.fullmatch(r"F\d+\.xml", nom) and (c := fiche_service_public(z.read(nom), entreprendre)):
+                    out.append(c)
     return out
 
 
