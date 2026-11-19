@@ -226,15 +226,17 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     def _utilisateur(request: Request) -> Utilisateur | None:
         return utilisateur_requis(request) if utilisateur_requis else None
 
-    def _consommer(u: Utilisateur | None, type_: str) -> None:
+    def _consommer(u: Utilisateur | None, type_: str) -> str | None:
         if u is None:
-            return
-        if not comptes.reserver(u, type_):
+            return None
+        jour = comptes.reserver(u, type_)
+        if jour is None:
             f = u.formule
             limite = f.questions_par_jour if type_ == "questions" else f.quiz_par_jour
             quoi = "questions" if type_ == "questions" else "questionnaires"
             raise HTTPException(402, f"Limite du jour atteinte : {limite} {quoi} avec la formule {f.nom}. "
                                      "Elle se renouvelle à minuit, ou passez à une formule supérieure.")
+        return jour
 
     def _place_libre(action):
         if not appels_modele.acquire(blocking=False):
@@ -251,15 +253,18 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             # adresses inventees : seul l'envoi d'un e-mail prouve qu'une adresse existe.
             raise HTTPException(403, "Confirmez votre adresse e-mail pour poser des questions : "
                                      "le lien vous a été envoyé à l'inscription.")
-        _consommer(u, type_)
+        jour = _consommer(u, type_)
         try:
             res = action()
         except Exception:
             if u is not None:
-                comptes.rembourser(u, type_)  # le modele n'a pas repondu : pas decompte
+                comptes.rembourser(u, type_, jour)  # le modele n'a pas repondu : pas decompte
             raise
         if u is not None and not res["controle"]["modele_appele"]:
-            comptes.rembourser(u, type_)  # aucun extrait trouve : le modele n'a pas ete appele
+            comptes.rembourser(u, type_, jour)  # aucun extrait trouve : le modele n'a pas ete appele
+        elif u is not None and type_ == "quiz" and res.get("obtenu") == 0:
+            # Aucune question verifiable : rien a faire pour l'etudiant, pas decompte (audit du 19/11, SRV-12).
+            comptes.rembourser(u, type_, jour)
         return res
 
     @app.exception_handler(LLMError)

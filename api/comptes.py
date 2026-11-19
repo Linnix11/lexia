@@ -766,8 +766,9 @@ class Comptes:
         q, z = rows[0] if rows else (0, 0)
         return {"jour": _jour(), "questions": q, "quiz": z}
 
-    def reserver(self, u: Utilisateur, type_: str) -> bool:
-        """Compte une utilisation si la limite du jour n'est pas atteinte (operation atomique)."""
+    def reserver(self, u: Utilisateur, type_: str) -> str | None:
+        """Compte une utilisation si la limite du jour n'est pas atteinte (operation atomique) ; renvoie le jour
+        decompte, a rendre a rembourser, ou None si la limite est atteinte."""
         colonne = {"questions": "questions", "quiz": "quiz"}[type_]
         limite = u.formule.questions_par_jour if type_ == "questions" else u.formule.quiz_par_jour
         jour = _jour()
@@ -776,10 +777,13 @@ class Comptes:
             cur = self._con.execute(
                 f"UPDATE usage SET {colonne} = {colonne} + 1 WHERE utilisateur = ? AND jour = ? AND {colonne} < ?",
                 (u.id, jour, limite))
-            return cur.rowcount == 1
+            return jour if cur.rowcount == 1 else None
 
-    def rembourser(self, u: Utilisateur, type_: str) -> None:
-        """Annule une reservation (le modele n'a pas pu repondre : l'etudiant n'est pas decompte)."""
+    def rembourser(self, u: Utilisateur, type_: str, jour: str | None = None) -> None:
+        """Annule une reservation (le modele n'a pas pu repondre : l'etudiant n'est pas decompte).
+
+        jour : celui de la reservation. Une question posee a 23 h 59 et ratee a minuit etait rendue sur le
+        lendemain (audit du 19/11, SRV-13)."""
         colonne = {"questions": "questions", "quiz": "quiz"}[type_]
         self._q(f"UPDATE usage SET {colonne} = MAX({colonne} - 1, 0) WHERE utilisateur = ? AND jour = ?",
-                (u.id, _jour()))
+                (u.id, jour or _jour()))

@@ -118,3 +118,13 @@ def test_une_seule_relance_par_question(env):  # noqa: F811
     q = "Le fils de mes voisins a tagué mon garage : que dit l'article 1240 du code civil ?"
     client.post("/chat", json={"question": q, "mode": "cas_pratique"})
     assert len(llm.prompts) == 2
+
+
+def test_relance_ratee_garde_la_premiere_reponse(env):  # noqa: F811
+    """SRV-4 (TST-6) : la relance en echec donnait 503 alors qu'une premiere reponse existait."""
+    from api.llm.base import LLMError
+    client, llm, _ = env
+    llm.reponses += [REFUS, LLMError("HTTP 503")]
+    q = "Mon voisin a abîmé ma voiture : que dit l'article 1240 du code civil ?"
+    r = client.post("/chat", json={"question": q})
+    assert r.status_code == 200 and r.json()["statut"] == "hors_champ" and len(llm.prompts) == 2

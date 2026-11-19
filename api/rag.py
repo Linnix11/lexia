@@ -30,8 +30,9 @@ K_CHAT = 8
 MAX_SUGGESTIONS = 4  # articles ajoutes sans recherche (lexique, concordance, reformulation)
 K_SECOURS = 4  # extraits envoyes au modele de secours (quota Groq gratuit : ~8 000 jetons par minute)
 # Au-dela, pas de relance « hors champ » : une seconde generation (jusqu'a 35 s de Gemini + 30 s de Groq)
-# depasserait les 120 s de nginx (second audit du 2026-11-16, point 10).
-DELAI_MAX_RELANCE = 40.0
+# depasserait la coupure de Cloudflare a 100 s, avant celle de nginx a 120 s (second audit du 2026-11-16,
+# point 10 ; audit du 19/11, SRV-5 : 40 s laissaient atteindre 105 s). 25 + 35 + 30 = 90 s au pire.
+DELAI_MAX_RELANCE = 25.0
 # Erreur, dol et violence (Code civil, art. 1132 a 1144) partagent la condition (vice determinant, art. 1130)
 # et la sanction (nullite relative, art. 1131), que la recherche ne ramenait pas : sur un cas de dol, la
 # reponse ne pouvait pas dire que le contrat est annulable (cas pratique cp-08, 2026-11-16).
@@ -354,16 +355,23 @@ class Lexia:
                     schema=prompts.schema_reponse(mode),
                 )
             brut, modele, extraits_envoyes = generer()
+            note = None
             if brut.get("statut") == "hors_champ" and time.monotonic() - debut < DELAI_MAX_RELANCE:
                 # Le modele refusait des faits racontes a la premiere personne une fois sur trois (D77) : il est
                 # relance une fois, avec une note qui lui rappelle les quatre refus legitimes sans lui imposer
                 # de repondre. Pas de relance apres une premiere generation lente (secours, 503 en serie) : la
-                # reponse depasserait les 120 s de nginx, l'etudiant aurait une erreur et un quota decompte.
-                brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_HORS_CHAMP)
+                # reponse depasserait la coupure de Cloudflare, l'etudiant aurait une erreur et un quota decompte.
+                note = prompts.NOTE_RELANCE_HORS_CHAMP
             elif (mode in prompts.MODES_METHODE and passages and brut.get("statut") == "reponse"
                   and not _cite_un_extrait(brut) and time.monotonic() - debut < DELAI_MAX_RELANCE):
                 # Une seule relance au total par question (meme limite de duree que ci-dessus).
-                brut, modele, extraits_envoyes = generer(prompts.NOTE_RELANCE_SOURCES)
+                note = prompts.NOTE_RELANCE_SOURCES
+            if note is not None:
+                try:
+                    brut, modele, extraits_envoyes = generer(note)
+                except LLMError as e:
+                    # Une relance ratee donnait 503 alors qu'une reponse existait (audit du 19/11, SRV-4).
+                    log.warning("relance impossible (%s) : premiere reponse gardee", str(e)[:200])
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode, cours_seul=option_cours == "seul")

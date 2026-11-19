@@ -396,3 +396,26 @@ def test_migration_ajoute_prenom_et_nom(tmp_path):
     c = Comptes(chemin)
     assert c.identite(1) == (None, None)
     assert c.changer_identite(1, "Léa", "Martin") == ("Léa", "Martin") and c.identite(1) == ("Léa", "Martin")
+
+
+def test_questionnaire_sans_question_verifiable_non_decompte(env):
+    """SRV-12 : le modele repond, mais aucune question ne passe le controle : rien a faire pour l'etudiant."""
+    client, _, _ = env
+    inscrire(client)
+    r = client.post("/quiz", json={"theme": "la responsabilité"})
+    assert r.status_code == 200 and r.json()["obtenu"] == 0 and r.json()["controle"]["modele_appele"]
+    assert client.get("/auth/moi").json()["usage"]["quiz"] == 0
+
+
+def test_remboursement_sur_le_jour_de_la_reservation(tmp_path, monkeypatch):
+    """SRV-13 : une question reservee a 23 h 59 et ratee apres minuit etait rendue sur le lendemain."""
+    from api import comptes as module
+    comptes = Comptes(tmp_path / "c.db")
+    u = comptes.creer("etu@exemple.fr", "motdepasse-solide", prenom="Léa", nom="Martin")
+    monkeypatch.setattr(module, "_jour", lambda: "2026-11-19")
+    jour = comptes.reserver(u, "questions")
+    assert jour == "2026-11-19"
+    monkeypatch.setattr(module, "_jour", lambda: "2026-11-20")
+    comptes.rembourser(u, "questions", jour)
+    monkeypatch.setattr(module, "_jour", lambda: "2026-11-19")
+    assert comptes.usage(u.id)["questions"] == 0
