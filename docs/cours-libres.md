@@ -195,6 +195,11 @@ contenir des erreurs. Elle affiche le catalogue écrit par l'ingestion (partie p
 
 - Site : page `/cours-recuperes` (réservée aux comptes, `web/src/site/CoursRecuperes.tsx`), dans le cadre de
   l'espace étudiant ; on l'ouvre depuis la carte « Cours récupérés » de la Bibliothèque.
+- Barre de recherche facultative en haut de la Bibliothèque (`web/src/components/RechercheBibliotheque.tsx`,
+  demande de l'éditeur du 2026-11-19). Rien n'est chargé tant que l'étudiant n'écrit pas. Elle cherche :
+  - dans les cours récupérés, titres puis texte ; chaque résultat ouvre la page avec la recherche remplie (`?q=`) ;
+  - dans les annales et les sources officielles ;
+  - et propose la même recherche dans le catalogue Sudoc.
 - Avertissement en haut de la page : « Cours récupérés sur des sites tiers sous licence libre. Ils ne sont pas
   rédigés par Lexia et peuvent contenir des erreurs ou être dépassés. Vérifiez toujours avec les textes officiels. »
   Il est rappelé sur chaque cours, et en tête du texte du cours ouvert.

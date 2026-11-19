@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { CarteBibliotheque, CarteOutils, CarteSources } from '../components/Cartes'
 import { CarteAnnales } from '../components/Annales'
+import { RechercheBibliotheque } from '../components/RechercheBibliotheque'
 import { Chat } from '../components/Chat'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
@@ -309,6 +310,7 @@ export function VueBibliotheque() {
   return (
     <>
       <EnTete surtitre="Bibliothèque" titre="Annales et ressources." texte="Annales d’examens par matière, manuels à consulter en bibliothèque et sources officielles du corpus." />
+      <RechercheBibliotheque />
       {/* Annales d'abord : les sources generales figurent deja sur « Mon espace » (audit du 2026-11-16, point 13). */}
       <div className="grid items-start gap-[18px] tab:grid-cols-2">
         <CarteAnnales />

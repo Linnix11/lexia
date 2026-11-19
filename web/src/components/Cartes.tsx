@@ -4,7 +4,8 @@ import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
 
 // sources : identifiants de /fraicheur ; textes : date de la derniere archive LEGI (codes et lois)
-const OFFICIELLES = [
+// eslint-disable-next-line react-refresh/only-export-components
+export const OFFICIELLES = [
   { sym: '§', nom: 'Légifrance', desc: '36 codes et lois en vigueur (archives DILA)', url: 'https://www.legifrance.gouv.fr/Droit-francais',
     textes: true, sources: [] as string[] },
   { sym: '⚖', nom: 'Cour de cassation', desc: 'Arrêts publiés depuis 2000, sommaires depuis 1960 (chambre criminelle : 1963)',

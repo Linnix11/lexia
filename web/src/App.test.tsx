@@ -531,6 +531,35 @@ describe('Audit du 16 novembre 2026', () => {
     const titres = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(titres.indexOf('Annales d’examens')).toBeLessThan(titres.indexOf('Sources de confiance'))
   })
+
+  it('bibliotheque : barre de recherche facultative sur les cours recuperes, les annales et les sources', async () => {
+    const cours = { id: 'sp-f1', titre: 'Divorce accepté', matiere: 'droit_de_la_famille', libelle_matiere: 'Droit de la famille',
+      auteur: 'DILA', source: 'Service Public / DILA', source_url: 'https://exemple.invalid/', url_original: 'https://exemple.invalid/f1',
+      historique_url: '', licence: 'etalab-2.0', licence_libelle: 'Licence Ouverte 2.0', licence_url: 'https://exemple.invalid/lo',
+      mis_a_jour: '2026-03-01', modifications: '', sections: 3 }
+    const dansLeTexte = { ...cours, id: 'sp-f2', titre: 'Prestation compensatoire' }
+    const annale = { id: 1, titre: 'Sujet divorce et filiation', matiere: 'droit_de_la_famille', libelle_matiere: 'Droit de la famille',
+      niveau: 'L1', annee: 2025, universite: 'Université test', session: '', url: 'https://exemple.fr/sujet', corrige: false, ajoute_le: '2026-11-01' }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/cours-recuperes')) return repondre({ avertissement: 'a', cours: [cours, dansLeTexte] })
+      if (url.includes('/cours-recuperes/recherche?q=divorce')) return repondre({ cours: ['sp-f1', 'sp-f2'] })
+      if (url.endsWith('/annales')) return repondre({ niveaux: ['L1'], annales: [annale] })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Bibliothèque/ }))
+    const barre = await screen.findByRole('searchbox', { name: /Rechercher dans la bibliothèque/ })
+    expect(screen.queryByText(/Cours récupérés \(/)).not.toBeInTheDocument()   // rien tant qu'on n'ecrit pas
+    fireEvent.change(barre, { target: { value: 'divorce' } })
+    expect(await screen.findByRole('link', { name: /Divorce accepté/ })).toHaveAttribute('href', '/cours-recuperes?q=Divorce%20accept%C3%A9')
+    expect(await screen.findByRole('link', { name: /Prestation compensatoire/ }, { timeout: 2000 })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Sujet divorce et filiation/ })).toHaveAttribute('href', 'https://exemple.fr/sujet')
+    expect(screen.getByRole('link', { name: /catalogue des bibliothèques universitaires/ })).toHaveAttribute('href', expect.stringContaining('TRM=divorce'))
+    fireEvent.change(barre, { target: { value: 'cassation' } })
+    const groupe = (await screen.findByRole('heading', { name: 'Sources officielles' })).closest('section')!
+    expect(within(groupe).getByRole('link', { name: /Cour de cassation/ })).toBeInTheDocument()
+  })
 })
 
 describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {

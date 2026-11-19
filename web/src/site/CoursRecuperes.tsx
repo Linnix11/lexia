@@ -92,7 +92,8 @@ export function CoursRecuperes() {
   const [erreur, setErreur] = useState(false)
   const { matiere: matiereEspace } = useApp()
   const [matiere, setMatiere] = useState('')
-  const [recherche, setRecherche] = useState('')
+  // ?q= : recherche ouverte depuis la barre de la Bibliotheque.
+  const [recherche, setRecherche] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '')
   const [nombre, setNombre] = useState(PAR_PAGE)
   // Recherche dans le texte des fiches (index plein texte, cote serveur), apres une courte pause de saisie.
   const [dansLeTexte, setDansLeTexte] = useState<{ q: string; ids: string[] }>({ q: '', ids: [] })
