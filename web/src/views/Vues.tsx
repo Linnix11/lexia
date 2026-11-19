@@ -290,6 +290,21 @@ export function VueFiches() {
   )
 }
 
+/** Entree vers la page a part des cours de sources libres (docs/cours-libres.md). */
+function CarteCoursRecuperes() {
+  return (
+    <Card className="p-[19px]">
+      <CardHead titre="Cours récupérés" sousTitre="Cours de sites tiers sous licence libre, rangés par matière" />
+      <p className="mt-3 text-[11px] leading-[1.45] text-muted">
+        Ils ne sont pas rédigés par Lexia et peuvent contenir des erreurs : à vérifier avec les textes officiels.
+      </p>
+      <Lien href="/cours-recuperes" className="mt-3 inline-block rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
+        Voir les cours récupérés
+      </Lien>
+    </Card>
+  )
+}
+
 export function VueBibliotheque() {
   return (
     <>
@@ -299,6 +314,7 @@ export function VueBibliotheque() {
         <CarteAnnales />
         <CarteBibliotheque complete />
         <CarteSources />
+        <CarteCoursRecuperes />
       </div>
       <p className="mt-4 text-[11px] text-muted">
         Les bibliographies recommandées par les facultés partenaires seront ajoutées ici (métadonnées et liens uniquement).

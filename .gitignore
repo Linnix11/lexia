@@ -27,6 +27,8 @@ data/embeddings/
 # Index local de recherche (regenere par ingest/build_index.py)
 data/index/
 data/index.*/
+# Catalogue des cours recuperes (ecrit par l'ingestion, docs/cours-libres.md)
+data/cours_recuperes/
 
 # Journaux de l'API
 logs/

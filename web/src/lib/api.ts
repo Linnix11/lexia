@@ -396,6 +396,30 @@ export interface Annale {
 
 export type NouvelleAnnale = Omit<Annale, 'id' | 'libelle_matiere' | 'ajoute_le'>
 
+/** Cours recupere sur un site tiers sous licence libre (docs/cours-libres.md) : attribution exigee par la licence. */
+export interface CoursRecupere {
+  id: string
+  titre: string
+  matiere: string
+  libelle_matiere: string
+  auteur: string
+  source: string
+  source_url: string
+  url_original: string
+  historique_url: string
+  licence: string
+  licence_libelle: string
+  licence_url: string
+  mis_a_jour: string
+  modifications: string
+  sections: number
+}
+
+export interface CoursRecupereComplet extends Omit<CoursRecupere, 'sections'> {
+  avertissement: string
+  sections: { titre: string; texte: string }[]
+}
+
 export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
@@ -439,6 +463,10 @@ export const api = {
   matieres: () => requete<Matiere[]>('/matieres'),
   fraicheur: () => requete<Fraicheur>('/fraicheur'),
   annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
+  coursRecuperes: {
+    lister: () => requete<{ avertissement: string; cours: CoursRecupere[] }>('/cours-recuperes'),
+    lire: (id: string) => requete<CoursRecupereComplet>(`/cours-recuperes/${encodeURIComponent(id)}`),
+  },
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number, cours?: OptionsCours) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre, ...optionsCours(cours) }),
   quiz: (theme: string, format: FormatQuiz, nombre: number, matiere: string | null, niveau: Niveau, semestre: number,

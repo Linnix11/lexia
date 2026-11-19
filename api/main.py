@@ -22,6 +22,7 @@ from api.auth import cle_ip, creer_routes, exiger_admin, routes_formules, verifi
 from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
+from api.cours_recuperes import Catalogue, creer_routes_cours_recuperes
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
@@ -201,6 +202,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         cours = Cours(comptes.chemin, embedder)
         lexia.cours = cours
         app.include_router(creer_routes_cours(cours, utilisateur_requis))
+        # Cours de sites tiers sous licence libre : page a part, jamais dans les reponses (docs/cours-libres.md)
+        app.include_router(creer_routes_cours_recuperes(Catalogue(settings.cours_recuperes), utilisateur_requis))
 
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)

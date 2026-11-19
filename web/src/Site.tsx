@@ -4,6 +4,7 @@ import { Lien, RouteurProvider, useRouteur } from './lib/router'
 import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
 import { Compte } from './site/Compte'
+import { CoursRecuperes } from './site/CoursRecuperes'
 import { Cgu, Confidentialite, MentionsLegales } from './site/Legal'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
@@ -33,6 +34,7 @@ const INVITES: Record<string, () => ReactNode> = {
 const MEMBRES: Record<string, () => ReactNode> = {
   '/app': () => <App />,
   '/compte': () => <Compte />,
+  '/cours-recuperes': () => <CoursRecuperes />,
 }
 
 function Chargement() {

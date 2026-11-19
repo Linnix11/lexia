@@ -48,6 +48,8 @@ class Settings:
     disjoncteur_pause: float = 300.0
     comptes_actifs: bool = False               # comptes et quotas (actives par defaut hors tests)
     app_db: Path = ROOT / "donnees" / "lexia.db"
+    # Catalogue des cours recuperes sous licence libre (ecrit par l'ingestion ; absent = page vide)
+    cours_recuperes: Path = ROOT / "data" / "cours_recuperes" / "catalogue.json"
     contact_email: str = ""                    # adresse affichee pour demander une formule payante
     admin_emails: tuple[str, ...] = ()         # comptes administrateurs (ADMIN_EMAILS, separes par des virgules)
     # comptes crees par adresse IP sur 24 h (0 = sans limite) ; un campus derriere une seule IP compte pour une

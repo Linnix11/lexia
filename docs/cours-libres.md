@@ -134,7 +134,41 @@ plus 5 % de passages en plus dans l'index.
 
 ## 7. Intégration proposée
 
-### Affichage, à part des textes officiels
+### Page « Cours récupérés » (construite le 2026-11-19, vide)
+
+Demande de l'éditeur : une page à part pour les cours récupérés, qui dit bien qu'ils sont récupérés et peuvent
+contenir des erreurs. Elle est construite, sans aucun cours réel. Elle reste vide tant que l'éditeur n'a pas validé
+les sources et que l'ingestion n'a pas écrit le catalogue.
+
+- Site : page `/cours-recuperes` (réservée aux comptes, `web/src/site/CoursRecuperes.tsx`), dans le cadre de
+  l'espace étudiant ; on l'ouvre depuis la carte « Cours récupérés » de la Bibliothèque.
+- Avertissement en haut de la page : « Cours récupérés sur des sites tiers sous licence libre. Ils ne sont pas
+  rédigés par Lexia et peuvent contenir des erreurs ou être dépassés. Vérifiez toujours avec les textes officiels. »
+  Il est rappelé sur chaque cours, et en tête du texte du cours ouvert.
+- Cours rangés par matière, filtre par matière. Chaque cours affiche :
+  - l'auteur, avec un lien vers la liste des contributeurs pour les wikis ;
+  - la source avec un lien ;
+  - la licence avec un lien vers son texte ;
+  - la date de dernière mise à jour ;
+  - le lien vers l'original ;
+  - les modifications faites, quand il y en a.
+
+  Le texte s'ouvre avec « Lire le cours ».
+- API : `GET /cours-recuperes` (liste sans le texte) et `GET /cours-recuperes/{id}` (texte par sections), réservés
+  aux comptes (`api/cours_recuperes.py`). Catalogue : `data/cours_recuperes/catalogue.json` (réglage
+  `cours_recuperes`, hors du dépôt), relu quand il change.
+- Contrôles du catalogue : une entrée est écartée, sans perdre les autres, si :
+  - sa licence n'est pas dans la liste admise (Licence Ouverte 1.0 et 2.0, CC BY 4.0, CC BY-SA 4.0 ; aucune clause
+    NC) ;
+  - sa matière n'est pas l'une des 20 matières ;
+  - un lien n'est pas en https ;
+  - l'auteur ou le texte manque.
+- Tests : `tests/test_cours_recuperes.py` et `web/src/site/CoursRecuperes.test.tsx`, avec un cours factice
+  seulement.
+- Ces cours ne servent pas aux réponses de l'assistant. Les intégrer aussi aux réponses (partie suivante) est une
+  étape à part, à décider plus tard.
+
+### Affichage dans les réponses (étape à part, à décider)
 
 - Nouveau type de passage `doctrine` (nature « Explication non officielle ») ; jamais compté parmi les textes ni la
   jurisprudence.
@@ -187,7 +221,7 @@ plus 5 % de passages en plus dans l'index.
 **Numéro à confirmer** : D103 est déjà pris sur la branche `claude/fiches-a-retourner` (cartes à retourner, non
 fusionnée). Prendre le premier numéro libre au moment de la fusion.
 
-| D103 | Cours et fiches libres, explications non officielles a cote du corpus (proposition, `docs/cours-libres.md`) | Releve du 2026-11-19 : aucun cours de licence en droit francais a la fois libre pour un usage commercial, complet et a jour (cours ouverts en CC BY-NC-ND ou sans licence libre, aucun cours de licence en droit francais sous licence ouverte dans HAL). Sources retenues, par phases et sur accord de l'editeur : (1) fiches et questions-reponses de vie-publique.fr (Licence Ouverte 2.0, source et date, sans modification ; Dossiers et Paroles d'expert exclus) ; (2) selection thematique des fiches pratiques de service-public.gouv.fr (Licence Ouverte, flux XML quotidien, source « Service Public / DILA » et date) ; (3) pages de Wikiversite et Wikilivres choisies une a une apres relecture (CC BY-SA 4.0, attribution et partage a l'identique ; « Obligation contractuelle », anterieure a la reforme de 2016, et « Droit du travail » exclus). Exclus : manuels, cours de faculte non libres, UNJF (D10), HAL, AUNEGe (CC BY-NC-ND). Affichage : type `doctrine`, rubrique « Pour comprendre (explications non officielles) » distincte des sources, etiquettes E1, E2..., editeur ou auteurs, licence, date de mise a jour et lien ; texte affiche sans modification ; mention d'anciennete ; aucune regle fondee sur une seule explication ; aucune explication en « Mon cours seulement » ni dans les fiches et questionnaires generes. Indexation : meme index SQLite (`passages`, `passages_fts`, vecteurs), troisieme groupe `doctrine` dans la recherche avec deux extraits au plus et aucun dans les 4 du secours. Mise a jour nocturne (D78) et page de credits. A faire par l'editeur : relire la page de vie-publique.fr retablie, demander une licence du manuel « Initiation aux etudes juridiques » (Couperin, BIU Cujas), confirmation ecrite du Conseil d'Etat et du Conseil constitutionnel, avis sur le partage a l'identique avant la phase 3. |
+| D103 | Cours et fiches libres, explications non officielles a cote du corpus (proposition, `docs/cours-libres.md`) | Releve du 2026-11-19 : aucun cours de licence en droit francais a la fois libre pour un usage commercial, complet et a jour (cours ouverts en CC BY-NC-ND ou sans licence libre, aucun cours de licence en droit francais sous licence ouverte dans HAL). Sources retenues, par phases et sur accord de l'editeur : (1) fiches et questions-reponses de vie-publique.fr (Licence Ouverte 2.0, source et date, sans modification ; Dossiers et Paroles d'expert exclus) ; (2) selection thematique des fiches pratiques de service-public.gouv.fr (Licence Ouverte, flux XML quotidien, source « Service Public / DILA » et date) ; (3) pages de Wikiversite et Wikilivres choisies une a une apres relecture (CC BY-SA 4.0, attribution et partage a l'identique ; « Obligation contractuelle », anterieure a la reforme de 2016, et « Droit du travail » exclus). Exclus : manuels, cours de faculte non libres, UNJF (D10), HAL, AUNEGe (CC BY-NC-ND). Page a part `/cours-recuperes` (demande de l'editeur, construite vide) : avertissement en haut de page et sur chaque cours (« Cours recuperes sur des sites tiers sous licence libre. Ils ne sont pas rediges par Lexia et peuvent contenir des erreurs ou etre depasses. Verifiez toujours avec les textes officiels. »), cours ranges par matiere, auteur, source, licence, date de mise a jour et lien vers l'original pour chacun ; API `GET /cours-recuperes` et `/cours-recuperes/{id}` reservees aux comptes, catalogue `data/cours_recuperes/catalogue.json` ecrit par l'ingestion, entree ecartee si sa licence interdit l'usage commercial. Affichage dans les reponses (etape a part, a decider) : type `doctrine`, rubrique « Pour comprendre (explications non officielles) » distincte des sources, etiquettes E1, E2..., editeur ou auteurs, licence, date de mise a jour et lien ; texte affiche sans modification ; mention d'anciennete ; aucune regle fondee sur une seule explication ; aucune explication en « Mon cours seulement » ni dans les fiches et questionnaires generes. Indexation : meme index SQLite (`passages`, `passages_fts`, vecteurs), troisieme groupe `doctrine` dans la recherche avec deux extraits au plus et aucun dans les 4 du secours. Mise a jour nocturne (D78) et page de credits. A faire par l'editeur : relire la page de vie-publique.fr retablie, demander une licence du manuel « Initiation aux etudes juridiques » (Couperin, BIU Cujas), confirmation ecrite du Conseil d'Etat et du Conseil constitutionnel, avis sur le partage a l'identique avant la phase 3. |
 
 ## 9. Pages lues
 
