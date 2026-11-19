@@ -302,3 +302,34 @@ def test_liens_mot_de_passe_oublie_plafonnes_par_ip(env, monkeypatch):
     autre_ip.post("/auth/mot-de-passe/oubli", json={"email": "etu2@exemple.fr"})
     _attendre(liens, auth.OUBLIS_PAR_IP_JOUR + 1)
     assert len(liens) == auth.OUBLIS_PAR_IP_JOUR + 1
+
+
+def test_codes_2fa_faux_plafonnes_sur_24_h_et_titulaire_prevenu(env, monkeypatch):
+    """SEC-2 : 5 echecs par 15 minutes seulement, remis a zero par chaque connexion reussie ; personne prevenu."""
+    import pytest
+    from fastapi import HTTPException
+    from api import auth, totp
+    client, _, envoyes = env
+    alertes = []
+    monkeypatch.setattr(courriel, "envoyer_alerte_code_faux", lambda dest: alertes.append(dest))
+    inscrire(client)
+    client.post("/auth/email/verifier", json={"jeton": jeton_de(envoyes[0][1])})
+    secret = client.post("/auth/2fa/preparer").json()["secret"]
+    client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide",
+                                           "code": totp._code(secret, totp.etape_courante())})
+    autre = TestClient(client.app)
+    for _ in range(2):
+        jeton = autre.post("/auth/connexion", json={"email": "etu@exemple.fr",
+                                                    "mot_de_passe": "motdepasse-solide"}).json()["jeton"]
+        assert autre.post("/auth/connexion/code", json={"jeton": jeton, "code": "zzzz-zzzz"}).status_code == 401
+    _attendre(alertes)
+    assert alertes == ["etu@exemple.fr"]                 # une seule alerte par 24 h
+
+    f = auth.Freins()
+    for _ in range(20):
+        f.verifier_jour("2fa:1")
+        f.echec_jour("2fa:1")
+    f.succes("2fa:1")                                    # une connexion reussie ne remet pas ce compteur a zero
+    with pytest.raises(HTTPException) as e:
+        f.verifier_jour("2fa:1")
+    assert e.value.status_code == 429

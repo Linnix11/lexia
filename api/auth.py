@@ -122,8 +122,12 @@ class Freins:
     et les comptes crees par IP sur 24 h (sans plafond, le quota gratuit se contourne en creant des comptes)."""
 
     def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5, inscriptions_ip_jour: int = 20,
-                 echecs_compte: int = 50):
+                 echecs_compte: int = 50, echecs_jour: int = 20):
         self.par_ip, self.max_echecs = par_ip_minute, echecs_email
+        # Plafond sur 24 h, que la connexion reussie du titulaire ne remet pas a zero : avec 5 echecs par
+        # 15 minutes seulement, un code a 6 chiffres se devinait en un an dans 40 % des cas (audit du 19/11, SEC-2).
+        self.max_echecs_jour = echecs_jour
+        self._echecs_jour: dict[str, deque] = defaultdict(deque)
         self.max_inscriptions = inscriptions_ip_jour
         # Plafond par compte, toutes adresses IP confondues : la limite de 5 echecs vise l'adresse qui se
         # trompe (sinon 5 faux mots de passe bloquaient le titulaire), celle-ci arrete une attaque repartie.
@@ -145,7 +149,8 @@ class Freins:
         if now - self._derniere_purge < 60:
             return
         self._derniere_purge = now
-        for d, fenetre in ((self._ip, 60), (self._echecs, 900), (self._inscriptions, 86400)):
+        for d, fenetre in ((self._ip, 60), (self._echecs, 900), (self._inscriptions, 86400),
+                           (self._echecs_jour, 86400)):
             for k in [k for k, q in d.items() if not q or now - q[-1] > fenetre]:
                 del d[k]
 
@@ -176,6 +181,21 @@ class Freins:
             self._purger(q, 86400, time.monotonic())
             if len(q) >= self.max_inscriptions:
                 raise HTTPException(429, "Trop de comptes créés depuis cette connexion aujourd'hui : réessayez demain.")
+
+    def verifier_jour(self, cle: str) -> None:
+        with self._lock:
+            q = self._echecs_jour[cle]
+            self._purger(q, 86400, time.monotonic())
+            if len(q) >= self.max_echecs_jour:
+                raise HTTPException(429, "Trop de codes incorrects pour ce compte aujourd'hui : réessayez demain, "
+                                         "ou utilisez un code de secours.")
+
+    def echec_jour(self, cle: str) -> int:
+        """Note un echec sur 24 h ; renvoie le nombre d'echecs de la fenetre."""
+        with self._lock:
+            q = self._echecs_jour[cle]
+            q.append(time.monotonic())
+            return len(q)
 
     def inscrit(self, ip: str) -> None:
         with self._lock:
@@ -290,9 +310,15 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             raise HTTPException(401, "Connectez-vous pour utiliser l'assistant.")
         return u
 
+    public = urlparse(url_publique)
+
     def _poser_cookie(request: Request, response: Response, jeton: str) -> None:
+        # Secure aussi quand la requete vise le site public en HTTPS, quel que soit le schema vu derriere nginx :
+        # Cloudflare repasse en « Flexible », et le cookie partait sans Secure sans signe visible (SEC-4).
+        secure = request.url.scheme == "https" or (public.scheme == "https"
+                                                   and request.headers.get("host") == public.netloc)
         response.set_cookie(COOKIE, jeton, max_age=int(DUREE_SESSION.total_seconds()), httponly=True,
-                            samesite="lax", secure=request.url.scheme == "https", path="/")
+                            samesite="lax", secure=secure, path="/")
 
     def _ip(request: Request) -> str:
         return cle_ip(request)
@@ -349,13 +375,31 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if uid is None:
             raise HTTPException(401, "Délai dépassé ou trop d'essais : reconnectez-vous.")
         freins.verifier(_ip(request), f"2fa:{uid}")
+        freins.verifier_jour(f"2fa:{uid}")
         if not comptes.verifier_2fa(uid, req.code):
             freins.echec(f"2fa:{uid}")
+            freins.echec_jour(f"2fa:{uid}")
+            _prevenir_code_faux(uid)
             raise HTTPException(401, "Code incorrect.")
         attentes.terminer(req.jeton)
         freins.succes(f"2fa:{uid}")
         _poser_cookie(request, response, comptes.ouvrir_session(uid))
         return profil(comptes, comptes.par_id(uid))
+
+    def _prevenir_code_faux(uid: int) -> None:
+        """E-mail au titulaire au premier code faux apres un bon mot de passe, une fois par 24 h au plus."""
+        u = comptes.par_id(uid)
+        if u is None or not u.email_verifie or not courriel.configure():
+            return
+        plafonds = ((f"alerte2fa:{uid}", 1), ("confirmes", ENVOIS_CONFIRMES_JOUR))
+        if _reserver(*plafonds) is not None:
+            envois_oubli.submit(_envoyer_alerte_code_faux, u.email)
+
+    def _envoyer_alerte_code_faux(email: str) -> None:
+        try:
+            courriel.envoyer_alerte_code_faux(email)
+        except courriel.ErreurCourriel:
+            log.warning("e-mail « code incorrect » non envoye")
 
     @router.post("/2fa/preparer", dependencies=[Depends(verifier_origine)])
     def preparer_2fa(u: Utilisateur = Depends(utilisateur_requis)):

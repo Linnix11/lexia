@@ -42,8 +42,10 @@ class ErreurCours(ValueError):
 def extraire_isole(nom: str, contenu: bytes, delai: float = DELAI_LECTURE) -> list[tuple[int | None, str]]:
     """extraire_texte dans un processus separe, tue s'il depasse le delai ou la memoire."""
     try:
+        # Environnement minimal : le lecteur de fichiers n'herite pas des cles du serveur (Gemini, Groq, Resend,
+        # CLE_SECRETS), qu'une faille de pypdf, zipfile ou expat lui donnerait sinon (audit du 19/11, SEC-3).
         r = subprocess.run([sys.executable, "-m", "api.extraction", nom], input=contenu, capture_output=True,
-                           timeout=delai, cwd=RACINE)
+                           timeout=delai, cwd=RACINE, env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"})
     except subprocess.TimeoutExpired:
         raise ErreurCours("La lecture de ce fichier prend trop de temps : il est refusé. "
                           "Déposez une version plus simple (texte exporté en PDF ou Word).") from None

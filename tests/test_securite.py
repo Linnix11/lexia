@@ -217,3 +217,31 @@ def test_second_audit_16_nom_de_fichier_refuse_dans_l_adresse(env):  # noqa: F81
     r = client.post("/cours", params={"matiere": "droit_civil", "fichier": "Dupont.txt", "titre": "t"},
                     content=b"Le dol est une manoeuvre.", headers={"Content-Type": "application/octet-stream"})
     assert r.status_code == 422 and "rechargez" in r.json()["detail"]
+
+
+def test_audit_19_11_sec3_le_lecteur_de_fichiers_n_herite_d_aucune_cle(monkeypatch):
+    import subprocess
+    from api import extraction
+    vus = {}
+
+    def faux_run(cmd, **kw):
+        vus.update(kw)
+        return subprocess.CompletedProcess(cmd, 0, stdout=b'{"pages": [[null, "texte"]]}', stderr=b"")
+
+    monkeypatch.setenv("GEMINI_API_KEY", "secret")
+    monkeypatch.setattr(extraction.subprocess, "run", faux_run)
+    extraction.extraire_isole("c.txt", b"texte")
+    assert vus["env"] is not None and not any("KEY" in k or "SECRET" in k for k in vus["env"])
+
+
+def test_audit_19_11_sec4_cookie_secure_pour_le_site_public_meme_vu_en_http(tmp_path):
+    from api.config import Settings
+    from api.main import create_app
+    from tests.test_comptes import LLM, Retriever
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              url_publique="https://lexia.test"),
+                     retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "c.db"))
+    r = inscrire(TestClient(app, base_url="http://lexia.test"))
+    assert r.status_code == 201 and "secure" in r.headers["set-cookie"].lower()
+    r = inscrire(TestClient(app), email="autre@exemple.fr")             # autre hote (tests, adresse IP) : inchange
+    assert r.status_code == 201 and "secure" not in r.headers["set-cookie"].lower()

@@ -101,6 +101,18 @@ def envoyer_reinitialisation(destinataire: str, lien: str) -> None:
     envoyer(destinataire, "Nouveau mot de passe — Lexia", texte, html)
 
 
+def envoyer_alerte_code_faux(destinataire: str) -> None:
+    """Code de l'application faux juste apres un bon mot de passe : le titulaire est prevenu (audit du 19/11,
+    SEC-2). Une fois par 24 h au plus (api/auth.py)."""
+    _envoyer_texte(destinataire, "Lexia : code de connexion incorrect", (
+        "Quelqu'un a saisi le bon mot de passe de votre compte Lexia, puis un code de double authentification "
+        "incorrect.\n\n"
+        "Si c'était vous, ignorez ce message.\n"
+        "Sinon, votre mot de passe est connu d'un tiers : changez-le dès maintenant dans « Mon compte », ou avec "
+        "« Mot de passe oublié » sur la page de connexion. La double authentification protège encore votre compte.\n"
+    ))
+
+
 # --- vente en ligne (api/paiement.py) ---------------------------------------------------------------------
 
 FORMULAIRE_RETRACTATION = (
