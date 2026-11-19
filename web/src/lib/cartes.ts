@@ -46,8 +46,8 @@ function sourcesCitees(ids: string[], sources: FicheSource[]): SourceCarte[] {
 }
 
 function nouvelleCarte(id: string, origine: Carte['origine'], recto: string, verso: string, sources: SourceCarte[], maintenant: Date): Carte {
-  const iso = maintenant.toISOString()
-  return { id, origine, recto, verso, sources, niveau: 1, prochaine: iso, creee_le: iso }
+  // Due des minuit du jour : une carte ajoutee apres l'ouverture de la vue compte deja parmi celles a revoir.
+  return { id, origine, recto, verso, sources, niveau: 1, prochaine: minuitDans(maintenant, 0), creee_le: maintenant.toISOString() }
 }
 
 /** Une carte par question corrigee dont la reponse est connue. */

@@ -39,6 +39,8 @@ describe('cartes tirees d un questionnaire corrige', () => {
     expect(carte.sources).toEqual([{ id: 'a1240', entete: 'Code civil, article 1240', url: S1.url }])
     expect(carte.niveau).toBe(1)
     expect(aReviser([carte], MAINTENANT)).toHaveLength(1)
+    // creee a 15 h, deja due pour une vue ouverte a 9 h le meme jour
+    expect(aReviser([carte], new Date(2026, 10, 19, 9, 0))).toHaveLength(1)
   })
 
   it('vrai ou faux et questions ouvertes', () => {
