@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Correction, CoursDepose, FormatQuiz, Matiere, Mode, Niveau, OptionsCours, Quiz, ReponseChat } from '../lib/api'
+import type { Carte } from '../lib/cartes'
 import type { Favori } from '../lib/favoris'
 import type { Semestre } from '../lib/semestres'
 
@@ -62,6 +63,10 @@ export interface AppState {
   favoris: Favori[]
   basculerFavori: (m: Message) => void
   estFavori: (reponseId: string) => boolean
+  cartes: Carte[] // cartes a retourner, gardees dans ce navigateur (lib/cartes.ts)
+  ajouterCartes: (nouvelles: Carte[]) => void
+  noterCarte: (id: string, sue: boolean) => void
+  retirerCarte: (id: string) => void
   sourceOuverte: string | null
   ouvrirSource: (id: string | null) => void
   quizOuvert: { theme?: string; id: number } | null

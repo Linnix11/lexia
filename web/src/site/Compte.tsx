@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
+import { effacerCartes } from '../lib/cartes'
 import { effacerFavoris } from '../lib/favoris'
 import { effacerDerniereMatiere, NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
@@ -229,6 +230,7 @@ export function Compte() {
       const email = profil.email
       await supprimer(mdp)
       effacerFavoris(email) // poste partage : les fiches du compte ne restent pas dans le navigateur
+      effacerCartes(email)
       effacerDerniereMatiere(email)
       naviguer('/?compte-supprime=1', { remplacer: true })
     } catch (err) {

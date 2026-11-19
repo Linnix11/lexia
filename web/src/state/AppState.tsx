@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, type CoursDepose, type Matiere, type Mode, type OptionsCours } from '../lib/api'
+import { ajouterCartes as ajouter, ecrireCartes, lireCartes, MESSAGE_LIMITE_CARTES, reviser, type Carte } from '../lib/cartes'
 import { ecrireFavoris, lireFavoris, MAX_FICHES, MESSAGE_LIMITE_FICHES, type Favori } from '../lib/favoris'
 import { ecrireDerniereMatiere, lireDerniereMatiere } from '../lib/personnalisation'
 import { ecrireSeance, lireSeance } from '../lib/seance'
@@ -57,6 +58,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>(() => conversationReprise(compte))
   const [dernierQuiz, setDernierQuiz] = useState<EtatQuiz>(() => quizRepris(compte))
   const [favoris, setFavoris] = useState<Favori[]>(() => lireFavoris(compte))
+  const [cartes, setCartes] = useState<Carte[]>(() => lireCartes(compte))
   const [sourceOuverte, setSourceOuverte] = useState<string | null>(null)
   const [quizOuvert, setQuizOuvert] = useState<{ theme?: string; id: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -247,6 +249,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [notifier, compte],
   )
 
+  const ajouterCartes = useCallback(
+    (nouvelles: Carte[]) => {
+      const r = ajouter(cartes, nouvelles)
+      if (r.ajoutees === 0) {
+        notifier(r.refusees ? MESSAGE_LIMITE_CARTES : nouvelles.length ? 'Ces cartes sont déjà dans vos révisions.' : 'Aucune carte à tirer de ce contenu.')
+        return
+      }
+      setCartes(r.liste)
+      if (!ecrireCartes(r.liste, compte)) notifier("Le navigateur n'a pas pu enregistrer ces cartes.")
+      else notifier(`${r.ajoutees} carte${r.ajoutees > 1 ? 's' : ''} ajoutée${r.ajoutees > 1 ? 's' : ''} aux révisions (« Fiches & révisions »)`
+        + (r.refusees ? ` ; ${MESSAGE_LIMITE_CARTES}` : ''))
+    },
+    [cartes, notifier, compte],
+  )
+
+  const enregistrerCartes = useCallback(
+    (suivante: Carte[]) => {
+      setCartes(suivante)
+      if (!ecrireCartes(suivante, compte)) notifier("Le navigateur n'a pas pu enregistrer vos révisions.")
+    },
+    [notifier, compte],
+  )
+  const noterCarte = useCallback(
+    (id: string, sue: boolean) => enregistrerCartes(cartes.map((c) => (c.id === id ? reviser(c, sue) : c))),
+    [cartes, enregistrerCartes],
+  )
+  const retirerCarte = useCallback((id: string) => enregistrerCartes(cartes.filter((c) => c.id !== id)), [cartes, enregistrerCartes])
+
   const valeur = useMemo<AppState>(
     () => ({
       vue,
@@ -274,6 +304,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       favoris,
       basculerFavori,
       estFavori: (rid) => favoris.some((f) => f.id === rid),
+      cartes,
+      ajouterCartes,
+      noterCarte,
+      retirerCarte,
       sourceOuverte,
       ouvrirSource: setSourceOuverte,
       quizOuvert,
@@ -287,7 +321,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
+    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, cartes, ajouterCartes, noterCarte, retirerCarte, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

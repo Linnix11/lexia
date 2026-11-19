@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Lien } from '../lib/router'
 import type { FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
+import { cartesDuQuiz } from '../lib/cartes'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
@@ -55,7 +56,7 @@ export function QuizModal() {
 }
 
 function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string; matiereInitiale: string | null }) {
-  const { fermerQuiz, matieres, ouvrirSource, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz } = useApp()
+  const { fermerQuiz, matieres, ouvrirSource, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz, ajouterCartes } = useApp()
   const { parametres, quiz, reponses, correction, etat, erreur, statut } = dernierQuiz
   const ref = useDialog<HTMLDivElement>(true, fermerQuiz)
   const [theme, setTheme] = useState(themeDemande ?? parametres?.theme ?? '')
@@ -161,7 +162,13 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
         {quiz?.quiz_id && (
           <div className="border-t border-line">
             {correction && (
-              <p className="my-3 text-[13px] font-semibold text-forest">Score : {correction.score} / {correction.total}</p>
+              <div className="my-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[13px] font-semibold text-forest">Score : {correction.score} / {correction.total}</p>
+                <button type="button" onClick={() => ajouterCartes(cartesDuQuiz(quiz, correction))}
+                  className="rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
+                  Ajouter aux cartes à réviser
+                </button>
+              </div>
             )}
             {quiz.obtenu < quiz.demande && !correction && (
               <p className="mt-3 text-[11px] text-muted">

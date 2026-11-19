@@ -6,6 +6,8 @@ import { Chat } from '../components/Chat'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
+import { CarteRevisions, SeanceRevision } from '../components/Revision'
+import { aReviser } from '../lib/cartes'
 import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
@@ -40,12 +42,13 @@ const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[10px]
 
 /** De quoi reprendre la ou l'on s'etait arrete (D100) : questionnaire commence, dernier cours, derniere fiche. */
 function CarteReprendre() {
-  const { dernierQuiz, ouvrirQuiz, mesCours, setMatiere, setCoursChoisis, setVue, favoris } = useApp()
+  const { dernierQuiz, ouvrirQuiz, mesCours, setMatiere, setCoursChoisis, setVue, favoris, cartes } = useApp()
   const quiz = dernierQuiz.quiz?.quiz_id && !dernierQuiz.correction ? dernierQuiz.quiz : null
   const cours = mesCours.filter((c) => c.statut !== 'traitement').reduce<(typeof mesCours)[number] | null>(
     (dernier, c) => (!dernier || c.ajoute_le > dernier.ajoute_le ? c : dernier), null)
   const fiche = favoris[0] ?? null
-  if (!quiz && !cours && !fiche) return null
+  const dues = aReviser(cartes).length
+  if (!quiz && !cours && !fiche && !dues) return null
   const ligne = 'flex items-center justify-between gap-3 border-t border-line-soft py-2.5 first:border-t-0 first:pt-0 last:pb-0'
   const action = 'shrink-0 rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]'
   return (
@@ -63,6 +66,12 @@ function CarteReprendre() {
             <span className="min-w-0">Dernier cours déposé : « {tronquer(cours.titre, 50)} »</span>
             <button type="button" className={action}
               onClick={() => { setMatiere(cours.matiere); setCoursChoisis([cours.id]); setVue('assistant') }}>L’interroger</button>
+          </li>
+        )}
+        {dues > 0 && (
+          <li className={ligne}>
+            <span className="min-w-0">{dues} carte{dues > 1 ? 's' : ''} à revoir aujourd’hui</span>
+            <button type="button" onClick={() => setVue('fiches')} className={action}>Réviser</button>
           </li>
         )}
         {fiche && (
@@ -214,6 +223,7 @@ export function VueFiches() {
   const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz, occupe } = useApp()
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [theme, setTheme] = useState('')
+  const [revision, setRevision] = useState(false)
   const creer = (e: FormEvent) => {
     e.preventDefault()
     if (theme.trim().length < 3 || occupe) return
@@ -224,7 +234,8 @@ export function VueFiches() {
   return (
     <>
       <EnTete surtitre="Fiches & révisions" titre="Vos fiches."
-        texte="Les fiches restent dans ce navigateur uniquement : exportez-les pour les garder ailleurs ou les ouvrir sur un autre appareil." />
+        texte="Les fiches et les cartes restent dans ce navigateur uniquement : exportez les fiches pour les garder ailleurs ou les ouvrir sur un autre appareil." />
+      {revision ? <SeanceRevision onFin={() => setRevision(false)} /> : <CarteRevisions onReviser={() => setRevision(true)} />}
       {favoris.length > 0 && (
         <div className="mb-3 flex justify-end">
           <button type="button" onClick={() => telecharger('fiches-lexia.md', fichesEnMarkdown(favoris))}
