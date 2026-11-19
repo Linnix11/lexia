@@ -81,3 +81,36 @@ def test_un_seul_envoi_a_la_fois(tmp_path):
     assert lancer(depot, env, f"JETON_VERROU={jeton}; rendre_verrou").returncode == 0 and not verrou.exists()
     r = lancer(depot, env, "prendre_verrou; rendre_verrou")
     assert r.returncode == 0 and not verrou.exists()
+
+
+PUBLIER = GARDE.parent / "publier.sh"
+
+
+def commande_rsync():
+    """La commande rsync de publier.sh, telle quelle, envoyee vers un dossier local au lieu du serveur."""
+    lignes = PUBLIER.read_text().splitlines()
+    debut = next(i for i, l in enumerate(lignes) if l.startswith("rsync "))
+    fin = next(i for i in range(debut, len(lignes)) if '"$SERVEUR:$APP/"' in lignes[i])
+    return "\n".join(lignes[debut:fin + 1]).replace('"$SERVEUR:$APP/"', '"$APP/"')
+
+
+def test_publication_garde_les_fichiers_ecrits_par_le_serveur(tmp_path):
+    """SRV-1 : une copie propre n'a ni le catalogue des cours recuperes ni la date de la derniere mise a jour
+    reussie ; rsync --delete ne doit pas les effacer sur le serveur."""
+    copie = tmp_path / "copie"
+    (copie / "api").mkdir(parents=True)
+    (copie / "api" / "main.py").write_text("code\n")
+    serveur = tmp_path / "serveur"
+    gardes = ["data/cours_recuperes/catalogue.json", "data/mise_a_jour_reussie", "data/index/lexia.sqlite",
+              "data/index.precedent/lexia.sqlite", "donnees/lexia.db", ".env", "logs/questions.jsonl"]
+    for chemin in gardes + ["ancien.py"]:
+        (serveur / chemin).parent.mkdir(parents=True, exist_ok=True)
+        (serveur / chemin).write_text("serveur\n")
+    script = "EXCLURE_INDEX=(--exclude 'data/index.*' --exclude 'data/index')\n" + commande_rsync()
+    r = subprocess.run(["bash", "-c", script], cwd=copie, env=os.environ | {"APP": str(serveur)},
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert (serveur / "api" / "main.py").read_text() == "code\n"
+    assert not (serveur / "ancien.py").exists()                 # --delete agit bien sur le reste
+    for chemin in gardes:
+        assert (serveur / chemin).read_text() == "serveur\n", chemin

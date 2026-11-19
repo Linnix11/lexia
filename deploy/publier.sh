@@ -53,10 +53,13 @@ echo "== Envoi du code, du front et de l'index (rsync)"
 # a part et reprend au prochain envoi. Sans « -dir », rsync ecrit dans le fichier de destination et
 # une coupure laisse l'index de production tronque (constate le 2026-11-14).
 # --timeout : une connexion muette est abandonnee au lieu de rester bloquee.
+# data/cours_recuperes et data/mise_a_jour_reussie sont ecrits par la mise a jour nocturne du serveur et
+# absents d'une copie propre : sans exclusion, --delete les effacerait (audit du 19/11, SRV-1).
 rsync -az --delete --partial-dir=.rsync-partiel --timeout=120 \
   --exclude '.git' --exclude '.venv' --exclude '.cache' --exclude 'node_modules' --exclude '.env' \
   --exclude 'donnees' --exclude '.claude' --exclude 'sauvegardes' \
   --exclude 'data/raw' --exclude 'data/embeddings' --exclude 'data/passages' \
+  --exclude 'data/cours_recuperes' --exclude 'data/mise_a_jour_reussie' \
   --exclude 'logs' --exclude 'eval/resultats' --exclude '__pycache__' --exclude '.pytest_cache' \
   --exclude 'web/src' --exclude 'tests' \
   ${EXCLURE_INDEX[@]+"${EXCLURE_INDEX[@]}"} \
