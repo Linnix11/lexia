@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, type CoursRecupere, type CoursRecupereComplet } from '../lib/api'
 import { CadreEspace } from '../components/Layout'
+import { useApp } from '../state/contexte'
 import { Surtitre } from './Public'
 
 // Meme texte que l'API (api/cours_recuperes.py) : affiche avant meme la reponse du serveur.
@@ -9,6 +10,8 @@ export const AVERTISSEMENT = 'Cours récupérés sur des sites tiers sous licenc
 const RAPPEL = 'Cours récupéré, non rédigé par Lexia : il peut contenir des erreurs ou être dépassé.'
 
 const lien = 'text-forest underline-offset-2 hover:underline'
+const PAR_PAGE = 20
+const normaliser = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 const dateLongue = (iso: string) =>
   new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${iso}T12:00:00`))
 
@@ -87,7 +90,10 @@ export function CoursRecuperes() {
   const [cours, setCours] = useState<CoursRecupere[] | null>(null)
   const [avertissement, setAvertissement] = useState(AVERTISSEMENT)
   const [erreur, setErreur] = useState(false)
+  const { matiere: matiereEspace } = useApp()
   const [matiere, setMatiere] = useState('')
+  const [recherche, setRecherche] = useState('')
+  const [nombre, setNombre] = useState(PAR_PAGE)
 
   useEffect(() => {
     let actif = true
@@ -106,7 +112,16 @@ export function CoursRecuperes() {
     }
     return [...g.entries()]
   }, [cours])
-  const visibles = groupes.filter(([id]) => !matiere || id === matiere)
+  // Une matiere a la fois (plusieurs centaines de cours) : celle choisie, sinon celle de l'espace, sinon la premiere.
+  const ids = groupes.map(([id]) => id)
+  const choisie = ids.includes(matiere) ? matiere : ids.includes(matiereEspace ?? '') ? matiereEspace! : ids[0] ?? ''
+  const mots = normaliser(recherche.trim())
+  // Une recherche porte sur toutes les matieres.
+  const trouves = (cours ?? []).filter((c) => mots ? normaliser(c.titre).includes(mots) : c.matiere === choisie)
+  const visibles = trouves.slice(0, nombre)
+  const parMatiere = groupes
+    .map(([id, g]) => [id, g.libelle, visibles.filter((c) => c.matiere === id)] as const)
+    .filter(([, , liste]) => liste.length > 0)
 
   return (
     <CadreEspace titre="Cours récupérés">
@@ -122,15 +137,22 @@ export function CoursRecuperes() {
           </span>
         </div>
 
-        {groupes.length > 1 && (
-          <label className="mt-5 grid max-w-[320px] gap-1 text-[11px] text-muted">
-            Matière
-            <select value={matiere} onChange={(e) => setMatiere(e.target.value)}
-              className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
-              <option value="">Toutes</option>
-              {groupes.map(([id, g]) => <option key={id} value={id}>{g.libelle}</option>)}
-            </select>
-          </label>
+        {groupes.length > 0 && (
+          <div className="mt-5 grid gap-3 tab:grid-cols-2">
+            <label className="grid gap-1 text-[11px] text-muted">
+              Matière
+              <select value={choisie} disabled={!!mots} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }}
+                className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink disabled:opacity-60">
+                {groupes.map(([id, g]) => <option key={id} value={id}>{g.libelle} ({g.cours.length})</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-[11px] text-muted">
+              Rechercher un titre, toutes matières
+              <input type="search" value={recherche} onChange={(e) => { setRecherche(e.target.value); setNombre(PAR_PAGE) }}
+                placeholder="Divorce, bail, licenciement…"
+                className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink" />
+            </label>
+          </div>
         )}
 
         {cours === null ? (
@@ -141,13 +163,24 @@ export function CoursRecuperes() {
           <p className="mt-6 text-[13px] text-muted">
             Aucun cours récupéré pour l’instant : les sources libres sont en cours de vérification.
           </p>
+        ) : trouves.length === 0 ? (
+          <p className="mt-6 text-[13px] text-muted">Aucun cours ne correspond à « {recherche.trim()} ».</p>
         ) : (
-          visibles.map(([id, g]) => (
-            <section key={id} className="mt-7">
-              <h2 className="mb-3 text-[15px] font-[650]">{g.libelle}</h2>
-              <div className="grid gap-3">{g.cours.map((c) => <CarteCours key={c.id} c={c} />)}</div>
-            </section>
-          ))
+          <>
+            {parMatiere.map(([id, libelle, liste]) => (
+              <section key={id} className="mt-7">
+                <h2 className="mb-3 text-[15px] font-[650]">{libelle}</h2>
+                <div className="grid gap-3">{liste.map((c) => <CarteCours key={c.id} c={c} />)}</div>
+              </section>
+            ))}
+            <p className="mt-4 text-[11px] text-muted">{visibles.length} sur {trouves.length}</p>
+            {trouves.length > visibles.length && (
+              <button type="button" onClick={() => setNombre((n) => n + PAR_PAGE)}
+                className="mt-2 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
+                Afficher {Math.min(PAR_PAGE, trouves.length - visibles.length)} de plus
+              </button>
+            )}
+          </>
         )}
       </div>
     </CadreEspace>

@@ -134,11 +134,62 @@ plus 5 % de passages en plus dans l'index.
 
 ## 7. Intégration proposée
 
-### Page « Cours récupérés » (construite le 2026-11-19, vide)
+### Récupération (accord de l'éditeur du 2026-11-19 : « les trois sources »)
+
+Commande : `python -m ingest.cours_recuperes` (télécharge si besoin et réécrit
+`data/cours_recuperes/catalogue.json`) ; `--hors-ligne` réutilise ce qui est déjà téléchargé.
+
+| Source | État | Détail |
+|---|---|---|
+| service-public.gouv.fr | **Récupéré : 781 fiches pratiques** | Archive XML Particuliers du 2026-11-19 ; fiches mises à jour entre le 2022-01-27 et le 2026-11-18 |
+| vie-publique.fr | **Bloqué** | Le site refuse les clients automatiques (protection anti-robots, réponse 403 ou page JavaScript) et ne publie aucun export de ses fiches. Contourner cette protection n'est pas envisagé. Licence relue sur le site rétabli le 2026-11-19 (Licence Ouverte 2.0, source « Vie publique », date, sans modification) |
+| Wikiversité, Wikilivres | **En attente** | L'API Wikimedia refuse un client dont le User-Agent ne donne pas de moyen de contact (politique des robots de Wikimedia). Il faut une adresse ou une URL de contact choisie par l'éditeur, dans la variable `WIKIMEDIA_CONTACT`. La relecture des pages (liste `WIKI`) n'a donc pas encore pu être faite ; aucune page n'est reprise |
+
+Pour vie-publique.fr, demander à la DILA un export des fiches (formulaire de contact du site ou DILA, Département de
+l'édition et du débat public).
+
+Fiches de service-public.gouv.fr :
+- seules les fiches pratiques sont reprises, pas les questions-réponses ;
+- elles sont rangées par sous-thème, parfois par dossier : table `SP_MATIERES` de `ingest/cours_recuperes.py` ;
+- le texte est repris sans modification, chapitre par chapitre, avec les textes de référence cités par la fiche ;
+- la mise en forme, les liens, les simulateurs et les blocs pratiques (adresses, services en ligne) ne sont pas
+  repris, et c'est indiqué sur chaque fiche.
+
+| Matière | Fiches |
+|---|---|
+| Contentieux administratif | 12 |
+| Droit administratif | 10 |
+| Droit administratif des biens | 6 |
+| Droit civil | 14 |
+| Droit constitutionnel | 13 |
+| Droit de la famille | 73 |
+| Droit des biens | 38 |
+| Droit des contrats | 116 |
+| Droit fiscal | 80 |
+| Droit pénal | 54 |
+| Droit social | 282 |
+| Introduction au droit | 12 |
+| Libertés fondamentales | 9 |
+| Procédure civile | 31 |
+| Procédure pénale | 31 |
+
+Aucune fiche pour Droit des affaires, Droit des sociétés, Droit européen, Droit international, Finances publiques :
+- les deux premières relèvent du volet Entreprendre de service-public.gouv.fr, qui n'est pas encore repris (jeu
+  « Fiches pratiques et ressources Entreprendre », même licence) ;
+- les trois autres n'ont pas de sous-thème qui leur corresponde.
+
+Reste à faire :
+- copier le catalogue sur le serveur et lancer la commande chaque nuit avec la mise à jour (D78) ;
+- choisir le contact Wikimedia, puis relire les pages des wikis ;
+- demander l'export de vie-publique.fr à la DILA.
+
+### Page « Cours récupérés » (construite le 2026-11-19)
+
+Volume : une matière à la fois (celle de l'espace par défaut), 20 cours par page. La recherche d'un titre porte sur
+toutes les matières.
 
 Demande de l'éditeur : une page à part pour les cours récupérés, qui dit bien qu'ils sont récupérés et peuvent
-contenir des erreurs. Elle est construite, sans aucun cours réel. Elle reste vide tant que l'éditeur n'a pas validé
-les sources et que l'ingestion n'a pas écrit le catalogue.
+contenir des erreurs. Elle affiche le catalogue écrit par l'ingestion (partie précédente) et reste vide sans lui.
 
 - Site : page `/cours-recuperes` (réservée aux comptes, `web/src/site/CoursRecuperes.tsx`), dans le cadre de
   l'espace étudiant ; on l'ouvre depuis la carte « Cours récupérés » de la Bibliothèque.

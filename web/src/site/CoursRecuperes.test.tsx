@@ -54,4 +54,20 @@ describe('Cours récupérés', () => {
     fireEvent.click(within(carte).getByRole('button', { name: 'Lire le cours' }))
     expect(await within(carte).findByText('Texte factice.')).toBeInTheDocument()
   })
+
+  it('montre une matière à la fois par pages de 20, et cherche un titre dans toutes', async () => {
+    const fiche = (i: number, matiere: string, libelle: string) =>
+      ({ ...FACTICE, id: `f-${matiere}-${i}`, titre: `${libelle} ${String(i).padStart(2, '0')}`, matiere, libelle_matiere: libelle })
+    cours = [...Array.from({ length: 25 }, (_, i) => fiche(i, 'droit_civil', 'Civil')),
+      fiche(0, 'droit_penal', 'Pénal')]
+    render(<Site />)
+    expect(await screen.findByText('Civil 00')).toBeInTheDocument()
+    expect(screen.getAllByRole('article')).toHaveLength(20)
+    expect(screen.queryByText('Pénal 00')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher 5 de plus' }))
+    expect(screen.getAllByRole('article')).toHaveLength(25)
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'penal' } })
+    expect(screen.getByText('Pénal 00')).toBeInTheDocument()
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+  })
 })
