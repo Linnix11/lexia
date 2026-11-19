@@ -146,3 +146,92 @@ def test_ecrire_ecarte_les_entrees_invalides(tmp_path):
     valides = ecrire([FACTICE, {**FACTICE, "id": "nc", "licence": "cc-by-nc-4.0"}, FACTICE], cible)
     assert [c["id"] for c in valides] == ["cours-factice"]
     assert json.loads(cible.read_text(encoding="utf-8")) == valides
+
+
+# --- Index : fiches rangees a part du corpus officiel (D103) ------------------------------------------------
+
+def test_passages_d_index_decoupes_et_sans_date_de_fraicheur():
+    from ingest.cours_recuperes import passages
+    long = "\n".join(f"Ligne {i} " + "x" * 90 for i in range(40))  # environ 4 000 caracteres
+    fiche = {**FACTICE, "source": "Service Public / DILA", "sections": [{"titre": "I. Partie", "texte": long}]}
+    (liste,) = passages([fiche, {**FACTICE, "id": "autre-site"}], "2026-11-19T10:00:00").values()
+    assert len(liste) == 3 and all(len(p.texte) <= 1500 for p in liste)
+    assert "\n".join(p.texte for p in liste) == long  # texte repris mot pour mot
+    p = liste[0]
+    assert (p.source_id, p.type, p.id) == ("fiches_service_public", "doctrine", "fiches_service_public:cours-factice:1")
+    assert p.entete == "Cours factice de test > I. Partie" and p.url == FACTICE["url_original"]
+    assert p.meta["cours_id"] == "cours-factice" and "date" not in p.meta
+
+
+def test_groupes_n_ouvrent_jamais_les_fiches_aux_reponses():
+    from api.retrieval.base import groupes
+    toutes = ("code_civil", "judilibre", "fiches_service_public")
+    assert groupes(None, toutes) == (("code_civil",), ("judilibre",))
+    assert groupes(("fiches_service_public", "code_civil"), toutes) == (("code_civil",), ())
+
+
+@pytest.fixture(scope="module")
+def index_mixte(tmp_path_factory):
+    """Un article et une fiche qui emploient les memes mots."""
+    from ingest.build_index import build
+    from ingest.cours_recuperes import passages
+    from ingest.models import Passage
+    base = tmp_path_factory.mktemp("cours_recuperes")
+    (base / "p").mkdir()
+    article = Passage(id="code_civil:art:229", source_id="code_civil", type="article", numero="229",
+                      titre="Du divorce", alineas=["Le divorce peut être prononcé en cas de consentement mutuel."],
+                      url="https://www.legifrance.gouv.fr/x", meta={"en_vigueur": True})
+    fiche = {**FACTICE, "source": "Service Public / DILA", "matiere": "droit_de_la_famille",
+             "sections": [{"titre": "", "texte": "Le divorce accepté se déroule devant le juge aux affaires familiales."}]}
+    lignes = [article.to_dict()] + [p.to_dict() for p in passages([fiche], "d")["fiches_service_public"]]
+    (base / "p" / "a.jsonl").write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in lignes), encoding="utf-8")
+    build(passages_dir=base / "p", index_dir=base / "i", cache_dir=base / "vide", model="aucun")
+    return base / "i"
+
+
+def test_recherche_des_reponses_sans_fiches_et_recherche_a_part(index_mixte):
+    from api.retrieval.local import LocalRetriever
+    r = LocalRetriever(index_mixte)
+    for sources in (None, ("code_civil", "fiches_service_public"), ("fiches_service_public",)):
+        hits = r.search("divorce juge", sources=sources, k=8)
+        assert all(h.passage["source_id"] != "fiches_service_public" for h in hits), sources
+    assert [h.passage["id"] for h in r.search("divorce", sources=None, k=8)] == ["code_civil:art:229"]
+    assert [p["meta"]["cours_id"] for p in r.rechercher_a_part("divorce juge")] == ["cours-factice"]
+    assert r.couverture(None) == 0.0  # calculee sur les seules sources officielles (aucun vecteur ici)
+
+
+def test_route_de_recherche_dans_le_texte(tmp_path):
+    class Index:
+        def rechercher_a_part(self, q, k=30):
+            return [{"meta": {"cours_id": "cours-factice"}}, {"meta": {"cours_id": "absent-du-catalogue"}},
+                    {"meta": {"cours_id": "cours-factice"}}]
+
+    catalogue = tmp_path / "catalogue.json"
+    ecrire(catalogue, [FACTICE])
+    app = create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                              cours_recuperes=catalogue),
+                     retriever=Retriever(), llm=LLM(), comptes=Comptes(tmp_path / "comptes.db"))
+    client = TestClient(app)
+    inscrire(client)
+    # Le retriever de test n'a pas de recherche a part : liste vide, sans erreur.
+    assert client.get("/cours-recuperes/recherche", params={"q": "divorce"}).json() == {"cours": []}
+    assert client.get("/cours-recuperes/recherche", params={"q": "di"}).status_code == 422
+    from api.cours_recuperes import creer_routes_cours_recuperes
+    from fastapi import FastAPI
+    seule = FastAPI()
+    seule.include_router(creer_routes_cours_recuperes(Catalogue(catalogue), lambda: None, Index()))
+    assert TestClient(seule).get("/cours-recuperes/recherche", params={"q": "divorce"}).json() == {"cours": ["cours-factice"]}
+
+
+def test_embeddings_sautent_les_fiches(tmp_path, monkeypatch):
+    from ingest import embed
+    for nom in ("code_civil", "fiches_service_public"):
+        (tmp_path / f"{nom}.jsonl").write_text("", encoding="utf-8")
+    vus = []
+    monkeypatch.setattr(embed, "PASSAGES_DIR", tmp_path)
+    monkeypatch.setattr(embed, "load_env", lambda *a: None)
+    monkeypatch.setattr(embed.embedders, "config_env", lambda: ("local", "m"))
+    monkeypatch.setattr(embed.embedders, "creer", lambda *a: None)
+    monkeypatch.setattr(embed, "run", lambda s, emb, limite: vus.append(s) or 0)
+    embed.main(["--all"])
+    assert vus == ["code_civil"]

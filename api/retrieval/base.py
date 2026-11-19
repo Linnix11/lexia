@@ -7,7 +7,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from api.textes import SOURCES_TEXTES  # sources primaires, servies en premier  # noqa: F401
+from api.textes import SOURCES_A_PART, SOURCES_TEXTES  # sources primaires, servies en premier  # noqa: F401
 
 RRF_K = 60
 SOURCE_LOIS = "lois"
@@ -103,8 +103,9 @@ def paires(mots: list[str]) -> list[tuple[str, str]]:
 
 
 def groupes(sources: tuple[str, ...] | None, toutes: tuple[str, ...]) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Separe les sources autorisees en (textes officiels, jurisprudence)."""
-    autorisees = sources or toutes
+    """Separe les sources autorisees en (textes officiels, jurisprudence). Les fiches recuperees (SOURCES_A_PART)
+    ne sont dans aucun des deux, meme demandees : les reponses ne reposent que sur des sources officielles."""
+    autorisees = tuple(s for s in (sources or toutes) if s not in SOURCES_A_PART)
     textes = tuple(s for s in autorisees if s in SOURCES_TEXTES)
     juris = tuple(s for s in autorisees if s not in SOURCES_TEXTES)
     return textes, juris

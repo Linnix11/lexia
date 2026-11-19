@@ -3,12 +3,13 @@
     python -m ingest.cours_recuperes                 # telecharge si besoin et reecrit le catalogue
     python -m ingest.cours_recuperes --hors-ligne    # reutilise seulement ce qui est deja telecharge
 
-Sources validees par l'editeur le 2026-11-19 :
-- fiches pratiques de service-public.gouv.fr (Licence Ouverte, archive XML quotidienne de la DILA), choisies par
-  sous-theme et rangees dans les matieres de Lexia ;
-- lecons de Wikiversite et livres de Wikilivres choisis un a un apres relecture (CC BY-SA 4.0), liste WIKI.
+Decision de l'editeur du 2026-11-19 (D103) : phases 1 et 2.
+- Phase 2 : fiches pratiques de service-public.gouv.fr (Licence Ouverte, archive XML quotidienne de la DILA),
+  choisies par sous-theme et rangees dans les matieres de Lexia. Elles alimentent la page et l'index, a part du
+  corpus officiel (source fiches_service_public, api.textes.SOURCES_A_PART).
+- Phase 3 non retenue : la liste WIKI (Wikiversite, Wikilivres, CC BY-SA 4.0) reste vide.
 
-vie-publique.fr n'est pas recupere : le site refuse les clients automatiques (protection anti-robots) et n'offre
+Phase 1, vie-publique.fr, n'est pas recuperee : le site refuse les clients automatiques (protection anti-robots) et n'offre
 aucun export de ses fiches. Il faut demander un export a la DILA (docs/cours-libres.md).
 
 Le texte est repris sans modification de fond : seuls la mise en forme, les liens et les blocs pratiques
@@ -34,9 +35,15 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 
 from api.config import ROOT
 from api.cours_recuperes import CoursRecupere
+from api.textes import SOURCES_A_PART
+from ingest.models import Passage
 
 RAW = ROOT / "data" / "raw" / "cours_recuperes"
 CATALOGUE = ROOT / "data" / "cours_recuperes" / "catalogue.json"
+PASSAGES_DIR = ROOT / "data" / "passages"
+# Source de l'index (a part du corpus officiel, api.textes.SOURCES_A_PART) de chaque site repris.
+SOURCE_INDEX = {"Service Public / DILA": "fiches_service_public", "Vie publique": "fiches_vie_publique"}
+TAILLE_PASSAGE = 1500  # caracteres, comme les cours deposes (D57)
 # Nom generique : aucune donnee du projet ni de l'editeur n'est envoyee aux sites sources.
 USER_AGENT = f"CoursLibresIngest/0.1 httpx/{httpx.__version__}"
 # Wikimedia refuse un client sans moyen de contact dans son User-Agent (politique des robots,
@@ -374,6 +381,66 @@ def cours_wiki(client: httpx.Client | None, page: PageWiki) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# Index : passages a part du corpus officiel (D103)
+
+
+def _morceaux(texte: str, taille: int = TAILLE_PASSAGE) -> list[str]:
+    """Coupe aux fins de ligne, en morceaux d'au plus `taille` caracteres (une ligne plus longue reste entiere)."""
+    out, courant = [], ""
+    for ligne in texte.splitlines():
+        if courant and len(courant) + 1 + len(ligne) > taille:
+            out.append(courant)
+            courant = ligne
+        else:
+            courant = f"{courant}\n{ligne}" if courant else ligne
+    if courant:
+        out.append(courant)
+    return out
+
+
+def passages(cours: list[dict], date_recuperation: str) -> dict[str, list[Passage]]:
+    """Passages de l'index par source (SOURCE_INDEX), type « doctrine ». Pas de `meta.date` : ces fiches ne
+    doivent pas entrer dans la fraicheur des sources officielles (table `fraicheur`, /fraicheur)."""
+    out: dict[str, list[Passage]] = {}
+    for c in cours:
+        source_id = SOURCE_INDEX.get(c["source"])
+        if source_id is None:
+            continue
+        assert source_id in SOURCES_A_PART
+        n = 0
+        for section in c["sections"]:
+            for morceau in _morceaux(section["texte"]):
+                n += 1
+                out.setdefault(source_id, []).append(Passage(
+                    id=f"{source_id}:{c['id']}:{n}",
+                    source_id=source_id,
+                    type="doctrine",
+                    numero=None,
+                    titre=c["titre"],
+                    alineas=[morceau],
+                    url=c["url_original"],
+                    version=f"mise à jour du {c['mis_a_jour']}",
+                    date_recuperation=date_recuperation,
+                    meta={"cours_id": c["id"], "matiere": c["matiere"], "source": c["source"],
+                          "licence": c["licence"], "mis_a_jour": c["mis_a_jour"], "section": section["titre"]},
+                    entete=" > ".join(t for t in (c["titre"], section["titre"]) if t),
+                ))
+    return out
+
+
+def ecrire_passages(par_source: dict[str, list[Passage]], dossier: Path = PASSAGES_DIR) -> None:
+    """Une source sans aucune fiche cette fois-ci (telechargement echoue) garde son fichier precedent."""
+    dossier.mkdir(parents=True, exist_ok=True)
+    for source_id, liste in par_source.items():
+        cible = dossier / f"{source_id}.jsonl"
+        tmp = cible.with_suffix(".tmp")
+        with tmp.open("w", encoding="utf-8") as f:
+            for p in liste:
+                f.write(json.dumps(p.to_dict(), ensure_ascii=False) + "\n")
+        tmp.replace(cible)
+
+
+# ---------------------------------------------------------------------------------------------------------------
 
 
 def ecrire(cours: list[dict], cible: Path = CATALOGUE) -> list[dict]:
@@ -416,6 +483,9 @@ def main(argv: list[str] | None = None) -> int:
     for c in valides:
         par_source[c["source"]] = par_source.get(c["source"], 0) + 1
     print(f"{len(valides)} cours dans {CATALOGUE.relative_to(ROOT)} : {par_source}")
+    index = passages(valides, time.strftime("%Y-%m-%dT%H:%M:%S%z"))
+    ecrire_passages(index)
+    print("passages pour l'index : " + ", ".join(f"{s} {len(l)}" for s, l in index.items()))
     return 0
 
 

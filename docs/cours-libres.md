@@ -1,7 +1,7 @@
 # Cours de droit libres : ce que Lexia peut intégrer à côté des textes officiels
 
-Relevé du 2026-11-19. Statut : **proposition**, rien n'est codé ni téléchargé. Décision attendue de l'éditeur (D103
-proposée en partie 8).
+Relevé du 2026-11-19. Décision de l'éditeur : phases 1 et 2 (vie-publique.fr et service-public.gouv.fr), sans les
+wikis ; décision D103 de `docs/decisions.md`. Phase 2 faite, phase 1 bloquée (partie 7).
 
 Question de l'éditeur : Lexia peut-elle récupérer des cours entiers, en plus des textes, pour un service payant ?
 
@@ -134,16 +134,17 @@ plus 5 % de passages en plus dans l'index.
 
 ## 7. Intégration proposée
 
-### Récupération (accord de l'éditeur du 2026-11-19 : « les trois sources »)
+### Récupération (décision de l'éditeur du 2026-11-19 : phases 1 et 2)
 
-Commande : `python -m ingest.cours_recuperes` (télécharge si besoin et réécrit
-`data/cours_recuperes/catalogue.json`) ; `--hors-ligne` réutilise ce qui est déjà téléchargé.
+Commande : `python -m ingest.cours_recuperes`. Elle télécharge si besoin, puis réécrit le catalogue de la page
+(`data/cours_recuperes/catalogue.json`) et les passages de l'index (`data/passages/fiches_service_public.jsonl`).
+Avec `--hors-ligne`, elle réutilise ce qui est déjà téléchargé. La mise à jour nocturne la lance avant l'index.
 
 | Source | État | Détail |
 |---|---|---|
-| service-public.gouv.fr | **Récupéré : 781 fiches pratiques** | Archive XML Particuliers du 2026-11-19 ; fiches mises à jour entre le 2022-01-27 et le 2026-11-18 |
-| vie-publique.fr | **Bloqué** | Le site refuse les clients automatiques (protection anti-robots, réponse 403 ou page JavaScript) et ne publie aucun export de ses fiches. Contourner cette protection n'est pas envisagé. Licence relue sur le site rétabli le 2026-11-19 (Licence Ouverte 2.0, source « Vie publique », date, sans modification) |
-| Wikiversité, Wikilivres | **En attente** | L'API Wikimedia refuse un client dont le User-Agent ne donne pas de moyen de contact (politique des robots de Wikimedia). Il faut une adresse ou une URL de contact choisie par l'éditeur, dans la variable `WIKIMEDIA_CONTACT`. La relecture des pages (liste `WIKI`) n'a donc pas encore pu être faite ; aucune page n'est reprise |
+| service-public.gouv.fr (phase 2) | **Récupéré : 781 fiches pratiques, 6 498 passages** | Archive XML Particuliers du 2026-11-19 ; fiches mises à jour entre le 2022-01-27 et le 2026-11-18 |
+| vie-publique.fr (phase 1) | **Bloqué** | Licence relue sur le site rétabli le 2026-11-19 : Licence Ouverte 2.0, inchangée (source « Vie publique », date, sans modification). Mais le site refuse les clients automatiques (protection anti-robots : page JavaScript et cookies, robots.txt lui-même illisible sans navigateur) et ne publie aucun export de ses fiches. Contourner cette protection est exclu |
+| Wikiversité, Wikilivres (phase 3) | **Non retenu** | Décision de l'éditeur. L'ingestion sait les lire (liste `WIKI` vide), mais l'API Wikimedia exigerait un contact dans le User-Agent (`WIKIMEDIA_CONTACT`) |
 
 Pour vie-publique.fr, demander à la DILA un export des fiches (formulaire de contact du site ou DILA, Département de
 l'édition et du débat public).
@@ -155,23 +156,24 @@ Fiches de service-public.gouv.fr :
 - la mise en forme, les liens, les simulateurs et les blocs pratiques (adresses, services en ligne) ne sont pas
   repris, et c'est indiqué sur chaque fiche.
 
-| Matière | Fiches |
-|---|---|
-| Contentieux administratif | 12 |
-| Droit administratif | 10 |
-| Droit administratif des biens | 6 |
-| Droit civil | 14 |
-| Droit constitutionnel | 13 |
-| Droit de la famille | 73 |
-| Droit des biens | 38 |
-| Droit des contrats | 116 |
-| Droit fiscal | 80 |
-| Droit pénal | 54 |
-| Droit social | 282 |
-| Introduction au droit | 12 |
-| Libertés fondamentales | 9 |
-| Procédure civile | 31 |
-| Procédure pénale | 31 |
+| Matière | Fiches | Passages |
+|---|---|---|
+| Contentieux administratif | 12 | 138 |
+| Droit administratif | 10 | 83 |
+| Droit administratif des biens | 6 | 62 |
+| Droit civil | 14 | 104 |
+| Droit constitutionnel | 13 | 88 |
+| Droit de la famille | 73 | 669 |
+| Droit des biens | 38 | 383 |
+| Droit des contrats | 116 | 1 193 |
+| Droit fiscal | 80 | 512 |
+| Droit pénal | 54 | 523 |
+| Droit social | 282 | 1 913 |
+| Introduction au droit | 12 | 161 |
+| Libertés fondamentales | 9 | 112 |
+| Procédure civile | 31 | 200 |
+| Procédure pénale | 31 | 357 |
+| **Total** | **781** | **6 498** |
 
 Aucune fiche pour Droit des affaires, Droit des sociétés, Droit européen, Droit international, Finances publiques :
 - les deux premières relèvent du volet Entreprendre de service-public.gouv.fr, qui n'est pas encore repris (jeu
@@ -179,14 +181,14 @@ Aucune fiche pour Droit des affaires, Droit des sociétés, Droit européen, Dro
 - les trois autres n'ont pas de sous-thème qui leur corresponde.
 
 Reste à faire :
-- copier le catalogue sur le serveur et lancer la commande chaque nuit avec la mise à jour (D78) ;
-- choisir le contact Wikimedia, puis relire les pages des wikis ;
-- demander l'export de vie-publique.fr à la DILA.
+- publier : copier le catalogue et les passages sur le serveur, ou y lancer la commande (la nuit suivante le fait) ;
+- demander l'export de vie-publique.fr à la DILA ;
+- reprendre le volet Entreprendre de service-public.gouv.fr si l'éditeur le souhaite.
 
 ### Page « Cours récupérés » (construite le 2026-11-19)
 
-Volume : une matière à la fois (celle de l'espace par défaut), 20 cours par page. La recherche d'un titre porte sur
-toutes les matières.
+Volume : une matière à la fois (celle de l'espace par défaut), 20 cours par page. La recherche porte sur toutes
+les matières : titres d'abord, puis fiches dont le texte répond (index plein texte, `GET /cours-recuperes/recherche`).
 
 Demande de l'éditeur : une page à part pour les cours récupérés, qui dit bien qu'ils sont récupérés et peuvent
 contenir des erreurs. Elle affiche le catalogue écrit par l'ingestion (partie précédente) et reste vide sans lui.
@@ -216,63 +218,46 @@ contenir des erreurs. Elle affiche le catalogue écrit par l'ingestion (partie p
   - l'auteur ou le texte manque.
 - Tests : `tests/test_cours_recuperes.py` et `web/src/site/CoursRecuperes.test.tsx`, avec un cours factice
   seulement.
-- Ces cours ne servent pas aux réponses de l'assistant. Les intégrer aussi aux réponses (partie suivante) est une
-  étape à part, à décider plus tard.
+- Ces cours ne servent pas aux réponses de l'assistant (partie suivante).
 
-### Affichage dans les réponses (étape à part, à décider)
+### Index : à part du corpus officiel (fait)
 
-- Nouveau type de passage `doctrine` (nature « Explication non officielle ») ; jamais compté parmi les textes ni la
-  jurisprudence.
-- Dans une réponse : rubrique distincte sous les sources, « Pour comprendre (explications non officielles) », avec
-  étiquettes propres (E1, E2...) et non S1, S2. Le modèle reçoit la consigne de fonder toute règle sur un texte ou
-  une décision ; une affirmation appuyée sur une seule explication passe dans les points d'attention, comme
-  « Hors de votre cours, à vérifier » de D93.
-- Panneau de source : bandeau « Explication non officielle, ne remplace pas le texte », éditeur ou auteurs, titre,
-  date de mise à jour, licence avec lien, lien vers la page d'origine, texte affiché sans modification. Exemples :
-  - « Source : Vie-publique.fr, fiche « Qu'est-ce que la QPC ? », mise à jour le JJ/MM/AAAA, Licence Ouverte 2.0 » ;
-  - « « Responsabilité délictuelle/... », Wikiversité, auteurs : voir l'historique de la page, CC BY-SA 4.0, extrait
-    découpé, mise en forme retirée ».
-- Ancienneté : mention visible quand la mise à jour date de plus de deux ans, ou d'avant le 1er octobre 2016 pour une
-  explication du droit des contrats et des obligations (entrée en vigueur de l'ordonnance de 2016).
-- Aucun logo, aucune formule laissant croire à une caution de la DILA ou de Wikimedia.
-- Page « Crédits » (ou mentions légales) : liste des sources réutilisées, licence et lien.
-- Réglage de l'étudiant : explications affichées ou non (affichées par défaut). En « Mon cours seulement », aucune
-  explication.
+Exigence de l'éditeur : rangé à part des textes officiels dans l'index, sans jamais remplacer ni contredire un
+article ou une décision dans une réponse. Le choix le plus sûr est retenu : **les fiches n'entrent pas du tout dans
+les réponses**.
+- Index SQLite : même table `passages`, source `fiches_service_public`, type `doctrine`, passages de 1 500 caractères
+  au plus coupés aux fins de ligne, en-tête « titre > chapitre », sans `meta.date` (elles n'entrent pas dans la
+  fraîcheur des sources officielles).
+- `api.textes.SOURCES_A_PART` (`fiches_service_public`, `fiches_vie_publique`) :
+  - `groupes()` les retire des deux groupes de la recherche des réponses, même quand on les demande ;
+  - `embed --all` ne les vectorise pas ;
+  - la couverture de l'index ne les compte pas ;
+  - le registre leur donne le statut `a_part` : elles ne figurent dans aucune matière.
+- Seule `LocalRetriever.rechercher_a_part` (plein texte) les lit, pour la recherche de la page.
+- Tests : `tests/test_cours_recuperes.py`. Sur un petit index où un article et une fiche emploient les mêmes mots, la
+  recherche des réponses ne renvoie que l'article, et la recherche de la page que la fiche.
+- Une intégration aux réponses (rubrique « Pour comprendre », étiquettes E1, E2...) reste possible plus tard ; elle
+  demanderait une nouvelle décision.
 
-### Indexation à côté du corpus DILA
+Reconstruction du 2026-11-19 sur le Mac, à côté de l'index en service (laissé intact), avec les passages du
+dépôt principal et ceux des fiches :
+- 922 471 passages, soit 916 158 dans l'index du 17 novembre, plus les 6 498 des fiches, moins 185. Ces 185
+  passages (chambre criminelle 172, Conseil d'État 11, chambres commerciale et sociale 1 chacune) viennent des
+  fichiers de la DILA modifiés depuis le 17 novembre, pas de ce changement.
+- 637 684 embeddings (aucun pour les fiches).
+- Contrôle de la mise à jour nocturne (`verifier`) : aucun écart.
+- Recherche des réponses sur 30 questions et 5 matières (famille, travail, garde à vue, bail, succession) : aucun
+  passage de fiche parmi les extraits. La recherche de la page trouve les fiches attendues.
+- Backtest de la recherche (`eval/backtest_recherche.py`, 187 cas) sur l'ancien et le nouvel index, mêmes réglages
+  (embeddings locaux, sans reformulation ni reclassement par Gemini) : résultats identiques, 182/187 dans les
+  8 extraits et 176/187 dans les 4 du secours. Ces chiffres sont plus bas que ceux de production, faute de
+  reclassement ; seule la comparaison compte ici.
 
-- `registry/sources.yaml` : une entrée par source, `type: doctrine`, licence exacte, texte d'attribution, statut
-  `a_verifier` puis `actif` après accord, matières.
-- Ingestion :
-  - `ingest/sources/vie_publique.py` : pages HTML, rubriques autorisées seulement, date de mise à jour gardée ;
-  - `ingest/sources/service_public.py` : archive XML quotidienne, thèmes retenus ;
-  - `ingest/sources/wikimedia.py` : API MediaWiki sur une liste fermée de pages, identifiant de révision gardé pour
-    l'attribution.
+## 8. Décision
 
-  Passages d'environ 1 500 caractères, plan rappelé en tête comme pour les cours déposés (D93). `meta` : éditeur,
-  auteurs ou lien d'historique, licence, URL, date de mise à jour, révision.
-- Index SQLite : même table `passages` (`type = 'doctrine'`, `en_vigueur = 1` sauf explication retirée à la source),
-  même `passages_fts` filtré par `jeton_source`, vecteurs avec le même modèle. Table `fraicheur` : date de la fiche la
-  plus récente par source.
-- Recherche : aujourd'hui `groupes()` (`api/retrieval/base.py`) range toute source hors `SOURCES_TEXTES` dans la
-  jurisprudence, et `pour_secours()` (`api/rag.py`) fait de même hors type `cours`. Il faut un troisième groupe
-  `doctrine`, avec un quota propre (deux extraits au plus sur k, jamais à la place du texte ou de la décision
-  attendus) et aucune place dans les 4 extraits du modèle de secours.
-- Mise à jour nocturne (D78) :
-  - service-public.gouv.fr chaque nuit (empreinte des passages) ;
-  - vie-publique.fr chaque semaine ;
-  - Wikimedia : nouvelle révision relue avant remplacement.
-
-  Une fiche disparue à la source est retirée de l'index.
-- Mesure avant mise en ligne : backtest sans recul (questions de cours 187/187, grands arrêts, matières de licence)
-  et nouveau cas de test « une explication n'est jamais citée comme fondement d'une règle ».
-
-## 8. Texte proposé pour la décision
-
-**Numéro à confirmer** : D103 est déjà pris sur la branche `claude/fiches-a-retourner` (cartes à retourner, non
-fusionnée). Prendre le premier numéro libre au moment de la fusion.
-
-| D103 | Cours et fiches libres, explications non officielles a cote du corpus (proposition, `docs/cours-libres.md`) | Releve du 2026-11-19 : aucun cours de licence en droit francais a la fois libre pour un usage commercial, complet et a jour (cours ouverts en CC BY-NC-ND ou sans licence libre, aucun cours de licence en droit francais sous licence ouverte dans HAL). Sources retenues, par phases et sur accord de l'editeur : (1) fiches et questions-reponses de vie-publique.fr (Licence Ouverte 2.0, source et date, sans modification ; Dossiers et Paroles d'expert exclus) ; (2) selection thematique des fiches pratiques de service-public.gouv.fr (Licence Ouverte, flux XML quotidien, source « Service Public / DILA » et date) ; (3) pages de Wikiversite et Wikilivres choisies une a une apres relecture (CC BY-SA 4.0, attribution et partage a l'identique ; « Obligation contractuelle », anterieure a la reforme de 2016, et « Droit du travail » exclus). Exclus : manuels, cours de faculte non libres, UNJF (D10), HAL, AUNEGe (CC BY-NC-ND). Page a part `/cours-recuperes` (demande de l'editeur, construite vide) : avertissement en haut de page et sur chaque cours (« Cours recuperes sur des sites tiers sous licence libre. Ils ne sont pas rediges par Lexia et peuvent contenir des erreurs ou etre depasses. Verifiez toujours avec les textes officiels. »), cours ranges par matiere, auteur, source, licence, date de mise a jour et lien vers l'original pour chacun ; API `GET /cours-recuperes` et `/cours-recuperes/{id}` reservees aux comptes, catalogue `data/cours_recuperes/catalogue.json` ecrit par l'ingestion, entree ecartee si sa licence interdit l'usage commercial. Affichage dans les reponses (etape a part, a decider) : type `doctrine`, rubrique « Pour comprendre (explications non officielles) » distincte des sources, etiquettes E1, E2..., editeur ou auteurs, licence, date de mise a jour et lien ; texte affiche sans modification ; mention d'anciennete ; aucune regle fondee sur une seule explication ; aucune explication en « Mon cours seulement » ni dans les fiches et questionnaires generes. Indexation : meme index SQLite (`passages`, `passages_fts`, vecteurs), troisieme groupe `doctrine` dans la recherche avec deux extraits au plus et aucun dans les 4 du secours. Mise a jour nocturne (D78) et page de credits. A faire par l'editeur : relire la page de vie-publique.fr retablie, demander une licence du manuel « Initiation aux etudes juridiques » (Couperin, BIU Cujas), confirmation ecrite du Conseil d'Etat et du Conseil constitutionnel, avis sur le partage a l'identique avant la phase 3. |
+Écrite dans `docs/decisions.md` (D103). Attention : le numéro D103 est aussi pris sur la branche
+`claude/fiches-a-retourner` (cartes à retourner), qui n'est pas encore fusionnée. Il faudra renuméroter l'une des
+deux au moment de la fusion.
 
 ## 9. Pages lues
 

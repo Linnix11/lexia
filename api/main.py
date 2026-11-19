@@ -203,7 +203,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         lexia.cours = cours
         app.include_router(creer_routes_cours(cours, utilisateur_requis))
         # Cours de sites tiers sous licence libre : page a part, jamais dans les reponses (docs/cours-libres.md)
-        app.include_router(creer_routes_cours_recuperes(Catalogue(settings.cours_recuperes), utilisateur_requis))
+        app.include_router(creer_routes_cours_recuperes(Catalogue(settings.cours_recuperes), utilisateur_requis,
+                                                     retriever))
 
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)

@@ -27,6 +27,7 @@ import sys
 import time
 from pathlib import Path
 
+from api.textes import SOURCES_A_PART
 from ingest import embedders
 from ingest.env import load_env
 
@@ -123,7 +124,9 @@ def main(argv: list[str] | None = None) -> int:
 
     provider, model = embedders.config_env()
     emb = embedders.creer(provider, model, os.environ.get("GEMINI_API_KEY", ""))
-    sources = sorted(p.stem for p in PASSAGES_DIR.glob("*.jsonl")) if args.all else [args.source]
+    # Fiches recuperees : jamais cherchees par le sens (D103), donc jamais vectorisees.
+    sources = sorted(p.stem for p in PASSAGES_DIR.glob("*.jsonl") if p.stem not in SOURCES_A_PART) \
+        if args.all else [args.source]
     remaining = args.limit
     for s in sources:
         n = run(s, emb, remaining)

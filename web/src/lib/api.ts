@@ -466,6 +466,7 @@ export const api = {
   coursRecuperes: {
     lister: () => requete<{ avertissement: string; cours: CoursRecupere[] }>('/cours-recuperes'),
     lire: (id: string) => requete<CoursRecupereComplet>(`/cours-recuperes/${encodeURIComponent(id)}`),
+    rechercher: (q: string) => requete<{ cours: string[] }>(`/cours-recuperes/recherche?q=${encodeURIComponent(q)}`),
   },
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number, cours?: OptionsCours) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre, ...optionsCours(cours) }),

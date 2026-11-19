@@ -94,6 +94,17 @@ export function CoursRecuperes() {
   const [matiere, setMatiere] = useState('')
   const [recherche, setRecherche] = useState('')
   const [nombre, setNombre] = useState(PAR_PAGE)
+  // Recherche dans le texte des fiches (index plein texte, cote serveur), apres une courte pause de saisie.
+  const [dansLeTexte, setDansLeTexte] = useState<{ q: string; ids: string[] }>({ q: '', ids: [] })
+  useEffect(() => {
+    const q = recherche.trim()
+    if (q.length < 3) return
+    let actif = true
+    const minuterie = window.setTimeout(() => {
+      api.coursRecuperes.rechercher(q).then((r) => actif && setDansLeTexte({ q, ids: r.cours })).catch(() => {})
+    }, 300)
+    return () => { actif = false; window.clearTimeout(minuterie) }
+  }, [recherche])
 
   useEffect(() => {
     let actif = true
@@ -116,8 +127,14 @@ export function CoursRecuperes() {
   const ids = groupes.map(([id]) => id)
   const choisie = ids.includes(matiere) ? matiere : ids.includes(matiereEspace ?? '') ? matiereEspace! : ids[0] ?? ''
   const mots = normaliser(recherche.trim())
-  // Une recherche porte sur toutes les matieres.
-  const trouves = (cours ?? []).filter((c) => mots ? normaliser(c.titre).includes(mots) : c.matiere === choisie)
+  // Une recherche porte sur toutes les matieres : titres d'abord, puis fiches dont le texte repond.
+  const parTitre = (cours ?? []).filter((c) => mots ? normaliser(c.titre).includes(mots) : c.matiere === choisie)
+  const parId = new Map((cours ?? []).map((c) => [c.id, c]))
+  const dejaVus = new Set(parTitre.map((c) => c.id))
+  const parTexte = mots && dansLeTexte.q === recherche.trim()
+    ? dansLeTexte.ids.filter((id) => !dejaVus.has(id)).map((id) => parId.get(id)).filter((c): c is CoursRecupere => !!c)
+    : []
+  const trouves = [...parTitre, ...parTexte]
   const visibles = trouves.slice(0, nombre)
   const parMatiere = groupes
     .map(([id, g]) => [id, g.libelle, visibles.filter((c) => c.matiere === id)] as const)
@@ -147,7 +164,7 @@ export function CoursRecuperes() {
               </select>
             </label>
             <label className="grid gap-1 text-[11px] text-muted">
-              Rechercher un titre, toutes matières
+              Rechercher dans les titres et les textes, toutes matières
               <input type="search" value={recherche} onChange={(e) => { setRecherche(e.target.value); setNombre(PAR_PAGE) }}
                 placeholder="Divorce, bail, licenciement…"
                 className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink" />

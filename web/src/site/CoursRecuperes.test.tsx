@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn((url: string) => {
     if (url.endsWith('/auth/session')) return json(PROFIL)
     if (url.endsWith('/cours-recuperes')) return json({ avertissement: AVERTISSEMENT, cours })
+    if (url.includes('/cours-recuperes/recherche?q=')) return json({ cours: ['cours-factice'] })
     if (url.endsWith('/cours-recuperes/cours-factice'))
       return json({ ...FACTICE, avertissement: AVERTISSEMENT, sections: [{ titre: 'I. Première partie', texte: 'Texte factice.' }] })
     return json({}, 404)
@@ -69,5 +70,14 @@ describe('Cours récupérés', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'penal' } })
     expect(screen.getByText('Pénal 00')).toBeInTheDocument()
     expect(screen.getAllByRole('article')).toHaveLength(1)
+  })
+
+  it('ajoute après les titres les cours dont le texte répond à la recherche', async () => {
+    cours = [FACTICE]
+    render(<Site />)
+    await screen.findByText('Cours factice de test')
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'juge aux affaires' } })
+    expect(await screen.findByText('Cours factice de test', {}, { timeout: 2000 })).toBeInTheDocument()
+    expect(screen.queryByText(/Aucun cours ne correspond/)).not.toBeInTheDocument()
   })
 })

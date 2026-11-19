@@ -15,7 +15,7 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from api.matieres import LIBELLES
@@ -134,12 +134,24 @@ class Catalogue:
         return {**_fiche(c), "sections": [s.model_dump() for s in c.sections]}
 
 
-def creer_routes_cours_recuperes(catalogue: Catalogue, utilisateur_requis) -> APIRouter:
+def creer_routes_cours_recuperes(catalogue: Catalogue, utilisateur_requis, retriever=None) -> APIRouter:
+    """retriever : index de recherche ; seule sa recherche a part (`rechercher_a_part`) est utilisee ici."""
     routes = APIRouter()
 
     @routes.get("/cours-recuperes")
     def lister(_=Depends(utilisateur_requis)):
         return {"avertissement": AVERTISSEMENT, "cours": catalogue.lister()}
+
+    @routes.get("/cours-recuperes/recherche")
+    def rechercher(q: str = Query(min_length=3, max_length=200), _=Depends(utilisateur_requis)):
+        """Cours dont le texte repond a la recherche (index plein texte, sources a part), du plus pertinent au moins."""
+        chercher = getattr(retriever, "rechercher_a_part", None)
+        ids: list[str] = []
+        for p in chercher(q) if chercher else []:
+            cid = (p.get("meta") or {}).get("cours_id")
+            if cid and cid not in ids and catalogue.lire(cid) is not None:
+                ids.append(cid)
+        return {"cours": ids[:50]}
 
     @routes.get("/cours-recuperes/{cid}")
     def lire(cid: str, _=Depends(utilisateur_requis)):

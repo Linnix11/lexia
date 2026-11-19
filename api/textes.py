@@ -85,6 +85,10 @@ TEXTES: tuple[Texte, ...] = (
 )
 
 SOURCES_TEXTES: frozenset[str] = frozenset(t.source_id for t in TEXTES)
+# Fiches explicatives recuperees sous licence libre (docs/cours-libres.md, D103) : indexees, mais a part. Ni la
+# recherche des reponses, ni les embeddings, ni la couverture ne les lisent ; seule la page « Cours recuperes »
+# les cherche. Elles ne peuvent donc ni remplacer ni contredire un article ou une decision dans une reponse.
+SOURCES_A_PART: frozenset[str] = frozenset({"fiches_service_public", "fiches_vie_publique"})
 # Textes hors archive LEGI : leur date n'est pas celle de la derniere archive DILA (fraicheur, B7).
 HORS_LEGI = frozenset({"constitution_1958", "tue", "tfue", "charte_droits_fondamentaux_ue"})
 NOMS: dict[str, str] = {t.source_id: t.nom for t in TEXTES} | {

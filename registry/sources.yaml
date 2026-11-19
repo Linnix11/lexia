@@ -2,7 +2,7 @@
 # Une entree par source. Les champs marques "a_verifier" doivent etre confirmes
 # (conditions d'utilisation, mode d'acces) avant toute ingestion.
 #
-# statut : actif | a_verifier | en_attente_acces | exclu
+# statut : actif | a_verifier | en_attente_acces | exclu | a_part (fiches recuperees, hors des reponses, D103)
 
 sources:
 - id: constitution_1958
@@ -1115,4 +1115,27 @@ sources:
   - L3
   ingestion: ingest/sources/traites.py
   statut: en_attente_acces   # usage commercial soumis a autorisation ecrite (D98)
+  derniere_synchro: null
+- id: fiches_service_public
+  nom: Fiches pratiques de service-public.gouv.fr (page Cours recuperes)
+  type: doctrine
+  autorite: DILA (Service Public)
+  url: https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers
+  acces: archive_xml (lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip)
+  licence: "Licence Ouverte (etalab-2.0 selon le site, lue le 2026-11-19) : mention « Service Public / DILA » et date de mise a jour"
+  frequence_maj: quotidienne
+  perimetre: fiches pratiques des sous-themes rattaches aux matieres (ingest/cours_recuperes.py, SP_MATIERES)
+  ingestion: ingest/cours_recuperes.py
+  statut: a_part   # indexee a part : jamais dans les reponses ni les matieres (api.textes.SOURCES_A_PART, D103)
+  derniere_synchro: null
+- id: fiches_vie_publique
+  nom: Fiches et questions-reponses de vie-publique.fr (page Cours recuperes)
+  type: doctrine
+  autorite: DILA (Vie publique)
+  url: https://www.vie-publique.fr/fiches
+  acces: aucun (le site refuse les clients automatiques ; export a demander a la DILA)
+  licence: "Licence Ouverte 2.0 (page « Utiliser nos contenus », relue le 2026-11-19) : source « Vie publique », date, sans modification"
+  frequence_maj: null
+  ingestion: null
+  statut: a_verifier   # validee par l'editeur (phase 1), recuperation impossible sans export de la DILA
   derniere_synchro: null

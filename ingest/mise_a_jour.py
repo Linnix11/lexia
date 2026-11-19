@@ -37,7 +37,7 @@ import httpx
 import numpy as np
 import yaml
 
-from ingest import build_index, dila, embed, run
+from ingest import build_index, cours_recuperes, dila, embed, run
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw" / "dila"
@@ -245,6 +245,14 @@ def main(argv: list[str] | None = None) -> int:
     ajoutees, _ = ajouter_nouvelles(build_index.PASSAGES_DIR, sources_actives())
     if ajoutees:
         print(f"  nouvelles sources : {', '.join(ajoutees)}")
+
+    # Fiches de service-public.gouv.fr pour la page « Cours recuperes » (D103) : catalogue de la page et passages
+    # a part du corpus officiel. Un echec garde les fiches de la veille et ne bloque jamais l'index.
+    print("== Fiches recuperees (a part du corpus officiel)", flush=True)
+    try:
+        cours_recuperes.main(["--hors-ligne"] if args.sans_telechargement else [])
+    except Exception as e:  # noqa: BLE001
+        print(f"  echec, fiches precedentes gardees : {e}", file=sys.stderr)
 
     print("== Embeddings des passages nouveaux ou modifies", flush=True)
     if n := amorcer_cache(INDEX, embed.CACHE_DIR):

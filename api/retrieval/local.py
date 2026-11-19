@@ -15,7 +15,7 @@ import numpy as np
 
 from api import lexique
 from api.references import extraire, variantes
-from api.textes import SOURCES_CASSATION, cibles_article, meme_loi
+from api.textes import SOURCES_A_PART, SOURCES_CASSATION, cibles_article, meme_loi
 from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler,
                                 construire_groupe,
                                 groupes, jeton_source, paires, termes)
@@ -87,7 +87,7 @@ class LocalRetriever:
                                                   dtype=np.float32)
 
     def couverture(self, sources: tuple[str, ...] | None) -> float:
-        srcs = sources or tuple(self._totaux)
+        srcs = sources or tuple(s for s in self._totaux if s not in SOURCES_A_PART)
         total = sum(self._totaux.get(s, 0) for s in srcs)
         return sum(self._vectorises.get(s, 0) for s in srcs) / total if total else 0.0
 
@@ -296,6 +296,18 @@ class LocalRetriever:
             self._groupe(question, juris, k, query_vector, complement, reclasseur),
             k,
         )
+
+    def rechercher_a_part(self, question: str, k: int = 30) -> list[dict]:
+        """Passages des fiches recuperees (SOURCES_A_PART) les plus proches de la question, plein texte seul.
+        Pour la page « Cours recuperes » ; jamais utilise pour une reponse."""
+        sources = tuple(s for s in self._toutes_sources() if s in SOURCES_A_PART)
+        classements = self._lexical(question, sources)
+        vus, out = set(), []
+        for _, p in (classements[0] if classements else [])[:k]:
+            if p["id"] not in vus:
+                vus.add(p["id"])
+                out.append(p)
+        return out
 
     def _toutes_sources(self) -> tuple[str, ...]:
         if not hasattr(self, "_sources_cache"):
