@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError } from '../lib/api'
 import { NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
-import { Lien, useRouteur } from '../lib/router'
+import { Lien, suiteSure, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { PublicLayout, bouton } from './Public'
 
@@ -35,6 +35,8 @@ export function Connexion() {
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
   const expiree = new URLSearchParams(window.location.search).has('expiree')
+  // Retour a la page demandee avant la connexion (WEB-11)
+  const suite = suiteSure(new URLSearchParams(window.location.search).get('suite'))
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault()
@@ -43,7 +45,7 @@ export function Connexion() {
     try {
       const r = await connexion(email, mdp)
       if ('jeton' in r) setJeton(r.jeton)
-      else naviguer('/app', { remplacer: true })
+      else naviguer(suite, { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Connexion impossible pour le moment.')
     } finally {
@@ -58,7 +60,7 @@ export function Connexion() {
     setEnvoi(true)
     try {
       await terminerConnexion(jeton, code)
-      naviguer('/app', { remplacer: true })
+      naviguer(suite, { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Vérification impossible pour le moment.')
       if (err instanceof ApiError && err.message.includes('reconnectez')) setJeton(null)

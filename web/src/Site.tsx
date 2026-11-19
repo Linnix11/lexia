@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react'
 import App from './App'
-import { Lien, RouteurProvider, useRouteur } from './lib/router'
+import { Lien, RouteurProvider, suiteSure, useRouteur } from './lib/router'
 import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
 import { Compte } from './site/Compte'
@@ -37,12 +37,80 @@ const MEMBRES: Record<string, () => ReactNode> = {
   '/cours-recuperes': () => <CoursRecuperes />,
 }
 
+/** Titre de l'onglet par page (WCAG 2.4.2, audit du 2026-11-19, WEB-5). */
+const TITRES: Record<string, string> = {
+  '/': 'Lexia, assistant d’étude du droit',
+  '/tarifs': 'Tarifs',
+  '/mentions-legales': 'Mentions légales',
+  '/cgu': 'Conditions d’utilisation',
+  '/confidentialite': 'Politique de confidentialité',
+  '/verifier-email': 'Confirmation de l’adresse',
+  '/mot-de-passe-oublie': 'Mot de passe oublié',
+  '/nouveau-mot-de-passe': 'Nouveau mot de passe',
+  '/connexion': 'Connexion',
+  '/inscription': 'Créer un compte',
+  '/app': 'Mon espace',
+  '/compte': 'Mon compte',
+  '/cours-recuperes': 'Fiches pratiques de l’administration',
+  '/admin': 'Administration',
+}
+
 function Chargement() {
+  const { indisponible, reessayer } = useSession()
+  if (indisponible) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4">
+        <div role="alert" className="max-w-[380px] text-center">
+          <Signet hauteur={44} />
+          <p className="mt-4 text-[15px] text-ink">Lexia redémarre, réessayez dans un instant.</p>
+          <p className="mt-1 text-[13px] text-muted">Vous n’avez pas été déconnecté.</p>
+          <button type="button" onClick={reessayer} className={`${bouton} mt-5 min-h-11`}>Réessayer</button>
+        </div>
+      </div>
+    )
+  }
   return (
-    <div className="grid min-h-screen place-items-center" aria-label="Chargement">
+    <div className="grid min-h-screen place-items-center" role="status" aria-label="Chargement">
       <Signet hauteur={44} className="animate-pulse" />
     </div>
   )
+}
+
+/** Limite d'erreur : une erreur de rendu ou un module introuvable (onglet ouvert pendant une publication)
+ *  affiche « Recharger » au lieu d'une page blanche (audit du 2026-11-19, WEB-2). */
+class LimiteErreur extends Component<{ children: ReactNode; cle: string }, { erreur: boolean }> {
+  state = { erreur: false }
+  static getDerivedStateFromError() {
+    return { erreur: true }
+  }
+  componentDidCatch(e: Error, _info: ErrorInfo) {
+    // Module de code introuvable apres une publication : un rechargement unique suffit.
+    const module = /dynamically imported module|Importing a module script failed/i.test(String(e?.message))
+    try {
+      if (module && !sessionStorage.getItem('lexia-recharge')) {
+        sessionStorage.setItem('lexia-recharge', '1')
+        window.location.reload()
+      }
+    } catch {
+      /* stockage indisponible : l'ecran « Recharger » suffit */
+    }
+  }
+  componentDidUpdate(avant: { cle: string }) {
+    if (avant.cle !== this.props.cle && this.state.erreur) this.setState({ erreur: false })
+  }
+  render() {
+    if (!this.state.erreur) return this.props.children
+    return (
+      <div className="grid min-h-screen place-items-center px-4">
+        <div role="alert" className="max-w-[380px] text-center">
+          <Signet hauteur={44} />
+          <h1 className="mt-4 font-display text-[24px] font-normal">Cette page n’a pas pu s’afficher</h1>
+          <p className="mt-1 text-[13px] text-muted">Lexia a peut-être été mis à jour pendant votre visite. Rechargez la page.</p>
+          <button type="button" onClick={() => window.location.reload()} className={`${bouton} mt-5 min-h-11`}>Recharger</button>
+        </div>
+      </div>
+    )
+  }
 }
 
 function Redirection({ vers }: { vers: string }) {
@@ -63,26 +131,57 @@ function Introuvable() {
   )
 }
 
+/** Titre de l'onglet, et focus sur le titre de la page apres une navigation interne (WEB-5). */
+function useTitreEtFocus(route: string) {
+  const premier = useRef(true)
+  useEffect(() => {
+    document.title = route === '/' ? TITRES['/'] : `${TITRES[route] ?? 'Page introuvable'} · Lexia`
+    if (premier.current) {
+      premier.current = false
+      return
+    }
+    const minuterie = setTimeout(() => {
+      const cible = document.querySelector<HTMLElement>('main h1, h1') ?? document.querySelector<HTMLElement>('main')
+      if (!cible) return
+      if (!cible.hasAttribute('tabindex')) cible.setAttribute('tabindex', '-1')
+      cible.focus({ preventScroll: true })
+    }, 0)
+    return () => clearTimeout(minuterie)
+  }, [route])
+}
+
 function Routes() {
   const { chemin } = useRouteur()
   const { profil } = useSession()
   const route = chemin.replace(/\/+$/, '') || '/'
+  useTitreEtFocus(route)
+  // Page demandee avant la connexion (retour de Stripe sur /compte?paiement=ok, par exemple ; WEB-11)
+  const versConnexion = `/connexion?suite=${encodeURIComponent(route + window.location.search)}`
 
   if (PUBLIQUES[route]) return <>{PUBLIQUES[route]()}</>
   if (INVITES[route]) {
     if (profil === undefined) return <Chargement />
-    return profil ? <Redirection vers="/app" /> : <>{INVITES[route]()}</>
+    return profil ? <Redirection vers={suiteSure(new URLSearchParams(window.location.search).get('suite'))} /> : <>{INVITES[route]()}</>
   }
   if (route === '/admin') {
     if (profil === undefined) return <Chargement />
-    if (!profil) return <Redirection vers="/connexion" />
+    if (!profil) return <Redirection vers={versConnexion} />
     return profil.admin ? <Suspense fallback={<Chargement />}><Admin /></Suspense> : <Introuvable />
   }
   if (MEMBRES[route]) {
     if (profil === undefined) return <Chargement />
-    return profil ? <>{MEMBRES[route]()}</> : <Redirection vers="/connexion" />
+    return profil ? <>{MEMBRES[route]()}</> : <Redirection vers={versConnexion} />
   }
   return <Introuvable />
+}
+
+function RoutesProtegees() {
+  const { chemin } = useRouteur()
+  return (
+    <LimiteErreur cle={chemin}>
+      <Routes />
+    </LimiteErreur>
+  )
 }
 
 /** Espace etudiant monte au-dessus des pages, une instance par compte : passer par Compte ou Tarifs
@@ -97,7 +196,7 @@ export default function Site() {
     <RouteurProvider>
       <SessionProvider>
         <EspaceEtudiant>
-          <Routes />
+          <RoutesProtegees />
         </EspaceEtudiant>
       </SessionProvider>
     </RouteurProvider>

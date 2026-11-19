@@ -58,3 +58,19 @@ export function jetonDuLien(): string {
   return new URLSearchParams(window.location.hash.slice(1)).get('jeton')
     ?? new URLSearchParams(window.location.search).get('jeton') ?? ''
 }
+
+/** Adresse de retour apres connexion (`?suite=`) : chemin interne seulement, jamais « //autre-site », « /\\ »
+ *  ni « https: » (audit du 2026-11-19, WEB-11). */
+// eslint-disable-next-line react-refresh/only-export-components
+export function suiteSure(suite: string | null): string {
+  return suite && suite.startsWith('/') && !suite.startsWith('//') && !suite.startsWith('/\\') ? suite : '/app'
+}
+
+/** Adresse de la connexion qui ramene ensuite a la page courante. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function connexionPuisRetour(extra = ''): string {
+  const ici = window.location.pathname + window.location.search
+  const suite = ici.startsWith('/connexion') || ici === '/' ? '' : `suite=${encodeURIComponent(ici)}`
+  const q = [extra, suite].filter(Boolean).join('&')
+  return q ? `/connexion?${q}` : '/connexion'
+}

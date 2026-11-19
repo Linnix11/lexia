@@ -78,6 +78,50 @@ describe('Site', () => {
     expect(window.location.pathname).toBe('/connexion')
   })
 
+  it('premier chargement : un 502 passager ne deconnecte pas, la page demandee s ouvre (WEB-1)', async () => {
+    connecte = true
+    let echecs = 2
+    const normal = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/session') && echecs > 0) {
+        echecs -= 1
+        return Promise.resolve(new Response('<html>502</html>', { status: 502 }))
+      }
+      return normal(url, init)
+    })
+    aller('/compte')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'etu@exemple.fr' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/compte')
+  })
+
+  it('premier chargement : serveur indisponible, message et bouton Reessayer, pas de renvoi vers la connexion (WEB-1)', async () => {
+    connecte = true
+    let panne = true
+    const normal = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/session') && panne) return Promise.resolve(new Response('', { status: 502 }))
+      return normal(url, init)
+    })
+    aller('/app')
+    render(<Site />)
+    expect(await screen.findByText('Lexia redémarre, réessayez dans un instant.')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/app')
+    panne = false
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+    })
+    expect(await screen.findByTitle('Mon compte')).toBeInTheDocument()
+  })
+
+  it('connexion : retour a la page demandee avant la connexion, jamais vers un autre site (WEB-11)', async () => {
+    aller('/compte?paiement=ok')
+    render(<Site />)
+    await screen.findByRole('heading', { name: 'Connexion' })
+    expect(new URLSearchParams(window.location.search).get('suite')).toBe('/compte?paiement=ok')
+    expect(document.title).toBe('Connexion · Lexia')
+  })
+
   it('affiche les trois formules et la demande par e-mail', async () => {
     aller('/tarifs')
     render(<Site />)

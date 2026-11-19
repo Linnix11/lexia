@@ -4,11 +4,15 @@ import { oublierSeance } from '../lib/seance'
 
 /** Resultat d'une connexion : session ouverte, ou code de l'application a saisir (jeton de l'etape 2). */
 export type ResultatConnexion = { ok: true } | { jeton: string }
-import { useRouteur } from '../lib/router'
+import { connexionPuisRetour, useRouteur } from '../lib/router'
 
 interface Session {
   /** undefined : chargement ; null : non connecte */
   profil: Profil | null | undefined
+  /** Premier chargement en echec apres plusieurs essais (502, reseau) : on ne sait pas si l'etudiant est connecte. */
+  indisponible: boolean
+  /** Relance le premier chargement apres `indisponible`. */
+  reessayer: () => void
   config: ConfigPublique | null
   rafraichir: () => Promise<void>
   connexion: (email: string, mdp: string) => Promise<ResultatConnexion>
@@ -19,11 +23,16 @@ interface Session {
   supprimer: (mdp: string) => Promise<void>
 }
 
+const ESSAIS_SESSION = 4
+const PAUSE_SESSION_MS = import.meta.env.MODE === 'test' ? 20 : 3000
+
 const Ctx = createContext<Session | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [profil, setProfil] = useState<Profil | null | undefined>(undefined)
   const [config, setConfig] = useState<ConfigPublique | null>(null)
+  const [indisponible, setIndisponible] = useState(false)
+  const [tentative, setTentative] = useState(0)
   const { naviguer } = useRouteur()
 
   const rafraichir = useCallback(async () => {
@@ -35,21 +44,48 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Premier chargement : seul un 401 (ou une reponse null) veut dire « non connecte ». Une erreur passagere
+  // (redemarrage du serveur, 502, reseau) est reessayee toutes les 3 s, puis un message s'affiche au lieu de
+  // renvoyer l'etudiant vers la connexion (audit du 2026-11-19, WEB-1).
   useEffect(() => {
-    api.session().then(setProfil).catch(() => setProfil(null))
+    let annule = false
+    let minuterie: ReturnType<typeof setTimeout> | undefined
+    let essais = 0
+    const charger = () => {
+      api.session().then((p) => {
+        if (!annule) setProfil(p)
+      }).catch((e) => {
+        if (annule) return
+        if (e instanceof ApiError && e.status === 401) return setProfil(null)
+        essais += 1
+        if (essais < ESSAIS_SESSION) minuterie = setTimeout(charger, PAUSE_SESSION_MS)
+        else setIndisponible(true)
+      })
+    }
+    setIndisponible(false)
+    charger()
+    return () => {
+      annule = true
+      clearTimeout(minuterie)
+    }
+  }, [tentative])
+
+  useEffect(() => {
     api.config().then(setConfig).catch(() => setConfig(null))
   }, [])
 
   useEffect(() => {
     quandSessionExpiree(() => {
       setProfil(null)
-      naviguer('/connexion?expiree=1')
+      naviguer(connexionPuisRetour('expiree=1'))
     })
     return () => quandSessionExpiree(null)
   }, [naviguer])
 
   const valeur = useMemo<Session>(() => ({
     profil,
+    indisponible: profil === undefined && indisponible,
+    reessayer: () => setTentative((n) => n + 1),
     config,
     rafraichir,
     connexion: async (email, mdp) => {
@@ -71,7 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       oublierSeance()
       setProfil(null)
     },
-  }), [profil, config, rafraichir])
+  }), [profil, indisponible, config, rafraichir])
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>
 }
