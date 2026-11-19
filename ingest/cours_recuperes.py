@@ -294,7 +294,14 @@ def service_public(client: httpx.Client | None) -> list[dict]:
             continue
         with zipfile.ZipFile(cible) as z:
             for nom in z.namelist():
-                if re.fullmatch(r"F\d+\.xml", nom) and (c := fiche_service_public(z.read(nom), entreprendre)):
+                if not re.fullmatch(r"F\d+\.xml", nom):
+                    continue
+                try:
+                    c = fiche_service_public(z.read(nom), entreprendre)
+                except ET.ParseError as e:   # une fiche illisible ne fait pas echouer toute l'etape (SRV-2)
+                    print(f"{nom} illisible, ignoree : {e}", file=sys.stderr)
+                    continue
+                if c:
                     out.append(c)
     return out
 
@@ -504,8 +511,20 @@ def ecrire_passages(par_source: dict[str, list[Passage]], dossier: Path = PASSAG
 # ---------------------------------------------------------------------------------------------------------------
 
 
-def ecrire(cours: list[dict], cible: Path = CATALOGUE) -> list[dict]:
-    """Valide chaque entree avec le modele de l'API ; les entrees invalides sont signalees et laissees de cote."""
+class CatalogueReduit(RuntimeError):
+    """Le nouveau catalogue perd trop de fiches par rapport au precedent : il n'est pas ecrit."""
+
+
+# Une archive vide ou un format change par service-public.gouv.fr ne reconnaissait plus aucune fiche, et le
+# catalogue vide remplacait le bon, relu aussitot par le service : page vide, sans alerte (audit du 19/11, SRV-2).
+PART_MINIMALE = 0.9
+
+
+def ecrire(cours: list[dict], cible: Path = CATALOGUE, forcer: bool = False) -> list[dict]:
+    """Valide chaque entree avec le modele de l'API ; les entrees invalides sont signalees et laissees de cote.
+
+    Leve CatalogueReduit, sans rien ecrire, si moins de 90 % des entrees du catalogue precedent restent
+    (sauf forcer, pour une source retiree volontairement)."""
     valides, vus = [], set()
     for c in cours:
         try:
@@ -516,6 +535,14 @@ def ecrire(cours: list[dict], cible: Path = CATALOGUE) -> list[dict]:
         if c["id"] not in vus:
             vus.add(c["id"])
             valides.append(c)
+    if not forcer and cible.exists():
+        try:
+            avant = len(json.loads(cible.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            avant = 0
+        if len(valides) < PART_MINIMALE * avant:
+            raise CatalogueReduit(f"{len(valides)} cours valides contre {avant} dans le catalogue precedent : "
+                                  "catalogue garde tel quel (relancer avec --forcer si la baisse est voulue)")
     cible.parent.mkdir(parents=True, exist_ok=True)
     tmp = cible.with_suffix(".tmp")
     tmp.write_text(json.dumps(valides, ensure_ascii=False), encoding="utf-8")
@@ -526,6 +553,7 @@ def ecrire(cours: list[dict], cible: Path = CATALOGUE) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--hors-ligne", action="store_true", help="aucun telechargement")
+    ap.add_argument("--forcer", action="store_true", help="ecrire le catalogue meme s'il perd plus de 10 %% des cours")
     args = ap.parse_args(argv)
     with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=120, follow_redirects=True) as client:
         cours = service_public(None if args.hors_ligne else client)
@@ -539,7 +567,7 @@ def main(argv: list[str] | None = None) -> int:
                 cours.append(cours_wiki(en_ligne, page))
             except (httpx.HTTPError, RuntimeError, KeyError) as e:
                 print(f"{page.site} {page.titre} : {e}", file=sys.stderr)
-    valides = ecrire(cours)
+    valides = ecrire(cours, forcer=args.forcer)
     par_source: dict[str, int] = {}
     for c in valides:
         par_source[c["source"]] = par_source.get(c["source"], 0) + 1

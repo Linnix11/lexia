@@ -37,7 +37,7 @@ import httpx
 import numpy as np
 import yaml
 
-from ingest import build_index, cours_recuperes, dila, embed, run
+from ingest import build_index, cours_recuperes, dila, embed, fraicheur, run
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw" / "dila"
@@ -253,6 +253,11 @@ def main(argv: list[str] | None = None) -> int:
         cours_recuperes.main(["--hors-ligne"] if args.sans_telechargement else [])
     except Exception as e:  # noqa: BLE001
         print(f"  echec, fiches precedentes gardees : {e}", file=sys.stderr)
+        # Un simple print passait inapercu : la page pouvait rester perimee ou vide (audit du 19/11, SRV-2).
+        try:
+            fraicheur.alerter(f"Etape des fiches recuperees seulement (l'index continue sans elle) : {e}")
+        except Exception as e2:  # noqa: BLE001  (l'alerte ne doit pas arreter la mise a jour de l'index)
+            print(f"  alerte non envoyee : {e2}", file=sys.stderr)
 
     print("== Embeddings des passages nouveaux ou modifies", flush=True)
     if n := amorcer_cache(INDEX, embed.CACHE_DIR):

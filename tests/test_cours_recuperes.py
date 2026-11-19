@@ -265,3 +265,30 @@ def test_fiche_entreprendre_lien_vers_son_site():
     c = fiche_service_public(xml, entreprendre=True)
     assert c["matiere"] == "droit_des_affaires" and c["source_url"] == "https://entreprendre.service-public.gouv.fr/"
     assert c["source"] == "Service Public / DILA" and c["licence"] == "etalab-2.0"
+
+
+def test_catalogue_qui_perd_trop_de_fiches_garde_l_ancien(tmp_path):
+    """SRV-2 (TST-2) : archive vide ou format change, le catalogue vide remplacait le bon sans alerte."""
+    from ingest.cours_recuperes import CatalogueReduit, ecrire as ecrire_catalogue
+    cible = tmp_path / "catalogue.json"
+    dix = [{**FACTICE, "id": f"cours-{i}"} for i in range(10)]
+    ecrire_catalogue(dix, cible)
+    for moins in ([], dix[:5], dix[:8]):
+        with pytest.raises(CatalogueReduit):
+            ecrire_catalogue(moins, cible)
+        assert len(json.loads(cible.read_text(encoding="utf-8"))) == 10      # l'ancien reste
+    assert len(ecrire_catalogue(dix[:9], cible)) == 9                         # 90 % : accepte
+    assert ecrire_catalogue([], cible, forcer=True) == []                     # baisse voulue
+
+
+def test_fiche_xml_illisible_ignoree(tmp_path, monkeypatch):
+    import zipfile
+    from ingest import cours_recuperes as cr
+    archive = tmp_path / "sp.zip"
+    with zipfile.ZipFile(archive, "w") as z:
+        z.writestr("F9999.xml", FICHE_SP)
+        z.writestr("F1.xml", b"<Publication><non-ferme>")
+    monkeypatch.setattr(cr, "SP_ZIP", archive)
+    monkeypatch.setattr(cr, "SPE_ZIP", tmp_path / "absent.zip")
+    monkeypatch.setattr(cr, "_archive", lambda client, url, cible: cible.exists())
+    assert [c["id"] for c in cr.service_public(None)] == ["sp-f9999"]
