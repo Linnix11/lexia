@@ -246,3 +246,59 @@ def test_un_compte_confirme_garde_sa_double_authentification(env, monkeypatch):
                                                     "mot_de_passe": "nouveau-mot-de-passe"})
     r = client.post("/auth/connexion", json={"email": "etu@exemple.fr", "mot_de_passe": "nouveau-mot-de-passe"})
     assert r.json().get("double_authentification_requise") is True          # le lien seul ne suffit pas a entrer
+
+
+def _sans_delai_entre_liens(monkeypatch):
+    import datetime
+    from api import comptes as module_comptes
+    monkeypatch.setattr(module_comptes, "DELAI_ENTRE_ENVOIS", datetime.timedelta(0))
+
+
+def _inscrit_confirme(app, envoyes, email, ip):
+    c = TestClient(app, client=(ip, 50000))
+    inscrire(c, email=email)
+    lien = next(l for d, l in reversed(envoyes) if d == email)
+    assert c.post("/auth/email/verifier", json={"jeton": jeton_de(lien)}).status_code == 200
+
+
+def test_des_comptes_inventes_ne_privent_pas_les_etudiants_de_leur_lien(env, monkeypatch):
+    """SEC-1 (TST-10) : 10 comptes non confirmes x 5 « mot de passe oublie » epuisaient le plafond commun de 50 ;
+    pendant 24 h, un etudiant confirme lisait « envoye » sans recevoir aucun e-mail."""
+    from api import auth
+    client, _, envoyes = env
+    liens = _liens_oubli(monkeypatch)
+    _sans_delai_entre_liens(monkeypatch)
+    _inscrit_confirme(client.app, envoyes, "etu@exemple.fr", "192.0.2.1")
+    pirates = [TestClient(client.app, client=(f"10.0.0.{k}", 50000)) for k in range(10)]   # une IP chacun
+    for k, pirate in enumerate(pirates):
+        inscrire(pirate, email=f"invente{k}@exemple.fr")
+    for k, pirate in enumerate(pirates):
+        for _ in range(5):
+            assert pirate.post("/auth/mot-de-passe/oubli", json={"email": f"invente{k}@exemple.fr"}).json() == {
+                "envoye": True}
+    attendus = auth.ENVOIS_NON_CONFIRMES_JOUR - len(envoyes)    # les liens d'inscription comptent aussi
+    _attendre(liens, attendus)
+    assert len(liens) == attendus and len(envoyes) == 11
+    etudiant = TestClient(client.app, client=("192.0.2.1", 50000))
+    assert etudiant.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"}).json() == {"envoye": True}
+    _attendre(liens, attendus + 1)
+    assert liens[-1][0] == "etu@exemple.fr"
+
+
+def test_liens_mot_de_passe_oublie_plafonnes_par_ip(env, monkeypatch):
+    from api import auth
+    client, _, envoyes = env
+    liens = _liens_oubli(monkeypatch)
+    _sans_delai_entre_liens(monkeypatch)
+    for k in range(3):
+        _inscrit_confirme(client.app, envoyes, f"etu{k}@exemple.fr", f"192.0.2.{k}")
+    meme_ip = TestClient(client.app, client=("198.51.100.7", 50000))
+    for k in range(3):
+        for _ in range(auth.RENVOIS_PAR_COMPTE_JOUR):
+            meme_ip.post("/auth/mot-de-passe/oubli", json={"email": f"etu{k}@exemple.fr"})
+    _attendre(liens, auth.OUBLIS_PAR_IP_JOUR + 1)
+    assert len(liens) == auth.OUBLIS_PAR_IP_JOUR
+    autre_ip = TestClient(client.app, client=("198.51.100.8", 50000))
+    autre_ip.post("/auth/mot-de-passe/oubli", json={"email": "etu2@exemple.fr"})
+    _attendre(liens, auth.OUBLIS_PAR_IP_JOUR + 1)
+    assert len(liens) == auth.OUBLIS_PAR_IP_JOUR + 1

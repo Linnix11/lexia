@@ -26,8 +26,13 @@ from api.comptes import (DUREE_SESSION, MESSAGE_IDENTITE, Comptes, ErreurCompte,
 from api.plans import FORMULES
 
 COOKIE = "lexia_session"
-RENVOIS_PAR_COMPTE_JOUR = 5   # renvois de l'e-mail de confirmation par compte sur 24 h
-RENVOIS_TOTAL_JOUR = 50       # en tout sur 24 h : laisse au moins 50 e-mails d'inscription (Resend : 100 par jour)
+RENVOIS_PAR_COMPTE_JOUR = 5   # renvois du lien de confirmation, ou liens « mot de passe oublie », par compte sur 24 h
+# Quota Resend : 100 e-mails par jour. Deux budgets separes sur 24 h (audit du 19/11, SEC-1) : un visiteur qui cree
+# des comptes a des adresses inventees n'epuise que celui des comptes non confirmes, et les etudiants confirmes
+# recoivent encore leur lien « mot de passe oublie ». Les 20 restants servent aux paiements, retractations et alertes.
+ENVOIS_NON_CONFIRMES_JOUR = 40   # lien d'inscription, renvoi du lien, mot de passe oublie d'un compte non confirme
+ENVOIS_CONFIRMES_JOUR = 40       # mot de passe oublie d'un compte confirme
+OUBLIS_PAR_IP_JOUR = 10          # liens « mot de passe oublie » envoyes vers une meme IP (ou un meme /64) sur 24 h
 log = logging.getLogger("lexia.auth")
 
 
@@ -248,12 +253,36 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     router = APIRouter()
     freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour)
     attentes = AttentesDeuxiemeFacteur()
-    # Renvois de l'e-mail de confirmation sur 24 h : par compte, et en tout (quota Resend). Sans plafond, un compte
-    # inscrit a l'adresse d'un tiers lui envoyait 720 e-mails par jour, et quelques comptes epuisaient le quota :
-    # plus aucun inscrit ne recevait son lien (audit 2, point 4). Les e-mails d'inscription ne sont pas comptes ici.
-    renvois: dict[int, deque] = defaultdict(deque)
-    renvois_total: deque = deque()
-    verrou_renvois = threading.Lock()
+    # E-mails envoyes sur 24 h glissantes, par cle : « compte:<id> », « oubli:<id> », « ip:<ip> », et les deux
+    # budgets « non_confirmes » et « confirmes ». Sans plafond, un compte inscrit a l'adresse d'un tiers lui
+    # envoyait 720 e-mails par jour (audit 2, point 4) ; avec un plafond commun, un seul visiteur privait tout le
+    # monde du lien « mot de passe oublie » pendant 24 h (audit du 19/11, SEC-1).
+    envois: dict[str, deque] = defaultdict(deque)
+    verrou_envois = threading.Lock()
+
+    def _reserver(*plafonds: tuple[str, int]) -> float | None:
+        """Reserve un envoi dans chaque file si aucune n'a atteint son plafond ; None sinon."""
+        maintenant = time.monotonic()
+        with verrou_envois:
+            if len(envois) > 10_000:
+                for k in [k for k, q in envois.items() if not q or maintenant - q[-1] > 86400]:
+                    del envois[k]
+            files = [(envois[cle], plafond) for cle, plafond in plafonds]
+            for q, _ in files:
+                while q and maintenant - q[0] > 86400:
+                    q.popleft()
+            if any(len(q) >= plafond for q, plafond in files):
+                return None
+            for q, _ in files:
+                q.append(maintenant)
+            return maintenant
+
+    def _annuler(t: float, *plafonds: tuple[str, int]) -> None:
+        """Rend la reservation d'un envoi qui n'est pas parti."""
+        with verrou_envois:
+            for cle, _ in plafonds:
+                if t in envois[cle]:
+                    envois[cle].remove(t)
 
     def utilisateur_requis(request: Request) -> Utilisateur:
         u = comptes.session(request.cookies.get(COOKIE))
@@ -287,7 +316,13 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             freins.inscrit(_ip(request))
             raise HTTPException(422, str(e)) from None
         freins.inscrit(_ip(request))
-        _envoyer_verification(request, u)  # l'echec d'envoi n'empeche pas la creation du compte
+        # L'echec d'envoi n'empeche pas la creation du compte ; le lien compte dans le budget des non confirmes.
+        budget = ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR)
+        t = _reserver(budget)
+        if t is None:
+            log.warning("plafond des e-mails aux comptes non confirmes atteint : lien d'inscription non envoye")
+        elif not _envoyer_verification(request, u):
+            _annuler(t, budget)
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
         return profil(comptes, comptes.par_id(u.id))
 
@@ -400,26 +435,21 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def renvoyer_verification(request: Request, u: Utilisateur = Depends(utilisateur_requis)):
         if u.email_verifie:
             raise HTTPException(422, "Votre adresse est déjà confirmée.")
-        maintenant = time.monotonic()
-        with verrou_renvois:
-            for q in (renvois[u.id], renvois_total):
-                while q and maintenant - q[0] > 86400:
-                    q.popleft()
-            if len(renvois[u.id]) >= RENVOIS_PAR_COMPTE_JOUR or len(renvois_total) >= RENVOIS_TOTAL_JOUR:
-                raise HTTPException(429, "Trop d'e-mails de confirmation envoyés aujourd'hui : réessayez demain, "
-                                         "ou écrivez-nous si le message n'arrive pas.")
+        plafonds = ((f"compte:{u.id}", RENVOIS_PAR_COMPTE_JOUR), ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
+        t = _reserver(*plafonds)
+        if t is None:
+            raise HTTPException(429, "Trop d'e-mails de confirmation envoyés aujourd'hui : réessayez demain, "
+                                     "ou écrivez-nous si le message n'arrive pas.")
         if not _envoyer_verification(request, u, force=False):
+            _annuler(t, *plafonds)
             raise HTTPException(429, "Un e-mail vient d'être envoyé : vérifiez vos courriers indésirables, "
                                      "puis réessayez dans deux minutes.")
-        with verrou_renvois:
-            renvois[u.id].append(maintenant)
-            renvois_total.append(maintenant)
         return {"envoye": True}
 
     # --- mot de passe oublie -------------------------------------------------
     # Meme reponse et meme duree qu'il existe un compte ou non (l'e-mail part dans un fil a part) : la page ne
-    # dit pas quelles adresses sont inscrites. Envois plafonnes par adresse et en tout, comme les renvois.
-    oublis: dict[str, deque] = defaultdict(deque)
+    # dit pas quelles adresses sont inscrites. Envois plafonnes par compte, par IP, et dans le budget du compte
+    # (confirme ou non) : des comptes inventes ne privent plus les etudiants confirmes de leur lien (SEC-1).
     envois_oubli = ThreadPoolExecutor(max_workers=2, thread_name_prefix="oubli")
 
     def _envoyer_oubli(email: str, lien: str) -> None:
@@ -432,20 +462,21 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def mot_de_passe_oublie(req: OubliMdp, request: Request):
         freins.verifier(_ip(request), f"oubli:{_ip(request)}")
         email = req.email.strip().lower()
-        maintenant = time.monotonic()
-        with verrou_renvois:
-            for q in (oublis[email], renvois_total):
-                while q and maintenant - q[0] > 86400:
-                    q.popleft()
-            plafond = len(oublis[email]) >= RENVOIS_PAR_COMPTE_JOUR or len(renvois_total) >= RENVOIS_TOTAL_JOUR
-        if courriel.configure() and url_publique and not plafond:
-            r = comptes.jeton_reinitialisation(email)
-            if r is not None:
-                u, jeton = r
-                with verrou_renvois:
-                    oublis[email].append(maintenant)
-                    renvois_total.append(maintenant)
-                envois_oubli.submit(_envoyer_oubli, u.email, f"{url_publique}/nouveau-mot-de-passe#jeton={jeton}")
+        u = comptes.par_email(email) if courriel.configure() and url_publique else None
+        if u is None:
+            return {"envoye": True}
+        budget = (("confirmes", ENVOIS_CONFIRMES_JOUR) if u.email_verifie
+                  else ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
+        plafonds = ((f"oubli:{u.id}", RENVOIS_PAR_COMPTE_JOUR), (f"ip:{_ip(request)}", OUBLIS_PAR_IP_JOUR), budget)
+        t = _reserver(*plafonds)
+        if t is None:
+            log.warning("plafond atteint : lien « mot de passe oublie » non envoye (%s)", budget[0])
+            return {"envoye": True}
+        r = comptes.jeton_reinitialisation(email)
+        if r is None:   # un lien vient de partir (2 minutes)
+            _annuler(t, *plafonds)
+            return {"envoye": True}
+        envois_oubli.submit(_envoyer_oubli, r[0].email, f"{url_publique}/nouveau-mot-de-passe#jeton={r[1]}")
         return {"envoye": True}
 
     @router.post("/mot-de-passe/nouveau", dependencies=[Depends(verifier_origine)])
