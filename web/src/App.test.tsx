@@ -372,7 +372,7 @@ describe('Audit du 16 novembre 2026', () => {
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: (b: Blob) => { exporte = b; return 'blob:fiche' }, revokeObjectURL: () => undefined }))
     await poser('article 1240')
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))
-    expect(await screen.findByRole('status')).toHaveTextContent('dans ce navigateur uniquement')
+    expect(await screen.findByText(/dans ce navigateur uniquement/)).toHaveAttribute('role', 'status')
     fireEvent.click(screen.getByRole('button', { name: /Fiches & révisions/ }))
     fireEvent.click(await screen.findByRole('button', { name: /Exporter toutes les fiches/ }))
     const texte = await exporte!.text()

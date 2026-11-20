@@ -76,3 +76,12 @@
     display: none;
   }
 }
+
+/* Bordure des champs a 3:1 au moins sur blanc, papier et surface (WCAG 1.4.11 ; audit du 2026-11-19, WEB-4) :
+   #878f88 donne 3,33:1 sur blanc et 3,02:1 sur #f6f4ee. Hors couche pour l'emporter sur border-line ; un champ
+   en erreur (aria-invalid) ou qui a le focus garde sa couleur. */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [aria-invalid="true"]):not(:focus),
+textarea:not([aria-invalid="true"]):not(:focus),
+select:not([aria-invalid="true"]):not(:focus) {
+  border-color: #878f88;
+}

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from '../Site'
 import { AVERTISSEMENT } from './CoursRecuperes'
+import { oublierCatalogue } from '../lib/catalogue'
 
 const PROFIL = { email: 'etu@exemple.fr', cree_le: '2026-11-11T10:00:00+00:00', formule_fin: null, admin: false,
   formule: { id: 'gratuit', nom: 'Gratuit', prix_mensuel_euros: 0, questions_par_jour: 10, quiz_par_jour: 2, description: 'd', avantages: [] },
@@ -22,6 +23,7 @@ let cours: unknown[] = []
 
 beforeEach(() => {
   cours = []
+  oublierCatalogue()
   vi.stubGlobal('fetch', vi.fn((url: string) => {
     if (url.endsWith('/auth/session')) return json(PROFIL)
     if (url.endsWith('/cours-recuperes')) return json({ avertissement: AVERTISSEMENT, cours })
@@ -46,13 +48,13 @@ describe('Cours récupérés', () => {
     render(<Site />)
     const carte = (await screen.findByText('Cours factice de test')).closest('article')!
     expect(screen.getByRole('heading', { name: 'Droit constitutionnel' })).toBeInTheDocument()
-    expect(within(carte).getByText(/non rédigé par Lexia/)).toBeInTheDocument()
+    expect(within(carte).getByText(/non rédigée par Lexia/)).toBeInTheDocument()
     expect(within(carte).getByText('Auteur factice')).toBeInTheDocument()
     expect(within(carte).getByRole('link', { name: /Site factice/ })).toHaveAttribute('href', 'https://exemple.invalid/')
     expect(within(carte).getByRole('link', { name: /Licence Ouverte 2.0/ })).toHaveAttribute('href', FACTICE.licence_url)
     expect(within(carte).getByText('15 janvier 2026')).toBeInTheDocument()
     expect(within(carte).getByRole('link', { name: /exemple.invalid\/cours-factice/ })).toHaveAttribute('href', FACTICE.url_original)
-    fireEvent.click(within(carte).getByRole('button', { name: 'Lire le cours' }))
+    fireEvent.click(within(carte).getByRole('button', { name: 'Lire la fiche « Cours factice de test »' }))
     expect(await within(carte).findByText('Texte factice.')).toBeInTheDocument()
   })
 

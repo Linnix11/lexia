@@ -203,7 +203,7 @@ export function VueMatieres() {
                         {m.sources.map((s) => (
                           <li key={s}>
                             · {m.noms_sources?.[s] ?? s}
-                            {fraicheur?.sources[s] && <span className="text-[#7a817c]"> · {libelleFraicheur(fraicheur.sources[s])}</span>}
+                            {fraicheur?.sources[s] && <span className="text-muted"> · {libelleFraicheur(fraicheur.sources[s])}</span>}
                           </li>
                         ))}
                       </ul>

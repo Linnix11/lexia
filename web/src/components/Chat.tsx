@@ -17,9 +17,9 @@ const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
 
 function Attente() {
   return (
-    <div className="rounded-[10px] bg-[#f6f4ee] px-4 py-3.5" aria-label="Lexia recherche dans les sources">
+    <div className="rounded-[10px] bg-[#f6f4ee] px-4 py-3.5">
       <p className="mb-2.5 text-[11px] text-muted">Lexia cherche dans les textes et la jurisprudence…</p>
-      <div className="grid animate-pulse gap-2">
+      <div aria-hidden className="grid animate-pulse gap-2">
         <div className="h-3 w-2/3 rounded bg-[#e7e4da]" />
         <div className="h-3 w-full rounded bg-[#ece9e0]" />
         <div className="h-3 w-5/6 rounded bg-[#ece9e0]" />
@@ -51,6 +51,17 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   }, [])
 
   const derniereEtat = messages.at(-1)?.etat
+  // Annonce courte pour les lecteurs d'ecran, au lieu de relire toute la conversation (audit du 2026-11-19, WEB-3)
+  const dernier = messages.at(-1)
+  const annonce = !dernier ? '' : dernier.etat === 'en_cours' ? 'Lexia prépare la réponse.'
+    : dernier.etat === 'ok' ? `Réponse prête : ${dernier.reponse?.titre ?? ''}` : `Erreur : ${dernier.erreur ?? ''}`
+  // Effacer la conversation en deux temps : rien ne se perd sur un clic involontaire (WEB-20)
+  const [confirmerEffacement, setConfirmerEffacement] = useState(false)
+  useEffect(() => {
+    if (!confirmerEffacement) return
+    const t = setTimeout(() => setConfirmerEffacement(false), 5000)
+    return () => clearTimeout(t)
+  }, [confirmerEffacement])
   useEffect(() => {
     fin.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [messages.length, derniereEtat])
@@ -163,7 +174,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           </div>
         </div>
       ) : (
-        <div aria-live="polite" className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'tab:max-h-[560px] tab:overflow-y-auto tab:pr-1'}`}>
+        <div className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'tab:max-h-[560px] tab:overflow-y-auto tab:pr-1'}`}>
           {messages.map((m) => (
             <div key={m.id} className="grid min-w-0 gap-2.5">
               <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55] whitespace-pre-line">
@@ -196,7 +207,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
       {aDeposer && <DepotRapide key={aDeposer.map((f) => f.name).join('|')} fichiers={aDeposer} onFermer={() => setADeposer(null)} />}
       <form
         onSubmit={soumettre}
-        className="mt-auto flex gap-[9px] rounded-[10px] border border-[#d9ddd5] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
+        className="mt-auto flex gap-[9px] rounded-[10px] border border-[#878f88] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
       >
         <button type="button" onClick={() => choixFichier.current?.click()}
               title="Ajouter un cours (PDF, Word, photo…) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
@@ -237,9 +248,17 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           Réponses générées par une intelligence artificielle · vérifiez toujours la règle applicable et la version des textes.
         </span>
         {messages.length > 0 && !occupe && (
-          <button type="button" onClick={effacer} className="shrink-0 hover:text-forest">Effacer la conversation</button>
+          <button type="button" className={`shrink-0 hover:text-forest ${confirmerEffacement ? 'font-semibold text-[#8c4a36]' : ''}`}
+            onClick={() => {
+              if (!confirmerEffacement) return setConfirmerEffacement(true)
+              setConfirmerEffacement(false)
+              effacer()
+            }}>
+            {confirmerEffacement ? 'Confirmer l’effacement' : 'Effacer la conversation'}
+          </button>
         )}
       </div>
+      <p role="status" className="sr-only">{annonce}</p>
     </div>
   )
 }

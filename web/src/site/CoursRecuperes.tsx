@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, type CoursRecupere, type CoursRecupereComplet } from '../lib/api'
+import { chargerCatalogue } from '../lib/catalogue'
+import { normaliser } from '../lib/texte'
 import { CadreEspace } from '../components/Layout'
 import { ResumeVocal } from '../components/ResumeVocal'
 import { useApp } from '../state/contexte'
@@ -8,31 +10,40 @@ import { Surtitre } from './Public'
 // Meme texte que l'API (api/cours_recuperes.py) : affiche avant meme la reponse du serveur.
 export const AVERTISSEMENT = 'Cours récupérés sur des sites tiers sous licence libre. Ils ne sont pas rédigés par Lexia et '
   + 'peuvent contenir des erreurs ou être dépassés. Vérifiez toujours avec les textes officiels.'
-const RAPPEL = 'Cours récupéré, non rédigé par Lexia : il peut contenir des erreurs ou être dépassé.'
+const RAPPEL = 'Fiche pratique de l’administration, non rédigée par Lexia : ce n’est ni un texte officiel ni un cours '
+  + 'de faculté, et elle peut contenir des erreurs ou être dépassée.'
 
 const lien = 'text-forest underline-offset-2 hover:underline'
 const PAR_PAGE = 20
-const normaliser = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 const dateLongue = (iso: string) =>
   new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${iso}T12:00:00`))
 
 /** Attribution exigee par les licences : auteur, source, licence, date de mise a jour, lien vers l'original. */
+/** Lien externe : le lecteur d'ecran entend qu'il s'ouvre dans un nouvel onglet (WEB-14). */
+function Externe({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a className={lien} href={href} target="_blank" rel="noreferrer">
+      {children} ↗<span className="sr-only"> (nouvel onglet)</span>
+    </a>
+  )
+}
+
 function Attribution({ c }: { c: Omit<CoursRecupere, 'sections'> }) {
   const ligne = 'grid grid-cols-[110px_minmax(0,1fr)] gap-2'
   return (
     <dl className="mt-3 grid gap-1 text-[11px]">
       <div className={ligne}><dt className="text-muted">Auteur</dt><dd>
-        {c.auteur}{c.historique_url && <> (<a className={lien} href={c.historique_url} target="_blank" rel="noreferrer">liste des contributeurs ↗</a>)</>}
+        {c.auteur}{c.historique_url && <> (<Externe href={c.historique_url}>liste des contributeurs</Externe>)</>}
       </dd></div>
       <div className={ligne}><dt className="text-muted">Source</dt><dd>
-        <a className={lien} href={c.source_url} target="_blank" rel="noreferrer">{c.source} ↗</a>
+        <Externe href={c.source_url}>{c.source}</Externe>
       </dd></div>
       <div className={ligne}><dt className="text-muted">Licence</dt><dd>
-        <a className={lien} href={c.licence_url} target="_blank" rel="noreferrer">{c.licence_libelle} ↗</a>
+        <Externe href={c.licence_url}>{c.licence_libelle}</Externe>
       </dd></div>
       <div className={ligne}><dt className="text-muted">Mise à jour</dt><dd>{dateLongue(c.mis_a_jour)}</dd></div>
       <div className={ligne}><dt className="text-muted">Original</dt><dd className="break-words">
-        <a className={lien} href={c.url_original} target="_blank" rel="noreferrer">{c.url_original} ↗</a>
+        <Externe href={c.url_original}>{c.url_original}</Externe>
       </dd></div>
       {c.modifications && <div className={ligne}><dt className="text-muted">Modifications</dt><dd>{c.modifications}</dd></div>}
     </dl>
@@ -54,20 +65,22 @@ function CarteCours({ c }: { c: CoursRecupere }) {
 
   return (
     <article className="rounded-xl border border-line bg-surface p-4 tab:p-[19px]">
-      <h3 className="font-display text-[19px] leading-snug font-normal">{c.titre}</h3>
+      <p className="text-[10px] font-bold tracking-[1.2px] text-forest uppercase">Fiche pratique · {c.source}</p>
+      <h3 className="mt-1 font-display text-[19px] leading-snug font-normal">{c.titre}</h3>
       <p className="mt-2 rounded-[7px] border-l-2 border-[#c8a16d] bg-cream px-2.5 py-1.5 text-[11px] leading-[1.45] text-[#746347]">
         {RAPPEL}
       </p>
       <Attribution c={c} />
       <button type="button" onClick={basculer} aria-expanded={ouvert}
-        className="mt-3 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
-        {ouvert ? 'Fermer le cours' : 'Lire le cours'}
+        aria-label={`${ouvert ? 'Fermer' : 'Lire'} la fiche « ${c.titre} »`}
+        className="mt-3 min-h-11 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
+        {ouvert ? 'Fermer la fiche' : 'Lire la fiche'}
       </button>
       <div className="mt-2"><ResumeVocal demande={() => ({ type: 'cours_recupere', id: c.id })} /></div>
       {ouvert && (
         <div className="mt-4 border-t border-line-soft pt-4">
           {erreur ? (
-            <p role="alert" className="text-[12px] text-[#8c4a36]">Le cours n’a pas pu être chargé. Réessayez plus tard.</p>
+            <p role="alert" className="text-[12px] text-[#8c4a36]">La fiche n’a pas pu être chargée. Réessayez plus tard.</p>
           ) : !complet ? (
             <div className="grid animate-pulse gap-2">{[0, 1, 2].map((i) => <div key={i} className="h-4 rounded bg-[#ece9e0]" />)}</div>
           ) : (
@@ -111,7 +124,7 @@ export function CoursRecuperes() {
 
   useEffect(() => {
     let actif = true
-    api.coursRecuperes.lister()
+    chargerCatalogue()
       .then((r) => { if (actif) { setCours(r.cours); setAvertissement(r.avertissement || AVERTISSEMENT) } })
       .catch(() => { if (actif) { setErreur(true); setCours([]) } })
     return () => { actif = false }
@@ -147,7 +160,12 @@ export function CoursRecuperes() {
     <CadreEspace titre="Cours récupérés">
       <div className="mx-auto max-w-[860px]">
         <Surtitre>Cours récupérés</Surtitre>
-        <h1 className="mt-2 font-display text-[32px] font-normal">Cours de sources libres</h1>
+        <h1 className="mt-2 font-display text-[32px] font-normal">Fiches pratiques de l’administration</h1>
+        <p className="mt-2 text-[13px] leading-[1.5] text-muted">
+          Fiches publiées pour le grand public par l’administration (service-public.gouv.fr, DILA), reprises sous
+          licence libre. Ce ne sont ni des textes officiels, ni des cours de faculté : elles expliquent des démarches
+          et des règles pratiques.
+        </p>
         <div role="note" aria-label="Avertissement"
           className="mt-4 rounded-xl border border-[#c8a16d] bg-cream px-4 py-3 text-[13px] leading-[1.5] text-[#5e4f36]">
           <strong className="block text-[14px]">À lire avant d’utiliser ces cours</strong>
@@ -168,7 +186,7 @@ export function CoursRecuperes() {
             </label>
             <label className="grid gap-1 text-[11px] text-muted">
               Rechercher dans les titres et les textes, toutes matières
-              <input type="search" value={recherche} onChange={(e) => { setRecherche(e.target.value); setNombre(PAR_PAGE) }}
+              <input type="search" maxLength={200} value={recherche} onChange={(e) => { setRecherche(e.target.value); setNombre(PAR_PAGE) }}
                 placeholder="Divorce, bail, licenciement…"
                 className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink" />
             </label>

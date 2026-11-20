@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api, type Annale, type CoursRecupere } from '../lib/api'
+import { chargerCatalogue } from '../lib/catalogue'
+import { normaliser } from '../lib/texte'
 import { Lien } from '../lib/router'
 import { OFFICIELLES } from './Cartes'
 
 /** Barre de recherche facultative de la Bibliotheque : cours recuperes (titres puis texte), annales, sources
  *  officielles, et un lien vers le catalogue universitaire. Rien n'est charge tant que l'etudiant n'ecrit pas. */
 const MAX = 6
-const normaliser = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 function Groupe({ titre, children }: { titre: string; children: ReactNode }) {
   return (
@@ -23,16 +24,22 @@ export function RechercheBibliotheque() {
   const [annales, setAnnales] = useState<Annale[] | null>(null)
   const [dansLeTexte, setDansLeTexte] = useState<{ q: string; ids: string[] }>({ q: '', ids: [] })
   const charge = useRef(false)
+  const [panne, setPanne] = useState(false)
+  const [essai, setEssai] = useState(0)
   const q = texte.trim()
   const mots = normaliser(q)
 
-  // Catalogues charges une fois, a la premiere saisie.
+  // Catalogues charges une fois, a la premiere saisie. Une panne est dite et reessayee (audit du 2026-11-19, WEB-6).
   useEffect(() => {
     if (!q || charge.current) return
     charge.current = true
-    api.coursRecuperes.lister().then((r) => setCours(r.cours)).catch(() => setCours([]))
-    api.annales().then((r) => setAnnales(r.annales)).catch(() => setAnnales([]))
-  }, [q])
+    const echec = () => {
+      charge.current = false
+      setPanne(true)
+    }
+    chargerCatalogue().then((r) => setCours(r.cours)).catch(echec)
+    api.annales().then((r) => setAnnales(r.annales)).catch(echec)
+  }, [q, essai])
 
   // Recherche dans le texte des cours recuperes (index plein texte), apres une courte pause de saisie.
   useEffect(() => {
@@ -61,14 +68,21 @@ export function RechercheBibliotheque() {
     <div className="mb-[18px] rounded-xl border border-line bg-surface p-4 tab:p-[19px]">
       <label className="grid gap-1.5 text-[11px] text-muted">
         Rechercher dans la bibliothèque (facultatif)
-        <input type="search" value={texte} onChange={(e) => setTexte(e.target.value)}
+        <input type="search" maxLength={200} value={texte} onChange={(e) => setTexte(e.target.value)}
           placeholder="Un thème, une matière, une université… ex. divorce, bail, Assas"
           className="rounded-[8px] border border-line bg-white px-3 py-2 text-[13px] text-ink" />
       </label>
       {mots.length >= 2 && (
         <div className="mt-4 grid gap-3" aria-live="polite">
+          {panne && (
+            <p role="alert" className="flex flex-wrap items-center gap-2 text-[12px] text-[#8c4a36]">
+              La bibliothèque n’a pas pu être chargée.
+              <button type="button" onClick={() => { setPanne(false); setEssai((n) => n + 1) }}
+                className="min-h-11 font-semibold text-forest hover:underline">Réessayer</button>
+            </p>
+          )}
           {coursTrouves.length > 0 && (
-            <Groupe titre={`Cours récupérés (${coursTrouves.length}), non rédigés par Lexia`}>
+            <Groupe titre={`Fiches pratiques de l’administration (${coursTrouves.length}), non rédigées par Lexia`}>
               {coursTrouves.slice(0, MAX).map((c) => (
                 <li key={c.id}>
                   <Lien href={`/cours-recuperes?q=${encodeURIComponent(c.titre)}`} className={lien}>
@@ -80,7 +94,7 @@ export function RechercheBibliotheque() {
               {coursTrouves.length > MAX && (
                 <li>
                   <Lien href={`/cours-recuperes?q=${encodeURIComponent(q)}`} className="px-2 text-[11px] text-forest hover:underline">
-                    Voir les {coursTrouves.length} cours récupérés
+                    Voir les {coursTrouves.length} fiches pratiques
                   </Lien>
                 </li>
               )}
@@ -92,7 +106,7 @@ export function RechercheBibliotheque() {
                 <li key={a.id}>
                   <a href={a.url} target="_blank" rel="noopener noreferrer" className={lien}>
                     <span className="min-w-0">{a.titre}</span>
-                    <span className="shrink-0 text-[10px] text-muted">{a.universite} · {a.annee} ↗</span>
+                    <span className="shrink-0 text-[10px] text-muted">{a.universite} · {a.annee} ↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}
@@ -104,18 +118,18 @@ export function RechercheBibliotheque() {
                 <li key={s.nom}>
                   <a href={s.url} target="_blank" rel="noreferrer" className={lien}>
                     <span className="min-w-0">{s.nom}</span>
-                    <span className="shrink-0 text-[10px] text-muted">↗</span>
+                    <span className="shrink-0 text-[10px] text-muted">↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}
             </Groupe>
           )}
-          {coursTrouves.length + annalesTrouvees.length + sourcesTrouvees.length === 0 && cours !== null && annales !== null && (
+          {coursTrouves.length + annalesTrouvees.length + sourcesTrouvees.length === 0 && !panne && cours !== null && annales !== null && (
             <p className="text-[12px] text-muted">Rien dans la bibliothèque pour « {q} ».</p>
           )}
           <a href={`https://www.sudoc.abes.fr/cbs/xslt//DB=2.1/CMD?ACT=SRCHA&IKT=1016&SRT=RLV&TRM=${encodeURIComponent(q)}`}
             target="_blank" rel="noreferrer" className="text-[11px] text-forest hover:underline">
-            Chercher « {q} » dans le catalogue des bibliothèques universitaires (Sudoc) ↗
+            Chercher « {q} » dans le catalogue des bibliothèques universitaires (Sudoc) ↗<span className="sr-only"> (nouvel onglet)</span>
           </a>
         </div>
       )}

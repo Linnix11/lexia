@@ -154,8 +154,9 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
         )}
 
         {etat === 'generation' && (
-          <div className="grid animate-pulse gap-3 border-t border-line pt-4" aria-label="Génération du questionnaire">
-            {[0, 1, 2].map((i) => <div key={i} className="h-10 rounded bg-[#ece9e0]" />)}
+          <div className="grid animate-pulse gap-3 border-t border-line pt-4">
+            <p role="status" className="sr-only">Génération du questionnaire en cours.</p>
+            {[0, 1, 2].map((i) => <div key={i} aria-hidden className="h-10 rounded bg-[#ece9e0]" />)}
           </div>
         )}
 
@@ -163,7 +164,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
           <div className="border-t border-line">
             {correction && (
               <div className="my-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[13px] font-semibold text-forest">Score : {correction.score} / {correction.total}</p>
+                <p role="status" className="text-[13px] font-semibold text-forest">Score : {correction.score} / {correction.total}</p>
                 <button type="button" onClick={() => ajouterCartes(cartesDuQuiz(quiz, correction))}
                   className="rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
                   Ajouter aux cartes à réviser
