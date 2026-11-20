@@ -149,21 +149,33 @@ class Disjoncteur:
     """Apres `seuil` echecs d'affilee du modele principal, on passe directement au secours pendant `pause` secondes.
 
     Gemini gratuit renvoie souvent des 503 en serie : sans disjoncteur, chaque question attendait le budget complet
-    (35 s) avant le secours. A la fin de la pause, un essai est refait ; s'il echoue, le disjoncteur se rouvre aussitot.
+    (35 s) avant le secours. A la fin de la pause, un seul essai est refait (les autres questions restent sur le
+    secours en attendant) ; s'il echoue, le disjoncteur se rouvre aussitot. Avant, toutes les questions en cours
+    retentaient Gemini ensemble et attendaient chacune son budget (audit du 19/11, SRV-14).
     """
+
+    DUREE_MAX_ESSAI = 120.0  # essai sans nouvelles (exception imprevue) : un autre est permis
 
     def __init__(self, seuil: int = 3, pause: float = 300.0, horloge=time.monotonic):
         self.seuil, self.pause, self._horloge = seuil, pause, horloge
-        self._echecs, self._jusqua = 0, 0.0
+        self._echecs, self._jusqua, self._essai = 0, 0.0, 0.0
         self._lock = threading.Lock()
 
     def ouvert(self) -> bool:
         with self._lock:
-            return self._horloge() < self._jusqua
+            maintenant = self._horloge()
+            if maintenant < self._jusqua:
+                return True
+            if self._jusqua > 0:  # fin de pause : un seul essai a la fois
+                if self._essai and maintenant - self._essai < self.DUREE_MAX_ESSAI:
+                    return True
+                self._essai = maintenant
+            return False
 
     def echec(self) -> None:
         with self._lock:
             essai_apres_pause = self._jusqua > 0
+            self._essai = 0.0
             self._echecs += 1
             if essai_apres_pause or self._echecs >= self.seuil:
                 self._jusqua = self._horloge() + self.pause
@@ -171,7 +183,7 @@ class Disjoncteur:
 
     def succes(self) -> None:
         with self._lock:
-            self._echecs, self._jusqua = 0, 0.0
+            self._echecs, self._jusqua, self._essai = 0, 0.0, 0.0
 
 
 class Lexia:

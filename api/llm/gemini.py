@@ -100,7 +100,8 @@ class GeminiLLM:
                         raise LLMError("; ".join(erreurs))
                     delai = min(delai, fin - debut)
                 try:
-                    r = self._client.post(f"{BASE}/{model}:generateContent", json=body, timeout=delai)
+                    r = self._client.post(f"{BASE}/{model}:generateContent", json=body,
+                                          timeout=httpx.Timeout(delai, connect=min(5.0, delai)))
                 except httpx.TimeoutException:
                     erreurs.append(f"{model}: delai depasse")
                     exclus.add(model)  # deja 30 s perdues : pas de second essai

@@ -78,6 +78,8 @@ def get_settings() -> Settings:
         llm_timeout=float(os.environ.get("LLM_TIMEOUT_SECONDS", "30")),
         max_question_chars=int(os.environ.get("MAX_QUESTION_CHARS", "2000")),
         rate_limit_per_minute=int(os.environ.get("RATE_LIMIT_PER_MINUTE", "10")),
+        # Jamais lu jusqu'ici : toujours 20 (audit du 19/11, SRV-17)
+        appels_modele_simultanes=int(os.environ.get("APPELS_MODELE_SIMULTANES", "20")),
         cors_origins=_list("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"),
         expansion_model=os.environ.get("QUERY_EXPANSION_MODEL", ""),
         expansion_fallback_models=_list("QUERY_EXPANSION_FALLBACK_MODELS"),

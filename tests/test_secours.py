@@ -220,3 +220,21 @@ def test_groq_plafonne_et_releve_le_cout(tmp_path):
     assert corps[0]["max_completion_tokens"] == 4096
     ligne = lire(tmp_path / "modele.jsonl")[0]
     assert (ligne["modele"], ligne["role"], ligne["entree"], ligne["sortie"]) == ("groq/qwen", "secours", 2500, 900)
+
+
+def test_fin_de_pause_un_seul_essai_a_la_fois():
+    """SRV-14 (TST-13) : a la fin de la pause, toutes les questions en cours retentaient Gemini ensemble."""
+    from api.rag import Disjoncteur
+    t = [0.0]
+    d = Disjoncteur(seuil=1, pause=300, horloge=lambda: t[0])
+    d.echec()
+    t[0] = 301
+    assert not d.ouvert()                        # la premiere question essaie Gemini
+    assert d.ouvert() and d.ouvert()             # les autres restent sur le secours pendant l'essai
+    d.succes()
+    assert not d.ouvert() and not d.ouvert()     # essai reussi : tout le monde revient sur Gemini
+    d.echec()
+    t[0] = 700
+    assert not d.ouvert()
+    t[0] = 700 + Disjoncteur.DUREE_MAX_ESSAI + 1
+    assert not d.ouvert()                        # essai reste sans nouvelles : un autre est permis

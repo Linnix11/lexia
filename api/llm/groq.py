@@ -61,7 +61,8 @@ class GroqLLM:
         }
         debut = time.monotonic()
         try:
-            r = self._client.post(URL, json=body, timeout=self._timeout)
+            r = self._client.post(URL, json=body,
+                                  timeout=httpx.Timeout(self._timeout, connect=min(5.0, self._timeout)))
         except httpx.TimeoutException:
             raise _Delai(f"groq {model}: delai depasse") from None
         except httpx.HTTPError as e:

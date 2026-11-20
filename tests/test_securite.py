@@ -171,10 +171,10 @@ def test_second_audit_8_le_limiteur_oublie_les_adresses_anciennes(monkeypatch):
     monkeypatch.setattr("api.main.time.monotonic", lambda: horloge[0])
     lim = LimiteRequetes(10)
     for i in range(500):
-        lim(SimpleNamespace(client=SimpleNamespace(host=f"10.0.{i // 250}.{i % 250}")))
+        lim(SimpleNamespace(cookies={}, client=SimpleNamespace(host=f"10.0.{i // 250}.{i % 250}")))
     assert len(lim._hits) == 500
     horloge[0] += 120
-    lim(SimpleNamespace(client=SimpleNamespace(host="10.9.9.9")))
+    lim(SimpleNamespace(cookies={}, client=SimpleNamespace(host="10.9.9.9")))
     assert len(lim._hits) == 1
 
 
@@ -255,3 +255,23 @@ def test_audit_19_11_sec5_et_sec9_api_sans_cache_et_origine_controlee(env):  # n
     assert client.post("/chat", json=question, headers={"Origin": "https://pirate.example"}).status_code == 403
     assert client.post("/quiz", json={"theme": "le dol"}, headers={"Origin": "https://pirate.example"}).status_code == 403
     assert client.post("/chat", json=question, headers={"Origin": "http://testserver"}).status_code == 200
+
+
+def test_audit_19_11_srv6_une_salle_de_td_derriere_une_seule_adresse():
+    """SRV-6 : par IP seulement, toute une salle partageait 10 questions par minute."""
+    from types import SimpleNamespace
+
+    from api.main import LimiteRequetes
+    lim = LimiteRequetes(2)
+    salle = lambda cookie: SimpleNamespace(cookies={"lexia_session": cookie} if cookie else {},  # noqa: E731
+                                           client=SimpleNamespace(host="192.0.2.10"))
+    for etudiant in ("jeton-a", "jeton-b", "jeton-c"):
+        lim(salle(etudiant))
+        lim(salle(etudiant))
+    with pytest.raises(HTTPException):
+        lim(salle("jeton-a"))
+    lim(salle(None))
+    lim(salle(None))
+    with pytest.raises(HTTPException):
+        lim(salle(None))
+    assert not any("jeton" in k for k in lim._hits)          # empreinte seulement, jamais le cookie

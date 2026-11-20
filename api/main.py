@@ -7,6 +7,7 @@ Documentation interactive (avec API_DOCS=1 dans .env) : http://localhost:8000/do
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 import time
@@ -18,7 +19,7 @@ from fastapi.responses import JSONResponse
 
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
-from api.auth import cle_ip, creer_routes, exiger_admin, routes_formules, verifier_origine
+from api.auth import COOKIE, cle_ip, creer_routes, exiger_admin, routes_formules, verifier_origine
 from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
@@ -38,7 +39,11 @@ log = logging.getLogger("lexia")
 
 
 class LimiteRequetes:
-    """Fenetre glissante d'une minute par adresse IP (memoire du processus)."""
+    """Fenetre glissante d'une minute par session, ou par adresse IP sans session (memoire du processus).
+
+    Par IP seulement, une salle de TD derriere le wifi de la faculte (une seule adresse) partageait 10 questions
+    par minute (audit du 19/11, SRV-6). Un etudiant connecte a sa propre limite ; un faux cookie n'apporte rien,
+    la route refuse ensuite toute session inconnue avant d'appeler le modele."""
 
     def __init__(self, par_minute: int):
         self.par_minute = par_minute
@@ -49,7 +54,9 @@ class LimiteRequetes:
     def __call__(self, request: Request) -> None:
         if self.par_minute <= 0:
             return
-        ip = cle_ip(request)  # reseau /64 en IPv6
+        session = request.cookies.get(COOKIE)
+        # Empreinte du cookie, jamais le cookie lui-meme ; sinon reseau /64 en IPv6
+        ip = "session:" + hashlib.sha256(session.encode()).hexdigest()[:32] if session else cle_ip(request)
         now = time.monotonic()
         with self._lock:
             if now - self._derniere_purge > 60:
