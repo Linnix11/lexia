@@ -56,6 +56,8 @@ class QuizStore:
         self._con = None
         if chemin is not None:
             self._con = sqlite3.connect(str(chemin), check_same_thread=False)
+            # Questionnaires purges vraiment effaces du fichier, comme les comptes et les cours (SEC-10)
+            self._con.execute("PRAGMA secure_delete = ON")
             self._con.execute("CREATE TABLE IF NOT EXISTS questionnaires "
                               "(id TEXT PRIMARY KEY, cree REAL NOT NULL, donnees TEXT NOT NULL)")
             self._con.commit()

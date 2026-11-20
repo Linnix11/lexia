@@ -419,3 +419,12 @@ def test_remboursement_sur_le_jour_de_la_reservation(tmp_path, monkeypatch):
     comptes.rembourser(u, "questions", jour)
     monkeypatch.setattr(module, "_jour", lambda: "2026-11-19")
     assert comptes.usage(u.id)["questions"] == 0
+
+
+def test_mots_de_passe_courants_refuses(env):
+    """SEC-10 : aucun refus des mots de passe les plus essayes."""
+    client, _, _ = env
+    for mdp in ("azertyuiop", "Motdepasse123", "aaaaaaaaaaaa", "1212121212"):
+        r = inscrire(client, mdp=mdp)
+        assert r.status_code == 422 and "courant" in r.json()["detail"], mdp
+    assert inscrire(client, mdp="ma-phrase-de-passe").status_code == 201

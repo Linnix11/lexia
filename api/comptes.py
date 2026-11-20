@@ -33,6 +33,14 @@ log = logging.getLogger("lexia")
 FUSEAU = ZoneInfo("Europe/Paris")
 DUREE_SESSION = timedelta(days=30)
 MDP_MIN = 10
+MDP_COURANTS = frozenset({
+    "1234567890", "0123456789", "12345678910", "123456789a", "azertyuiop", "qwertyuiop", "azerty1234",
+    "azerty123456", "qwerty1234", "qwerty123456", "motdepasse", "motdepasse1", "motdepasse12", "motdepasse123",
+    "password12", "password123", "password1234", "passwordpassword", "iloveyou12", "jetaime1234", "soleil1234",
+    "doudou1234", "loulou1234", "chocolat12", "chocolat123", "marseille13", "lexialexia", "lexia12345",
+    "droit12345", "etudiant12", "etudiant123", "bonjour123", "bonjour1234", "azertyuiop1", "abcdefghij",
+    "abcdefgh12", "abc1234567", "1q2w3e4r5t", "a1b2c3d4e5", "123456789azerty",
+})
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 # scrypt : N=2^14, r=8, p=5, une des combinaisons recommandees par l'OWASP (16 Mo de memoire, ~120 ms).
 # p=1 etait sous la recommandation (audit du 2026-11-16, point 10) ; p plutot que N pour garder 16 Mo par
@@ -289,6 +297,9 @@ class Comptes:
             raise ErreurCompte(f"Le mot de passe doit contenir au moins {MDP_MIN} caractères.")
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
+        # Mots de passe parmi les plus essayes, ou presque sans variete (audit du 19/11, SEC-10)
+        if mdp.lower() in MDP_COURANTS or len(set(mdp.lower())) < 4:
+            raise ErreurCompte("Ce mot de passe est trop courant : choisissez-en un autre.")
 
     def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None,
               nom: str | None = None) -> Utilisateur:
