@@ -66,3 +66,67 @@ def test_consigne_et_schema_de_la_reponse_directe():
     assert "laisse 'reponse_directe' vide" in prompt_chat("Sujet.", "dissertation", passages)
     for mode in ("expliquer", "commentaire"):
         assert "reponse_directe" in schema_reponse(mode)["required"]
+
+
+# --- Couple code et article (audit du 2026-11-19, SRC-2, TST-7) -------------------------------------------------
+
+import pytest  # noqa: E402
+
+from api.references import articles_cites, references_non_couvertes  # noqa: E402
+
+LOI_1991 = {"source_id": "lois", "numero": "1", "texte": "La présente loi s'applique aux procédures civiles.",
+            "entete": "Loi n° 91-650 du 9 juillet 1991, article 1 (en vigueur)"}
+CIV_1240 = {"source_id": "code_civil", "numero": "1240", "texte": "Tout fait quelconque de l'homme, qui cause...",
+            "entete": "Code civil, article 1240 (en vigueur, depuis le 1er octobre 2016)"}
+DDHC_16 = {"source_id": "ddhc_1789", "numero": "16", "texte": "Toute société dans laquelle la garantie des droits...",
+           "entete": "Déclaration des droits de l'homme et du citoyen de 1789, article 16"}
+QPC = {"source_id": "decisions_conseil_constitutionnel", "numero": None, "texte":
+       "Décision du 16 octobre 2026. Vu l'article 61-1 de la Constitution ; vu l'article 9 de la loi du 9 juillet 1991.",
+       "entete": "Conseil constitutionnel, décision n° 2026-1100 QPC du 16 octobre 2026"}
+CASS = {"source_id": "judilibre", "numero": None, "texte": "Vu l'article 1242, alinéa 1er, du code civil ; vu l'article 9 ;",
+        "entete": "Cass. 2e civ., 9 juillet 2026"}
+
+
+@pytest.mark.parametrize("phrase, passages", [
+    ("Selon l'article 9 du Code civil, chacun a droit au respect de sa vie privée.", [LOI_1991]),   # « 9 juillet »
+    ("L'article 16 de la DDHC garantit la séparation des pouvoirs.", [QPC]),                       # « 16 octobre »
+    ("L'article 1 du Code civil fixe l'entrée en vigueur des lois.", [LOI_1991]),                   # loi, pas code
+    ("L'article 1240 du Code pénal oblige à réparer le dommage.", [CIV_1240]),                     # mauvais code
+    ("L'article 2 de la Constitution fixe la langue.", [CIV_1240, DDHC_16]),
+    ("Selon le Code pénal, en son article 1240, le dommage se répare.", [CIV_1240]),               # code avant
+    ("L'article 9 de la DDHC pose la présomption d'innocence.", [QPC]),                           # 9 d'une loi
+    ("Les articles 1240 et 1241 du Code civil fondent la responsabilité.", [CIV_1240]),           # 1241 absent
+])
+def test_citation_retiree_petit_numero_ou_mauvais_code(phrase, passages):
+    assert references_non_couvertes(phrase, passages)
+
+
+@pytest.mark.parametrize("phrase, passages", [
+    ("L'article 1240 du Code civil oblige à réparer.", [CIV_1240]),
+    ("L'article 1240 C. civ. oblige à réparer.", [CIV_1240]),
+    ("Selon le Code civil, en son article 1240, le dommage se répare.", [CIV_1240]),
+    ("L'article 1240 oblige à réparer.", [CIV_1240]),
+    ("L'article 16 de la Déclaration des droits de l'homme et du citoyen protège les droits.", [DDHC_16]),
+    ("L'article 61-1 de la Constitution ouvre la question prioritaire.", [QPC]),                  # cite par la decision
+    ("L'article 1242, alinéa 1er, du Code civil vise les choses que l'on a sous sa garde.", [CASS]),
+    ("L'article 1er de la loi du 9 juillet 1991 et l'article 1240 du Code civil.", [CIV_1240, LOI_1991]),
+    ("L'article 9 de la loi du 9 juillet 1991 est visé.", [QPC]),
+])
+def test_citation_gardee(phrase, passages):
+    assert references_non_couvertes(phrase, passages) == []
+
+
+def test_articles_cites_et_texte_rattache():
+    assert articles_cites("loi du 9 juillet 1991 ; le 16 octobre") == ()
+    assert articles_cites("articles 1240 et 1241, alinéa 2, du Code civil ; article 1er de la Constitution ; "
+                          "art. 267 TFUE ; article 3 de la loi") == (
+        ("1240", "code_civil"), ("1241", "code_civil"), ("1", "constitution_1958"), ("267", "tfue"), ("3", ""))
+
+
+def test_element_retire_quand_le_code_ne_correspond_pas():
+    c = Controle()
+    out = nettoyer_elements([{"texte": "L'article 1240 du Code pénal impose réparation.", "sources": ["S1"]},
+                             {"texte": "L'article 1240 du Code civil impose réparation.", "sources": ["S1"]}],
+                            {"S1": {"id": "civ", **CIV_1240}}, c, exiger_source=True)
+    assert [e["texte"] for e in out] == ["L'article 1240 du Code civil impose réparation."]
+    assert c.elements_retires == 1 and c.references_non_verifiees == ["article 1240"]
