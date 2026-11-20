@@ -8,7 +8,7 @@ cadre légal : `docs/marketing/plan.md`.
 - **Période proposée** : du lundi 30 novembre au dimanche 27 décembre 2026, soit les révisions et les partiels du
   premier semestre. Si les prérequis du plan (partie 1) ne sont pas levés à temps, décaler toutes les dates du même
   nombre de semaines : les contenus ne dépendent pas d'une date, sauf les mentions des partiels.
-- **Nom** : « Lexia » est employé partout, mais la recherche de marque n'est pas faite (plan, partie 9). Les textes
+- **Nom** : « Lexia » est employé partout, mais la recherche de marque n'est pas faite (plan, partie 7.6). Les textes
   sont écrits pour qu'un remplacement global du nom suffise. Aucun logo ni nom de compte n'est imprimé ou payé
   avant cette vérification.
 - **Chaque affirmation sur le produit** vient de la liste des phrases autorisées (plan, partie 4). Chaque
