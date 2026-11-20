@@ -27,6 +27,12 @@ cas:
   - {id: cp-07, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242],
      question: "Une cliente glisse sur une flaque d’huile dans un supermarché et se blesse. Peut-elle se retourner contre le magasin ?"}
 
+  # Exemple de la consigne (api/prompts.py, regle 8) : echouait le 2026-11-19 (682, 1253 ; audit SRC-1)
+  - {id: cp-31, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242, code_civil:1240],
+     question: "Le fils de 15 ans des voisins a tagué notre garage. À qui peut-on réclamer réparation ?"}
+  - {id: cp-32, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242, code_civil:1240],
+     question: "Des adolescents ont fait des graffitis sur la façade de mon magasin. Leurs parents doivent-ils payer le nettoyage ?"}
+
   # ===================================================================== CONTRATS
   - {id: cp-08, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137],
      question: "Paul a vendu sa voiture à Marie en lui cachant qu’elle avait été gravement accidentée. Marie peut-elle faire annuler la vente ?"}

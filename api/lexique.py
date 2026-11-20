@@ -36,7 +36,10 @@ _SILENCE = (r"(?:\bcach(?:ant|ait|aient|er)\b|\b(?:a|avait|ont|avaient|lui|leur|
             r"|sous silence)")
 _CONTRAT = r"(?:\bvend|\bvente|\bachet|\bachat|\bacquere|contrat|\bsign|\bcede|\bcession|\bbail\b|\blou)"
 _DOMMAGE = (r"(?:\bbless|renvers|percut|\bcass(?:e|ant)\b|\bbris(?:e|ant)\b|\babim|endommag|\bdegats?\b|degrad"
-            r"|\bray(?:e|er|ant)\b|\bfractur|\bheurt|\bmord|\bgriff|\bpietin)")
+            r"|\bray(?:e|er|ant)\b|\bfractur|\bheurt|\bmord|\bgriff|\bpietin"
+            # tag, graffiti : exemple meme de la consigne (api/prompts.py, regle 8), qui ramenait 682 et 1253
+            # (audit du 2026-11-19, SRC-1)
+            r"|\btagu|\btags?\b|graffit|vandalis)")
 _REPARER = r"(?:repar|indemni|dedommag|dommages|\bpayer\b|rembours|responsable|poursuivre|se retourner)"
 _SUSPENDRE = (r"(?:refuser?|cesser?|suspendre|arreter|retenir) (?:de )?(?:payer|livrer|fournir|travailler|executer"
               r"|la fourniture|le paiement|sa prestation)")

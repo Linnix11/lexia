@@ -71,6 +71,11 @@ def test_lexique_reticence_sans_faux_positif(question):
 # Situations racontees (D75) : formulations differentes de celles des jeux d'evaluation.
 @pytest.mark.parametrize("question, attendu", [
     ("Mon neveu de huit ans a cassé la fenêtre de la boulangerie. Qui va payer ?", (CC, "1242")),
+    # Exemple de la consigne (regle 8), audit du 2026-11-19 SRC-1 et TST-9
+    ("Le fils de mes voisins a tagué mon garage, à qui puis-je réclamer réparation ?", (CC, "1242")),
+    ("Le fils de 15 ans des voisins tague le garage.", (CC, "1242")),
+    ("Des adolescents ont fait des graffitis sur la façade du magasin. Qui doit payer ?", (CC, "1242")),
+    ("Des inconnus ont tagué ma voiture, puis-je obtenir réparation ?", (CC, "1240")),
     ("Un livreur salarié renverse une passante avec son scooter. L'employeur doit-il payer ?", (CC, "1242")),
     ("Le berger allemand du voisin a mordu le facteur.", (CC, "1243")),
     ("Une cheminée mal entretenue s'est effondrée sur la voiture garée en bas.", (CC, "1244")),
@@ -127,6 +132,8 @@ def test_lexique_reconnait_les_situations(question, attendu):
     ("En voulant éviter un chien sur la route, une conductrice blesse un piéton.", (CC, "1243")),
     ("Un client glisse un parfum dans son sac et sort sans payer.", ("code_penal", "314-1")),       # vol simple
     ("Mon voisin m'a expliqué la raison de son refus.", ("code_relations_public_administration", "L211-2")),
+    ("Une étiquette (tag) de prix était fausse au magasin.", (CC, "1242")),                         # pas un dommage
+    ("Comment fonctionne une stratégie de tagging dans le marketing ?", (CC, "1240")),
 ])
 def test_lexique_situations_sans_faux_positif(question, exclu):
     assert exclu not in lexique.suggestions(question)
