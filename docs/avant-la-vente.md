@@ -90,7 +90,7 @@ avant d'adhérer.
 | Médiation Solution | https://sasmediationsolution-conso.fr/ | Non publié |
 
 À faire par l'éditeur : choisir, adhérer (convention signée), puis donner le nom, l'adresse postale et le site du
-médiateur à renseigner dans `LEGAL_MEDIATEUR`. Les CGU (article 8) l'affichent alors.
+médiateur à renseigner dans `LEGAL_MEDIATEUR`. Les CGU (article 9, « Droit applicable », depuis la version du 20 novembre 2026) l'affichent alors.
 
 ## 4. Paiement en ligne : Stripe Checkout (choix de l'éditeur, 17 novembre 2026, D86)
 

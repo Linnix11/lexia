@@ -339,7 +339,7 @@ export function Cgu() {
           lesquels elle repose et, le cas échéant, le fait qu’elle fait suite à un signalement ; le texte de loi ou
           la clause des présentes conditions en cause ; vos voies de recours (article 17 du règlement (UE)
           2022/2065). Vous pouvez la contester en répondant à cet e-mail : une personne réexamine la décision. Vous
-          pouvez aussi saisir le médiateur de la consommation (article 8) ou le juge.
+          pouvez aussi saisir le médiateur de la consommation (article 9) ou le juge.
         </p>
         <p>
           Si votre compte est fermé alors qu’une formule payante est en cours, la part du prix correspondant à la
