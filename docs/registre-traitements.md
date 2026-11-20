@@ -196,7 +196,7 @@ recommande la CNIL (https://www.cnil.fr/fr/adequation-des-etats-unis-les-premier
 | Hostinger International Ltd | Hébergement du serveur (VPS) | Toutes les données du serveur | Chypre (UE) ; centre de données du VPS à vérifier dans le panneau Hostinger | Sans objet si le centre de données est dans l'UE | Accord de traitement des données de Hostinger : à vérifier et archiver |
 | Cloudflare, Inc. | Acheminement et protection du trafic (proxy) | Adresse IP, requêtes et réponses qui transitent | États-Unis | Certifié (actif) | Accord de traitement des données Cloudflare : à vérifier et archiver |
 | Google LLC | API Gemini (rédaction des réponses) | Questions, extraits, passages de cours | États-Unis | Certifié (actif) | Conditions de l'API Gemini et avenant sur le traitement des données : le niveau payant est requis (T2) |
-| Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types à vérifier dans l'accord de traitement de Groq (D58) ; option « Zero Data Retention » activée (D58) | Accord de traitement des données Groq : à lire et archiver |
+| Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types intégrées à l'accord de traitement de Groq du 15/10/2025 (§ 8.2, relu à l'audit du 2026-11-19, JUR-10), accord à archiver ; option « Zero Data Retention » activée (D58) | Accord de traitement des données Groq : à lire et archiver |
 | Resend | E-mails : confirmation d'adresse, réinitialisation, avertissement d'inactivité, confirmation du contrat, accusé de rétractation | Adresse e-mail, texte du message (nom déclaré dans un accusé de rétractation) | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
 | Stripe Payments Europe, Limited | Paiement par carte (Stripe Checkout) | T5 | Irlande (UE) ; Stripe, LLC aux États-Unis | Stripe, LLC certifiée (actif) | Contrat de services et accord de traitement des données Stripe, acceptés à l'ouverture du compte : à archiver |
 
@@ -212,8 +212,8 @@ de Cloudflare ; limites de débit par adresse IP ; sauvegardes en 600 ; deux aud
 ## Actions restantes
 
 1. Passer l'API Gemini au niveau payant et mettre `GEMINI_NIVEAU_PAYANT=1` (bloquant, D83).
-2. Groq : lire l'accord de traitement des données et noter la garantie de transfert (clauses contractuelles
-   types) ; à défaut, retirer `GROQ_API_KEY`.
+2. Groq : archiver l'accord de traitement des données (clauses contractuelles types, § 8.2) et vérifier
+   « Zero Data Retention » dans la console (EDI-2).
 3. Archiver les accords de traitement des données de Hostinger, Cloudflare, Google, Groq et Resend.
 4. Vérifier la localisation du VPS Hostinger et la rotation des journaux nginx (14 jours).
 5. Appliquer la durée des échanges par e-mail (T9, 3 ans) dans la boîte `CONTACT_EMAIL`.
