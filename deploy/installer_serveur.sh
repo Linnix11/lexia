@@ -16,7 +16,8 @@ fi
 
 echo "== Paquets systeme"
 apt-get update
-apt-get install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx rsync
+apt-get install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx rsync \
+  tesseract-ocr tesseract-ocr-fra poppler-utils  # OCR des cours scannes (D107)
 
 echo "== Utilisateur et dossiers"
 id lexia >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nologin lexia

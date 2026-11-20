@@ -438,11 +438,12 @@ describe('Audit du 16 novembre 2026', () => {
     const carte = textes.closest('section')!
     const ordre = within(carte).getByRole('button', { name: 'Poser une question' }).compareDocumentPosition(textes)
     expect(ordre & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Choisir un fichier' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Choisir des fichiers' })).toBeInTheDocument()
     expect(screen.getByText('Aucun fichier choisi')).toBeInTheDocument()
     const pdf = new File(['%PDF'], 'chapitre1.pdf', { type: 'application/pdf' })
     fireEvent.change(document.getElementById('depot-fichier')!, { target: { files: [pdf] } })
-    expect(screen.getByText('chapitre1.pdf')).toBeInTheDocument()
+    expect(screen.getAllByText('chapitre1.pdf').length).toBeGreaterThan(0)
+    expect(screen.getByText('prêt à envoyer')).toBeInTheDocument()
   })
 
   it('matieres classees par annee, cherchables, avec leurs sources principales (D97)', async () => {
@@ -819,5 +820,109 @@ describe('Personnalisation (D100, D102)', () => {
     expect(JSON.parse(String(appel[1].body))).toEqual({ prenom: 'Léa', nom: 'Martin' })
     fireEvent.change(prenom, { target: { value: ' ' } })
     expect(enregistrer).toBeDisabled()
+  })
+})
+
+describe('Depots de cours, version 2 (D107)', () => {
+  const COURS = { id: 7, matiere: 'droit_civil', libelle_matiere: 'Droit civil', titre: 'Chapitre 3', fichier: 'chapitre3.pdf',
+    pages: 12, passages: 30, statut: 'pret', ajoute_le: '2026-11-12T10:00:00+00:00' }
+
+  /** XMLHttpRequest simule : progression de l'envoi, puis la reponse donnee. */
+  function simulerEnvoi(reponse: (nom: string) => { status: number; corps: unknown }) {
+    const envois: { url: string; entetes: Record<string, string>; corps: unknown }[] = []
+    class FauxXHR {
+      upload: { onprogress?: (e: { lengthComputable: boolean; loaded: number; total: number }) => void; onload?: () => void } = {}
+      onload?: () => void
+      onerror?: () => void
+      ontimeout?: () => void
+      timeout = 0
+      status = 0
+      responseText = ''
+      private url = ''
+      private entetes: Record<string, string> = {}
+      open(_m: string, url: string) { this.url = url }
+      setRequestHeader(k: string, v: string) { this.entetes[k] = v }
+      send(corps: unknown) {
+        envois.push({ url: this.url, entetes: this.entetes, corps })
+        const r = reponse(decodeURIComponent(this.entetes['X-Lexia-Fichier']))
+        setTimeout(() => {
+          this.upload.onprogress?.({ lengthComputable: true, loaded: 50, total: 100 })
+          this.upload.onload?.()
+          this.status = r.status
+          this.responseText = JSON.stringify(r.corps)
+          this.onload?.()
+        }, 0)
+      }
+    }
+    vi.stubGlobal('XMLHttpRequest', FauxXHR)
+    return envois
+  }
+
+  it('depose plusieurs fichiers avec progression et refuse clairement format et taille avant l envoi', async () => {
+    const envois = simulerEnvoi((nom) => nom === 'scan.pdf'
+      ? { status: 422, corps: { detail: 'Ce document scanné est illisible : vérifiez que le scan est net.' } }
+      : { status: 201, corps: { ...COURS, avertissement: 'Page 2 lue par reconnaissance de caractères (scan) : vérifiez le texte dans l’aperçu.' } })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    const fichiers = [
+      new File(['%PDF'], 'chapitre3.pdf', { type: 'application/pdf' }),
+      new File(['%PDF'], 'scan.pdf', { type: 'application/pdf' }),
+      new File(['x'], 'cours.doc'),
+      new File([new Uint8Array(21 * 1024 * 1024)], 'enorme.pdf'),
+      new File(['x'], 'photo.heic'),
+    ]
+    fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: fichiers } })
+    const liste = screen.getByRole('list', { name: 'Fichiers à déposer' })
+    expect(within(liste).getByText(/ancien format Word \(\.doc\) : ouvrez-le puis enregistrez-le en \.docx/)).toBeInTheDocument()
+    expect(within(liste).getByText(/fichier trop volumineux \(21,0 Mo, 20 Mo au plus\)/)).toBeInTheDocument()
+    expect(within(liste).getByText(/photo HEIC : enregistrez-la en JPEG/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Titre (facultatif)')).not.toBeInTheDocument()   // plusieurs fichiers : leurs noms
+    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Déposer 2 cours' }))
+    })
+    expect(await within(liste).findByText(/déposé \(12 pages, 30 passages\)\. Page 2 lue par reconnaissance/)).toBeInTheDocument()
+    expect(await within(liste).findByText(/Ce document scanné est illisible/)).toBeInTheDocument()
+    expect(envois.map((e) => e.entetes['X-Lexia-Titre'])).toEqual(['chapitre3', 'scan'])
+    expect(envois[0].url).toContain('matiere=droit_civil')
+    expect(envois[0].url).not.toContain('chapitre3')
+  })
+
+  it('montre la progression de l envoi puis la lecture du fichier', async () => {
+    simulerEnvoi(() => ({ status: 201, corps: COURS }))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] } })
+    expect(screen.getByLabelText('Titre (facultatif)')).toHaveValue('photo')
+    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Déposer' }))
+    expect(screen.getByRole('progressbar', { name: 'Dépôt de photo.jpg' })).toHaveAttribute('aria-valuenow', '0')
+    expect(await screen.findByText(/déposé \(12 pages, 30 passages\)/)).toBeInTheDocument()
+  })
+
+  it('apercu du texte lu, puis renommer et changer de matiere', async () => {
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/cours')) return repondre({ cours: [COURS], maximum: 3, formats: ['.pdf'] })
+      if (url.endsWith('/cours/7/apercu')) return repondre({ ...COURS, apercu: [{ page: 1, page_fin: 2, texte: 'Le dol est une manoeuvre.' }] })
+      if (url.endsWith('/cours/7/modifier')) return repondre({ ...COURS, titre: 'Les vices' })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    expect(await screen.findByText(/12 pages · 30 passages · prêt/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Aperçu' }))
+    const apercu = await screen.findByRole('region', { name: 'Aperçu de « Chapitre 3 »' })
+    expect(within(apercu).getByText('Le dol est une manoeuvre.')).toBeInTheDocument()
+    expect(within(apercu).getByText('p. 1 à 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    const formulaire = screen.getByRole('form', { name: 'Modifier « Chapitre 3 »' })
+    fireEvent.change(within(formulaire).getByLabelText('Titre'), { target: { value: ' Les vices ' } })
+    await act(async () => {
+      fireEvent.click(within(formulaire).getByRole('button', { name: 'Enregistrer' }))
+    })
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/cours/7/modifier'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ titre: 'Les vices', matiere: 'droit_civil' })
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Modifier « Chapitre 3 »' })).not.toBeInTheDocument())
   })
 })

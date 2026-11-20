@@ -21,12 +21,13 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, Field
 
 from api.auth import verifier_origine
 from api import concordance
 from api.extraction import (CARACTERES_MAX, FORMATS, ErreurCours, extraire_isole,  # noqa: F401
-                            extraire_texte, pages_sans_texte)
+                            extraire_texte, lire_isole, pages_sans_texte)
 from api.matieres import LIBELLES
 from api.references import extraire
 from api.retrieval.base import fusion_rrf, termes
@@ -37,6 +38,7 @@ TAILLE_MAX = 20 * 1024 * 1024       # 20 Mo par fichier
 DEPOTS_PAR_JOUR = 20                # depots par compte sur 24 h (deposer/retirer en boucle saturerait le serveur)
 DEPOTS_SIMULTANES = 2               # depots lus en meme temps, tous comptes confondus (memoire du serveur)
 TAILLE_PASSAGE = 1500               # caracteres par passage (environ)
+APERCU_PASSAGES = 5                 # passages montres dans l'apercu d'un cours depose
 RELANCE_VECTORISATION = 600         # secondes avant de relancer le calcul des vecteurs d'un cours en erreur
 SOURCE_ID = "cours_perso"
 
@@ -254,7 +256,8 @@ class Cours:
         # fichier vide ou trop gros) restent gratuits : un etudiant ne s'y bloque pas lui-meme.
         with self._lock:
             self._depots.setdefault(uid, []).append(time.monotonic())
-        pages = extraire_isole(fichier, contenu)  # processus a part, borne en duree et en memoire
+        lecture = lire_isole(fichier, contenu)  # processus a part, borne en duree et en memoire
+        pages = lecture.pages
         if sum(len(t) for _, t in pages) > CARACTERES_MAX:
             raise ErreurCours("Document trop long : découpez-le en plusieurs cours.")
         passages = decouper(pages)
@@ -262,7 +265,9 @@ class Cours:
             raise ErreurCours("Aucun texte exploitable dans ce fichier.")
         maintenant = datetime.now(timezone.utc).isoformat(timespec="seconds")
         nb_pages = max((p for p, _ in pages if p), default=None)
-        avertissement = _avertissement_pages(pages_sans_texte(pages) if Path(fichier).suffix.lower() == ".pdf" else [])
+        avertissement = " ".join(a for a in (
+            _avertissement_ocr(lecture.ocr, Path(fichier).suffix.lower() == ".pdf"),
+            _avertissement_pages(pages_sans_texte(pages) if Path(fichier).suffix.lower() == ".pdf" else [])) if a) or None
         with self._lock, self._con:
             cid = self._con.execute(
                 "INSERT INTO cours (utilisateur, matiere, titre, fichier, pages, passages, statut, ajoute_le,"
@@ -326,6 +331,28 @@ class Cours:
         rows = self._q("SELECT id, matiere, titre, fichier, pages, passages, statut, ajoute_le, avertissement"
                        " FROM cours WHERE utilisateur = ? ORDER BY matiere, ajoute_le DESC", (uid,))
         return [self._dict(r) for r in rows]
+
+    def modifier(self, uid: int, cid: int, titre: str | None = None, matiere: str | None = None) -> dict:
+        """Nouveau titre et/ou nouvelle matiere d'un cours de l'etudiant."""
+        if matiere is not None and matiere not in LIBELLES:
+            raise ErreurCours("Matière inconnue.")
+        if titre is not None:
+            titre = titre.strip()[:120]
+            if not titre:
+                raise ErreurCours("Donnez un titre au cours.")
+        with self._lock, self._con:
+            n = self._con.execute("UPDATE cours SET titre = coalesce(?, titre), matiere = coalesce(?, matiere)"
+                                  " WHERE id = ? AND utilisateur = ?", (titre, matiere, cid, uid)).rowcount
+        if not n:
+            raise ErreurCours("Cours introuvable.")
+        return self.fiche(uid, cid)
+
+    def apercu(self, uid: int, cid: int) -> dict:
+        """Premiers passages lus dans un cours, pour verifier ce que Lexia en a compris (OCR surtout)."""
+        fiche = self.fiche(uid, cid)
+        rows = self._q("SELECT page, page_fin, texte FROM cours_passages WHERE cours = ? ORDER BY rang LIMIT ?",
+                       (cid, APERCU_PASSAGES))
+        return {**fiche, "apercu": [{"page": p, "page_fin": f, "texte": t} for p, f, t in rows]}
 
     def supprimer(self, uid: int, cid: int) -> None:
         with self._lock:
@@ -391,10 +418,23 @@ class Cours:
         return [par_id[i] for i in meilleurs if i in par_id]
 
 
+def _liste(nombres: list[int]) -> str:
+    return ", ".join(map(str, nombres[:-1])) + f" et {nombres[-1]}" if len(nombres) > 1 else str(nombres[0])
+
+
+def _avertissement_ocr(pages: list[int], pdf: bool) -> str | None:
+    if not pages:
+        return None
+    if not pdf:
+        return "Texte lu sur une photo par reconnaissance de caractères : vérifiez-le dans l'aperçu."
+    return (f"Page{'s' if len(pages) > 1 else ''} {_liste(pages)} lue{'s' if len(pages) > 1 else ''} par "
+            "reconnaissance de caractères (scan) : vérifiez le texte dans l'aperçu.")
+
+
 def _avertissement_pages(vides: list[int]) -> str | None:
     if not vides:
         return None
-    liste = ", ".join(map(str, vides[:-1])) + f" et {vides[-1]}" if len(vides) > 1 else str(vides[0])
+    liste = _liste(vides)
     return (f"Page{'s' if len(vides) > 1 else ''} {liste} sans texte (scan ou image) : "
             f"{'leur' if len(vides) > 1 else 'son'} contenu n'est pas pris en compte.")
 
@@ -439,6 +479,11 @@ def _vers_passage(r) -> dict:
 
 
 # --- routes ------------------------------------------------------------------------
+
+class ModificationCours(BaseModel):
+    titre: str | None = Field(default=None, max_length=200)
+    matiere: str | None = Field(default=None, max_length=80)
+
 
 def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
     router = APIRouter()
@@ -486,6 +531,21 @@ def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
             _erreur(e)
         finally:
             en_cours.discard(u.id)
+
+    @router.get("/cours/{cid}/apercu")
+    def apercu(cid: int, response: Response, u=Depends(utilisateur_requis)):
+        response.headers["Cache-Control"] = "no-store"  # texte du cours : jamais garde par un cache
+        try:
+            return cours.apercu(u.id, cid)
+        except ErreurCours as e:
+            raise HTTPException(404, str(e)) from None
+
+    @router.post("/cours/{cid}/modifier", dependencies=[Depends(verifier_origine)])
+    def modifier(cid: int, corps: ModificationCours, u=Depends(utilisateur_requis)):
+        try:
+            return cours.modifier(u.id, cid, corps.titre, corps.matiere)
+        except ErreurCours as e:
+            _erreur(e)
 
     @router.post("/cours/{cid}/supprimer", status_code=204, dependencies=[Depends(verifier_origine)])
     def supprimer(cid: int, u=Depends(utilisateur_requis)):

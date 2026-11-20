@@ -1,8 +1,10 @@
 // Fichiers de cours : formats acceptes et lecture d'un glisser-deposer (fichiers ou dossier).
 
-const EXTENSIONS = ['.pdf', '.docx', '.odt', '.pptx', '.txt', '.md']
+const EXTENSIONS = ['.pdf', '.docx', '.odt', '.pptx', '.rtf', '.txt', '.md', '.jpg', '.jpeg', '.png']
 /** Formats acceptes, en clair, pour les messages du site. */
-export const FORMATS_LISIBLES = 'PDF, Word, OpenDocument, PowerPoint ou texte'
+export const FORMATS_LISIBLES = 'PDF (même scanné), Word, OpenDocument, PowerPoint, RTF, texte ou photo (JPEG, PNG)'
+/** Taille maximale d'un fichier, verifiee aussi par le serveur (api/cours.py). */
+export const TAILLE_MAX = 20 * 1024 * 1024
 /** Valeur de l'attribut accept des champs de fichier : une seule liste pour tout le site. */
 export const ACCEPT = EXTENSIONS.join(',')
 export const formatAccepte = (f: File) => EXTENSIONS.some((e) => f.name.toLowerCase().endsWith(e))
@@ -10,6 +12,19 @@ export const formatAccepte = (f: File) => EXTENSIONS.some((e) => f.name.toLowerC
 // calcul est relance automatiquement (audit C10). Meme libelle dans la liste des cours et dans leur choix.
 export const STATUTS = { traitement: 'en préparation…', pret: 'prêt', erreur: 'mots-clés seulement, nouvel essai bientôt' }
 export const sansExtension = (nom: string) => nom.replace(/\.[^.]+$/, '')
+
+/** Refus d'un fichier avant l'envoi (format, taille, fichier vide), en clair ; null s'il peut partir. */
+export function refusFichier(f: File): string | null {
+  if (!formatAccepte(f)) {
+    const ext = /\.[^.]+$/.exec(f.name)?.[0]
+    if (ext === '.doc') return 'ancien format Word (.doc) : ouvrez-le puis enregistrez-le en .docx.'
+    if (ext === '.heic' || ext === '.heif') return 'photo HEIC : enregistrez-la en JPEG (ou réglez l’appareil sur « Le plus compatible »).'
+    return `format non pris en charge (${ext ?? 'sans extension'}) : ${FORMATS_LISIBLES}.`
+  }
+  if (f.size === 0) return 'le fichier est vide.'
+  if (f.size > TAILLE_MAX) return `fichier trop volumineux (${(f.size / 1024 / 1024).toFixed(1).replace('.', ',')} Mo, 20 Mo au plus).`
+  return null
+}
 
 /** Fichiers deposes par glisser-deposer, y compris le contenu d'un dossier (un niveau de sous-dossiers suffit en pratique). */
 export async function fichiersDeposes(dt: DataTransfer): Promise<File[]> {

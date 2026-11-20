@@ -92,6 +92,8 @@ mkdir -p donnees sauvegardes logs && chmod 700 donnees sauvegardes logs
 # Base, journal WAL et journaux crees en 644 avant UMask=0077 (audit de la base du 2026-11-18, D99)
 find donnees logs sauvegardes -maxdepth 1 -type f -exec chmod 600 {} +
 chown -R lexia:lexia $APP
+# OCR des cours scannes et des photos (D107) : installe une seule fois, seulement s'il manque.
+dpkg -s tesseract-ocr tesseract-ocr-fra poppler-utils >/dev/null 2>&1 || { apt-get update -q && apt-get install -y -q tesseract-ocr tesseract-ocr-fra poppler-utils; }
 # Python et pip tournent en tant que lexia : root n'execute jamais du code modifiable par le service.
 runuser -u lexia -- bash -c 'test -d .venv || python3 -m venv .venv'
 runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --upgrade pip

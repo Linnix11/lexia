@@ -1,89 +1,12 @@
-// Cours deposes par l'etudiant : depot (PDF, Word, OpenDocument, PowerPoint, texte) et liste par matiere.
-import { useRef, useState, type FormEvent } from 'react'
-import { api, ApiError } from '../lib/api'
+// Cours deposes par l'etudiant : liste par matiere (apercu, modification, retrait) et depot rapide depuis l'assistant.
+import { useState, type FormEvent } from 'react'
+import { api, ApiError, type ApercuCours, type CoursDepose } from '../lib/api'
 import { useApp } from '../state/contexte'
-import { ACCEPT, FORMATS_LISIBLES, formatAccepte, sansExtension, STATUTS } from '../lib/fichiers'
-import { Card, CardHead } from './Layout'
+import { FORMATS_LISIBLES, formatAccepte, refusFichier, sansExtension, STATUTS } from '../lib/fichiers'
 import { OptionsMatieres } from './OptionsMatieres'
 import { ResumeVocal } from './ResumeVocal'
 
-const TAILLE_MAX = 20 * 1024 * 1024
-
-export function DepotCours() {
-  const { matieres, mesCours, coursMax, rafraichirCours, notifier } = useApp()
-  const [fichier, setFichier] = useState<File | null>(null)
-  const [matiere, setMatiere] = useState('')
-  const [titre, setTitre] = useState('')
-  const [envoi, setEnvoi] = useState(false)
-  const [erreur, setErreur] = useState<string | null>(null)
-  const plein = coursMax > 0 && mesCours.length >= coursMax
-  const choix = useRef<HTMLInputElement>(null)
-
-  const deposer = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!fichier || !matiere) return
-    if (fichier.size > TAILLE_MAX) {
-      setErreur('Fichier trop volumineux (20 Mo au plus).')
-      return
-    }
-    setEnvoi(true)
-    setErreur(null)
-    try {
-      const depose = await api.cours.deposer(fichier, matiere, titre.trim())
-      notifier(depose.avertissement ? `Cours déposé. ${depose.avertissement}` : 'Cours déposé : Lexia le prépare pour vos révisions.')
-      setFichier(null)
-      setTitre('')
-      if (choix.current) choix.current.value = ''
-      rafraichirCours()
-    } catch (err) {
-      setErreur(err instanceof ApiError ? err.message : 'Le dépôt a échoué.')
-    } finally {
-      setEnvoi(false)
-    }
-  }
-
-  const champ = 'rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink'
-  return (
-    <Card className="mb-[18px] p-4 tab:p-[19px]">
-      <CardHead titre="Déposer un cours"
-        sousTitre={`${FORMATS_LISIBLES}, 20 Mo au plus. Votre cours reste privé : vous seul pouvez l’utiliser.`}
-        droite={coursMax > 0 ? <span className="text-[11px] text-muted">{mesCours.length} / {coursMax} cours</span> : undefined} />
-      <form onSubmit={deposer} className="mt-3.5 flex flex-wrap items-end gap-2">
-        {/* Champ natif masque : son bouton s'affichait en anglais selon le navigateur (« Choose File »). */}
-        <div className="grid min-w-[200px] flex-1 gap-1.5 text-[11px] text-muted">
-          <span id="depot-fichier-libelle">Fichier</span>
-          <input ref={choix} id="depot-fichier" type="file" accept={ACCEPT} className="sr-only" tabIndex={-1} aria-hidden
-            onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
-          <span className="flex items-center gap-2.5 rounded-[7px] border border-line bg-white px-[5px] py-[4px] text-[12px] text-ink">
-            <button type="button" onClick={() => choix.current?.click()} aria-describedby="depot-fichier-nom"
-              className="shrink-0 rounded-[6px] border border-line bg-chip px-2.5 py-1 text-[12px] text-forest hover:border-[#9eafa3]">
-              Choisir un fichier
-            </button>
-            <span id="depot-fichier-nom" className="min-w-0 truncate text-muted">{fichier ? fichier.name : 'Aucun fichier choisi'}</span>
-          </span>
-        </div>
-        <label className="grid gap-1.5 text-[11px] text-muted">
-          Matière
-          <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ}>
-            <option value="">Choisir…</option>
-            <OptionsMatieres matieres={matieres} />
-          </select>
-        </label>
-        <label className="grid min-w-[180px] flex-1 gap-1.5 text-[11px] text-muted">
-          Titre (facultatif)
-          <input value={titre} onChange={(e) => setTitre(e.target.value)} maxLength={120} placeholder="Ex. Chapitre 3 : les vices du consentement" className={champ} />
-        </label>
-        <button type="submit" disabled={!fichier || !matiere || envoi || plein}
-          className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
-          {envoi ? 'Envoi…' : 'Déposer'}
-        </button>
-      </form>
-      {plein && <p className="mt-2 text-[11px] text-[#8c4a36]">Limite atteinte pour votre formule : retirez un cours ou passez à une formule supérieure.</p>}
-      {erreur && <p role="alert" className="mt-2 text-[11px] text-[#8c4a36]">{erreur}</p>}
-    </Card>
-  )
-}
-
+export { DepotCours } from './DepotCours'
 
 export function ListeCoursMatiere({ matiere }: { matiere: string }) {
   const { mesCours, rafraichirCours, setCoursChoisis, setMatiere, setVue, coursChoisis, notifier } = useApp()
@@ -104,24 +27,97 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
       <h3 className="mb-1.5 text-[10px] font-bold tracking-[1.4px] text-forest uppercase">Mes cours</h3>
       <ul className="grid gap-2">
         {liste.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-[12px]">
-            <span className="min-w-0">
-              <span className="font-semibold">{c.titre}</span>
-              <span className="block text-[10px] text-muted">
-                {c.pages ? `${c.pages} pages · ` : ''}{STATUTS[c.statut]}
-              </span>
-              {c.avertissement && <span className="block text-[10px] text-[#8c4a36]">{c.avertissement}</span>}
-            </span>
-            <span className="flex gap-2">
-              <button type="button" onClick={() => { setCoursChoisis([c.id]); setMatiere(matiere); setVue('assistant') }}
-                className="text-[11px] font-semibold text-forest hover:underline">Réviser</button>
-              <button type="button" onClick={() => retirer(c.id, c.titre)} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
-            </span>
-            <ResumeVocal demande={() => ({ type: 'cours', id: String(c.id) })} />
-          </li>
+          <CoursLigne key={c.id} cours={c} onReviser={() => { setCoursChoisis([c.id]); setMatiere(matiere); setVue('assistant') }}
+            onRetirer={() => retirer(c.id, c.titre)} />
         ))}
       </ul>
     </div>
+  )
+}
+
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
+
+/** Un cours de la liste : pages et passages, apercu du texte lu, modification du titre et de la matiere. */
+function CoursLigne({ cours: c, onReviser, onRetirer }: { cours: CoursDepose; onReviser: () => void; onRetirer: () => void }) {
+  const { matieres, rafraichirCours, notifier } = useApp()
+  const [apercu, setApercu] = useState<ApercuCours | 'chargement' | null>(null)
+  const [edition, setEdition] = useState(false)
+  const [titre, setTitre] = useState(c.titre)
+  const [matiere, setMatiereCours] = useState(c.matiere)
+  const [erreur, setErreur] = useState<string | null>(null)
+
+  const basculerApercu = () => {
+    if (apercu) return setApercu(null)
+    setApercu('chargement')
+    api.cours.apercu(c.id).then(setApercu).catch((e) => {
+      setApercu(null)
+      notifier(e instanceof ApiError ? e.message : 'L’aperçu n’a pas pu être chargé.')
+    })
+  }
+  const enregistrer = (e: FormEvent) => {
+    e.preventDefault()
+    setErreur(null)
+    api.cours.modifier(c.id, { titre: titre.trim(), matiere })
+      .then(() => {
+        setEdition(false)
+        notifier(matiere !== c.matiere ? 'Cours déplacé' : 'Cours renommé')
+        rafraichirCours()
+      })
+      .catch((err) => setErreur(err instanceof ApiError ? err.message : 'La modification a échoué.'))
+  }
+  const lien = 'text-[11px] text-muted hover:text-forest'
+  const champ = 'rounded-[7px] border border-line bg-white p-[6px] text-[12px] text-ink'
+  return (
+    <li className="grid gap-1.5 text-[12px]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="min-w-0">
+          <span className="font-semibold">{c.titre}</span>
+          <span className="block text-[10px] text-muted">
+            {c.pages ? `${pluriel(c.pages, 'page')} · ` : ''}{pluriel(c.passages, 'passage')} · {STATUTS[c.statut]}
+          </span>
+          {c.avertissement && <span className="block text-[10px] text-[#8c4a36]">{c.avertissement}</span>}
+        </span>
+        <span className="flex flex-wrap gap-2">
+          <button type="button" onClick={onReviser} className="text-[11px] font-semibold text-forest hover:underline">Réviser</button>
+          <button type="button" onClick={basculerApercu} aria-expanded={apercu !== null} className={lien}>Aperçu</button>
+          <button type="button" onClick={() => { setEdition(!edition); setTitre(c.titre); setMatiereCours(c.matiere) }}
+            aria-expanded={edition} className={lien}>Modifier</button>
+          <button type="button" onClick={onRetirer} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+        </span>
+      </div>
+      <ResumeVocal demande={() => ({ type: 'cours', id: String(c.id) })} />
+      {edition && (
+        <form onSubmit={enregistrer} aria-label={`Modifier « ${c.titre} »`} className="flex flex-wrap items-end gap-2 rounded-[8px] bg-[#f6f8f3] p-2">
+          <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] text-muted">
+            Titre
+            <input value={titre} onChange={(e) => setTitre(e.target.value)} maxLength={120} required className={champ} />
+          </label>
+          <label className="grid gap-1 text-[10px] text-muted">
+            Matière
+            <select value={matiere} onChange={(e) => setMatiereCours(e.target.value)} className={champ}>
+              <OptionsMatieres matieres={matieres} />
+            </select>
+          </label>
+          <button type="submit" disabled={!titre.trim()} className="rounded-[7px] bg-forest px-2.5 py-[6px] text-[11px] text-white disabled:opacity-50">Enregistrer</button>
+          {erreur && <p role="alert" className="w-full text-[10px] text-[#8c4a36]">{erreur}</p>}
+        </form>
+      )}
+      {apercu === 'chargement' && <p role="status" className="text-[10px] text-muted">Chargement de l’aperçu…</p>}
+      {apercu && apercu !== 'chargement' && (
+        <div aria-label={`Aperçu de « ${c.titre} »`} role="region" className="max-h-64 overflow-y-auto rounded-[8px] border border-line-soft bg-white p-2.5 text-[11px] leading-relaxed">
+          <p className="mb-1.5 text-[10px] text-muted">
+            Texte lu par Lexia ({apercu.apercu.length} premier{apercu.apercu.length > 1 ? 's' : ''} passage{apercu.apercu.length > 1 ? 's' : ''} sur {apercu.passages}).
+            S’il est incomplet ou illisible, retirez le cours et déposez une version plus nette.
+          </p>
+          {apercu.apercu.map((x, i) => (
+            <p key={i} className="mb-2 whitespace-pre-line">
+              {x.page ? <span className="mr-1 text-[10px] text-muted">{x.page_fin && x.page_fin !== x.page ? `p. ${x.page} à ${x.page_fin}` : `p. ${x.page}`}</span> : null}
+              {x.texte}
+            </p>
+          ))}
+        </div>
+      )}
+    </li>
   )
 }
 
@@ -144,8 +140,9 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
     const avertissements: string[] = []
     for (const f of acceptes.slice(0, place)) {
       setEnvoi(f.name)
-      if (f.size > TAILLE_MAX) {
-        echecs.push(`${f.name} : fichier trop volumineux (20 Mo au plus).`)
+      const refus = refusFichier(f)
+      if (refus) {
+        echecs.push(`${f.name} : ${refus}`)
         continue
       }
       try {

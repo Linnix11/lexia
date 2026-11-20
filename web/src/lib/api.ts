@@ -350,6 +350,41 @@ async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
   return r.json() as Promise<T>
 }
 
+/** Envoi d'un fichier par XMLHttpRequest pour suivre sa progression ; memes messages d'erreur que requete. */
+function envoyerAvecProgres<T>(chemin: string, fichier: File, entetes: Record<string, string>,
+  progres: (part: number) => void): Promise<T> {
+  return new Promise<T>((ok, ko) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${BASE}${chemin}`)
+    xhr.timeout = DELAI_DEPOT_MS
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+    for (const [k, v] of Object.entries(entetes)) xhr.setRequestHeader(k, v)
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) progres(Math.min(1, e.loaded / e.total)) }
+    xhr.upload.onload = () => progres(1)
+    xhr.ontimeout = () => ko(new ApiError(0, MESSAGES[504]))
+    xhr.onerror = () => ko(new ApiError(0, 'Le serveur Lexia est injoignable. Vérifiez votre connexion.'))
+    xhr.onload = () => {
+      let corps: unknown = null
+      try {
+        corps = JSON.parse(xhr.responseText)
+      } catch {
+        /* corps non JSON (page de nginx ou de Cloudflare) : message par defaut */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) return ok(corps as T)
+      const detail = (corps as { detail?: unknown } | null)?.detail
+      if (xhr.status === 401) surSessionExpiree?.()
+      ko(new ApiError(xhr.status, typeof detail === 'string' ? detail
+        : xhr.status === 413 ? 'Fichier trop volumineux (20 Mo au plus).'
+          : MESSAGES[xhr.status] ?? `Erreur inattendue (${xhr.status}).`))
+    }
+    xhr.send(fichier)
+  })
+}
+
+export interface ApercuCours extends CoursDepose {
+  apercu: { page: number | null; page_fin: number | null; texte: string }[]
+}
+
 export interface CoursDepose {
   id: number
   matiere: string
@@ -503,6 +538,15 @@ export const api = {
         },
       })
     },
+    /** Meme envoi, avec la progression de l'envoi du fichier (fetch ne la donne pas) : 0 a 1, puis la lecture. */
+    deposerAvecProgres: (fichier: File, matiere: string, titre: string, progres: (part: number) => void) =>
+      envoyerAvecProgres<CoursDepose>(`/cours?${new URLSearchParams({ matiere })}`, fichier, {
+        'X-Lexia-Fichier': encodeURIComponent(fichier.name),
+        'X-Lexia-Titre': encodeURIComponent(titre),
+      }, progres),
+    apercu: (id: number) => requete<ApercuCours>(`/cours/${id}/apercu`),
+    modifier: (id: number, changement: { titre?: string; matiere?: string }) =>
+      post<CoursDepose>(`/cours/${id}/modifier`, changement),
     supprimer: (id: number) => post<void>(`/cours/${id}/supprimer`, {}),
   },
   corriger: (quiz_id: string, reponses: { index: number; valeur: number | boolean | string | null }[]) =>

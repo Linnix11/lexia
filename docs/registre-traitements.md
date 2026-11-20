@@ -92,7 +92,9 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 
 - Finalité : permettre à l'utilisateur de réviser avec ses propres cours.
 - Données (`api/cours.py`) : texte extrait découpé en passages, numéro de page, vecteurs de recherche, titre,
-  matière, nom du fichier, date d'ajout. Le fichier d'origine n'est pas conservé.
+  matière, nom du fichier, date d'ajout. Le fichier d'origine n'est pas conservé. Scans et photos : lus sur le
+  serveur par Tesseract (logiciel libre, aucun service extérieur), image écrite le temps de la lecture dans un
+  dossier temporaire effacé aussitôt (D107).
 - Destinataires : éditeur, Hostinger ; Google ou Groq pour les seuls passages retenus pour une réponse (T2).
 - Durée : jusqu'au retrait du cours ou à la suppression du compte (suppression en cascade) ; copies dans les
   sauvegardes jusqu'à leur effacement (T8).

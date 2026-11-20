@@ -223,14 +223,15 @@ def test_audit_19_11_sec3_le_lecteur_de_fichiers_n_herite_d_aucune_cle(monkeypat
     import subprocess
     from api import extraction
     vus = {}
+    vrai_popen = subprocess.Popen
 
-    def faux_run(cmd, **kw):
+    def espion(cmd, **kw):  # le lecteur est lance par Popen (groupe de processus tue au-dela du delai, D107)
         vus.update(kw)
-        return subprocess.CompletedProcess(cmd, 0, stdout=b'{"pages": [[null, "texte"]]}', stderr=b"")
+        return vrai_popen(cmd, **kw)
 
     monkeypatch.setenv("GEMINI_API_KEY", "secret")
-    monkeypatch.setattr(extraction.subprocess, "run", faux_run)
-    extraction.extraire_isole("c.txt", b"texte")
+    monkeypatch.setattr(extraction.subprocess, "Popen", espion)
+    assert extraction.extraire_isole("c.txt", b"texte") == [(None, "texte")]
     assert vus["env"] is not None and not any("KEY" in k or "SECRET" in k for k in vus["env"])
 
 

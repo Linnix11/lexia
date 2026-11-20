@@ -258,7 +258,10 @@ export function Cgu() {
       <section>
         <h2>5. Cours déposés</h2>
         <p>
-          Vous pouvez déposer vos propres cours (PDF, Word, texte) pour réviser avec Lexia. Vous garantissez avoir le
+          Vous pouvez déposer vos propres cours (PDF, même scanné, Word, OpenDocument, PowerPoint, RTF, texte ou photo)
+          pour réviser avec Lexia. Les scans et les photos sont lus sur le serveur de Lexia par un logiciel libre de
+          reconnaissance de caractères (Tesseract), sans service extérieur ; seul le texte lu est conservé, jamais le
+          fichier ni l’image. Vous garantissez avoir le
           droit de les utiliser : un cours reçu de votre enseignant ou de votre faculté reste son œuvre, et vous ne le
           déposez que pour votre usage personnel d’étude. Lexia n’acquiert aucun droit sur vos cours, ne les montre
           à aucun autre utilisateur, ne les publie pas et ne les vend pas. Vous pouvez les retirer à tout moment ;

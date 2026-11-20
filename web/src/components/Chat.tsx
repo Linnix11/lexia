@@ -101,7 +101,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     <div className="relative flex min-h-[340px] min-w-0 flex-1 flex-col" {...glisser}>
       {survol && (
         <div aria-hidden className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-[10px] border-2 border-dashed border-forest bg-[#f6f8f3]/90 text-center">
-          <p className="font-display text-[19px] text-forest">Déposez votre cours ici<span className="mt-1 block font-sans text-[11px] text-muted">PDF, Word ou texte · un fichier, plusieurs, ou un dossier</span></p>
+          <p className="font-display text-[19px] text-forest">Déposez votre cours ici<span className="mt-1 block font-sans text-[11px] text-muted">PDF (même scanné), Word, PowerPoint, photo de cours… · un fichier, plusieurs, ou un dossier</span></p>
         </div>
       )}
       {complet && (
@@ -199,7 +199,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         className="mt-auto flex gap-[9px] rounded-[10px] border border-[#d9ddd5] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
       >
         <button type="button" onClick={() => choixFichier.current?.click()}
-              title="Ajouter un cours (PDF, Word, texte) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
+              title="Ajouter un cours (PDF, Word, photo…) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"
           className="rounded-[7px] px-2 text-[16px] text-muted hover:bg-chip hover:text-forest">📎</button>
         <input ref={choixFichier} type="file" multiple accept={ACCEPT} hidden data-testid="ajout-cours"
           onChange={(e) => {
