@@ -12,7 +12,7 @@ Etapes :
      est entree en vigueur ou a pris fin depuis sa construction (date de bascule franchie, SRC-3) ;
   3. reimporte les sources DILA (data/passages). Les autres (Constitution, page du Conseil constitutionnel)
      gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; la Constitution est relue quand sa
-     recuperation date de plus de 30 jours ; une source hors DILA active dans
+     recuperation date de plus de 25 jours ; une source hors DILA active dans
      le registre mais absente de l'index (traites de l'Union, D98) est telechargee une fois, sans bloquer la
      mise a jour si son site ne repond pas ;
   4. calcule les embeddings des seuls passages nouveaux ou modifies (cache data/embeddings, amorce depuis
@@ -160,7 +160,7 @@ def ajouter_nouvelles(passages_dir: Path, actives: set[str], importer=None) -> t
 
 
 RAFRAICHIR = ("constitution_1958",)   # hors DILA, jamais relue apres son premier import (audit SRC-5)
-AGE_MAX_JOURS = 30
+AGE_MAX_JOURS = 25   # avant les 30 jours au-dela desquels le site signale une source ancienne (D96)
 
 
 def rafraichir(passages_dir: Path, sources: tuple[str, ...] = RAFRAICHIR, aujourdhui: date | None = None,
