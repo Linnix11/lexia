@@ -111,9 +111,18 @@ def test_citation_retiree_petit_numero_ou_mauvais_code(phrase, passages):
     ("L'article 1242, alinéa 1er, du Code civil vise les choses que l'on a sous sa garde.", [CASS]),
     ("L'article 1er de la loi du 9 juillet 1991 et l'article 1240 du Code civil.", [CIV_1240, LOI_1991]),
     ("L'article 9 de la loi du 9 juillet 1991 est visé.", [QPC]),
+    # Constitution, art. 19 : liste coupee par une parenthese (faux positif trouve en rejouant eval/resultats)
+    ("Sauf exceptions, comme l'article 16 ou l'article 12 de la Constitution.",
+     [{"source_id": "constitution_1958", "numero": "19", "entete": "Constitution du 4 octobre 1958, article 19",
+       "texte": "Les actes du Président de la République autres que ceux prévus aux articles 8 (1er alinéa), 11, 12, "
+                "16, 18, 54, 56 et 61 sont contresignés par le Premier ministre."}]),
 ])
 def test_citation_gardee(phrase, passages):
     assert references_non_couvertes(phrase, passages) == []
+
+
+def test_precision_entre_parentheses_ne_compte_pas():
+    assert [n for n, _ in articles_cites("aux articles 8 (1er alinéa), 11 et 16")] == ["8", "11", "16"]
 
 
 def test_articles_cites_et_texte_rattache():

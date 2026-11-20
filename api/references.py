@@ -19,10 +19,14 @@ from api.textes import SOURCES_TEXTES, TEXTES, codes_cites, lois_citees, sans_ac
 # conseil des ministres) ; suffixe bis, ter... (audit du 2026-11-18, B2 et B3).
 _SUFFIXES = "bis|ter|quater|quinquies|sexies|septies|octies|nonies|decies"
 _NUM = rf"(?:L\.?\s?O\.?\s?|[LRDA]\.?\s?\*?\.?\s?)?\d+(?:-\d+)*(?:\s(?:{_SUFFIXES})\b)?"
+# « articles 8 (1er alinéa), 11, 12, 16 » (Constitution, art. 19) : une precision entre parentheses ne coupe pas la
+# liste ; elle est retiree avant de lire les numeros.
+_PRECISION = r"(?:\s*\([^()]{0,40}\))?"
 _ARTICLES_RE = re.compile(
-    rf"\b(?:art(?:icle)?s?\.?)\s+({_NUM}(?:\s*(?:,|et|à|ou)\s*{_NUM})*)",
+    rf"\b(?:art(?:icle)?s?\.?)\s+({_NUM}{_PRECISION}(?:\s*(?:,|et|à|ou)\s*{_NUM}{_PRECISION})*)",
     re.IGNORECASE,
 )
+_PRECISION_RE = re.compile(r"\([^()]*\)")
 _NUM_RE = re.compile(_NUM, re.IGNORECASE)
 _ARTICLE_PREMIER_RE = re.compile(r"\barticle\s+(?:premier|1er)\b", re.IGNORECASE)
 # « 91-166 L » (nature reglementaire, art. 37) : L majuscule seul, pas « 2005-205 l'article » (B9).
@@ -71,7 +75,7 @@ def variantes(num: str) -> tuple[str, ...]:
 def extraire(texte: str) -> References:
     articles: list[str] = ["1"] if _ARTICLE_PREMIER_RE.search(texte) else []
     for m in _ARTICLES_RE.finditer(texte):
-        for n in _NUM_RE.findall(m.group(1)):
+        for n in _NUM_RE.findall(_PRECISION_RE.sub(" ", m.group(1))):
             n = _norm_num(n)
             if n not in articles:
                 articles.append(n)
@@ -115,7 +119,7 @@ def articles_cites(texte: str) -> tuple[tuple[str, str | None], ...]:
     out: list[tuple[str, str | None]] = []
     for m in _ARTICLES_RE.finditer(texte):
         code = _texte_rattache(texte[m.end():])
-        out += [(_norm_num(n), code) for n in _NUM_RE.findall(m.group(1))]
+        out += [(_norm_num(n), code) for n in _NUM_RE.findall(_PRECISION_RE.sub(" ", m.group(1)))]
     out += [("1", _texte_rattache(texte[m.end():])) for m in _ARTICLE_PREMIER_RE.finditer(texte)]
     return tuple(dict.fromkeys(out))
 
