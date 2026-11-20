@@ -1,11 +1,7 @@
 import { Component, lazy, Suspense, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react'
-import App from './App'
 import { Lien, RouteurProvider, suiteSure, useRouteur } from './lib/router'
 import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
-import { Compte } from './site/Compte'
-import { CoursRecuperes } from './site/CoursRecuperes'
-import { Cgu, Confidentialite, MentionsLegales } from './site/Legal'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
 import { VerifierEmail } from './site/VerifierEmail'
@@ -16,6 +12,14 @@ import { Signet } from './components/Logo'
 
 // Administration chargee a part : seuls les administrateurs la telechargent (audit du 2026-11-18, D11).
 const Admin = lazy(() => import('./site/Admin').then((m) => ({ default: m.Admin })))
+// Pages legales et espace etudiant charges a part : l'accueil d'un visiteur est plus leger (audit du 2026-11-19,
+// WEB-23). L'echec de chargement d'un module (publication pendant la visite) est rattrape par LimiteErreur.
+const App = lazy(() => import('./App'))
+const Compte = lazy(() => import('./site/Compte').then((m) => ({ default: m.Compte })))
+const CoursRecuperes = lazy(() => import('./site/CoursRecuperes').then((m) => ({ default: m.CoursRecuperes })))
+const Cgu = lazy(() => import('./site/Legal').then((m) => ({ default: m.Cgu })))
+const Confidentialite = lazy(() => import('./site/Legal').then((m) => ({ default: m.Confidentialite })))
+const MentionsLegales = lazy(() => import('./site/Legal').then((m) => ({ default: m.MentionsLegales })))
 
 const PUBLIQUES: Record<string, () => ReactNode> = {
   '/': () => <Accueil />,
@@ -180,7 +184,9 @@ function RoutesProtegees() {
   const { chemin } = useRouteur()
   return (
     <LimiteErreur cle={chemin}>
-      <Routes />
+      <Suspense fallback={<Chargement />}>
+        <Routes />
+      </Suspense>
     </LimiteErreur>
   )
 }

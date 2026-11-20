@@ -38,7 +38,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
           className="absolute z-10 mt-1 grid max-h-[320px] min-w-[240px] gap-1 overflow-auto rounded-[8px] border border-line bg-white p-2.5 shadow-md">
           {matieres.map((m) => (
             <div key={m} className="grid gap-1">
-              <span className="text-[10px] font-bold tracking-[1px] text-forest uppercase">{m}</span>
+              <span className="text-[11px] font-bold tracking-[1px] text-forest uppercase">{m}</span>
               {mesCours.filter((c) => c.libelle_matiere === m).map((c) => (
                 <label key={c.id} className="flex items-center gap-2 text-ink">
                   <input type="checkbox" checked={coursChoisis.includes(c.id)} onChange={() => basculer(c.id)} />

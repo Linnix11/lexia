@@ -58,7 +58,7 @@ export function Formules() {
             className={`flex flex-col rounded-xl border bg-surface p-6 ${miseEnAvant ? 'border-forest shadow-[0_12px_40px_#17241d14]' : 'border-line'}`}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-display text-[22px]">{f.nom}</h3>
-              {miseEnAvant && <span className="rounded-full bg-mint px-2.5 py-1 text-[10px] font-semibold text-forest">Recommandé</span>}
+              {miseEnAvant && <span className="rounded-full bg-mint px-2.5 py-1 text-[11px] font-semibold text-forest">Recommandé</span>}
             </div>
             <p className="mt-1 min-h-[40px] text-[13px] text-muted">{f.description}</p>
             <p className="mt-4"><span className="font-display text-[34px]">{prix(f)}</span>{f.prix_mensuel_euros > 0 && <span className="text-[13px] text-muted"> / mois</span>}</p>

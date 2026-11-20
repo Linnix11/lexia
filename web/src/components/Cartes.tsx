@@ -38,8 +38,8 @@ export function CarteSources() {
             <span aria-hidden className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-[#eef1eb] text-[14px] text-forest">{s.sym}</span>
             <span className="min-w-0 flex-1">
               <strong className="block text-[11px] leading-[1.3] font-semibold">{s.nom}</strong>
-              <small className="mt-1 block text-[10px] text-muted">{s.desc}</small>
-              {aJour(s) && <small className="mt-0.5 block text-[10px] text-forest">{aJour(s)}</small>}
+              <small className="mt-1 block text-[11px] text-muted">{s.desc}</small>
+              {aJour(s) && <small className="mt-0.5 block text-[11px] text-forest">{aJour(s)}</small>}
             </span>
             <a className={fleche} href={s.url} target="_blank" rel="noreferrer" aria-label={`Ouvrir ${s.nom}`}>↗</a>
           </li>
@@ -66,15 +66,15 @@ export function CarteBibliotheque({ complete = false }: { complete?: boolean }) 
           <div aria-hidden className={`grid h-11 w-[34px] shrink-0 place-items-center rounded font-display text-[15px] ${o.classe}`}>{o.couv}</div>
           <div className="min-w-0">
             <strong className="block text-[11px] leading-[1.35]">{o.titre}</strong>
-            <small className="mt-1 block text-[10px] leading-[1.35] text-muted">{o.note}</small>
+            <small className="mt-1 block text-[11px] leading-[1.35] text-muted">{o.note}</small>
             <a href={`https://www.sudoc.abes.fr/cbs/xslt//DB=2.1/CMD?ACT=SRCHA&IKT=1016&SRT=RLV&TRM=${encodeURIComponent(o.recherche)}`}
-              target="_blank" rel="noreferrer" className="mt-[5px] inline-block text-[10px] text-forest hover:underline">
+              target="_blank" rel="noreferrer" className="mt-[5px] inline-block text-[11px] text-forest hover:underline">
               Rechercher au catalogue universitaire ↗
             </a>
           </div>
         </div>
       ))}
-      <p className="mt-3.5 border-l-2 border-[#c8a16d] bg-cream px-2.5 py-[9px] text-[10px] leading-[1.45] text-[#746347]">
+      <p className="mt-3.5 border-l-2 border-[#c8a16d] bg-cream px-2.5 py-[9px] text-[11px] leading-[1.45] text-[#746347]">
         Les manuels commerciaux sont protégés. Lexia référence les ouvrages et leurs catalogues ; leur texte intégral
         nécessite un accès bibliothèque ou une licence.
       </p>
@@ -106,7 +106,7 @@ export function CarteOutils() {
             className="min-h-[82px] rounded-[9px] border border-line bg-[#faf9f5] px-2.5 py-[11px] text-left text-ink hover:border-[#9fb0a2] hover:bg-[#f6f8f3] tab:min-h-[91px]">
             <div aria-hidden className="mb-[7px] text-[18px]">{o.ico}</div>
             <strong className="block text-[11px] font-semibold">{o.titre}</strong>
-            <span className="mt-1 block text-[10px] leading-[1.3] text-muted">{o.desc}</span>
+            <span className="mt-1 block text-[11px] leading-[1.3] text-muted">{o.desc}</span>
           </button>
         ))}
       </div>

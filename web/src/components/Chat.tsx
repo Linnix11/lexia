@@ -84,9 +84,13 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     e.currentTarget.form?.requestSubmit()
   }
 
+  // Question trop courte : dit au clic, au lieu d'un bouton grise explique par une infobulle (audit WEB-10)
+  const [tropCourt, setTropCourt] = useState(false)
   const soumettre = (e: FormEvent) => {
     e.preventDefault()
-    if (texte.trim().length < 3 || occupe) return  // l'API exige 3 caracteres (ChatRequest)
+    if (occupe || !texte.trim()) return
+    if (texte.trim().length < 3) return setTropCourt(true)  // l'API exige 3 caracteres (ChatRequest)
+    setTropCourt(false)
     envoyer(texte, mode)
     setTexte('')
   }
@@ -180,7 +184,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
               <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55] whitespace-pre-line">
                 {m.question}
                 {m.mode !== 'expliquer' && (
-                  <span className="ml-2 text-[10px] text-muted">· {MODES.find((x) => x.id === m.mode)?.label}</span>
+                  <span className="ml-2 text-[11px] text-muted">· {MODES.find((x) => x.id === m.mode)?.label}</span>
                 )}
               </div>
               {m.etat === 'en_cours' && <Attente />}
@@ -223,7 +227,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           ref={champ}
           id={complet ? 'question-complete' : 'question'}
           value={texte}
-          onChange={(e) => setTexte(e.target.value)}
+          onChange={(e) => { setTexte(e.target.value); setTropCourt(false) }}
           onKeyDown={auClavier}
           rows={1}
           placeholder={complet ? infos.placeholder : 'Écrivez votre question de droit…'}
@@ -234,14 +238,15 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         />
         <button
           type="submit"
-          disabled={occupe || texte.trim().length < 3}
-          // bouton desactive : la raison est dite (audit du 2026-11-18, D8)
-          title={occupe ? 'Une réponse est en cours de préparation.' : texte.trim().length < 3 ? 'Écrivez au moins 3 caractères.' : undefined}
+          disabled={occupe}
+          // bouton desactive pendant une reponse : son libelle « Recherche… » le dit (audit du 2026-11-18, D8)
+          title={occupe ? 'Une réponse est en cours de préparation.' : undefined}
           className="rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
         >
           {occupe ? 'Recherche…' : 'Envoyer ↗'}
         </button>
       </form>
+      {tropCourt && <p role="alert" className="mx-0.5 mt-2 text-[12px] text-[#8c4a36]">Écrivez au moins 3 caractères.</p>}
       <div className="mx-0.5 mt-2.5 flex justify-between gap-2 text-[12px] text-[#5f6762]">
         <span>
           <span id={complet ? 'aide-saisie-complete' : 'aide-saisie'} className="pointer-coarse:hidden">Entrée pour envoyer, Maj + Entrée pour aller à la ligne. </span>

@@ -61,10 +61,10 @@ export function Accueil() {
           <div className="mt-3 rounded-[10px] bg-[#f6f4ee] px-4 py-3.5 text-[12.5px] leading-[1.6]">
             <div className="font-display text-[17px]">La responsabilité pour faute</div>
             {/* meme presentation que l'espace : l'essentiel et l'exemple d'abord, sources numerotees [1], [2] (D12) */}
-            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-forest uppercase">L’essentiel</div>
+            <div className="mt-2.5 text-[11px] font-bold tracking-[1.4px] text-forest uppercase">L’essentiel</div>
             <p>Celui qui cause un dommage à autrui par sa faute doit le réparer : il faut une faute, un dommage et un lien de causalité. <span className="font-semibold text-forest">[1]</span></p>
             <p className="mt-1">Une simple négligence ou imprudence suffit. <span className="font-semibold text-forest">[2]</span></p>
-            <div className="mt-2.5 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Exemple</div>
+            <div className="mt-2.5 text-[11px] font-bold tracking-[1.4px] text-muted uppercase">Exemple</div>
             <p>Un cycliste renverse un piéton par imprudence : il doit réparer le dommage subi. <span className="font-semibold text-forest">[1]</span></p>
             <div className="mt-3 border-t border-line-soft pt-2 text-[11px] text-muted">
               <span className="font-semibold text-forest">▸ Développements et sources</span><br />

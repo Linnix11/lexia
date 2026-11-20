@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
 import { libelleFraicheur, sourcesAnciennes, useFraicheur } from '../lib/fraicheur'
 import { infosMode, symbole } from '../lib/modes'
@@ -54,7 +54,7 @@ function Bloc({ titre, items, sources, ton, rubriques = true }: {
   const couleur = ton === 'droit' ? 'text-forest' : ton === 'attention' ? 'text-[#8a6537]' : 'text-muted'
   return (
     <div className="mt-3.5">
-      <h4 className={`mb-1.5 text-[10px] font-bold tracking-[1.4px] uppercase ${couleur}`}>{titre}</h4>
+      <h4 className={`mb-1.5 text-[11px] font-bold tracking-[1.4px] uppercase ${couleur}`}>{titre}</h4>
       <ul className="grid max-w-[75ch] gap-1.5">
         {items.map((it, i) => (
           <li key={i} className="text-[12.5px] leading-[1.6]">
@@ -79,7 +79,7 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
   const anciennes = sourcesAnciennes(fraicheur, sources.map((s) => s.source_id))
   return (
     <div className="mt-4 border-t border-line-soft pt-3">
-      <h4 className="mb-1 text-[10px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
+      <h4 className="mb-1 text-[11px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
       <ul className="max-w-[75ch]">
         {sources.map((s, i) => (
           <li key={s.id}>
@@ -95,17 +95,17 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
                 <span className="block text-[11px] leading-[1.35] font-semibold" title={s.entete}>
                   <span className="text-forest">[{i + 1}]</span> {titreCourt(s.entete)}
                 </span>
-                <span className="mt-0.5 block text-[10px] break-words text-muted">{s.version}</span>
+                <span className="mt-0.5 block text-[11px] break-words text-muted">{s.version}</span>
               </span>
               {s.en_vigueur === false && (
-                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[10px] text-[#8a6537]">ancienne version</span>
+                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[11px] text-[#8a6537]">ancienne version</span>
               )}
             </button>
           </li>
         ))}
       </ul>
       {anciennes.map((a) => (
-        <p key={a.nom} className="mt-1 text-[10px] leading-[1.4] text-muted">
+        <p key={a.nom} className="mt-1 text-[11px] leading-[1.4] text-muted">
           {a.nom} : {libelleFraicheur(a)}. {a.nature === 'textes' ? 'Une modification' : 'Une décision'} plus récente peut ne pas y figurer.
         </p>
       ))}
@@ -130,11 +130,11 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
     setEtat('envoye')
     notifier('Merci pour votre retour')
   }
-  if (etat === 'envoye') return <span className="text-[10px] text-muted">Retour envoyé</span>
+  if (etat === 'envoye') return <span className="text-[11px] text-muted">Retour envoyé</span>
   if (etat === 'motif')
     return (
       <span className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] text-muted">Quel problème ?</span>
+        <span className="text-[11px] text-muted">Quel problème ?</span>
         {MOTIFS.map(([id, libelle]) => (
           <button key={id} type="button" onClick={() => envoyer(false, id)}
             className="min-h-6 rounded-full border border-line px-2.5 text-[11px] text-[#59615b] hover:border-[#9eafa3]">
@@ -145,7 +145,7 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
     )
   return (
     <span className="flex items-center gap-1.5">
-      <span className="text-[10px] text-muted">Cette réponse vous a aidé ?</span>
+      <span className="text-[11px] text-muted">Cette réponse vous a aidé ?</span>
       {/* cibles de 24 px au moins (WCAG 2.5.8, audit du 2026-11-18, D8) */}
       <button type="button" onClick={() => envoyer(true)} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Oui</button>
       <button type="button" onClick={() => setEtat('motif')} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Non</button>
@@ -188,7 +188,10 @@ function Developpements({ r, blocs }: { r: ReponseChat; blocs: [string, string, 
 }
 
 /** titre=false : la fiche ouverte dans « Fiches & révisions » affiche deja le titre dans sa carte (point 6). */
-export function Reponse({ message, actions = true, titre = true }: { message: Message; actions?: boolean; titre?: boolean }) {
+// Memoise : la saisie dans le champ de question ne redessine plus toutes les reponses (audit du 2026-11-19, WEB-21)
+export const Reponse = memo(ReponseComplete)
+
+function ReponseComplete({ message, actions = true, titre = true }: { message: Message; actions?: boolean; titre?: boolean }) {
   const { basculerFavori, estFavori } = useApp()
   const r = message.reponse!
   const retires = r.controle.elements_retires + r.controle.citations_retirees
@@ -221,7 +224,7 @@ export function Reponse({ message, actions = true, titre = true }: { message: Me
               onClick={() => basculerFavori(message)}
               aria-pressed={estFavori(r.reponse_id)}
               title="La fiche reste dans ce navigateur uniquement ; elle peut être exportée depuis « Fiches & révisions »."
-              className="text-[10px] font-semibold text-forest hover:underline"
+              className="text-[11px] font-semibold text-forest hover:underline"
             >
               {estFavori(r.reponse_id) ? '★ Enregistrée' : '☆ Enregistrer en fiche'}
             </button>

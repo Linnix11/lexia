@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
 import { effacerCartes } from '../lib/cartes'
 import { effacerFavoris } from '../lib/favoris'
+import { effacerSemestre } from '../lib/semestres'
 import { effacerDerniereMatiere, NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
@@ -248,6 +249,7 @@ export function Compte() {
       await supprimer(mdp)
       effacerFavoris(email) // poste partage : les fiches du compte ne restent pas dans le navigateur
       effacerCartes(email)
+      effacerSemestre(email)
       effacerDerniereMatiere(email)
       naviguer('/?compte-supprime=1', { remplacer: true })
     } catch (err) {

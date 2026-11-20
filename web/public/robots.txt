@@ -1,0 +1,9 @@
+# Lexia : pages publiques ouvertes aux moteurs de recherche, espace des comptes et API exclus (audit du 2026-11-19, WEB-15)
+User-agent: *
+Disallow: /app
+Disallow: /compte
+Disallow: /admin
+Disallow: /cours-recuperes
+Disallow: /api/
+Disallow: /verifier-email
+Disallow: /nouveau-mot-de-passe

@@ -32,14 +32,14 @@ function quizRepris(compte: string): EtatQuiz {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [vue, setVue] = useState<Vue>('espace')
-  const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre())
+  const { rafraichir, profil } = useSession()
+  const compte = profil?.email ?? ''
+  const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre(compte))
   const niveau = niveauDe(semestre)
   const setSemestre = useCallback((s: Semestre) => {
     setSemestreEtat(s)
-    ecrireSemestre(s)
-  }, [])
-  const { rafraichir, profil } = useSession()
-  const compte = profil?.email ?? ''
+    ecrireSemestre(s, compte)
+  }, [compte])
   // Derniere matiere choisie reprise a la visite suivante (D100), gardee dans ce navigateur seulement.
   const [matiereChoisie, setMatiere] = useState<string | null>(() => lireDerniereMatiere(compte))
   const [mode, setMode] = useState<Mode>('expliquer')

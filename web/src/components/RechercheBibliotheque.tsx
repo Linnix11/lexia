@@ -12,7 +12,7 @@ const MAX = 6
 function Groupe({ titre, children }: { titre: string; children: ReactNode }) {
   return (
     <section className="border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
-      <h3 className="text-[10px] font-bold tracking-[1.2px] text-forest uppercase">{titre}</h3>
+      <h3 className="text-[11px] font-bold tracking-[1.2px] text-forest uppercase">{titre}</h3>
       <ul className="mt-1.5 grid gap-1">{children}</ul>
     </section>
   )
@@ -87,7 +87,7 @@ export function RechercheBibliotheque() {
                 <li key={c.id}>
                   <Lien href={`/cours-recuperes?q=${encodeURIComponent(c.titre)}`} className={lien}>
                     <span className="min-w-0">{c.titre}</span>
-                    <span className="shrink-0 text-[10px] text-muted">{c.libelle_matiere}</span>
+                    <span className="shrink-0 text-[11px] text-muted">{c.libelle_matiere}</span>
                   </Lien>
                 </li>
               ))}
@@ -106,7 +106,7 @@ export function RechercheBibliotheque() {
                 <li key={a.id}>
                   <a href={a.url} target="_blank" rel="noopener noreferrer" className={lien}>
                     <span className="min-w-0">{a.titre}</span>
-                    <span className="shrink-0 text-[10px] text-muted">{a.universite} · {a.annee} ↗<span className="sr-only"> (nouvel onglet)</span></span>
+                    <span className="shrink-0 text-[11px] text-muted">{a.universite} · {a.annee} ↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}
@@ -118,7 +118,7 @@ export function RechercheBibliotheque() {
                 <li key={s.nom}>
                   <a href={s.url} target="_blank" rel="noreferrer" className={lien}>
                     <span className="min-w-0">{s.nom}</span>
-                    <span className="shrink-0 text-[10px] text-muted">↗<span className="sr-only"> (nouvel onglet)</span></span>
+                    <span className="shrink-0 text-[11px] text-muted">↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}

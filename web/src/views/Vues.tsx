@@ -27,7 +27,7 @@ function EnTete({ surtitre, titre, texte, droite }: { surtitre: string; titre: s
   return (
     <div className="mb-[19px] tab:mb-[25px] tab:flex tab:items-end tab:justify-between tab:gap-5">
       <div>
-        <div className="text-[10px] font-bold tracking-[1.6px] text-forest uppercase">{surtitre}</div>
+        <div className="text-[11px] font-bold tracking-[1.6px] text-forest uppercase">{surtitre}</div>
         <h1 className="mt-[9px] mb-[7px] font-display text-[28px] leading-[1.1] font-normal tracking-[-.8px] min-[361px]:text-[31px] tab:text-[36px]">
           {titre}
         </h1>
@@ -38,7 +38,7 @@ function EnTete({ surtitre, titre, texte, droite }: { surtitre: string; titre: s
   )
 }
 
-const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[10px] whitespace-nowrap text-forest">● Corpus officiel</span>
+const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[11px] whitespace-nowrap text-forest">● Corpus officiel</span>
 
 /** De quoi reprendre la ou l'on s'etait arrete (D100) : questionnaire commence, dernier cours, derniere fiche. */
 function CarteReprendre() {
@@ -181,7 +181,7 @@ export function VueMatieres() {
           )}
           {groupes.map((g) => (
             <section key={g.titre} aria-labelledby={`annee-${g.annee ?? 'autres'}`} className="mb-[22px]">
-              <h2 id={`annee-${g.annee ?? 'autres'}`} className="mb-2.5 text-[10px] font-bold tracking-[1.6px] text-forest uppercase">
+              <h2 id={`annee-${g.annee ?? 'autres'}`} className="mb-2.5 text-[11px] font-bold tracking-[1.6px] text-forest uppercase">
                 {g.titre}{g.annee && g.annee === niveau ? ' · votre année' : ''}
               </h2>
               <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
@@ -224,9 +224,15 @@ export function VueFiches() {
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [theme, setTheme] = useState('')
   const [revision, setRevision] = useState(false)
+  // Bouton actif : la raison d'un refus est dite au clic plutot qu'en infobulle (audit du 2026-11-19, WEB-10)
+  const [aide, setAide] = useState<string | null>(null)
+  // Retrait d'une fiche en deux temps (WEB-20)
+  const [aRetirer, setARetirer] = useState<string | null>(null)
   const creer = (e: FormEvent) => {
     e.preventDefault()
-    if (theme.trim().length < 3 || occupe) return
+    if (occupe) return setAide('Une réponse est en cours : patientez quelques secondes.')
+    if (theme.trim().length < 3) return setAide('Écrivez un thème d’au moins 3 caractères.')
+    setAide(null)
     setVue('assistant')
     envoyer(`Fais-moi une fiche de révision sur ${theme.trim()}`, 'fiche')
     setTheme('')
@@ -248,15 +254,15 @@ export function VueFiches() {
         <form onSubmit={creer} className="flex flex-wrap items-end gap-2">
           <label className="grid min-w-[220px] flex-1 gap-1.5 text-[11px] text-muted">
             Nouvelle fiche sur…
-            <input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Ex. la force obligatoire du contrat"
-              className="rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink" />
+            <input value={theme} onChange={(e) => { setTheme(e.target.value); setAide(null) }} placeholder="Ex. la force obligatoire du contrat"
+              aria-describedby="aide-fiche" className="rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink" />
           </label>
-          <button type="submit" disabled={occupe || theme.trim().length < 3}
-            title={occupe ? 'Une réponse est en cours : patientez quelques secondes.' : undefined}
+          <button type="submit"
             className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">Créer la fiche</button>
           <button type="button" onClick={() => ouvrirQuiz(theme)} className="rounded-[7px] border border-line px-3 py-[9px] text-[12px] text-forest hover:border-[#9eafa3]">
             Quiz sur ce thème
           </button>
+          <p id="aide-fiche" role="status" className="w-full text-[12px] text-[#8c4a36] empty:hidden">{aide ?? ''}</p>
         </form>
       </Card>
       {favoris.length === 0 ? (
@@ -283,9 +289,18 @@ export function VueFiches() {
                   <span className="flex gap-3">
                     <button type="button" onClick={() => telecharger(nomFichier(f.reponse.titre || f.question), ficheEnMarkdown(f))}
                       aria-label={`Exporter la fiche « ${f.reponse.titre || f.question} »`}
-                      className="text-[11px] text-forest hover:underline">Exporter</button>
-                    <button type="button" onClick={() => basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })}
-                      className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                      className="min-h-11 text-[11px] text-forest hover:underline">Exporter</button>
+                    <button type="button"
+                      onClick={() => {
+                        if (aRetirer !== f.id) return setARetirer(f.id)
+                        setARetirer(null)
+                        basculerFavori({ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse })
+                      }}
+                      onBlur={() => setARetirer((x) => (x === f.id ? null : x))}
+                      aria-label={aRetirer === f.id ? `Confirmer le retrait de « ${f.reponse.titre || f.question} »` : `Retirer la fiche « ${f.reponse.titre || f.question} »`}
+                      className={`min-h-11 text-[11px] hover:text-[#8c4a36] ${aRetirer === f.id ? 'font-semibold text-[#8c4a36]' : 'text-muted'}`}>
+                      {aRetirer === f.id ? 'Confirmer le retrait' : 'Retirer'}
+                    </button>
                   </span>
                 </div>
                 {ouverte === f.id && (

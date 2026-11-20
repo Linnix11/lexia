@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { ApiError } from '../lib/api'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { api, ApiError } from '../lib/api'
 import { NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, suiteSure, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
@@ -125,6 +125,16 @@ export function Inscription() {
   const [touche, setTouche] = useState<Record<string, boolean>>({})
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
+  // Limites de la formule gratuite lues sur le serveur, jamais ecrites en dur (audit du 2026-11-19, WEB-17)
+  const [gratuit, setGratuit] = useState<string>('Formule gratuite, sans carte bancaire.')
+  useEffect(() => {
+    let actif = true
+    api.formules().then((fs) => {
+      const g = fs.find((f) => f.prix_mensuel_euros === 0)
+      if (actif && g) setGratuit(`Gratuit : ${g.questions_par_jour} questions et ${g.quiz_par_jour} questionnaire${g.quiz_par_jour > 1 ? 's' : ''} par jour.`)
+    }).catch(() => undefined)
+    return () => { actif = false }
+  }, [])
 
   const erreurs = {
     prenom: prenom.trim() ? null : 'Indiquez votre prénom.',
@@ -132,6 +142,7 @@ export function Inscription() {
     email: /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.trim()) ? null : 'Adresse e-mail invalide.',
     mdp: mdp.length >= MDP_MIN ? null : `Au moins ${MDP_MIN} caractères.`,
     confirmation: confirmation === mdp ? null : 'Les deux mots de passe ne correspondent pas.',
+    cases: age && cgu ? null : 'Cochez les deux cases ci-dessus pour créer votre compte.',
   }
   const valide = !erreurs.prenom && !erreurs.nom && !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu && age
   const montre = (k: keyof typeof erreurs) => (touche[k] ? erreurs[k] : null)
@@ -139,8 +150,12 @@ export function Inscription() {
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault()
-    setTouche({ prenom: true, nom: true, email: true, mdp: true, confirmation: true })
-    if (!valide) return
+    setTouche({ prenom: true, nom: true, email: true, mdp: true, confirmation: true, cases: true })
+    if (!valide) {
+      // focus sur le premier champ en erreur, une fois les messages affiches
+      setTimeout(() => document.querySelector<HTMLElement>('form [aria-invalid="true"]')?.focus(), 0)
+      return
+    }
     setErreur(null)
     setEnvoi(true)
     try {
@@ -156,7 +171,7 @@ export function Inscription() {
   const aide = (id: string, msg: string | null) => msg && <span id={id} className="text-[12px] text-[#8c4a36]">{msg}</span>
 
   return (
-    <Carte titre="Créer un compte" sousTitre="Gratuit : 10 questions et 2 questionnaires par jour.">
+    <Carte titre="Créer un compte" sousTitre={gratuit}>
       <form onSubmit={soumettre} className="grid gap-4" noValidate>
         <div className="grid gap-4 min-[420px]:grid-cols-2">
           <label className="grid content-start gap-1.5 text-[13px]">
@@ -204,8 +219,10 @@ export function Inscription() {
             j’ai lu la <Lien href="/confidentialite" target="_blank" className="text-forest underline">politique de confidentialité</Lien>.
           </span>
         </label>
+        {aide('err-cases', montre('cases'))}
         <Erreur message={erreur} />
-        <button type="submit" disabled={envoi || !valide} className={bouton}>{envoi ? 'Création…' : 'Créer mon compte'}</button>
+        {/* Bouton actif : les erreurs s'affichent au clic au lieu d'un bouton grise sans explication (WEB-10) */}
+        <button type="submit" disabled={envoi} className={bouton}>{envoi ? 'Création…' : 'Créer mon compte'}</button>
       </form>
       <p className="mt-5 text-center text-[13px] text-muted">
         Déjà inscrit ? <Lien href="/connexion" className="font-semibold text-forest hover:underline">Se connecter</Lien>

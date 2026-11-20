@@ -114,6 +114,18 @@ describe('Site', () => {
     expect(await screen.findByTitle('Mon compte')).toBeInTheDocument()
   })
 
+  it('erreur de rendu : ecran Recharger au lieu d une page blanche (WEB-2)', async () => {
+    const console_ = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/auth/session') ? json({ ...PROFIL, formule: null }) : normal(url, init))   // profil mal forme
+    aller('/compte')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Cette page n’a pas pu s’afficher' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Recharger' })).toBeInTheDocument()
+    console_.mockRestore()
+  })
+
   it('connexion : retour a la page demandee avant la connexion, jamais vers un autre site (WEB-11)', async () => {
     aller('/compte?paiement=ok')
     render(<Site />)
@@ -150,16 +162,18 @@ describe('Site', () => {
     fireEvent.blur(screen.getByLabelText(/^Mot de passe/))
     expect(screen.getByText('Au moins 10 caractères.')).toBeInTheDocument()
     const creer = screen.getByRole('button', { name: 'Créer mon compte' })
-    expect(creer).toBeDisabled()
+    expect(creer).toBeEnabled()   // actif : les erreurs sont dites au clic (WEB-10)
     fireEvent.change(screen.getByLabelText(/^Mot de passe/), { target: { value: 'motdepasse-solide' } })
     fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'motdepasse-solide' } })
     fireEvent.click(screen.getByRole('checkbox', { name: /J’accepte les conditions/ }))
-    fireEvent.click(screen.getByRole('checkbox', { name: 'J’ai 15 ans ou plus.' }))
-    expect(creer).toBeDisabled() // prenom et nom pas encore saisis
-    fireEvent.blur(screen.getByLabelText('Prénom'))
+    fireEvent.click(creer) // prenom et nom pas encore saisis, case d'age pas cochee : rien n'est envoye
     expect(screen.getByText('Indiquez votre prénom.')).toBeInTheDocument()
+    expect(screen.getByText('Cochez les deux cases ci-dessus pour créer votre compte.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'J’ai 15 ans ou plus.' }))
     fireEvent.change(screen.getByLabelText(/^Prénom/), { target: { value: ' Léa ' } })
-    expect(creer).toBeDisabled() // nom manquant
+    fireEvent.click(creer) // nom manquant
+    expect(screen.getByText('Indiquez votre nom.')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/auth/inscription'))).toBe(false)
     fireEvent.change(screen.getByLabelText(/^Nom/), { target: { value: 'Martin' } })
     await act(async () => {
       fireEvent.click(creer)

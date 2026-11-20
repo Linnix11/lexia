@@ -65,7 +65,7 @@ function CarteCours({ c }: { c: CoursRecupere }) {
 
   return (
     <article className="rounded-xl border border-line bg-surface p-4 tab:p-[19px]">
-      <p className="text-[10px] font-bold tracking-[1.2px] text-forest uppercase">Fiche pratique · {c.source}</p>
+      <p className="text-[11px] font-bold tracking-[1.2px] text-forest uppercase">Fiche pratique · {c.source}</p>
       <h3 className="mt-1 font-display text-[19px] leading-snug font-normal">{c.titre}</h3>
       <p className="mt-2 rounded-[7px] border-l-2 border-[#c8a16d] bg-cream px-2.5 py-1.5 text-[11px] leading-[1.45] text-[#746347]">
         {RAPPEL}

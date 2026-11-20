@@ -43,6 +43,9 @@ function reprendre(ancienne: string, compte: string) {
 }
 
 export function lireFavoris(compte: string): Favori[] {
+  // Pas encore de compte (chargement) : ne rien reprendre sous une cle vide, les fiches d'avant y seraient perdues
+  // (audit du 2026-11-19, WEB-12).
+  if (!compte) return []
   try {
     // Fiches d'avant la separation par compte (reprises par le premier compte qui se connecte), puis
     // fiches rangees sous l'adresse en clair.

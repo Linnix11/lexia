@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
+import { lireSemestre } from './lib/semestres'
 import { api, type ReponseChat } from './lib/api'
 import { ecrireFavoris, empreinte, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
@@ -104,7 +105,8 @@ describe('Assistant', () => {
     expect(within(choix).getAllByRole('option').map((o) => o.textContent)).toEqual([
       'L1 · Semestre 1', 'L1 · Semestre 2', 'L2 · Semestre 3', 'L2 · Semestre 4', 'L3 · Semestre 5', 'L3 · Semestre 6'])
     fireEvent.change(choix, { target: { value: '4' } })
-    expect(localStorage.getItem('lexia.semestre.v1')).toBe('4')
+    expect(lireSemestre('etu@exemple.fr')).toBe(4)   // une cle par compte (WEB-16)
+    expect(lireSemestre('autre@exemple.fr')).toBe(1)
     fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'article 1240' } })
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
@@ -680,8 +682,10 @@ describe('Audit du 18 novembre 2026, lot D', () => {
   it('accessibilite : citation nommee, Oui/Non de 24 px, avertissement lisible, bouton desactive explique (D8)', async () => {
     render(<Site />)
     const envoyer = await screen.findByRole('button', { name: /Envoyer/ })
-    expect(envoyer).toBeDisabled()
-    expect(envoyer).toHaveAccessibleDescription('Écrivez au moins 3 caractères.')
+    // bouton actif, la raison est dite au clic (WEB-10)
+    fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'ab' } })
+    fireEvent.click(envoyer)
+    expect(screen.getByRole('alert')).toHaveTextContent('Écrivez au moins 3 caractères.')
     fireEvent.change(screen.getByLabelText('Votre question'), { target: { value: 'Que dit l’article 1240 ?' } })
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))

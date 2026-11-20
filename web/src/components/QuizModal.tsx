@@ -212,7 +212,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
 
                     {r && (
                       <div className="mt-3 rounded-lg bg-[#f6f4ee] px-3 py-2.5 text-[12px] leading-[1.55]">
-                        <span className={`mr-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUTS[r.statut].classe}`}>
+                        <span className={`mr-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUTS[r.statut].classe}`}>
                           {STATUTS[r.statut].texte}
                         </span>
                         {bonneReponse(q, r) && <span className="text-[11px] text-muted">Bonne réponse : <b className="text-ink">{bonneReponse(q, r)}</b></span>}
@@ -242,7 +242,7 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5">
-          <small className="text-[10px] text-muted">Outil d’entraînement : vérifiez les corrigés dans les sources citées.</small>
+          <small className="text-[11px] text-muted">Outil d’entraînement : vérifiez les corrigés dans les sources citées.</small>
           {quiz?.quiz_id && !correction && (
             <button type="button" onClick={corriger} disabled={etat !== 'libre'}
               className="rounded-[7px] bg-forest px-[13px] py-2.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">

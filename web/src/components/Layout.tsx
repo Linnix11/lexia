@@ -30,7 +30,7 @@ export function CadreEspace({ titre, children }: { titre?: string; children: Rea
           <Topbar titre={titre} />
           <div className="mx-auto max-w-[1300px] px-4 pt-6 pb-6 min-[361px]:px-4 tab:px-[22px] tab:pt-[29px] desk:px-[38px] desk:pt-9 desk:pb-[52px]">
             {children}
-            <footer className="pt-5 text-[10px] leading-[1.6] text-[#5f6762] tab:flex tab:justify-between tab:gap-3.5">
+            <footer className="pt-5 text-[11px] leading-[1.6] text-[#5f6762] tab:flex tab:justify-between tab:gap-3.5">
               <span className="block">Lexia · étude du droit français</span>
               <span className="mt-1 block tab:mt-0">Les citations ouvrent la source, la date et la version utilisées.</span>
             </footer>
@@ -59,12 +59,12 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
         <Signet hauteur={34} />
         <div className="hidden desk:block">
           <div className="font-display text-[21px] tracking-[-.4px]">lexia</div>
-          <div className="mt-0.5 text-[10px] text-muted">L’espace d’étude juridique</div>
+          <div className="mt-0.5 text-[11px] text-muted">L’espace d’étude juridique</div>
         </div>
       </div>
 
       <nav aria-label="Navigation principale" className="h-full tab:h-auto tab:w-full">
-        <div className="mb-2 hidden px-2.5 text-[10px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
+        <div className="mb-2 hidden px-2.5 text-[11px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
         <ul className="flex h-full items-center justify-around tab:grid tab:h-auto tab:gap-1">
           {VUES.map((v) => {
             const actif = !horsEspace && vue === v.id
@@ -93,7 +93,7 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
       </nav>
 
       <div className="mt-auto hidden desk:block">
-        <div className="mb-2 px-2.5 text-[10px] tracking-[1.25px] text-[#5f6762] uppercase">Mon semestre</div>
+        <div className="mb-2 px-2.5 text-[11px] tracking-[1.25px] text-[#5f6762] uppercase">Mon semestre</div>
         <div className="rounded-[10px] border border-[#dfdfd5] bg-chip p-3">
           <small className="text-[11px] text-muted">Semestre {semestre} · {niveau}</small>
           <strong className="my-1.5 block text-[13px]">Parcours droit général</strong>
@@ -147,9 +147,11 @@ export function Topbar({ titre }: { titre?: string }) {
             <span className="hidden tab:inline">· {profil.formule.nom}</span>
           </Lien>
         )}
-        <Lien href="/compte" aria-label="Mon compte" title={profil?.email}
-          className="grid size-[31px] place-items-center rounded-full bg-[#e9dfd0] text-[11px] font-bold text-[#694b31] hover:ring-2 hover:ring-[#d6c6ad]">
-          {initiales}
+        {/* zone de clic de 44 px, pastille de 31 px (WCAG 2.5.5 ; audit du 2026-11-19, WEB-9) */}
+        <Lien href="/compte" aria-label="Mon compte" title={profil?.email} className="group grid size-11 place-items-center rounded-full">
+          <span className="grid size-[31px] place-items-center rounded-full bg-[#e9dfd0] text-[11px] font-bold text-[#694b31] group-hover:ring-2 group-hover:ring-[#d6c6ad]">
+            {initiales}
+          </span>
         </Lien>
       </div>
     </header>

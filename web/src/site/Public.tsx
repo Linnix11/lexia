@@ -8,7 +8,7 @@ export const boutonSecondaire = 'inline-flex items-center justify-center rounded
 
 function Logo() {
   return (
-    <Lien href="/" className="flex items-center gap-2.5" aria-label="Lexia, accueil">
+    <Lien href="/" className="flex min-h-11 min-w-11 items-center gap-2.5" aria-label="Lexia, accueil">
       <Signet hauteur={34} />
       <span className="hidden font-display text-[21px] tracking-[-.4px] min-[400px]:inline">lexia</span>
     </Lien>
@@ -23,14 +23,14 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between gap-2 px-4 tab:px-6">
           <Logo />
           <nav aria-label="Navigation du site" className="flex items-center gap-1 tab:gap-3">
-            <Lien href="/tarifs" className="rounded-md px-1.5 py-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Tarifs</Lien>
+            <Lien href="/tarifs" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Tarifs</Lien>
             {profil ? (
               <Lien href="/app" className={`${bouton} whitespace-nowrap`}>
                 <span className="tab:hidden">Mon espace</span><span className="hidden tab:inline">Ouvrir mon espace</span>
               </Lien>
             ) : (
               <>
-                <Lien href="/connexion" className="rounded-md px-1.5 py-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Connexion</Lien>
+                <Lien href="/connexion" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Connexion</Lien>
                 <Lien href="/inscription" className={`${bouton} whitespace-nowrap`}>
                   <span className="tab:hidden">S’inscrire</span><span className="hidden tab:inline">Créer un compte</span>
                 </Lien>
@@ -44,9 +44,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-[1100px] flex-col gap-3 px-4 py-6 text-[12px] text-muted tab:flex-row tab:items-center tab:justify-between tab:px-6">
           <span>Lexia · outil d’étude du droit français, pas un avis juridique.</span>
           <nav aria-label="Informations légales" className="flex flex-wrap gap-x-4 gap-y-1">
-            <Lien href="/mentions-legales" className="hover:text-forest">Mentions légales</Lien>
-            <Lien href="/cgu" className="hover:text-forest">Conditions d’utilisation</Lien>
-            <Lien href="/confidentialite" className="hover:text-forest">Confidentialité</Lien>
+            {/* liens de 44 px de haut sur mobile (WEB-9) */}
+            <Lien href="/mentions-legales" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Mentions légales</Lien>
+            <Lien href="/cgu" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Conditions d’utilisation</Lien>
+            <Lien href="/confidentialite" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Confidentialité</Lien>
           </nav>
         </div>
       </footer>

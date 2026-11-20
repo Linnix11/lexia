@@ -59,7 +59,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <div className="text-[10px] font-bold tracking-[1.6px] text-forest uppercase">
+            <div className="text-[11px] font-bold tracking-[1.6px] text-forest uppercase">
               {source ? NATURE[source.type] ?? 'Source' : 'Source'}
             </div>
             <h2 id="source-titre" className="mt-1 font-display text-[19px] leading-snug">
