@@ -195,7 +195,9 @@ export function Cgu() {
         <p>
           <strong>Droit de rétractation.</strong> Vous avez le droit de vous rétracter du contrat sans donner de
           motif dans un délai de quatorze jours. Le délai de rétractation expire quatorze jours après le jour de la
-          conclusion du contrat (articles L. 221-18 et suivants du Code de la consommation).
+          conclusion du contrat (articles L. 221-18 et suivants du Code de la consommation). S’il expire un samedi, un
+          dimanche ou un jour férié ou chômé, il est prorogé jusqu’au premier jour ouvrable suivant (article
+          L. 221-19).
         </p>
         <p>
           Pour exercer ce droit, vous nous notifiez votre décision de rétractation au moyen d’une déclaration dénuée
@@ -213,7 +215,9 @@ export function Cgu() {
             recevra l’accusé de réception ; vous validez avec le bouton « Confirmer la rétractation ». La formule
             concernée est retirée aussitôt. Nous vous envoyons alors, dans les meilleurs délais, un accusé de
             réception de la rétractation sur un support durable (un e-mail), avec son contenu ainsi que la date et
-            l’heure de sa soumission (articles L. 221-21 et D. 221-5 du Code de la consommation).
+            l’heure de sa soumission (articles L. 221-21 et D. 221-5 du Code de la consommation). Si l’envoi de cet
+            e-mail échoue, la page vous le dit et l’accusé vous est renvoyé automatiquement ; votre rétractation est
+            enregistrée dès la confirmation.
           </p>
         )}
         <p>

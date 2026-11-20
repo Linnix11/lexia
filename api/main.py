@@ -74,6 +74,20 @@ class LimiteRequetes:
             q.append(now)
 
 
+def identite_vendeur(settings: Settings) -> str:
+    """Bloc d'identite de la confirmation du contrat (C. consom. L. 221-5 et L. 221-13 ; audit JUR-8)."""
+    legal = settings.legal
+    lignes = [
+        ("Vendeur", ", ".join(v for v in (legal.get("editeur"), legal.get("statut")) if v)),
+        ("Adresse", legal.get("adresse", "")),
+        ("Immatriculation", legal.get("siren", "")),
+        ("E-mail", settings.contact_email),
+        ("Téléphone", legal.get("telephone", "")),
+        ("Médiateur de la consommation (recours gratuit)", legal.get("mediateur", "")),
+    ]
+    return "\n".join(f"{nom} : {valeur}" for nom, valeur in lignes if valeur)
+
+
 def _construire_retriever(settings: Settings) -> Retriever:
     from api.retrieval.local import LocalRetriever
 
@@ -250,7 +264,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             secret_webhook=settings.stripe_webhook_secret, url_publique=settings.url_publique, journal=journal,
             client=client_stripe, admin_requis=admin_requis,
             vendeur=", ".join(v for v in (settings.legal.get("editeur"), settings.legal.get("adresse"),
-                                          settings.contact_email) if v)), prefix="/paiement")
+                                          settings.contact_email) if v),
+            identite=identite_vendeur(settings)), prefix="/paiement")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:

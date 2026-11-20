@@ -28,6 +28,14 @@ function Jauge({ libelle, utilise, limite }: { libelle: string; utilise: number;
 const NOMS: Record<string, string> = { etudiant: 'Étudiant', intensif: 'Intensif' }
 const prix = (centimes: number) => `${(centimes / 100).toFixed(2).replace('.', ',')} €`
 
+/** Fin du delai la plus lointaine des achats retractables, prorogee par le serveur au premier jour ouvrable. */
+function finDelai(achats: { fin?: string }[] | undefined): string {
+  const fins = (achats ?? []).map((a) => a.fin).filter((f): f is string => Boolean(f)).sort()
+  if (!fins.length) return 'la fin du délai de 14 jours'
+  const [a, m, j] = fins[fins.length - 1].split('-').map(Number)
+  return new Date(a, m - 1, j).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 /** Retour de la page Stripe (/compte?paiement=ok) et retractation en ligne des achats de moins de 14 jours. */
 function Paiement() {
   const { config, profil, rafraichir } = useSession()
@@ -91,11 +99,20 @@ function Paiement() {
     e.preventDefault()
     setErreur(null)
     try {
-      await api.retracter(nom, choisis)
+      const r = await api.retracter(nom, choisis)
       setDeclaration(false)
-      setEtat(await api.paiementEtat())
-      await rafraichir()
-      setMessage('Rétractation enregistrée. La formule est retirée et un accusé de réception vous a été envoyé par e-mail ; le remboursement suit dans les 14 jours.')
+      // Message exact : l'accuse est parti, ou il sera renvoye (audit du 2026-11-19, JUR-7)
+      const le = new Date(r.le)
+      const quand = `le ${le.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })} à ${le.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' })}`
+      setMessage(r.accuse_envoye
+        ? `Rétractation enregistrée ${quand}. La formule est retirée et un accusé de réception vous a été envoyé par e-mail ; le remboursement suit dans les 14 jours.`
+        : `Rétractation enregistrée ${quand} : la formule est retirée et le remboursement suit dans les 14 jours. L’accusé de réception n’a pas pu partir pour l’instant ; il vous sera renvoyé automatiquement par e-mail. Votre rétractation est valable dès maintenant.`)
+      try {
+        setEtat(await api.paiementEtat())
+        await rafraichir()
+      } catch {
+        /* la retractation est faite : l'etat se mettra a jour au prochain chargement */
+      }
     } catch (e) {
       setErreur(e instanceof ApiError ? e.message : 'Rétractation impossible pour le moment : écrivez-nous.')
     }
@@ -110,9 +127,9 @@ function Paiement() {
           {message ? <p role="status" className="mt-1 text-[12px] leading-[1.6] text-forest">{message}</p> : (
             <>
               <p className="mt-1 text-[12px] leading-[1.6] text-muted">
-                Vous avez souscrit il y a moins de 14 jours : vous pouvez vous rétracter sans motif et sans frais. La
-                formule est retirée et le paiement vous est remboursé, déduction faite de la part de la période déjà
-                écoulée (accès immédiat demandé).
+                Vous pouvez vous rétracter sans motif jusqu’au {finDelai(etat?.retractables)} inclus. La formule est
+                retirée et le paiement vous est remboursé, déduction faite de la part de la période déjà écoulée,
+                puisque vous avez demandé l’accès immédiat ; aucun autre frais.
               </p>
               {!declaration ? (
                 <button type="button" onClick={ouvrir} className={`${boutonSecondaire} mt-3`}>Renoncer au contrat ici</button>
@@ -131,7 +148,7 @@ function Paiement() {
                         <input type="checkbox" checked={choisis.includes(a.session)} onChange={() => basculer(a.session)}
                           className="accent-forest" />
                         Formule {NOMS[a.formule] ?? a.formule}, {a.mois} mois, {prix(a.montant_centimes)}, payée le{' '}
-                        {new Date(a.paye_le).toLocaleDateString('fr-FR')}
+                        {new Date(a.paye_le).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}
                       </label>
                     ))}
                   </fieldset>

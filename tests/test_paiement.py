@@ -511,3 +511,85 @@ def test_a9_revenu_sans_les_formules_donnees_sans_fin(env):
     assert comptes.statistiques(1)["revenu_mensuel_estime"] == 0
     comptes.changer_formule("etu@exemple.fr", "intensif", 10)
     assert comptes.statistiques(1)["revenu_mensuel_estime"] == 9.99
+
+
+# --- audit du 2026-11-19 : JUR-6 (prorogation du delai), JUR-7 et JUR-8 (renvoi des e-mails) ---------------
+
+def test_jur6_fin_du_delai_prorogee_au_premier_jour_ouvrable():
+    """C. consom. L. 221-19 3° : un delai qui expire un samedi, un dimanche ou un jour ferie est proroge."""
+    from api.paiement import fin_retractation, jours_feries
+    paris = lambda jour: datetime.fromisoformat(f"{jour}T12:00:00+01:00").isoformat()  # noqa: E731
+    assert fin_retractation(paris("2026-12-02")) == date(2026, 12, 16)   # mercredi : pas de report
+    assert fin_retractation(paris("2026-12-05")) == date(2026, 12, 21)   # 19 = samedi -> lundi 21
+    assert fin_retractation(paris("2026-12-06")) == date(2026, 12, 21)   # 20 = dimanche -> lundi 21
+    assert fin_retractation(paris("2026-12-11")) == date(2026, 12, 28)   # vendredi 25 = Noel, puis week-end
+    assert fin_retractation(paris("2027-03-15")) == date(2027, 3, 30)    # 29 = lundi de Paques 2027
+    assert fin_retractation(paris("2027-04-22")) == date(2027, 5, 7)     # 6 = jeudi de l'Ascension
+    # paiement le 4 a 23 h 30 UTC, deja le 5 a Paris (0 h 30) : le jour compte est celui de Paris
+    assert fin_retractation("2026-12-04T23:30:00+00:00") == date(2026, 12, 21)
+    assert fin_retractation("2026-12-04T22:30:00+00:00") == date(2026, 12, 18)
+    assert date(2026, 4, 6) in jours_feries(2026) and date(2026, 5, 25) in jours_feries(2026)  # Paques, Pentecote
+    assert len(jours_feries(2027)) == 11
+    from api.paiement import _paques
+    assert [_paques(a) for a in (2024, 2025, 2026, 2027, 2038)] == [
+        date(2024, 3, 31), date(2025, 4, 20), date(2026, 4, 5), date(2027, 3, 28), date(2038, 4, 25)]
+
+
+def test_jur6_bouton_encore_la_le_lundi_apres_un_delai_qui_finit_un_samedi(env, monkeypatch):
+    client, comptes, _ = env
+    demander(client)
+    payer(client, evenement("cs_test_1", 499))
+    comptes._q("UPDATE paiements SET paye_le = '2026-12-05T10:00:00+00:00'")
+
+    class Lundi(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 12, 21, 18, 0, tzinfo=FUSEAU).astimezone(tz)
+
+    monkeypatch.setattr("api.paiement.datetime", Lundi)
+    etat = client.get("/paiement/etat").json()
+    assert etat["retractable"] and etat["retractables"][0]["fin"] == "2026-12-21"
+    assert retracter(client).status_code == 200
+
+
+def test_jur7_accuse_en_echec_dit_a_l_ecran_puis_renvoye(env, monkeypatch):
+    client, comptes, _ = env   # pas de cle Resend : l'accuse ne part pas
+    demander(client)
+    payer(client, evenement("cs_test_1", 499))
+    r = retracter(client)
+    assert r.status_code == 200 and r.json()["accuse_envoye"] is False
+    paiements = Paiements(comptes)
+    assert [p["accuse_envoye_le"] for p in paiements.a_traiter()] == [None]
+    # Le lendemain, Resend repond : l'accuse part (avec le contenu de la declaration) et n'est plus renvoye
+    envoyes = []
+    monkeypatch.setenv("RESEND_API_KEY", "re_essai")
+    monkeypatch.setattr("api.courriel.envoyer", lambda dest, sujet, texte, html: envoyes.append((dest, sujet, texte)))
+    for tache in comptes.taches_quotidiennes:
+        tache()
+    assert len(envoyes) == 1   # l'accuse ; pas de confirmation pour un contrat dont on s'est retracte
+    accuse = envoyes[0]
+    assert "Camille Martin" in accuse[2] and "Étudiant" in accuse[2]
+    assert paiements.a_traiter()[0]["accuse_envoye_le"]
+    for tache in comptes.taches_quotidiennes:
+        tache()
+    assert len(envoyes) == 1
+
+
+def test_jur8_confirmation_complete(env, courriels):
+    client, _, _ = env
+    demander(client, "etudiant", 1)
+    payer(client, evenement("cs_test_1", 499))
+    texte = courriels[0][2]
+    assert "Garantie légale de conformité" in texte and "L. 224-25-12" in texte
+
+
+def test_jur8_identite_du_vendeur():
+    from api.main import identite_vendeur
+    s = Settings(gemini_models=("fake",), contact_email="contact@exemple.fr",
+                 legal={"editeur": "Jean Dupont", "statut": "entrepreneur individuel", "adresse": "1 rue A, Paris",
+                        "telephone": "01 02 03 04 05", "mediateur": "Médiateur X, https://mediateur.exemple"})
+    bloc = identite_vendeur(s)
+    for attendu in ("Jean Dupont, entrepreneur individuel", "1 rue A", "contact@exemple.fr", "01 02 03 04 05",
+                    "Médiateur X"):
+        assert attendu in bloc
+    assert "Immatriculation" not in bloc   # champ vide : ligne absente

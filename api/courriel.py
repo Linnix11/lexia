@@ -139,8 +139,9 @@ def _envoyer_texte(destinataire: str, sujet: str, texte: str) -> None:
 
 def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int, prix: str, fin: str,
                                   cgu_version: str, acces_immediat_le: str, retractation_jusquau: str,
-                                  url_publique: str, vendeur: str) -> None:
-    """Confirmation du contrat sur support durable (art. L. 221-13 du Code de la consommation)."""
+                                  url_publique: str, vendeur: str, identite: str = "") -> None:
+    """Confirmation du contrat sur support durable (art. L. 221-13 du Code de la consommation), avec les
+    informations de L. 221-5 : identite et coordonnees de l'editeur, garantie legale, mediateur (audit JUR-8)."""
     texte = (
         "Bonjour,\n\n"
         "Votre paiement est confirmé. Cet e-mail confirme votre contrat avec Lexia : gardez-le.\n\n"
@@ -151,11 +152,16 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
         f"Conditions générales d'utilisation et de vente acceptées : version du {cgu_version} ({url_publique}/cgu)\n"
         f"Demande d'accès immédiat : {acces_immediat_le}. Vous avez demandé que la formule commence avant la fin "
         "du délai de rétractation.\n\n"
-        f"Droit de rétractation : vous pouvez vous rétracter sans motif jusqu'au {retractation_jusquau}, "
-        f"gratuitement, avec le bouton « Renoncer au contrat ici » de la page Mon compte ({url_publique}/compte) ou en "
+        f"Droit de rétractation : vous pouvez vous rétracter sans motif jusqu'au {retractation_jusquau} inclus, "
+        f"avec le bouton « Renoncer au contrat ici » de la page Mon compte ({url_publique}/compte) ou en "
         "renvoyant le formulaire ci-dessous. Comme vous avez demandé l'accès immédiat, vous payez la part de la "
         "période déjà écoulée et le reste vous est remboursé dans les 14 jours, par le moyen de paiement utilisé. "
         "Ce droit est perdu si la formule a été entièrement exécutée avant la fin du délai.\n\n"
+        "Garantie légale de conformité : le service doit être conforme au contrat pendant toute la durée de la "
+        "formule (articles L. 224-25-12 et suivants du Code de la consommation). En cas de défaut, vous avez droit "
+        "à sa mise en conformité sans frais, à défaut à une réduction du prix ou à la résolution du contrat "
+        "(articles L. 224-25-17 à L. 224-25-23).\n\n"
+        + (f"{identite}\n\n" if identite else "")
         + FORMULAIRE_RETRACTATION.format(vendeur=vendeur or "Lexia")
     )
     _envoyer_texte(destinataire, "Confirmation de votre formule Lexia", texte)

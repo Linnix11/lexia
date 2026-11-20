@@ -81,7 +81,7 @@ describe('Site', () => {
   it('premier chargement : un 502 passager ne deconnecte pas, la page demandee s ouvre (WEB-1)', async () => {
     connecte = true
     let echecs = 2
-    const normal = fetchMock.getMockImplementation()!
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/auth/session') && echecs > 0) {
         echecs -= 1
@@ -98,7 +98,7 @@ describe('Site', () => {
   it('premier chargement : serveur indisponible, message et bouton Reessayer, pas de renvoi vers la connexion (WEB-1)', async () => {
     connecte = true
     let panne = true
-    const normal = fetchMock.getMockImplementation()!
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/auth/session') && panne) return Promise.resolve(new Response('', { status: 502 }))
       return normal(url, init)

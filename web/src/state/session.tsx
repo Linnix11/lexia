@@ -62,7 +62,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         else setIndisponible(true)
       })
     }
-    setIndisponible(false)
     charger()
     return () => {
       annule = true
@@ -85,7 +84,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const valeur = useMemo<Session>(() => ({
     profil,
     indisponible: profil === undefined && indisponible,
-    reessayer: () => setTentative((n) => n + 1),
+    reessayer: () => {
+      setIndisponible(false)
+      setTentative((n) => n + 1)
+    },
     config,
     rafraichir,
     connexion: async (email, mdp) => {

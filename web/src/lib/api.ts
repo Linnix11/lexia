@@ -173,6 +173,8 @@ export interface AchatRetractable {
   mois: number
   montant_centimes: number
   paye_le: string
+  /** Dernier jour du delai (AAAA-MM-JJ), proroge au premier jour ouvrable (C. consom. L. 221-19 3°) */
+  fin: string
 }
 
 export interface EtatPaiement {
@@ -193,6 +195,8 @@ export interface PaiementATraiter {
   cree_le: string
   paye_le: string | null
   retractation_le: string | null
+  /** null : accuse de retractation pas encore parti (renvoye chaque jour) */
+  accuse_envoye_le?: string | null
   paiement_stripe: string | null
 }
 
@@ -497,7 +501,8 @@ export const api = {
     post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate, cgu_version }),
   paiementEtat: () => requete<EtatPaiement>('/paiement/etat'),
   /** Declaration de retractation en ligne (art. L. 221-21 et D. 221-5 du Code de la consommation). */
-  retracter: (nom: string, sessions: string[]) => post<{ retractes: number }>('/paiement/retractation', { nom, sessions }),
+  retracter: (nom: string, sessions: string[]) =>
+    post<{ retractes: number; accuse_envoye: boolean; le: string }>('/paiement/retractation', { nom, sessions }),
   admin: {
     stats: () => requete<StatsAdmin>('/admin/stats'),
     paiements: () => requete<PaiementATraiter[]>('/paiement/a-traiter'),

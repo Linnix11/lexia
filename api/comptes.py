@@ -272,6 +272,8 @@ class Comptes:
         self._lock = threading.Lock()
         self._dernier_entretien: str | None = None  # jour de la derniere purge quotidienne (_entretien)
         self._lock_entretien = threading.Lock()
+        # Autres taches du jour (renvoi des e-mails de paiement en echec, api/paiement.py), apres les purges
+        self.taches_quotidiennes: list = []
         # adresses declarees administrateur dans la configuration (ADMIN_EMAILS)
         self._admins = {a.strip().lower() for a in admins if a.strip()}
         # empreinte factice : meme duree de verification pour un e-mail inconnu (pas d'enumeration)
@@ -707,6 +709,11 @@ class Comptes:
             self.purger_inactifs()
         except Exception:  # une purge ratee se refait le lendemain ; elle ne doit pas casser le service
             log.exception("purge quotidienne des comptes")
+        for tache in self.taches_quotidiennes:
+            try:
+                tache()
+            except Exception:
+                log.exception("tache quotidienne")
 
     def purger_usage(self) -> int:
         """Compteurs d'usage de plus de USAGE_CONSERVE (90 jours). Renvoie le nombre de lignes effacees."""

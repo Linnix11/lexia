@@ -78,10 +78,14 @@ function Chargement() {
 
 /** Limite d'erreur : une erreur de rendu ou un module introuvable (onglet ouvert pendant une publication)
  *  affiche « Recharger » au lieu d'une page blanche (audit du 2026-11-19, WEB-2). */
-class LimiteErreur extends Component<{ children: ReactNode; cle: string }, { erreur: boolean }> {
-  state = { erreur: false }
+class LimiteErreur extends Component<{ children: ReactNode; cle: string }, { erreur: boolean; cle: string }> {
+  state = { erreur: false, cle: this.props.cle }
   static getDerivedStateFromError() {
     return { erreur: true }
+  }
+  // Changer de page efface l'erreur : la page suivante a sa chance
+  static getDerivedStateFromProps(props: { cle: string }, state: { cle: string }) {
+    return props.cle !== state.cle ? { erreur: false, cle: props.cle } : null
   }
   componentDidCatch(e: Error, _info: ErrorInfo) {
     // Module de code introuvable apres une publication : un rechargement unique suffit.
@@ -94,9 +98,6 @@ class LimiteErreur extends Component<{ children: ReactNode; cle: string }, { err
     } catch {
       /* stockage indisponible : l'ecran « Recharger » suffit */
     }
-  }
-  componentDidUpdate(avant: { cle: string }) {
-    if (avant.cle !== this.props.cle && this.state.erreur) this.setState({ erreur: false })
   }
   render() {
     if (!this.state.erreur) return this.props.children

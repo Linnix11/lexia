@@ -93,6 +93,7 @@ function PaiementsATraiter() {
               <span className="text-muted">
                 {p.statut.replace('_', ' ')}{p.motif ? ` : ${MOTIFS[p.motif] ?? p.motif}` : ''} · payé le {date(p.paye_le)}
                 {p.paiement_stripe ? ` · ${p.paiement_stripe}` : ''}
+                {p.retractation_le && p.accuse_envoye_le === null ? ' · accusé de rétractation non envoyé (renvoi quotidien)' : ''}
               </span>
             </li>
           ))}

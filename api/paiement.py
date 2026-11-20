@@ -72,11 +72,16 @@ CREATE TABLE IF NOT EXISTS paiements (
     paiement_stripe        TEXT,                     -- identifiant du PaymentIntent (pi_...), pour un remboursement
     motif                  TEXT,                     -- pourquoi a rembourser, ecarte ou en litige
     retractation_le        TEXT,                     -- retractation faite en ligne (Mon compte) : date et heure
-    retractation_nom       TEXT                      -- nom et prenom donnes dans la declaration de retractation
+    retractation_nom       TEXT,                     -- nom et prenom donnes dans la declaration de retractation
+    accuse_envoye_le       TEXT,                     -- accuse de retractation parti (sinon renvoye chaque jour)
+    confirmation_envoyee_le TEXT                     -- confirmation du contrat partie (sinon renvoyee chaque jour)
 );
 """
 # Colonnes ajoutees aux tables creees avant elles
-COLONNES_AJOUTEES = ("cgu_version", "motif", "retractation_le", "retractation_nom")
+COLONNES_AJOUTEES = ("cgu_version", "motif", "retractation_le", "retractation_nom", "accuse_envoye_le",
+                     "confirmation_envoyee_le")
+# Accuse ou confirmation dont l'envoi a echoue : renvoye chaque jour pendant ce nombre de jours (audit JUR-7, JUR-8)
+RENVOI_JOURS = 30
 
 
 class ErreurPaiement(Exception):
@@ -122,8 +127,61 @@ def _jour_paris(horodatage: str) -> date:
     return datetime.fromisoformat(horodatage).astimezone(FUSEAU).date()
 
 
+def _paques(annee: int) -> date:
+    """Dimanche de Paques (calendrier gregorien, algorithme anonyme dit de Meeus, Jones et Butcher)."""
+    a, b, c = annee % 19, annee // 100, annee % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l_ = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l_) // 451
+    mois, jour = divmod(h + l_ - 7 * m + 114, 31)
+    return date(annee, mois, jour + 1)
+
+
+def jours_feries(annee: int) -> set[date]:
+    """Les onze fetes legales de l'art. L. 3133-1 du Code du travail (verifie dans LEGI le 2026-11-19)."""
+    paques = _paques(annee)
+    return {date(annee, 1, 1), paques + timedelta(days=1), date(annee, 5, 1), date(annee, 5, 8),
+            paques + timedelta(days=39), paques + timedelta(days=50), date(annee, 7, 14), date(annee, 8, 15),
+            date(annee, 11, 1), date(annee, 11, 11), date(annee, 12, 25)}
+
+
+def fin_retractation(paye_le: str) -> date:
+    """Dernier jour du delai de retractation (C. consom. L. 221-18 et L. 221-19, verifies dans LEGI le 2026-11-19) :
+    le jour du paiement n'est pas compte (1°), le delai finit a la derniere heure du 14e jour (2°) et, s'il expire
+    un samedi, un dimanche ou un jour ferie ou chome, il est proroge jusqu'au premier jour ouvrable suivant (3°)."""
+    fin = _jour_paris(paye_le) + timedelta(days=DELAI_RETRACTATION)
+    while fin.weekday() >= 5 or fin in jours_feries(fin.year):
+        fin += timedelta(days=1)
+    return fin
+
+
 def retractable(paye_le: str | None) -> bool:
-    return bool(paye_le) and datetime.now(FUSEAU).date() <= _jour_paris(paye_le) + timedelta(days=DELAI_RETRACTATION)
+    return bool(paye_le) and datetime.now(FUSEAU).date() <= fin_retractation(paye_le)
+
+
+def texte_contrat(p: dict) -> str:
+    """Contrat vise par une retractation, tel qu'il figure dans la declaration et dans l'accuse."""
+    return (f"formule {FORMULES[p['formule']].nom}, {p['mois']} mois, {euros(p['montant_centimes'])}, "
+            f"payée le {date_fr(_jour_paris(p['paye_le']))}")
+
+
+def envoyer_accuse(paiements: "Paiements", email: str, nom: str, le: str, faits: list[dict]) -> bool:
+    """Accuse de reception de la retractation (D. 221-5). Vrai s'il est parti ; sinon la tache quotidienne le
+    renvoie (audit JUR-7)."""
+    envoi = datetime.fromisoformat(le).astimezone(FUSEAU)
+    try:
+        courriel.envoyer_accuse_retractation(
+            email, nom=nom, envoye_le=f"{date_fr(envoi.date())} à {envoi:%H:%M} (heure de Paris)",
+            contrats=[texte_contrat(p) for p in faits])
+    except courriel.ErreurCourriel:
+        log.warning("accuse de retractation non envoye (nouvel essai demain)")
+        return False
+    paiements.noter_envoi("accuse_envoye_le", [p["session"] for p in faits])
+    return True
 
 
 MOIS_FR = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre",
@@ -151,6 +209,12 @@ class Paiements:
             for col in COLONNES_AJOUTEES:
                 if col not in colonnes:
                     comptes._con.execute(f"ALTER TABLE paiements ADD COLUMN {col} TEXT")
+            # Lignes plus anciennes que le suivi des envois : jamais renvoyees (rien ne dit qu'elles ont echoue)
+            if "accuse_envoye_le" not in colonnes and colonnes:
+                comptes._con.execute("UPDATE paiements SET accuse_envoye_le = retractation_le "
+                                     "WHERE retractation_le IS NOT NULL")
+            if "confirmation_envoyee_le" not in colonnes and colonnes:
+                comptes._con.execute("UPDATE paiements SET confirmation_envoyee_le = paye_le WHERE paye_le IS NOT NULL")
 
     def ouvrir(self, session: str, u: Utilisateur, formule: str, mois: int, montant: int,
                cgu_version: str = VERSION_CGU) -> None:
@@ -191,14 +255,40 @@ class Paiements:
         lignes = self._dicts("SELECT session, statut, formule, mois, montant_centimes, paye_le FROM paiements "
                              "WHERE utilisateur = ? ORDER BY id DESC", (uid,))
         dernier = {k: lignes[0][k] for k in ("statut", "formule", "mois", "paye_le")} if lignes else None
-        retractables = [{k: p[k] for k in ("session", "formule", "mois", "montant_centimes", "paye_le")}
+        retractables = [{**{k: p[k] for k in ("session", "formule", "mois", "montant_centimes", "paye_le")},
+                         "fin": fin_retractation(p["paye_le"]).isoformat()}
                         for p in lignes if p["statut"] == "paye" and retractable(p["paye_le"])]
         return {"dernier": dernier, "retractable": bool(retractables), "retractables": retractables}
 
     def a_traiter(self) -> list[dict]:
+        """Paiements a rembourser ou a verifier, et retractations dont l'accuse n'est pas encore parti."""
         return self._dicts("SELECT session, email, formule, mois, montant_centimes, statut, motif, cree_le, paye_le, "
-                           "retractation_le, paiement_stripe FROM paiements WHERE statut IN "
-                           f"({','.join('?' * len(A_TRAITER))}) ORDER BY id DESC", A_TRAITER)
+                           "retractation_le, accuse_envoye_le, paiement_stripe FROM paiements WHERE statut IN "
+                           f"({','.join('?' * len(A_TRAITER))}) OR (retractation_le IS NOT NULL AND "
+                           "accuse_envoye_le IS NULL) ORDER BY id DESC", A_TRAITER)
+
+    def noter_envoi(self, colonne: str, sessions: list[str]) -> None:
+        assert colonne in ("accuse_envoye_le", "confirmation_envoyee_le")
+        with self.comptes._lock, self.comptes._con:
+            self.comptes._con.executemany(f"UPDATE paiements SET {colonne} = ? WHERE session = ?",
+                                          [(_maintenant(), s) for s in sessions])
+
+    def accuses_en_attente(self) -> list[tuple[str, str, str, list[dict]]]:
+        """(email, nom, date de la declaration, contrats) des accuses de retractation jamais partis."""
+        lignes = self._dicts("SELECT session, email, formule, mois, montant_centimes, paye_le, retractation_le, "
+                             "retractation_nom FROM paiements WHERE retractation_le IS NOT NULL AND "
+                             "accuse_envoye_le IS NULL AND retractation_le >= ? ORDER BY id",
+                             (_il_y_a(days=RENVOI_JOURS),))
+        groupes: dict[tuple, list[dict]] = {}
+        for p in lignes:
+            groupes.setdefault((p["email"], p["retractation_nom"], p["retractation_le"]), []).append(p)
+        return [(email, nom, le, faits) for (email, nom, le), faits in groupes.items()]
+
+    def confirmations_en_attente(self) -> list[str]:
+        """Sessions payees dont la confirmation du contrat (L. 221-13) n'est jamais partie."""
+        return [r["session"] for r in self._dicts(
+            "SELECT session FROM paiements WHERE statut = 'paye' AND confirmation_envoyee_le IS NULL AND paye_le >= ?",
+            (_il_y_a(days=RENVOI_JOURS),))]
 
     @staticmethod
     def _retirer(con, uid: int, formule: str, mois: int) -> None:
@@ -333,7 +423,7 @@ EN_COURS = ("Un paiement précédent est en cours de confirmation : attendez que
 
 def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_origine, *, cle: str, secret_webhook: str,
                           url_publique: str, journal=None, client: httpx.Client | None = None,
-                          admin_requis=None, vendeur: str = "") -> APIRouter:
+                          admin_requis=None, vendeur: str = "", identite: str = "") -> APIRouter:
     router = APIRouter()
     http = client or httpx.Client(timeout=15)
 
@@ -432,15 +522,9 @@ def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_ori
         if not faits:
             raise HTTPException(409, "Aucun achat de moins de 14 jours à annuler.")
         noter(resultat="retractation", sessions=[p["session"] for p in faits])
-        envoi = datetime.fromisoformat(le).astimezone(FUSEAU)
-        try:
-            courriel.envoyer_accuse_retractation(
-                u.email, nom=nom, envoye_le=f"{date_fr(envoi.date())} à {envoi:%H:%M} (heure de Paris)",
-                contrats=[f"formule {FORMULES[p['formule']].nom}, {p['mois']} mois, {euros(p['montant_centimes'])}, "
-                          f"payée le {date_fr(_jour_paris(p['paye_le']))}" for p in faits])
-        except courriel.ErreurCourriel:
-            log.warning("accuse de retractation non envoye")
-        return {"retractes": len(faits)}
+        envoye = envoyer_accuse(paiements, u.email, nom, le, faits)
+        # L'ecran dit la verite : accuse parti, ou renvoye plus tard (audit JUR-7)
+        return {"retractes": len(faits), "accuse_envoye": envoye, "le": le}
 
     if admin_requis is not None:
         @router.get("/a-traiter")
@@ -462,12 +546,25 @@ def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_ori
                     cgu_version=p["cgu_version"] or "",
                     acces_immediat_le=datetime.fromisoformat(p["execution_immediate_le"]).astimezone(FUSEAU)
                     .strftime("le %d/%m/%Y à %H:%M"),
-                    retractation_jusquau=date_fr(_jour_paris(p["paye_le"]) + timedelta(days=DELAI_RETRACTATION)),
-                    url_publique=url_publique, vendeur=vendeur)
+                    retractation_jusquau=date_fr(fin_retractation(p["paye_le"])),
+                    url_publique=url_publique, vendeur=vendeur, identite=identite)
+                paiements.noter_envoi("confirmation_envoyee_le", [session])
             elif p["statut"] == "a_rembourser":
                 courriel.envoyer_paiement_non_active(p["email"], formule=f.nom, prix=euros(p["montant_centimes"]))
         except courriel.ErreurCourriel:
             log.warning("e-mail du paiement %s non envoye", session)
+
+    def renvoyer() -> None:
+        """Tache quotidienne : accuses de retractation et confirmations du contrat dont l'envoi a echoue
+        (audit JUR-7, JUR-8). Sans envoi configure (developpement), rien a faire."""
+        if not courriel.configure():
+            return
+        for email, nom, le, faits in paiements.accuses_en_attente():
+            envoyer_accuse(paiements, email, nom, le, faits)
+        for session in paiements.confirmations_en_attente():
+            confirmer(session, "active")
+
+    paiements.comptes.taches_quotidiennes.append(renvoyer)
 
     def traiter(evenement: dict) -> None:
         type_ = evenement.get("type")
