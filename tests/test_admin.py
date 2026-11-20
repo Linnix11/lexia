@@ -69,7 +69,8 @@ def test_adresse_admin_ne_s_inscrit_pas_depuis_le_site(env, monkeypatch):
     for adresse in ("chef@exemple.fr", "Chef+admin@exemple.fr"):
         r = TestClient(app).post("/auth/inscription", json={"email": adresse, "mot_de_passe": MDP, "accepte_cgu": True,
                                                    "prenom": "Léa", "nom": "Martin"})
-        assert r.status_code == 422 and "réservée" in r.json()["detail"]
+        # Meme message qu'un compte existant : la reponse ne revele pas les adresses d'administration (SEC-7).
+        assert r.status_code == 422 and r.json()["detail"] == "Un compte existe déjà avec cette adresse e-mail."
     assert comptes.par_email("chef@exemple.fr") is None
 
 

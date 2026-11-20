@@ -560,3 +560,14 @@ def test_c10_vectorisation_en_erreur_relancee_sans_redemarrage(tmp_path, monkeyp
     assert c.lister(u.id)[0]["statut"] == "traitement"               # relance a la consultation de la liste
     c._fil.submit(lambda: None).result()
     assert c.fiche(u.id, cid)["statut"] == "pret"
+
+
+def test_nom_de_fichier_avec_caractere_de_controle_refuse_sans_decompte(env):
+    """SEC-8 : « cours%00.txt » donnait une erreur 500 et le depot etait decompte."""
+    app, _, _, _ = env
+    client = TestClient(app)
+    inscrire(client)
+    assert deposer(client, fichier="cours\x00.txt").status_code == 422
+    assert deposer(client, titre="Le\x07dol").status_code == 422
+    assert client.get("/cours").json()["cours"] == []
+    assert deposer(client).status_code == 201

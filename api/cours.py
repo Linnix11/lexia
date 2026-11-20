@@ -465,6 +465,9 @@ def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
         titre = unquote(request.headers.get("x-lexia-titre", ""))
         if not fichier:
             raise HTTPException(422, "Nom de fichier manquant : rechargez la page puis réessayez.")
+        if any(ord(c) < 32 or ord(c) == 127 for c in fichier + titre):
+            # Octet nul (cours%00.txt) : erreur 500 et depot decompte (audit du 19/11, SEC-8).
+            raise HTTPException(422, "Nom de fichier ou titre invalide : renommez le fichier puis réessayez.")
         if not u.email_verifie:
             raise HTTPException(403, "Confirmez votre adresse e-mail pour déposer un cours : "
                                      "le lien vous a été envoyé à l'inscription.")

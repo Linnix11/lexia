@@ -177,6 +177,12 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         route = request.scope.get("route")
         if reponse.status_code == 200 and getattr(route, "path", None) in routes_generees:
             reponse.headers["X-AI-Generated"] = "true"
+        # Reponses JSON de l'API (profil, administration, cours) jamais gardees par le navigateur : un poste
+        # partage les gardait sur disque (audit du 19/11, SEC-5). Pose ici plutot que dans nginx, ou un
+        # add_header de location effacerait les en-tetes de securite du serveur.
+        if (reponse.headers.get("content-type", "").startswith("application/json")
+                and "cache-control" not in reponse.headers):
+            reponse.headers["Cache-Control"] = "no-store"
         return reponse
 
     # --- comptes et quotas -------------------------------------------------------
@@ -333,7 +339,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                  "principales": list(MATIERES[m].principales), "sources": list(s),
                  "noms_sources": {i: NOMS.get(i, i) for i in s}} for m, s in sources_par_matiere().items()]
 
-    @app.post("/chat", dependencies=[Depends(limite)])
+    @app.post("/chat", dependencies=[Depends(verifier_origine), Depends(limite)])
     def chat(req: ChatRequest, request: Request):
         u = _utilisateur(request)
         _taille(req.question)
@@ -343,7 +349,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                                                                    req.niveau, req.semestre, req.cours,
                                                                    req.avec_officiel, u.id if u else None)))
 
-    @app.post("/quiz", dependencies=[Depends(limite)])
+    @app.post("/quiz", dependencies=[Depends(verifier_origine), Depends(limite)])
     def creer_quiz(req: QuizRequest, request: Request):
         u = _utilisateur(request)
         _taille(req.theme)
@@ -353,7 +359,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                                       req.niveau, req.semestre, req.cours, req.avec_officiel,
                                       u.id if u else None)))
 
-    @app.post("/quiz/correct", dependencies=[Depends(limite)])
+    @app.post("/quiz/correct", dependencies=[Depends(verifier_origine), Depends(limite)])
     def corriger_quiz(req: CorrectionRequest, request: Request):
         u = _utilisateur(request)
         res = _place_libre(lambda: quiz.corriger(req.quiz_id, [r.model_dump() for r in req.reponses],
@@ -391,7 +397,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             raise HTTPException(404, "Source introuvable.")
         return {**fiche_source(p), "texte": p["texte"], "titre": p.get("titre"), "meta": p.get("meta") or {}}
 
-    @app.post("/feedback", status_code=204, dependencies=[Depends(limite)])
+    @app.post("/feedback", status_code=204, dependencies=[Depends(verifier_origine), Depends(limite)])
     def feedback(req: FeedbackRequest, request: Request):
         # Compte a l'adresse confirmee et limite de debit : un compte jetable ecrivait des milliers de lignes
         # par minute et faussait les statistiques (second audit du 2026-11-16, point 14).

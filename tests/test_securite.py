@@ -245,3 +245,13 @@ def test_audit_19_11_sec4_cookie_secure_pour_le_site_public_meme_vu_en_http(tmp_
     assert r.status_code == 201 and "secure" in r.headers["set-cookie"].lower()
     r = inscrire(TestClient(app), email="autre@exemple.fr")             # autre hote (tests, adresse IP) : inchange
     assert r.status_code == 201 and "secure" not in r.headers["set-cookie"].lower()
+
+
+def test_audit_19_11_sec5_et_sec9_api_sans_cache_et_origine_controlee(env):  # noqa: F811
+    client, _, _ = env
+    inscrire(client)
+    assert client.get("/auth/moi").headers["cache-control"] == "no-store"
+    question = {"question": "article 1240"}
+    assert client.post("/chat", json=question, headers={"Origin": "https://pirate.example"}).status_code == 403
+    assert client.post("/quiz", json={"theme": "le dol"}, headers={"Origin": "https://pirate.example"}).status_code == 403
+    assert client.post("/chat", json=question, headers={"Origin": "http://testserver"}).status_code == 200

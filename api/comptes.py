@@ -300,8 +300,8 @@ class Comptes:
         if depuis_le_site and boite in {forme_canonique(a) for a in self._admins}:
             # Une adresse d'ADMIN_EMAILS sans compte, inscrite par un tiers, devenait administrateur des que le
             # vrai titulaire cliquait sur le lien recu (second audit du 2026-11-16, points 4 et 15).
-            raise ErreurCompte("Cette adresse est réservée à l'administration : le compte se crée sur le serveur "
-                               "avec la commande d'administration.")
+            # Meme message qu'un compte existant : l'ancien revelait les adresses d'administration (SEC-7).
+            raise ErreurCompte("Un compte existe déjà avec cette adresse e-mail.")
         self._valider_mdp(mdp)
         maintenant = _maintenant().isoformat(timespec="seconds")
         empreinte = hacher_mdp(mdp)
