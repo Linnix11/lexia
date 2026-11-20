@@ -132,6 +132,16 @@ QUESTIONNAIRES_CONSERVES_S = 3 * 3600
 # au modele, dans un e-mail ni a l'administration ; effaces avec le compte (ligne supprimee).
 COLONNES_PROFIL = {"prenom": "TEXT", "nom": "TEXT"}
 PRENOM_MAX = 50
+# Inscription (note de l'editeur du 2026-11-20, point 1) : ce que l'etudiant a coche, garde avec le compte.
+#   age_atteste    : texte de la case cochee (« 15 ans ou plus ») ; meme instant que cgu_le. NULL : compte ancien
+#                    ou client qui n'envoie pas la case (app iOS anterieure) ;
+#   cgu_version    : version des CGU affichee et acceptee (api/paiement.py, VERSION_CGU) ; date : cgu_le ;
+#   infos_email_le : consentement aux e-mails d'information (case distincte, non cochee par defaut), retirable
+#                    dans Mon compte ; NULL = pas de consentement ;
+#   origine        : reponse facultative a « Comment avez-vous connu Lexia ? » (ORIGINES).
+COLONNES_INSCRIPTION = {"age_atteste": "TEXT", "cgu_version": "TEXT", "infos_email_le": "TEXT", "origine": "TEXT"}
+AGE_MINIMUM = 15   # CGU, article 3 ; a changer avec la case du site (web/src/site/Auth.tsx) si l'editeur passe a 18
+ORIGINES = ("reseaux_sociaux", "association", "ami", "enseignant", "recherche", "autre")
 NOM_MAX = 50
 PONCTUATION_PRENOM = set(" -'’.")
 
@@ -264,6 +274,9 @@ class Comptes:
         for nom, genre in COLONNES_PROFIL.items():  # migration : prenom et nom
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
+        for nom, genre in COLONNES_INSCRIPTION.items():  # migration : cases et reponse de l'inscription
+            if nom not in colonnes:
+                self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
         for nom, genre in COLONNES_ACTIVITE.items():  # migration : comptes inactifs
             if nom not in colonnes:
                 self._con.execute(f"ALTER TABLE utilisateurs ADD COLUMN {nom} {genre}")
@@ -307,9 +320,13 @@ class Comptes:
             raise ErreurCompte("Ce mot de passe est trop courant : choisissez-en un autre.")
 
     def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None,
-              nom: str | None = None) -> Utilisateur:
+              nom: str | None = None, age_atteste: str | None = None, cgu_version: str | None = None,
+              infos_email: bool = False, origine: str | None = None) -> Utilisateur:
         """depuis_le_site=False : creation par la commande d'administration (adresses d'administration).
-        Prenom et nom : exiges par la route d'inscription (api/auth.py), facultatifs ici."""
+        Prenom et nom : exiges par la route d'inscription (api/auth.py), facultatifs ici. Cases et origine :
+        voir COLONNES_INSCRIPTION."""
+        if origine is not None and origine not in ORIGINES:
+            origine = None
         email = normaliser_email(email)
         prenom, nom = normaliser_prenom(prenom), normaliser_nom(nom)
         boite = forme_canonique(email)
@@ -348,10 +365,12 @@ class Comptes:
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.
                 cur = self._con.execute(
-                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom, nom) VALUES ("
+                    "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom, nom, age_atteste, "
+                    "cgu_version, infos_email_le, origine) VALUES ("
                     "MAX(COALESCE((SELECT valeur FROM compteurs WHERE nom = 'utilisateurs'), 0),"
-                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?,?)",
-                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom, nom))
+                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?,?,?,?,?,?)",
+                    (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom, nom, age_atteste,
+                     cgu_version, maintenant if infos_email else None, origine))
                 self._con.execute("INSERT INTO compteurs (nom, valeur) VALUES ('utilisateurs', ?) "
                                   "ON CONFLICT(nom) DO UPDATE SET valeur = excluded.valeur", (cur.lastrowid,))
         except sqlite3.IntegrityError:
@@ -377,6 +396,19 @@ class Comptes:
             raise ErreurCompte(MESSAGE_IDENTITE)
         self._q("UPDATE utilisateurs SET prenom = ?, nom = ? WHERE id = ?", (prenom, nom, uid))
         return prenom, nom
+
+    def infos_email(self, uid: int) -> bool:
+        rows = self._q("SELECT infos_email_le FROM utilisateurs WHERE id = ?", (uid,))
+        return bool(rows and rows[0][0])
+
+    def changer_infos_email(self, uid: int, accepte: bool) -> None:
+        """Donne ou retire le consentement aux e-mails d'information (aussi simple a retirer qu'a donner,
+        RGPD art. 7.3). La date est celle du dernier consentement donne."""
+        if accepte:
+            self._q("UPDATE utilisateurs SET infos_email_le = COALESCE(infos_email_le, ?) WHERE id = ?",
+                    (_maintenant().isoformat(timespec="seconds"), uid))
+        else:
+            self._q("UPDATE utilisateurs SET infos_email_le = NULL WHERE id = ?", (uid,))
 
     def authentifier(self, email: str, mdp: str) -> Utilisateur | None:
         rows = self._q("SELECT id, mdp FROM utilisateurs WHERE email = ?", ((email or "").strip().lower(),))

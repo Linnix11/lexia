@@ -407,6 +407,9 @@ export function Confidentialite() {
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création, date de la dernière visite (pour supprimer les comptes inutilisés).</li>
           <li><strong>Prénom et nom</strong> : demandés à l’inscription. Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte (il pré-remplit par exemple la déclaration de rétractation). Ils ne sont jamais transmis à l’intelligence artificielle ni à l’administration du site, et ne figurent dans aucun e-mail. Vous pouvez les corriger à tout moment dans « Mon compte ».</li>
+          <li><strong>Inscription</strong> : la case d’âge cochée, la version des conditions d’utilisation acceptée et la date de l’acceptation, pour garder la preuve de votre accord.</li>
+          <li><strong>E-mails d’information</strong> (si vous les acceptez) : la date de votre accord. Case distincte, jamais cochée d’avance ; vous pouvez la décocher à tout moment dans « Mon compte ».</li>
+          <li><strong>Comment vous avez connu Lexia</strong> (facultatif) : un choix parmi une courte liste (réseaux sociaux, association, ami, enseignant, recherche, autre).</li>
           <li><strong>Déclaration de rétractation</strong> (si vous en faites une en ligne) : le nom et le prénom que vous y indiquez, la date et l’heure ; ils figurent dans l’accusé de réception envoyé par e-mail et sont gardés avec le paiement, comme pièce comptable.</li>
           <li><strong>Questionnaires</strong> : thème, questions, extraits et correction d’un questionnaire en cours, gardés 3 heures au plus pour pouvoir le corriger, y compris après un redémarrage du serveur, puis effacés (et avec le compte).</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
@@ -502,6 +505,9 @@ export function Confidentialite() {
           <li>Fournir le service : compte, réponses, cours déposés, questionnaires, e-mails de confirmation et de réinitialisation (exécution du contrat).</li>
           <li>Appliquer les limites des formules et gérer les formules payantes (exécution du contrat).</li>
           <li>Identifier le titulaire du compte par ses prénom et nom, et le saluer par son prénom dans son espace (exécution du contrat).</li>
+          <li>Garder la preuve de votre acceptation des conditions et de l’âge déclaré (exécution du contrat).</li>
+          <li>Vous envoyer les nouveautés de Lexia par e-mail, seulement si vous l’avez accepté (consentement, retirable à tout moment dans « Mon compte »).</li>
+          <li>Savoir par quels canaux les étudiants connaissent Lexia, à partir de la réponse facultative donnée à l’inscription (intérêt légitime).</li>
           <li>Tenir la comptabilité des formules payantes (obligation légale).</li>
           <li>Assurer la sécurité du service : journaux du serveur web, limites contre les abus, empreinte gardée après une suppression de compte (intérêt légitime).</li>
           <li>Suivre la qualité et le coût du service : journaux techniques sans le texte des questions, avis « utile / pas utile » (intérêt légitime).</li>
@@ -512,6 +518,7 @@ export function Confidentialite() {
         <ul>
           <li>Compte : jusqu’à sa suppression par vous, ou après deux ans sans aucune visite ; un e-mail vous prévient un mois avant et une simple connexion garde le compte. Un compte avec une formule payante en cours n’est jamais supprimé pour ce motif.</li>
           <li>Prénom et nom : comme le compte, effacés avec lui.</li>
+          <li>Preuve de l’acceptation des conditions, réponse sur la façon dont vous avez connu Lexia : comme le compte. Accord pour les e-mails d’information : jusqu’à son retrait ou la suppression du compte.</li>
           <li>Compteurs de questions et de questionnaires : 90 jours.</li>
           <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>

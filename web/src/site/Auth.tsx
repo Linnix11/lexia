@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { api, ApiError } from '../lib/api'
+import { api, ApiError, ORIGINES, type Origine } from '../lib/api'
+import { VERSION_CGU } from '../lib/cgu'
 import { NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, suiteSure, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
@@ -122,6 +123,9 @@ export function Inscription() {
   const [confirmation, setConfirmation] = useState('')
   const [cgu, setCgu] = useState(false)
   const [age, setAge] = useState(false) // CGU, article 3 : compte reserve aux 15 ans et plus
+  // Case distincte et non cochee : le consentement aux e-mails d'information ne conditionne pas le compte
+  const [infos, setInfos] = useState(false)
+  const [origine, setOrigine] = useState<Origine | ''>('') // facultatif
   const [touche, setTouche] = useState<Record<string, boolean>>({})
   const [erreur, setErreur] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
@@ -159,7 +163,9 @@ export function Inscription() {
     setErreur(null)
     setEnvoi(true)
     try {
-      await inscription(email, mdp, cgu, prenom, nom)
+      // Case d'age et version des CGU enregistrees avec le compte (note de l'editeur du 2026-11-20, point 1)
+      await inscription(email, mdp, cgu, prenom, nom,
+        { age_atteste: age, cgu_version: VERSION_CGU, infos_email: infos, origine: origine || null })
       naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Inscription impossible pour le moment.')
@@ -220,6 +226,20 @@ export function Inscription() {
           </span>
         </label>
         {aide('err-cases', montre('cases'))}
+        <label className="flex items-start gap-2 text-[13px] leading-[1.5]">
+          <input type="checkbox" checked={infos} onChange={(e) => setInfos(e.target.checked)} className="mt-1 accent-forest" />
+          <span>
+            J’accepte de recevoir les e-mails d’information de Lexia (nouveautés, quelques fois par an). Facultatif,
+            modifiable à tout moment dans « Mon compte ».
+          </span>
+        </label>
+        <label className="grid gap-1.5 text-[13px]">
+          Comment avez-vous connu Lexia ? <span className="text-[12px] text-muted">Facultatif</span>
+          <select value={origine} onChange={(e) => setOrigine(e.target.value as Origine | '')} className={champ}>
+            <option value="">Je préfère ne pas répondre</option>
+            {ORIGINES.map(([valeur, libelle]) => <option key={valeur} value={valeur}>{libelle}</option>)}
+          </select>
+        </label>
         <Erreur message={erreur} />
         {/* Bouton actif : les erreurs s'affichent au clic au lieu d'un bouton grise sans explication (WEB-10) */}
         <button type="submit" disabled={envoi} className={bouton}>{envoi ? 'Création…' : 'Créer mon compte'}</button>

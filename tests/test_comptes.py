@@ -428,3 +428,55 @@ def test_mots_de_passe_courants_refuses(env):
         r = inscrire(client, mdp=mdp)
         assert r.status_code == 422 and "courant" in r.json()["detail"], mdp
     assert inscrire(client, mdp="ma-phrase-de-passe").status_code == 201
+
+
+def test_inscription_enregistre_cases_version_des_cgu_et_origine(env):
+    """Note de l'editeur du 2026-11-20, point 1 : case d'age, version des CGU, e-mails d'information, origine."""
+    import sqlite3
+
+    from api.paiement import VERSION_CGU
+    client, comptes, _ = env
+    corps = {"email": "etu@exemple.fr", "mot_de_passe": "motdepasse-solide", "accepte_cgu": True,
+             "prenom": "Léa", "nom": "Martin"}
+    assert client.post("/auth/inscription", json={**corps, "age_atteste": False}).status_code == 422
+    r = client.post("/auth/inscription", json={**corps, "age_atteste": True, "cgu_version": "1er janvier 2000"})
+    assert r.status_code == 422 and "rechargez" in r.json()["detail"]
+    assert client.post("/auth/inscription", json={**corps, "origine": "publicite"}).status_code == 422
+    r = client.post("/auth/inscription", json={**corps, "age_atteste": True, "cgu_version": VERSION_CGU,
+                                               "infos_email": False, "origine": "association"})
+    assert r.status_code == 201 and r.json()["infos_email"] is False
+    with sqlite3.connect(comptes.chemin) as c:
+        ligne = c.execute("SELECT age_atteste, cgu_version, cgu_le, infos_email_le, origine FROM utilisateurs").fetchone()
+    assert ligne[0] == "15 ans ou plus" and ligne[1] == VERSION_CGU and ligne[2] and ligne[3] is None
+    assert ligne[4] == "association"
+    # Consentement donne puis retire dans Mon compte, date gardee tant qu'il est donne
+    assert client.post("/auth/infos-email", json={"accepte": True}).json()["infos_email"] is True
+    with sqlite3.connect(comptes.chemin) as c:
+        assert c.execute("SELECT infos_email_le FROM utilisateurs").fetchone()[0]
+    assert client.post("/auth/infos-email", json={"accepte": False}).json()["infos_email"] is False
+    export = client.get("/compte/export").json()
+    assert export["compte"]["cgu_version"] == VERSION_CGU and export["compte"]["origine"] == "association"
+
+
+def test_client_ancien_sans_les_nouveaux_champs_inscrit_sans_rien_enregistrer(env):
+    import sqlite3
+    client, comptes, _ = env
+    assert inscrire(client).status_code == 201          # app iOS anterieure : ni case d'age ni version envoyees
+    with sqlite3.connect(comptes.chemin) as c:
+        assert c.execute("SELECT age_atteste, cgu_version, infos_email_le, origine FROM utilisateurs").fetchone() == (
+            None, None, None, None)
+
+
+def test_suppression_exige_le_code_quand_la_2fa_est_active(env):
+    """SEC-6 : la desactivation de la 2FA exigeait le code, pas la suppression du compte."""
+    from api import totp
+    client, comptes, _ = env
+    inscrire(client)
+    secret = client.post("/auth/2fa/preparer").json()["secret"]
+    secours = client.post("/auth/2fa/activer", json={"mot_de_passe": "motdepasse-solide",
+                                                     "code": totp._code(secret, totp.etape_courante())}).json()
+    assert client.post("/auth/supprimer", json={"mot_de_passe": "motdepasse-solide"}).status_code == 401
+    assert client.post("/auth/supprimer", json={"mot_de_passe": "motdepasse-solide", "code": "zzzz-zzzz"}).status_code == 401
+    assert comptes.par_email("etu@exemple.fr") is not None
+    r = client.post("/auth/supprimer", json={"mot_de_passe": "motdepasse-solide", "code": secours["codes_secours"][0]})
+    assert r.status_code == 204 and comptes.par_email("etu@exemple.fr") is None

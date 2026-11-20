@@ -258,11 +258,43 @@ function Identite() {
   )
 }
 
+/** Consentement aux e-mails d'information : aussi simple a retirer qu'a donner (RGPD, article 7.3). */
+function InfosEmail() {
+  const { profil, majProfil } = useSession()
+  const [erreur, setErreur] = useState<string | null>(null)
+  const [envoi, setEnvoi] = useState(false)
+  if (!profil) return null
+  const changer = async (accepte: boolean) => {
+    setErreur(null)
+    setEnvoi(true)
+    try {
+      majProfil(await api.changerInfosEmail(accepte))
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Modification impossible pour le moment.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
+  return (
+    <section className="rounded-xl border border-line bg-surface p-5">
+      <h2 className="text-[14px] font-semibold">E-mails d’information</h2>
+      <label className="mt-2 flex items-start gap-2 text-[13px] leading-[1.5]">
+        <input type="checkbox" checked={!!profil.infos_email} disabled={envoi} onChange={(e) => changer(e.target.checked)}
+          className="mt-1 accent-forest" />
+        <span>Recevoir les nouveautés de Lexia par e-mail, quelques fois par an. Les e-mails liés à votre compte
+          (confirmation d’adresse, mot de passe, paiement) partent dans tous les cas.</span>
+      </label>
+      {erreur && <p role="alert" className="mt-2 text-[12px] text-[#8c4a36]">{erreur}</p>}
+    </section>
+  )
+}
+
 export function Compte() {
   const { profil, deconnexion, supprimer } = useSession()
   const { naviguer } = useRouteur()
   const [suppression, setSuppression] = useState(false)
   const [mdp, setMdp] = useState('')
+  const [code, setCode] = useState('') // exige quand la double authentification est active (SEC-6)
   const [erreur, setErreur] = useState<string | null>(null)
 
   if (!profil) return null
@@ -278,7 +310,7 @@ export function Compte() {
     setErreur(null)
     try {
       const email = profil.email
-      await supprimer(mdp)
+      await supprimer(mdp, code)
       effacerFavoris(email) // poste partage : les fiches du compte ne restent pas dans le navigateur
       effacerCartes(email)
       effacerSemestre(email)
@@ -329,6 +361,8 @@ export function Compte() {
             </div>
           </section>
 
+          <InfosEmail />
+
           <MesDonnees />
 
           <section className="rounded-xl border border-[#ecd9c4] bg-cream p-5">
@@ -351,10 +385,18 @@ export function Compte() {
                   <input type="password" autoComplete="current-password" autoFocus value={mdp} onChange={(e) => setMdp(e.target.value)}
                     className="rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
                 </label>
-                <button type="submit" disabled={!mdp} className="rounded-[8px] bg-[#8c4a36] px-3 py-2 text-[13px] text-white disabled:opacity-60">
+                {profil.double_authentification && (
+                  <label className="grid gap-1 text-[12px] text-[#5f4f37]">
+                    Code de l’application (ou code de secours)
+                    <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)}
+                      className="w-40 rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
+                  </label>
+                )}
+                <button type="submit" disabled={!mdp || (!!profil.double_authentification && !code.trim())}
+                  className="rounded-[8px] bg-[#8c4a36] px-3 py-2 text-[13px] text-white disabled:opacity-60">
                   Supprimer définitivement le compte {profil.email}
                 </button>
-                <button type="button" onClick={() => { setSuppression(false); setMdp(''); setErreur(null) }} className="px-2 py-2 text-[13px] text-muted">
+                <button type="button" onClick={() => { setSuppression(false); setMdp(''); setCode(''); setErreur(null) }} className="px-2 py-2 text-[13px] text-muted">
                   Annuler
                 </button>
                 {erreur && <p role="alert" className="w-full text-[12px] text-[#8c4a36]">{erreur}</p>}

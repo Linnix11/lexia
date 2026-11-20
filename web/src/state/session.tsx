@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, ApiError, quandSessionExpiree, type ConfigPublique, type Profil } from '../lib/api'
+import { api, ApiError, quandSessionExpiree, type ChoixInscription, type ConfigPublique, type Profil } from '../lib/api'
 import { oublierSeance } from '../lib/seance'
 
 /** Resultat d'une connexion : session ouverte, ou code de l'application a saisir (jeton de l'etape 2). */
@@ -18,9 +18,9 @@ interface Session {
   connexion: (email: string, mdp: string) => Promise<ResultatConnexion>
   terminerConnexion: (jeton: string, code: string) => Promise<void>
   majProfil: (p: Profil) => void
-  inscription: (email: string, mdp: string, cgu: boolean, prenom: string, nom: string) => Promise<void>
+  inscription: (email: string, mdp: string, cgu: boolean, prenom: string, nom: string, choix: ChoixInscription) => Promise<void>
   deconnexion: () => Promise<void>
-  supprimer: (mdp: string) => Promise<void>
+  supprimer: (mdp: string, code?: string) => Promise<void>
 }
 
 const ESSAIS_SESSION = 4
@@ -98,14 +98,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     terminerConnexion: async (jeton, code) => setProfil(await api.connexionCode(jeton, code)),
     majProfil: setProfil,
-    inscription: async (email, mdp, cgu, prenom, nom) => setProfil(await api.inscription(email, mdp, cgu, prenom, nom)),
+    inscription: async (email, mdp, cgu, prenom, nom, choix) => setProfil(await api.inscription(email, mdp, cgu, prenom, nom, choix)),
     deconnexion: async () => {
       await api.deconnexion().catch(() => undefined)
       oublierSeance() // poste partage : la conversation et le questionnaire ne restent pas dans l'onglet
       setProfil(null)
     },
-    supprimer: async (mdp) => {
-      await api.supprimerCompte(mdp)
+    supprimer: async (mdp, code) => {
+      await api.supprimerCompte(mdp, code)
       oublierSeance()
       setProfil(null)
     },

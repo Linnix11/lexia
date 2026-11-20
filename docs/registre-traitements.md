@@ -32,6 +32,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 | T7 | Sécurité du service | Intérêt légitime | 14 jours (serveur web), 48 h (empreinte après suppression) |
 | T8 | Sauvegardes | Intérêt légitime (continuité du service) | 14 jours sur le serveur, 60 jours hors serveur |
 | T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | 3 ans après le dernier échange (à appliquer par l'éditeur dans sa boîte) |
+| T10 | E-mails d'information et origine des inscriptions | Consentement (e-mails) ; intérêt légitime (origine, réponse facultative) | Comme le compte ; consentement effacé dès son retrait |
 
 ## Fiches
 
@@ -46,6 +47,11 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   empreintes des jetons de confirmation et de réinitialisation ; date de la dernière visite (`actif_le`, une
   écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions : empreinte du
   jeton et date d'expiration.
+- Preuve de l'acceptation à l'inscription (D110, note de l'éditeur du 2026-11-20, point 1) : texte de la case d'âge
+  cochée (`age_atteste`, « 15 ans ou plus »), version des CGU acceptée (`cgu_version`, même valeur que
+  `VERSION_CGU`), date de l'acceptation (`cgu_le`). Vides pour les comptes créés avant D110 et pour un client qui
+  ne les envoie pas (app iOS antérieure). Base légale : exécution du contrat (preuve de l'acceptation des
+  conditions et de l'âge déclaré).
 - Prénom et nom (D100, D102, colonnes `prenom` et `nom`, `Comptes.changer_identite`) : demandés à l'inscription
   depuis le site (refus 422 sans eux, `api/auth.py`), modifiables dans « Mon compte » mais jamais vides une fois
   enregistrés ; 50 caractères au plus chacun (lettres, espaces, traits d'union, apostrophes, points). Comptes créés
@@ -172,6 +178,20 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   (`deploy/sauvegarder_comptes.sh`) ; copie hors serveur sur l'ordinateur de l'éditeur, 60 copies
   (`deploy/rapatrier_sauvegardes.sh`, dossier en 700, fichiers en 600, disque chiffré FileVault requis : à
   vérifier sur la machine).
+
+### T10. E-mails d'information et origine des inscriptions
+
+- Finalités : envoyer les nouveautés de Lexia par e-mail à ceux qui l'ont accepté ; savoir par quels canaux les
+  étudiants connaissent Lexia (statistiques d'ensemble).
+- Données (`api/comptes.py`, colonnes `infos_email_le` et `origine`) : date du consentement (case distincte, non
+  cochée par défaut, à l'inscription ou dans « Mon compte ») ; réponse facultative à « Comment avez-vous connu
+  Lexia ? » parmi six choix (réseaux sociaux, association étudiante, ami, enseignant, recherche, autre).
+- Base légale : consentement pour les e-mails (C. postes et comm. électr., L. 34-5 ; RGPD art. 6.1.a), retirable à
+  tout moment dans « Mon compte » (`POST /auth/infos-email`), le retrait efface la date ; intérêt légitime pour
+  l'origine, que l'étudiant peut ne pas donner (« Je préfère ne pas répondre »).
+- Destinataires : éditeur ; Resend quand un e-mail d'information sera envoyé (aucun envoi n'existe encore : chaque
+  e-mail devra porter un lien de désinscription et ne partir qu'aux comptes dont `infos_email_le` est renseigné).
+- Durée : comme le compte (effacées avec lui) ; incluses dans l'export des données (`api/export.py`).
 
 ### T9. Échanges par e-mail
 

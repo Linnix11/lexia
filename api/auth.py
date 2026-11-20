@@ -15,14 +15,16 @@ import threading
 import time
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
+from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from api import courriel, totp
-from api.comptes import (DUREE_SESSION, MESSAGE_IDENTITE, Comptes, ErreurCompte, Utilisateur, normaliser_nom,
-                         normaliser_prenom)
+from api.comptes import (AGE_MINIMUM, DUREE_SESSION, MESSAGE_IDENTITE, Comptes, ErreurCompte, Utilisateur,
+                         normaliser_nom, normaliser_prenom)
+from api.paiement import VERSION_CGU
 from api.plans import FORMULES
 
 COOKIE = "lexia_session"
@@ -43,6 +45,16 @@ class Inscription(BaseModel):
     # Exiges (D102) ; limites fines dans normaliser_prenom et normaliser_nom
     prenom: str | None = Field(default=None, max_length=100)
     nom: str | None = Field(default=None, max_length=100)
+    # Note de l'editeur du 2026-11-20, point 1 (api/comptes.py, COLONNES_INSCRIPTION). None : client ancien
+    # (app iOS) qui n'envoie pas la case ou la version ; rien n'est alors enregistre pour ce champ.
+    age_atteste: bool | None = None
+    cgu_version: str | None = Field(default=None, max_length=40)
+    infos_email: bool = False
+    origine: Literal["reseaux_sociaux", "association", "ami", "enseignant", "recherche", "autre"] | None = None
+
+
+class InfosEmail(BaseModel):
+    accepte: bool
 
 
 class Identite(BaseModel):
@@ -57,6 +69,7 @@ class Connexion(BaseModel):
 
 class Suppression(BaseModel):
     mot_de_passe: str = Field(max_length=256)
+    code: str = Field(default="", max_length=20)   # exige quand la double authentification est active (SEC-6)
 
 
 class CodeConnexion(BaseModel):
@@ -250,6 +263,7 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
         "double_authentification": u.double_authentification,
         "email_verifie": u.email_verifie,
         "codes_secours_restants": comptes.codes_secours_restants(u.id) if u.double_authentification else 0,
+        "infos_email": comptes.infos_email(u.id),
     }
 
 
@@ -327,6 +341,12 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def inscription(req: Inscription, request: Request, response: Response):
         if not req.accepte_cgu:
             raise HTTPException(422, "Vous devez accepter les conditions générales d'utilisation.")
+        if req.age_atteste is False:
+            raise HTTPException(422, f"Lexia est réservé aux personnes de {AGE_MINIMUM} ans ou plus.")
+        if req.cgu_version is not None and req.cgu_version != VERSION_CGU:
+            # Onglet ouvert avant une modification des conditions : l'etudiant accepterait une autre version
+            raise HTTPException(422, "Les conditions d'utilisation ont changé : rechargez la page pour lire la "
+                                     "nouvelle version, puis réessayez.")
         try:
             if not normaliser_prenom(req.prenom) or not normaliser_nom(req.nom):
                 raise ErreurCompte(MESSAGE_IDENTITE)
@@ -335,7 +355,9 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         freins.verifier(_ip(request), "inscription")
         freins.verifier_inscription(_ip(request))
         try:
-            u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom, nom=req.nom)
+            u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom, nom=req.nom,
+                              age_atteste=f"{AGE_MINIMUM} ans ou plus" if req.age_atteste else None,
+                              cgu_version=req.cgu_version, infos_email=req.infos_email, origine=req.origine)
         except ErreurCompte as e:
             # Un refus compte dans la limite du jour : « Un compte existe deja » permettait de tester des
             # adresses sans limite (audit du 2026-11-16, point 8 ; reste possible 20 fois par jour et par IP).
@@ -550,6 +572,11 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def moi(u: Utilisateur = Depends(utilisateur_requis)):
         return profil(comptes, u)
 
+    @router.post("/infos-email", dependencies=[Depends(verifier_origine)])
+    def changer_infos_email(req: InfosEmail, u: Utilisateur = Depends(utilisateur_requis)):
+        comptes.changer_infos_email(u.id, req.accepte)
+        return profil(comptes, comptes.par_id(u.id))
+
     @router.post("/identite", dependencies=[Depends(verifier_origine)])
     def changer_identite(req: Identite, u: Utilisateur = Depends(utilisateur_requis)):
         try:
@@ -565,6 +592,14 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if comptes.authentifier(u.email, req.mot_de_passe) is None:
             freins.echec(u.email)
             raise HTTPException(401, "Mot de passe incorrect.")
+        # Comme la desactivation de la 2FA : avec une session restee ouverte et le mot de passe, un tiers
+        # supprimait le compte sans le code (audit du 19/11, SEC-6). Code de secours accepte aussi.
+        if u.double_authentification:
+            if not req.code.strip():
+                raise HTTPException(401, "Saisissez le code de votre application d'authentification.")
+            if not comptes.verifier_2fa(u.id, req.code):
+                freins.echec(u.email)
+                raise HTTPException(401, "Code incorrect.")
         comptes.supprimer(u.id, garder_trace=True)  # pas de reinscription avant 24 h (quota remis a zero)
         response.delete_cookie(COOKIE, path="/")
 

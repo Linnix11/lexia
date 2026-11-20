@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
+import { VERSION_CGU } from './lib/cgu'
 
 const FORMULES = [
   { id: 'gratuit', nom: 'Gratuit', prix_mensuel_euros: 0, questions_par_jour: 10, quiz_par_jour: 2, description: 'd', avantages: ['10 questions par jour'] },
@@ -175,13 +176,37 @@ describe('Site', () => {
     expect(screen.getByText('Indiquez votre nom.')).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/auth/inscription'))).toBe(false)
     fireEvent.change(screen.getByLabelText(/^Nom/), { target: { value: 'Martin' } })
+    // Case des e-mails d'information distincte et non cochee ; origine facultative
+    const infos = screen.getByRole('checkbox', { name: /e-mails d’information/ })
+    expect(infos).not.toBeChecked()
+    fireEvent.change(screen.getByLabelText(/Comment avez-vous connu Lexia/), { target: { value: 'association' } })
     await act(async () => {
       fireEvent.click(creer)
     })
     await waitFor(() => expect(window.location.pathname).toBe('/app'))
     const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/inscription'))!
     expect(JSON.parse(String(appel[1].body))).toEqual({ email: 'etu@exemple.fr', mot_de_passe: 'motdepasse-solide', accepte_cgu: true,
-      prenom: 'Léa', nom: 'Martin' })
+      prenom: 'Léa', nom: 'Martin', age_atteste: true, cgu_version: VERSION_CGU, infos_email: false, origine: 'association' })
+  })
+
+  it('suppression du compte : code de l application exige quand la double authentification est active (SEC-6)', async () => {
+    connecte = true
+    admin = true   // le profil de test n'a la double authentification qu'avec le role admin
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/auth/supprimer') ? Promise.resolve(new Response(null, { status: 204 })) : normal(url, init))
+    aller('/compte')
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer mon compte…' }))
+    fireEvent.change(screen.getByLabelText('Mot de passe pour confirmer'), { target: { value: 'motdepasse-solide' } })
+    const supprimer = screen.getByRole('button', { name: /Supprimer définitivement/ })
+    expect(supprimer).toBeDisabled()
+    fireEvent.change(screen.getByLabelText(/Code de l’application \(ou code de secours\)/), { target: { value: '123456' } })
+    await act(async () => {
+      fireEvent.click(supprimer)
+    })
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/auth/supprimer'))!
+    expect(JSON.parse(String(appel[1].body))).toEqual({ mot_de_passe: 'motdepasse-solide', code: '123456' })
   })
 
   it('connexion avec double authentification : code demande apres le mot de passe', async () => {

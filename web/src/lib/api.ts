@@ -150,6 +150,27 @@ export interface Profil {
   double_authentification?: boolean
   codes_secours_restants?: number
   email_verifie?: boolean
+  /** Consentement aux e-mails d'information (case distincte a l'inscription, retirable dans Mon compte) */
+  infos_email?: boolean
+}
+
+/** Reponse facultative a « Comment avez-vous connu Lexia ? » (api/comptes.py, ORIGINES) */
+export const ORIGINES = [
+  ['reseaux_sociaux', 'Réseaux sociaux'],
+  ['association', 'Association étudiante'],
+  ['ami', 'Un ami ou une amie'],
+  ['enseignant', 'Un enseignant'],
+  ['recherche', 'Recherche sur internet'],
+  ['autre', 'Autre'],
+] as const
+export type Origine = (typeof ORIGINES)[number][0]
+
+/** Cases et reponse de l'inscription, enregistrees avec le compte (note de l'editeur du 2026-11-20, point 1) */
+export interface ChoixInscription {
+  age_atteste: boolean
+  cgu_version: string
+  infos_email: boolean
+  origine: Origine | null
 }
 
 /** Reponse de /auth/connexion quand le compte a la double authentification : le code reste a saisir. */
@@ -481,8 +502,9 @@ export const api = {
   session: () => requete<Profil | null>('/auth/session'),
   /** Donnees du compte (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11) */
   exporterDonnees: () => requete<unknown>('/compte/export'),
-  inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean, prenom: string, nom: string) =>
-    post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu, prenom: prenom.trim(), nom: nom.trim() }),
+  inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean, prenom: string, nom: string, choix: ChoixInscription) =>
+    post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu, prenom: prenom.trim(), nom: nom.trim(), ...choix }),
+  changerInfosEmail: (accepte: boolean) => post<Profil>('/auth/infos-email', { accepte }),
   changerIdentite: (prenom: string, nom: string) => post<Profil>('/auth/identite', { prenom: prenom.trim(), nom: nom.trim() }),
   connexion: (email: string, mot_de_passe: string) => post<Profil | DeuxiemeEtape>('/auth/connexion', { email, mot_de_passe }),
   connexionCode: (jeton: string, code: string) => post<Profil>('/auth/connexion/code', { jeton, code }),
@@ -497,7 +519,8 @@ export const api = {
     desactiver: (mot_de_passe: string, code: string) => post<Profil>('/auth/2fa/desactiver', { mot_de_passe, code }),
   },
   deconnexion: () => post<void>('/auth/deconnexion', {}),
-  supprimerCompte: (mot_de_passe: string) => post<void>('/auth/supprimer', { mot_de_passe }),
+  /** code : celui de l'application quand la double authentification est active (SEC-6), sinon vide */
+  supprimerCompte: (mot_de_passe: string, code = '') => post<void>('/auth/supprimer', { mot_de_passe, code }),
   /** Ouvre une session de paiement Stripe Checkout ; renvoie l'adresse de la page de paiement. */
   payer: (formule: string, mois: number, execution_immediate: boolean, cgu_version: string) =>
     post<{ url: string }>('/paiement/session', { formule, mois, execution_immediate, cgu_version }),
