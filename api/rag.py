@@ -204,6 +204,7 @@ class Lexia:
 
     def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], dict]:
         """Renvoie les passages et un resume de la recherche (pour le controle et les journaux)."""
+        debut = time.monotonic()
         sources = sources_pour(matiere)
         toutes = tuple(sorted({s for ids in sources_par_matiere().values() for s in ids}))
         textes, juris = groupes(sources, toutes)
@@ -236,8 +237,10 @@ class Lexia:
             complement.suggestions = list(dict.fromkeys(locales + complement.suggestions))[:MAX_SUGGESTIONS]
         if complement and complement.reformulation and vectoriel:
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
+        debut_calcul = time.monotonic()
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
                                      complement=complement, reclasseur=self.reclasseur)
+        calcul_ms = int((time.monotonic() - debut_calcul) * 1000)
         # Article d'une matiere speciale (successions...) dont la question ne parle pas : ecarte, sauf s'il est cite.
         hits = [h for h in hits if "reference" in h.via or not lexique.hors_matiere(h.passage, texte)]
         # Version finie depuis la construction de l'index (fin le 1er janvier...) : l'index la croit en vigueur
@@ -262,6 +265,11 @@ class Lexia:
             "reclassement": self.reclasseur is not None,
             "suggestions_retenues": sum(1 for h in hits if "suggestion" in h.via),
             "lexique": len(locales),
+            # Durees dans le journal (recherche_detail) : la recherche se mesure sur le serveur sans aucune
+            # requete de plus (audit du 19/11, SRV-7). duree_ms : recherche entiere, reformulation comprise ;
+            # calcul_ms : parcours de l'index et reclassement.
+            "duree_ms": int((time.monotonic() - debut) * 1000),
+            "calcul_ms": calcul_ms,
         }
         if anciens:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
