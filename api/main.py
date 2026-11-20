@@ -24,6 +24,7 @@ from api import coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
 from api.cours_recuperes import Catalogue, creer_routes_cours_recuperes
+from api.cartes_mentales import MAX_JETONS_CARTE, CartesMentales, creer_routes_cartes_mentales
 from api.config import Settings, get_settings
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
@@ -113,25 +114,29 @@ def releve_jetons(journal: Journal | None, role: str):
     return releve
 
 
-def _construire_llm(settings: Settings, journal: Journal | None = None, **options) -> LLM:
-    """options : max_jetons (resumes vocaux, plafond plus bas que les reponses)."""
+def _construire_llm(settings: Settings, journal: Journal | None = None, *, delai: float | None = None,
+                    **options) -> LLM:
+    """options : max_jetons (resumes vocaux, cartes mentales : plafond plus bas que les reponses).
+    delai : duree d'un appel (et budget avant le secours) plus courte que celle des reponses (cartes mentales)."""
     from api.llm.gemini import GeminiLLM
 
     # Groq configure : un seul tour de Gemini, borne dans le temps, puis le secours prend le relais.
     avec_secours = bool(settings.groq_api_key)
+    budget = min(settings.budget_avant_secours, delai) if delai else settings.budget_avant_secours
     return GeminiLLM(api_key=settings.gemini_api_key, models=settings.gemini_models,
-                     thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout,
+                     thinking_level=settings.gemini_thinking_level, timeout=delai or settings.llm_timeout,
                      releve=releve_jetons(journal, "generation"), tentatives=1 if avec_secours else 2,
-                     budget=settings.budget_avant_secours if avec_secours else None, **options)
+                     budget=budget if avec_secours else None, **options)
 
 
-def _construire_secours(settings: Settings, journal: Journal | None = None, **options):
+def _construire_secours(settings: Settings, journal: Journal | None = None, *, delai: float | None = None,
+                        **options):
     if not settings.groq_api_key:
         return None
     from api.llm.groq import GroqLLM
 
-    return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models, timeout=settings.llm_timeout,
-                   releve=releve_jetons(journal, "secours"), **options)
+    return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models,
+                   timeout=delai or settings.llm_timeout, releve=releve_jetons(journal, "secours"), **options)
 
 
 def _construire_expanseur(settings: Settings, journal: Journal | None = None):
@@ -193,7 +198,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     # AI Act, art. 50.2 (marquage lisible par machine des textes generes ; echeance du 2 decembre 2026 pour un
     # systeme deja en ligne, reglement 2026/1744) : en-tete sur les reponses redigees par le modele. Moyen a
     # confirmer quand le code de bonne pratique de la Commission sera fixe (audit du 2026-11-18, E7).
-    routes_generees = {"/chat", "/quiz", "/quiz/correct", "/resume-vocal"}
+    routes_generees = {"/chat", "/quiz", "/quiz/correct", "/resume-vocal", "/carte-mentale"}
 
     @app.middleware("http")
     async def marquer_contenu_genere(request: Request, call_next):
@@ -248,10 +253,26 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             llm_resume = _construire_llm(settings, journal, max_jetons=MAX_JETONS_RESUME)
             secours_resume = _construire_secours(settings, journal, max_jetons=MAX_JETONS_RESUME)
         lexia_resume = Lexia(retriever, llm_resume, journal, secours=secours_resume, disjoncteur=lexia.disjoncteur)
+        resumes = ResumesVocaux(lexia_resume, retriever, journal, cours, catalogue)
         app.include_router(creer_routes_resumes_vocaux(
-            ResumesVocaux(lexia_resume, retriever, journal, cours, catalogue),
-            QuotaResumes(comptes.chemin, settings.resumes_vocaux_par_jour), utilisateur_requis, limite,
+            resumes, QuotaResumes(comptes.chemin, settings.resumes_vocaux_par_jour), utilisateur_requis, limite,
             lambda action: _place_libre(action)))
+
+        # Cartes mentales (D112, docs/cartes-mentales.md) : memes modeles et disjoncteur, plafond de jetons et
+        # duree par appel plus bas ; documents lus comme les resumes vocaux ; matiere cherchee par la recherche
+        # habituelle ; quota par jour a part.
+        if llm_fourni:
+            llm_carte, secours_carte = llm, secours
+        else:
+            llm_carte = _construire_llm(settings, journal, max_jetons=MAX_JETONS_CARTE,
+                                        delai=settings.cartes_mentales_delai)
+            secours_carte = _construire_secours(settings, journal, max_jetons=MAX_JETONS_CARTE,
+                                                delai=settings.cartes_mentales_delai)
+        lexia_carte = Lexia(retriever, llm_carte, journal, secours=secours_carte, disjoncteur=lexia.disjoncteur)
+        app.include_router(creer_routes_cartes_mentales(
+            CartesMentales(lexia_carte, retriever, resumes, chercheur=lexia, journal=journal),
+            QuotaResumes(comptes.chemin, settings.cartes_mentales_par_jour, table="cartes_mentales"),
+            utilisateur_requis, limite, lambda action: _place_libre(action)))
 
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)

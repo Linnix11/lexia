@@ -4,6 +4,7 @@ import { chargerCatalogue } from '../lib/catalogue'
 import { normaliser } from '../lib/texte'
 import { CadreEspace } from '../components/Layout'
 import { ResumeVocal } from '../components/ResumeVocal'
+import { CarteMentale } from '../components/CarteMentale'
 import { useApp } from '../state/contexte'
 import { Surtitre } from './Public'
 
@@ -76,7 +77,10 @@ function CarteCours({ c }: { c: CoursRecupere }) {
         className="mt-3 min-h-11 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
         {ouvert ? 'Fermer la fiche' : 'Lire la fiche'}
       </button>
-      <div className="mt-2"><ResumeVocal demande={() => ({ type: 'cours_recupere', id: c.id })} /></div>
+      <div className="mt-2 flex flex-wrap items-start gap-2">
+        <ResumeVocal demande={() => ({ type: 'cours_recupere', id: c.id })} />
+        <CarteMentale demande={() => ({ type: 'cours_recupere', id: c.id })} />
+      </div>
       {ouvert && (
         <div className="mt-4 border-t border-line-soft pt-4">
           {erreur ? (

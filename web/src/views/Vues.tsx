@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { CarteBibliotheque, CarteOutils, CarteSources } from '../components/Cartes'
 import { CarteAnnales } from '../components/Annales'
+import { CarteMentale } from '../components/CarteMentale'
 import { RechercheBibliotheque } from '../components/RechercheBibliotheque'
 import { Chat } from '../components/Chat'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
@@ -196,6 +197,10 @@ export function VueMatieres() {
                         className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>
                       <button type="button" onClick={() => { setMatiere(m.id); ouvrirQuiz() }}
                         className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
+                    </div>
+                    <div className="mt-2">
+                      <CarteMentale avecNotion libelle="Carte mentale de la matière"
+                        demande={(notion) => ({ type: 'matiere', matiere: m.id, notion })} />
                     </div>
                     <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
                       <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>

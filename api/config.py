@@ -55,6 +55,8 @@ class Settings:
     # comptes crees par adresse IP sur 24 h (0 = sans limite) ; un campus derriere une seule IP compte pour une
     inscriptions_par_ip_jour: int = 20
     resumes_vocaux_par_jour: int = 5           # resumes vocaux par compte et par jour (docs/resumes-vocaux.md)
+    cartes_mentales_par_jour: int = 5          # cartes mentales par compte et par jour (docs/cartes-mentales.md)
+    cartes_mentales_delai: float = 25.0        # secondes par appel au modele pour une carte mentale
     # Adresse publique du site (https://...), seule base des liens envoyes par e-mail. Jamais l'en-tete Host ou
     # Origin de la requete : un domaine tiers pointe sur le serveur faisait envoyer des liens vers lui (audit 2).
     url_publique: str = ""
@@ -98,6 +100,8 @@ def get_settings() -> Settings:
         admin_emails=_list("ADMIN_EMAILS"),
         inscriptions_par_ip_jour=int(os.environ.get("INSCRIPTIONS_PAR_IP_JOUR", "20")),
         resumes_vocaux_par_jour=int(os.environ.get("RESUMES_VOCAUX_PAR_JOUR", "5")),
+        cartes_mentales_par_jour=int(os.environ.get("CARTES_MENTALES_PAR_JOUR", "5")),
+        cartes_mentales_delai=float(os.environ.get("CARTES_MENTALES_DELAI_SECONDES", "25")),
         url_publique=os.environ.get("URL_PUBLIQUE", "").strip().rstrip("/"),
         stripe_secret_key=os.environ.get("STRIPE_SECRET_KEY", "").strip(),
         stripe_webhook_secret=os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip(),

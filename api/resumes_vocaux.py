@@ -54,11 +54,15 @@ class DemandeResume(BaseModel):
 class QuotaResumes:
     """Resumes du jour par compte, dans la base des comptes (table a part : rien a changer dans `usage`)."""
 
-    def __init__(self, chemin: Path | str, par_jour: int):
+    def __init__(self, chemin: Path | str, par_jour: int, table: str = "resumes_vocaux"):
+        # table : nom fixe dans le code (« cartes_mentales » pour les cartes, D112), jamais venu d'une requete
+        if not table.isidentifier():
+            raise ValueError(table)
         self.par_jour = par_jour
+        self._t = table
         self._con = sqlite3.connect(str(chemin), check_same_thread=False)
         self._con.execute("PRAGMA foreign_keys = ON")
-        self._con.execute("CREATE TABLE IF NOT EXISTS resumes_vocaux (utilisateur INTEGER NOT NULL "
+        self._con.execute(f"CREATE TABLE IF NOT EXISTS {table} (utilisateur INTEGER NOT NULL "
                           "REFERENCES utilisateurs(id) ON DELETE CASCADE, jour TEXT NOT NULL, "
                           "nombre INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (utilisateur, jour))")
         self._con.commit()
@@ -66,7 +70,7 @@ class QuotaResumes:
 
     def utilises(self, uid: int) -> int:
         with self._lock:
-            row = self._con.execute("SELECT nombre FROM resumes_vocaux WHERE utilisateur = ? AND jour = ?",
+            row = self._con.execute(f"SELECT nombre FROM {self._t} WHERE utilisateur = ? AND jour = ?",
                                     (uid, _jour())).fetchone()
         return row[0] if row else 0
 
@@ -74,15 +78,15 @@ class QuotaResumes:
         jour = _jour()
         ancien = (date.fromisoformat(jour) - timedelta(days=CONSERVATION_JOURS)).isoformat()
         with self._lock, self._con:
-            self._con.execute("DELETE FROM resumes_vocaux WHERE jour < ?", (ancien,))
-            self._con.execute("INSERT OR IGNORE INTO resumes_vocaux (utilisateur, jour) VALUES (?, ?)", (uid, jour))
-            cur = self._con.execute("UPDATE resumes_vocaux SET nombre = nombre + 1 WHERE utilisateur = ? "
+            self._con.execute(f"DELETE FROM {self._t} WHERE jour < ?", (ancien,))
+            self._con.execute(f"INSERT OR IGNORE INTO {self._t} (utilisateur, jour) VALUES (?, ?)", (uid, jour))
+            cur = self._con.execute(f"UPDATE {self._t} SET nombre = nombre + 1 WHERE utilisateur = ? "
                                     "AND jour = ? AND nombre < ?", (uid, jour, self.par_jour))
             return cur.rowcount == 1
 
     def rembourser(self, uid: int) -> None:
         with self._lock, self._con:
-            self._con.execute("UPDATE resumes_vocaux SET nombre = MAX(nombre - 1, 0) WHERE utilisateur = ? "
+            self._con.execute(f"UPDATE {self._t} SET nombre = MAX(nombre - 1, 0) WHERE utilisateur = ? "
                               "AND jour = ?", (uid, _jour()))
 
 

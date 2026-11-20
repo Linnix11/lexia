@@ -4,6 +4,7 @@ import { api, ApiError, type ApercuCours, type CoursDepose } from '../lib/api'
 import { useApp } from '../state/contexte'
 import { FORMATS_LISIBLES, formatAccepte, refusFichier, sansExtension, STATUTS } from '../lib/fichiers'
 import { OptionsMatieres } from './OptionsMatieres'
+import { CarteMentale } from './CarteMentale'
 import { ResumeVocal } from './ResumeVocal'
 
 export { DepotCours } from './DepotCours'
@@ -85,7 +86,10 @@ function CoursLigne({ cours: c, onReviser, onRetirer }: { cours: CoursDepose; on
           <button type="button" onClick={onRetirer} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
         </span>
       </div>
-      <ResumeVocal demande={() => ({ type: 'cours', id: String(c.id) })} />
+      <div className="flex flex-wrap items-start gap-2">
+        <ResumeVocal demande={() => ({ type: 'cours', id: String(c.id) })} />
+        <CarteMentale demande={() => ({ type: 'cours', id: String(c.id) })} />
+      </div>
       {edition && (
         <form onSubmit={enregistrer} aria-label={`Modifier « ${c.titre} »`} className="flex flex-wrap items-end gap-2 rounded-[8px] bg-[#f6f8f3] p-2">
           <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] text-muted">

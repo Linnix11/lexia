@@ -498,6 +498,29 @@ export interface ResumeVocal {
   restants: number
 }
 
+/** Carte mentale (D112, docs/cartes-mentales.md) : documents lus comme pour le resume vocal, ou une matiere. */
+export type DemandeCarte = DemandeResume | { type: 'matiere'; matiere: string; notion: string }
+
+export interface FeuilleCarte {
+  texte: string // reference presente dans les extraits envoyes au modele
+  lien: { url: string; entete: string } | null // texte officiel, quand Lexia le connait
+}
+
+export interface NoeudCarte {
+  libelle: string
+  articles: FeuilleCarte[]
+  enfants: NoeudCarte[]
+}
+
+export interface CarteMentale {
+  titre: string
+  branches: NoeudCarte[]
+  partiel: boolean
+  message: string
+  avertissement: string
+  restants: number
+}
+
 export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
@@ -585,6 +608,7 @@ export const api = {
   corriger: (quiz_id: string, reponses: { index: number; valeur: number | boolean | string | null }[]) =>
     post<Correction>('/quiz/correct', { quiz_id, reponses }),
   resumeVocal: (demande: DemandeResume) => post<ResumeVocal>('/resume-vocal', demande),
+  carteMentale: (demande: DemandeCarte) => post<CarteMentale>('/carte-mentale', demande),
   source: (id: string) => requete<SourceComplete>(`/sources/${encodeURIComponent(id)}`),
   vigueur: (id: string) => requete<Vigueur>(`/sources/${encodeURIComponent(id)}/vigueur`),
   feedback: (reponse_id: string, utile: boolean, motif?: string) =>
