@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, type CoursRecupere, type CoursRecupereComplet } from '../lib/api'
 import { CadreEspace } from '../components/Layout'
+import { ResumeVocal } from '../components/ResumeVocal'
 import { useApp } from '../state/contexte'
 import { Surtitre } from './Public'
 
@@ -62,6 +63,7 @@ function CarteCours({ c }: { c: CoursRecupere }) {
         className="mt-3 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
         {ouvert ? 'Fermer le cours' : 'Lire le cours'}
       </button>
+      <div className="mt-2"><ResumeVocal demande={() => ({ type: 'cours_recupere', id: c.id })} /></div>
       {ouvert && (
         <div className="mt-4 border-t border-line-soft pt-4">
           {erreur ? (

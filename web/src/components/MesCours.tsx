@@ -5,6 +5,7 @@ import { useApp } from '../state/contexte'
 import { ACCEPT, FORMATS_LISIBLES, formatAccepte, sansExtension, STATUTS } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 import { OptionsMatieres } from './OptionsMatieres'
+import { ResumeVocal } from './ResumeVocal'
 
 const TAILLE_MAX = 20 * 1024 * 1024
 
@@ -116,6 +117,7 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
                 className="text-[11px] font-semibold text-forest hover:underline">Réviser</button>
               <button type="button" onClick={() => retirer(c.id, c.titre)} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
             </span>
+            <ResumeVocal demande={() => ({ type: 'cours', id: String(c.id) })} />
           </li>
         ))}
       </ul>

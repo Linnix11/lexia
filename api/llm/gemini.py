@@ -30,7 +30,8 @@ MAX_JETONS_SORTIE = 4096
 
 class GeminiLLM:
     def __init__(self, *, api_key: str, models: tuple[str, ...], thinking_level: str = "low", timeout: float = 30.0,
-                 tentatives: int = 2, releve=None, budget: float | None = None):
+                 tentatives: int = 2, releve=None, budget: float | None = None,
+                 max_jetons: int = MAX_JETONS_SORTIE):
         if not api_key or not models:
             raise ValueError("GEMINI_API_KEY et GEMINI_MODEL sont requis")
         self._models = models
@@ -41,6 +42,7 @@ class GeminiLLM:
         # Temps total accorde a Gemini (tous modeles confondus) ; None = sans limite. Avec un modele de secours,
         # mieux vaut lui passer la main vite que d'attendre une serie de 503 (jusqu'a 26 s chacun, constate).
         self._budget = budget
+        self._max_jetons = max_jetons  # plus bas pour les resumes vocaux (api/resumes_vocaux.py)
         self._client = httpx.Client(headers={"x-goog-api-key": api_key})
 
     # --- generation ----------------------------------------------------------
@@ -50,7 +52,7 @@ class GeminiLLM:
             "responseMimeType": "application/json",
             "responseJsonSchema": schema,
             "temperature": temperature,
-            "maxOutputTokens": MAX_JETONS_SORTIE,
+            "maxOutputTokens": self._max_jetons,
         }
         if self._thinking:
             config["thinkingConfig"] = {"thinkingLevel": self._thinking}

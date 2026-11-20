@@ -420,6 +420,22 @@ export interface CoursRecupereComplet extends Omit<CoursRecupere, 'sections'> {
   sections: { titre: string; texte: string }[]
 }
 
+/** Demande de resume vocal (D106, docs/resumes-vocaux.md) : le serveur relit lui-meme cours et extraits. */
+export type DemandeResume =
+  | { type: 'reponse'; titre: string; texte: string; sources: string[] }
+  | { type: 'cours' | 'cours_recupere'; id: string }
+
+export interface ResumeVocal {
+  titre: string
+  paragraphes: string[]
+  mots: number
+  duree_estimee_s: number
+  partiel: boolean // document trop long : seul son debut est resume
+  message: string
+  avertissement: string
+  restants: number
+}
+
 export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
@@ -491,6 +507,7 @@ export const api = {
   },
   corriger: (quiz_id: string, reponses: { index: number; valeur: number | boolean | string | null }[]) =>
     post<Correction>('/quiz/correct', { quiz_id, reponses }),
+  resumeVocal: (demande: DemandeResume) => post<ResumeVocal>('/resume-vocal', demande),
   source: (id: string) => requete<SourceComplete>(`/sources/${encodeURIComponent(id)}`),
   vigueur: (id: string) => requete<Vigueur>(`/sources/${encodeURIComponent(id)}/vigueur`),
   feedback: (reponse_id: string, utile: boolean, motif?: string) =>

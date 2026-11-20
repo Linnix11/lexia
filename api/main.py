@@ -31,6 +31,7 @@ from api.matieres import LIBELLES, MATIERES, sources_par_matiere
 from api.textes import HORS_LEGI, NOMS, SOURCES_TEXTES
 from api.quiz import QuizService, QuizStore
 from api.rag import Disjoncteur, Lexia, fiche_source
+from api.resumes_vocaux import MAX_JETONS_RESUME, QuotaResumes, ResumesVocaux, creer_routes_resumes_vocaux
 from api.retrieval.base import Retriever
 from api.schemas.models import ChatRequest, CorrectionRequest, FeedbackRequest, QuizRequest
 from ingest import fraicheur
@@ -98,7 +99,8 @@ def releve_jetons(journal: Journal | None, role: str):
     return releve
 
 
-def _construire_llm(settings: Settings, journal: Journal | None = None) -> LLM:
+def _construire_llm(settings: Settings, journal: Journal | None = None, **options) -> LLM:
+    """options : max_jetons (resumes vocaux, plafond plus bas que les reponses)."""
     from api.llm.gemini import GeminiLLM
 
     # Groq configure : un seul tour de Gemini, borne dans le temps, puis le secours prend le relais.
@@ -106,16 +108,16 @@ def _construire_llm(settings: Settings, journal: Journal | None = None) -> LLM:
     return GeminiLLM(api_key=settings.gemini_api_key, models=settings.gemini_models,
                      thinking_level=settings.gemini_thinking_level, timeout=settings.llm_timeout,
                      releve=releve_jetons(journal, "generation"), tentatives=1 if avec_secours else 2,
-                     budget=settings.budget_avant_secours if avec_secours else None)
+                     budget=settings.budget_avant_secours if avec_secours else None, **options)
 
 
-def _construire_secours(settings: Settings, journal: Journal | None = None):
+def _construire_secours(settings: Settings, journal: Journal | None = None, **options):
     if not settings.groq_api_key:
         return None
     from api.llm.groq import GroqLLM
 
     return GroqLLM(api_key=settings.groq_api_key, models=settings.groq_models, timeout=settings.llm_timeout,
-                   releve=releve_jetons(journal, "secours"))
+                   releve=releve_jetons(journal, "secours"), **options)
 
 
 def _construire_expanseur(settings: Settings, journal: Journal | None = None):
@@ -148,6 +150,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     settings = settings or get_settings()
     retriever = retriever or _construire_retriever(settings)
     journal = journal if journal is not None else Journal(settings.logs_dir)
+    llm_fourni = llm is not None  # tests : le meme modele factice sert aussi aux resumes vocaux
     llm = llm or _construire_llm(settings, journal)
     if embedder is None:
         embedder = _construire_embedder(settings)  # charge le modele au demarrage (pas a la 1re question)
@@ -176,7 +179,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     # AI Act, art. 50.2 (marquage lisible par machine des textes generes ; echeance du 2 decembre 2026 pour un
     # systeme deja en ligne, reglement 2026/1744) : en-tete sur les reponses redigees par le modele. Moyen a
     # confirmer quand le code de bonne pratique de la Commission sera fixe (audit du 2026-11-18, E7).
-    routes_generees = {"/chat", "/quiz", "/quiz/correct"}
+    routes_generees = {"/chat", "/quiz", "/quiz/correct", "/resume-vocal"}
 
     @app.middleware("http")
     async def marquer_contenu_genere(request: Request, call_next):
@@ -216,8 +219,22 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         lexia.cours = cours
         app.include_router(creer_routes_cours(cours, utilisateur_requis))
         # Cours de sites tiers sous licence libre : page a part, jamais dans les reponses (docs/cours-libres.md)
-        app.include_router(creer_routes_cours_recuperes(Catalogue(settings.cours_recuperes), utilisateur_requis,
+        catalogue = Catalogue(settings.cours_recuperes)
+        app.include_router(creer_routes_cours_recuperes(catalogue, utilisateur_requis,
                                                      retriever))
+
+        # Resumes vocaux (D106, docs/resumes-vocaux.md) : memes modeles et meme disjoncteur que les reponses,
+        # plafond de jetons plus bas ; quota par jour a part.
+        if llm_fourni:
+            llm_resume, secours_resume = llm, secours
+        else:
+            llm_resume = _construire_llm(settings, journal, max_jetons=MAX_JETONS_RESUME)
+            secours_resume = _construire_secours(settings, journal, max_jetons=MAX_JETONS_RESUME)
+        lexia_resume = Lexia(retriever, llm_resume, journal, secours=secours_resume, disjoncteur=lexia.disjoncteur)
+        app.include_router(creer_routes_resumes_vocaux(
+            ResumesVocaux(lexia_resume, retriever, journal, cours, catalogue),
+            QuotaResumes(comptes.chemin, settings.resumes_vocaux_par_jour), utilisateur_requis, limite,
+            lambda action: _place_libre(action)))
 
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)

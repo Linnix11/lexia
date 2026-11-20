@@ -4,6 +4,14 @@ import { libelleFraicheur, sourcesAnciennes, useFraicheur } from '../lib/fraiche
 import { infosMode, symbole } from '../lib/modes'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useApp, type Message } from '../state/contexte'
+import { ResumeVocal } from './ResumeVocal'
+
+/** Texte de la reponse envoye pour le resume vocal : l'essentiel d'abord, comme a l'ecran. */
+function texteReponse(r: ReponseChat): string {
+  return [r.reponse_directe ?? [], r.droit_positif, r.explication, r.points_incertains]
+    .flatMap((items) => items.map((e) => (e.rubrique ? `${e.rubrique} : ${e.texte}` : e.texte)))
+    .join('\n').slice(0, 12_000)
+}
 
 function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) {
   const { ouvrirSource } = useApp()
@@ -221,6 +229,12 @@ export function Reponse({ message, actions = true, titre = true }: { message: Me
           </div>
         )}
       </div>
+      {r.statut === 'reponse' && (
+        <div className="mt-2">
+          <ResumeVocal demande={() => ({ type: 'reponse', titre: r.titre, texte: texteReponse(r),
+            sources: r.sources.slice(0, 12).map((x) => x.id) })} />
+        </div>
+      )}
     </article>
   )
 }

@@ -29,12 +29,14 @@ class _Delai(LLMError):
 
 
 class GroqLLM:
-    def __init__(self, *, api_key: str, models: tuple[str, ...], timeout: float = 30.0, releve=None):
+    def __init__(self, *, api_key: str, models: tuple[str, ...], timeout: float = 30.0, releve=None,
+                 max_jetons: int = MAX_JETONS_SORTIE):
         if not api_key or not models:
             raise ValueError("GROQ_API_KEY et GROQ_MODELS sont requis")
         self.models = tuple(models)
         self.model = self.models[0]
         self._timeout = timeout
+        self._max_jetons = max_jetons
         self._releve = releve  # releve(modele, usage) apres chaque reponse : cout du secours (eval/cout.py)
         self._client = httpx.Client(headers={"Authorization": f"Bearer {api_key}"})
 
@@ -56,7 +58,7 @@ class GroqLLM:
             "messages": [{"role": "system", "content": system + "\nRéponds uniquement en JSON."},
                          {"role": "user", "content": prompt}],
             "temperature": temperature,
-            "max_completion_tokens": MAX_JETONS_SORTIE,  # comme Gemini (api/llm/gemini.py)
+            "max_completion_tokens": self._max_jetons,  # comme Gemini (api/llm/gemini.py)
             "response_format": {"type": "json_schema", "json_schema": {"name": "reponse", "schema": schema}},
         }
         debut = time.monotonic()
