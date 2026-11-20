@@ -13,6 +13,21 @@ RACINE=${LEXIA_RACINE:-/opt/lexia}
 SRC=${LEXIA_BASE:-$RACINE/donnees/lexia.db}
 DEST=${LEXIA_SAUVEGARDES:-$RACINE/sauvegardes}
 PY=${LEXIA_PYTHON:-$RACINE/.venv/bin/python}
+# Echec : e-mail aux ADMIN_EMAILS. Il n'etait ecrit que dans un journal, que personne ne lit (audit du 19/11,
+# SRV-9). LEXIA_ALERTE remplace l'envoi dans les tests.
+alerter_echec() {
+  local code=$?
+  [ "$code" -eq 0 ] && return 0
+  local message="$(hostname) $(horodatage) : sauvegarde de la base des comptes en echec (code $code), voir sauvegarde.log"
+  if [ -n "${LEXIA_ALERTE:-}" ]; then
+    "$LEXIA_ALERTE" "$message" || true
+  else
+    (cd "$RACINE" && "$PY" -m ingest.fraicheur --sujet "Lexia : echec de la sauvegarde des comptes" \
+      --alerte "$message") || true
+  fi
+  return "$code"
+}
+trap alerter_echec EXIT
 mkdir -p "$DEST" && chmod 700 "$DEST"
 # Base absente (deplacee, renommee) : echec visible. Avant, le script ecrivait « fin » et sortait
 # en succes chaque nuit, sans plus rien sauvegarder.

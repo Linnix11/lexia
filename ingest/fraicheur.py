@@ -62,7 +62,9 @@ def a_jour(data_dir: Path, maintenant: datetime | None = None) -> bool | None:
     return (maintenant or datetime.now(timezone.utc)) - d <= DELAI_MAX
 
 
-def alerter(message: str) -> int:
+def alerter(message: str, sujet: str | None = None) -> int:
+    """E-mail aux ADMIN_EMAILS. Sans sujet : echec de la mise a jour du corpus ; avec un sujet (sauvegarde des
+    comptes, audit du 19/11, SRV-9), le message seul."""
     from api import courriel
     from ingest.env import load_env
 
@@ -71,10 +73,14 @@ def alerter(message: str) -> int:
     if not courriel.configure() or not destinataires:
         print("alerte non envoyee (RESEND_API_KEY ou ADMIN_EMAILS absent) : " + message, file=sys.stderr)
         return 1
-    texte = (f"La mise a jour nocturne du corpus Lexia a echoue.\n\n{message}\n\n"
-             "L'index en service reste le precedent. Journal : /var/log/lexia-mise-a-jour.log")
+    if sujet is None:
+        sujet = "Lexia : echec de la mise a jour du corpus"
+        texte = (f"La mise a jour nocturne du corpus Lexia a echoue.\n\n{message}\n\n"
+                 "L'index en service reste le precedent. Journal : /var/log/lexia-mise-a-jour.log")
+    else:
+        texte = message
     for a in destinataires:
-        courriel.envoyer(a, "Lexia : echec de la mise a jour du corpus", texte,
+        courriel.envoyer(a, sujet, texte,
                          "<pre>" + courriel._echapper(texte) + "</pre>")
     return 0
 
@@ -82,7 +88,9 @@ def alerter(message: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--alerte", metavar="MESSAGE", required=True, help="Envoyer l'e-mail d'echec")
-    return alerter(parser.parse_args(argv).alerte)
+    parser.add_argument("--sujet", help="Sujet de l'e-mail (defaut : echec de la mise a jour du corpus)")
+    args = parser.parse_args(argv)
+    return alerter(args.alerte, args.sujet)
 
 
 if __name__ == "__main__":

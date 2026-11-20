@@ -148,7 +148,11 @@ Le script rapatrie les sauvegardes dans `~/Lexia-sauvegardes` (60 conservées), 
 
 Lancement quotidien : renseigner `deploy/fr.lexia.sauvegarde.plist` (chemin du dépôt, IP), le copier dans `~/Library/LaunchAgents/`, puis `launchctl load ~/Library/LaunchAgents/fr.lexia.sauvegarde.plist`. La clé SSH doit fonctionner sans saisie (agent ou trousseau). Journal : `/tmp/lexia-sauvegarde.log`.
 
-Restaurer : arrêter le service, remplacer `/opt/lexia/donnees/lexia.db` par la copie (propriétaire `lexia`, droits 600), redémarrer.
+Restaurer : arrêter le service (`systemctl stop lexia`), supprimer `/opt/lexia/donnees/lexia.db-wal` et `/opt/lexia/donnees/lexia.db-shm` s'ils existent (sinon SQLite rejoue sur la copie un journal qui ne lui appartient pas), remplacer `/opt/lexia/donnees/lexia.db` par la copie (propriétaire `lexia`, droits 600), redémarrer.
+
+`CLE_SECRETS` (dans `/opt/lexia/.env`) chiffre les secrets de double authentification : sans elle, une sauvegarde restaurée sur un nouveau serveur laisse les comptes avec 2FA bloqués. La garder aussi dans un gestionnaire de mots de passe, hors du VPS.
+
+Échecs : la sauvegarde du serveur envoie un e-mail aux `ADMIN_EMAILS` (`python -m ingest.fraicheur --sujet ... --alerte ...`), le rapatriement affiche une notification sur le Mac. Après une mise à jour de `deploy/rapatrier_sauvegardes.sh`, recopier le script là où le lance `fr.lexia.sauvegarde.plist`.
 
 ## Sécurité
 

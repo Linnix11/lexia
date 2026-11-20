@@ -571,3 +571,19 @@ def test_nom_de_fichier_avec_caractere_de_controle_refuse_sans_decompte(env):
     assert deposer(client, titre="Le\x07dol").status_code == 422
     assert client.get("/cours").json()["cours"] == []
     assert deposer(client).status_code == 201
+
+
+def test_sauvegarde_en_echec_alerte(tmp_path):
+    """SRV-9 : un echec de sauvegarde n'etait ecrit que dans un journal."""
+    import os
+    import subprocess
+    import sys
+    racine = Path(__file__).resolve().parent.parent
+    faux = tmp_path / "alerte"
+    faux.write_text(f'#!/usr/bin/env bash\necho "$1" > "{tmp_path}/message"\n')
+    faux.chmod(0o755)
+    r = subprocess.run(["bash", str(racine / "deploy" / "sauvegarder_comptes.sh")], capture_output=True, text=True,
+                       env={**os.environ, "LEXIA_RACINE": str(racine), "LEXIA_BASE": str(tmp_path / "absente.db"),
+                            "LEXIA_SAUVEGARDES": str(tmp_path / "s"), "LEXIA_PYTHON": sys.executable,
+                            "LEXIA_ALERTE": str(faux)})
+    assert r.returncode == 1 and "sauvegarde de la base des comptes en echec" in (tmp_path / "message").read_text()

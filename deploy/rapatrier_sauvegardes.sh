@@ -11,6 +11,15 @@
 # Les copies contiennent des adresses e-mail et des empreintes de mots de passe : dossier en 700, fichiers
 # en 600, disque chiffre (FileVault) indispensable. Lancement automatique : voir deploy/fr.lexia.sauvegarde.plist.
 set -euo pipefail
+# Echec : notification sur le Mac. Il n'etait ecrit que dans /tmp/lexia-sauvegarde.log (audit du 19/11, SRV-9).
+notifier_echec() {
+  local code=$?
+  if [ "$code" -ne 0 ] && command -v osascript >/dev/null; then
+    osascript -e 'display notification "Rapatriement des sauvegardes en echec : voir /tmp/lexia-sauvegarde.log" with title "Lexia"' || true
+  fi
+  return "$code"
+}
+trap notifier_echec EXIT
 
 : "${LEXIA_SERVEUR:?definir LEXIA_SERVEUR, ex. root@IP_DU_VPS}"
 COPIES="${LEXIA_COPIES:-$HOME/Lexia-sauvegardes}"
@@ -53,7 +62,7 @@ fi
 
 # Restauration testee sur une copie temporaire : la sauvegarde s'ouvre, est integre et contient les comptes.
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'code=$?; rm -rf "$TMP"; (exit "$code"); notifier_echec' EXIT
 cp "$DERNIERE" "$TMP/essai.db"
 INTEGRITE="$(sqlite3 "$TMP/essai.db" 'PRAGMA integrity_check;' 2>&1 || true)"
 COMPTES="$(sqlite3 "$TMP/essai.db" 'SELECT count(*) FROM utilisateurs;' 2>/dev/null || echo "absente")"
