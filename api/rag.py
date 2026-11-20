@@ -19,7 +19,7 @@ from api.journal import Journal
 from api.llm.base import LLM, ContenuRefuse, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
-from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, groupes
+from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, ajouter_duree, groupes
 from api.textes import SOURCES_A_PART, SOURCES_TEXTES, en_vigueur_aujourdhui
 
 AVERTISSEMENT = (
@@ -218,12 +218,21 @@ class Lexia:
         # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
         # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
         futur = None
+        # Millisecondes par etape, dans le journal (recherche_detail.etapes_ms, audit du 19/11, SRV-7 ; D114).
+        etapes: dict[str, float] = {}
+        fin_reformulation: list[float] = []
         # Disjoncteur ouvert : Gemini est en panne, la reformulation ferait attendre pour rien.
         en_panne = self.secours is not None and self.disjoncteur.ouvert()
         if self.expanseur is not None and refs.vide and not en_panne and _FILS_REFORMULATION.acquire(blocking=False):
+            debut_reformulation = time.perf_counter()
             futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
             futur.add_done_callback(lambda _: _FILS_REFORMULATION.release())
-        vecteur = self.embedder.embed_query(texte) if vectoriel else None
+            futur.add_done_callback(lambda _: fin_reformulation.append(time.perf_counter()))
+        vecteur = None
+        if vectoriel:
+            t = time.perf_counter()
+            vecteur = self.embedder.embed_query(texte)
+            ajouter_duree(etapes, "vectorisation", t)
         complement = None
         if futur is not None:
             try:
@@ -231,15 +240,19 @@ class Lexia:
             except DelaiDepasse:
                 futur.cancel()  # encore en file d'attente : n'appellera pas Gemini pour rien
                 log.info("reformulation trop lente (> %.0f s) : recherche sans elle", self.delai_reformulation)
+            # Duree de l'appel lui-meme (il tourne pendant la vectorisation), ou de l'attente s'il a ete abandonne.
+            etapes["reformulation"] = ((fin_reformulation or [time.perf_counter()])[0] - debut_reformulation) * 1000
         reformule = complement is not None
         if locales:
             complement = complement or Complement()
             complement.suggestions = list(dict.fromkeys(locales + complement.suggestions))[:MAX_SUGGESTIONS]
         if complement and complement.reformulation and vectoriel:
+            t = time.perf_counter()
             complement.vecteur_reformulation = self.embedder.embed_query(complement.reformulation)
+            ajouter_duree(etapes, "vectorisation", t)
         debut_calcul = time.monotonic()
         hits = self.retriever.search(texte, sources=sources, k=k, query_vector=vecteur,
-                                     complement=complement, reclasseur=self.reclasseur)
+                                     complement=complement, reclasseur=self.reclasseur, durees=etapes)
         calcul_ms = int((time.monotonic() - debut_calcul) * 1000)
         # Article d'une matiere speciale (successions...) dont la question ne parle pas : ecarte, sauf s'il est cite.
         hits = [h for h in hits if "reference" in h.via or not lexique.hors_matiere(h.passage, texte)]
@@ -270,6 +283,9 @@ class Lexia:
             # calcul_ms : parcours de l'index et reclassement.
             "duree_ms": int((time.monotonic() - debut) * 1000),
             "calcul_ms": calcul_ms,
+            # reformulation (appel Gemini, en parallele de la vectorisation), vectorisation (modele d'embedding),
+            # references, lexicale (plein texte), vectorielle (parcours de l'index), reclassement (attente comprise)
+            "etapes_ms": {e: int(ms) for e, ms in etapes.items()},
         }
         if anciens:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
@@ -364,6 +380,7 @@ class Lexia:
         recherche = infos["recherche"]
         table = table_extraits(passages)
         modele = None
+        generation: dict[str, float] = {}  # duree des appels au modele de reponse, relance comprise (D114)
         if conseil_demande:
             reponse, controle = valider_reponse({"statut": "hors_champ"}, table)
         elif not passages and mode not in prompts.MODES_METHODE:
@@ -371,13 +388,17 @@ class Lexia:
             reponse, controle = valider_reponse({"statut": "abstention"}, table)
         else:
             def generer(note: str = ""):
-                return self.generer(
-                    system=prompts.SYSTEME,
-                    construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
-                                                              infos.get("concordance"), option_cours) + note,
-                    passages=passages,
-                    schema=prompts.schema_reponse(mode),
-                )
+                t = time.perf_counter()
+                try:
+                    return self.generer(
+                        system=prompts.SYSTEME,
+                        construire=lambda ps: prompts.prompt_chat(question, mode, ps, niveau, semestre,
+                                                                  infos.get("concordance"), option_cours) + note,
+                        passages=passages,
+                        schema=prompts.schema_reponse(mode),
+                    )
+                finally:
+                    ajouter_duree(generation, "ms", t)
             brut, modele, extraits_envoyes = generer()
             note = None
             if brut.get("statut") == "hors_champ" and time.monotonic() - debut < DELAI_MAX_RELANCE:
@@ -407,6 +428,8 @@ class Lexia:
             statut=reponse["statut"], recherche=recherche, modele=modele,
             passages_fournis=[p["id"] for p in passages], passages_cites=[s["id"] for s in sources],
             controle=controle.as_dict(), recherche_detail=infos, duree_ms=int((time.monotonic() - debut) * 1000),
+            # Modele de reponse (principal, secours et relance compris) ; absent sans appel au modele (D114).
+            **({"generation_ms": int(generation["ms"])} if generation else {}),
         )
         res = {
             "reponse_id": reponse_id,

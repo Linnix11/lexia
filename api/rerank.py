@@ -9,9 +9,16 @@ Configuration : RERANK_MODEL (vide = desactive).
 
 from __future__ import annotations
 
+import threading
+
 from api.retrieval.base import Hit
 
 MAX_CHARS = 800  # avec max_length=256 : au-dela, le texte serait tronque par le modele (D47)
+# Deux reclassements a la fois au plus (audit du 19/11, SRV-7 ; D114) : le VPS n'a que 2 processeurs et chaque
+# reclassement les occupe deja ; 10 questions simultanees se partageaient le calcul et finissaient toutes
+# ensemble, pres de la coupure de Cloudflare (100 s). Au-dela, les questions attendent leur tour.
+RECLASSEMENTS_SIMULTANES = 2
+_PLACES = threading.BoundedSemaphore(RECLASSEMENTS_SIMULTANES)
 
 
 class CrossEncoderReclasseur:
@@ -25,7 +32,8 @@ class CrossEncoderReclasseur:
         if not hits:
             return hits
         paires = [(question, (h.passage.get("entete", "") + "\n" + h.passage["texte"])[:MAX_CHARS]) for h in hits]
-        scores = self._ce.predict(paires, show_progress_bar=False)
+        with _PLACES:
+            scores = self._ce.predict(paires, show_progress_bar=False)
         out = []
         for h, sc in sorted(zip(hits, scores), key=lambda x: -float(x[1])):
             out.append(Hit(h.passage, float(sc), h.via | {"reclasse"}))

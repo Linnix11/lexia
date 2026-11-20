@@ -9,6 +9,7 @@ import json
 import logging
 import sqlite3
 import threading
+import time
 from pathlib import Path
 
 import numpy as np
@@ -16,12 +17,27 @@ import numpy as np
 from api import lexique
 from api.references import extraire, variantes
 from api.textes import SOURCES_A_PART, SOURCES_CASSATION, cibles_article, en_vigueur_aujourdhui, meme_loi
-from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler,
-                                construire_groupe,
+from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur,
+                                ReclasseurChronometre, ajouter_duree, assembler, construire_groupe,
                                 groupes, jeton_source, paires, termes)
 
 N_CANDIDATS = 50
 log = logging.getLogger("lexia.recherche")
+
+
+def meilleurs(sims: np.ndarray, masque: np.ndarray, n: int) -> np.ndarray:
+    """Indices des n meilleurs scores parmi les vecteurs du masque, du meilleur au moins bon, egalites dans l'ordre
+    de l'index : exactement le debut de `np.argsort(-sims, kind="stable")` filtre par le masque.
+
+    Sans tri des 640 000 scores (audit du 19/11, SRV-7) : `np.partition` trouve le n-ieme meilleur score, puis
+    seuls les scores au moins egaux (egalites au seuil comprises) sont tries."""
+    retenus = np.flatnonzero(masque)
+    if len(retenus) > n:
+        s = sims[retenus]
+        seuil = np.partition(s, len(s) - n)[len(s) - n]
+        retenus = retenus[s >= seuil]
+    ordre = np.lexsort((retenus, -sims[retenus]))  # score decroissant, puis indice croissant
+    return retenus[ordre[:n]]
 
 
 class LocalRetriever:
@@ -85,6 +101,7 @@ class LocalRetriever:
             if self._principes:
                 self._vecs_principes = np.asarray(self._vecs[[rang[pid] for pid, _ in self._principes]],
                                                   dtype=np.float32)
+            self._preparer_masques()
 
     def couverture(self, sources: tuple[str, ...] | None) -> float:
         srcs = sources or tuple(s for s in self._totaux if s not in SOURCES_A_PART)
@@ -217,28 +234,59 @@ class LocalRetriever:
             classements.append(self._fts(near, sources))
         return classements
 
-    def _vectoriel(self, vecteur: list[float], sources: tuple[str, ...] | None) -> list[str]:
+    def _scores(self, vecteur: list[float] | None) -> np.ndarray | None:
+        """Similarite du vecteur avec tous les vecteurs de l'index (un parcours des 2 Go).
+
+        Calculee une fois par vecteur et par question, puis partagee par les deux groupes de sources (textes,
+        jurisprudence) : avant, chaque groupe refaisait le calcul, soit 4 parcours par question avec la
+        reformulation (audit du 19/11, SRV-7)."""
         if not len(self._ids) or vecteur is None:
-            return []
-        q = np.asarray(vecteur, dtype=np.float32)
+            return None
+        q = np.array(vecteur, dtype=np.float32)
         if self._vecs.shape[1] != q.shape[0]:
             # EMBED_MODEL change sans reconstruire l'index : la recherche par sens est sautee
             # (le plein texte continue) au lieu de faire echouer chaque question.
             log.warning("vecteur de la question en dimension %d, index en %d : recherche vectorielle sautee",
                         q.shape[0], self._vecs.shape[1])
-            return []
+            return None
         q /= np.linalg.norm(q) or 1.0
-        sims = self._vecs @ q
-        autorisees = set(sources) if sources else None
-        out: list[str] = []
-        for i in np.argsort(-sims):
-            pid = self._ids[int(i)]
-            src, vig = self._meta_vec.get(pid, ("", None))
-            if (autorisees is None or src in autorisees) and vig != 0:
-                out.append(pid)
-                if len(out) >= N_CANDIDATS:
-                    break
-        return out
+        return self._vecs @ q
+
+    def _preparer_masques(self) -> None:
+        """Source de chaque vecteur (indice dans `_noms_vec`) et versions hors vigueur, en tableaux numpy."""
+        meta = [self._meta_vec.get(pid, ("", None)) for pid in self._ids]
+        noms = sorted({src for src, _ in meta})
+        rang = {src: i for i, src in enumerate(noms)}
+        self._source_vec = np.fromiter((rang[src] for src, _ in meta), dtype=np.int32, count=len(meta))
+        self._noms_vec = noms
+        self._hors_vigueur = np.fromiter((vig == 0 for _, vig in meta), dtype=bool, count=len(meta))
+        self._masques: dict[tuple[str, ...] | None, np.ndarray] = {}
+
+    def _masque(self, sources: tuple[str, ...] | None) -> np.ndarray:
+        """Vecteurs autorises pour ces sources, hors versions qui ne sont plus en vigueur. Garde en memoire par jeu
+        de sources (quelques dizaines de jeux, 640 Ko chacun)."""
+        if not hasattr(self, "_masques"):
+            self._preparer_masques()
+        cle = tuple(sorted(sources)) if sources else None
+        m = self._masques.get(cle)
+        if m is None:
+            m = ~self._hors_vigueur
+            if cle is not None:
+                m &= np.isin(self._source_vec, [i for i, src in enumerate(self._noms_vec) if src in cle])
+            if len(self._masques) > 256:
+                self._masques.clear()
+            self._masques[cle] = m
+        return m
+
+    def _vectoriel(self, vecteur: list[float] | None, sources: tuple[str, ...] | None,
+                   sims: np.ndarray | None = None) -> list[str]:
+        """Les N_CANDIDATS passages autorises les plus proches, du plus proche au moins proche (egalites dans
+        l'ordre de l'index). sims : scores deja calcules par `_scores` pour ce vecteur."""
+        if sims is None:
+            sims = self._scores(vecteur)
+        if sims is None:
+            return []
+        return [self._ids[int(i)] for i in meilleurs(sims, self._masque(sources), N_CANDIDATS)]
 
     def _suggestions(self, complement: Complement | None, sources: tuple[str, ...]) -> list[dict]:
         if not complement or not complement.suggestions or not sources:
@@ -257,24 +305,41 @@ class LocalRetriever:
                 out.append((pid, p))
         return out
 
-    def _groupe(self, question, sources, k, query_vector, complement=None, reclasseur=None) -> list[Hit]:
+    def _groupe(self, question, sources, k, query_vector, complement=None, reclasseur=None, scores=None,
+                durees: dict[str, float] | None = None) -> list[Hit]:
+        """scores(vecteur) : similarites deja calculees pour la question (partagees entre les deux groupes) ;
+        durees : millisecondes ajoutees par etape (lexicale, vectorielle, reclassement)."""
         if not sources:
             return []
+        scores = scores or self._scores
+        # Meme ordre d'insertion qu'avant : la fusion (RRF) additionne les rangs dans cet ordre.
         classements: dict[str, list[tuple[str, dict]]] = {}
+        t = time.perf_counter()
         for i, c in enumerate(self._lexical(question, sources)):
             classements[f"lexical_{i}"] = c
+        ajouter_duree(durees, "lexicale", t)
         vectoriel = self.couverture(sources) >= SEUIL_COUVERTURE
+        t = time.perf_counter()
         if query_vector is not None and vectoriel:
-            classements["vecteur"] = self._par_ids(self._vectoriel(query_vector, sources))
+            classements["vecteur"] = self._par_ids(self._vectoriel(query_vector, sources, scores(query_vector)))
+        ajouter_duree(durees, "vectorielle", t)
         if complement and complement.reformulation:
+            t = time.perf_counter()
             for i, c in enumerate(self._lexical(complement.reformulation, sources)):
                 classements[f"lexical_reformulation_{i}"] = c
+            ajouter_duree(durees, "lexicale", t)
+            t = time.perf_counter()
             if complement.vecteur_reformulation is not None and vectoriel:
-                classements["vecteur_reformulation"] = self._par_ids(
-                    self._vectoriel(complement.vecteur_reformulation, sources))
+                v = complement.vecteur_reformulation
+                classements["vecteur_reformulation"] = self._par_ids(self._vectoriel(v, sources, scores(v)))
+            ajouter_duree(durees, "vectorielle", t)
         suggestions = self._suggestions(complement, sources)
+        t = time.perf_counter()
         principes = [] if suggestions or reclasseur is None or not vectoriel \
             else self._principes_proches(query_vector, sources)
+        ajouter_duree(durees, "vectorielle", t)
+        if reclasseur is not None and durees is not None:
+            reclasseur = ReclasseurChronometre(reclasseur, durees)
         return construire_groupe(classements, k, question=question, reclasseur=reclasseur,
                                  suggestions=suggestions, principes=principes)
 
@@ -291,13 +356,25 @@ class LocalRetriever:
         return [p for i in np.argsort(-sims)[:N_PRINCIPES] if (p := self.get(self._principes[sel[int(i)]][0]))]
 
     def search(self, question, *, sources, k, query_vector=None, complement: Complement | None = None,
-               reclasseur: Reclasseur | None = None):
+               reclasseur: Reclasseur | None = None, durees: dict[str, float] | None = None):
+        """durees : si donne, recoit les millisecondes passees par etape (references, lexicale, vectorielle,
+        reclassement), pour le journal des questions (SRV-7)."""
+        t = time.perf_counter()
         refs = [Hit(p, float("inf"), {"reference"}) for p in self._par_reference(question, sources)]
+        ajouter_duree(durees, "references", t)
         textes, juris = groupes(sources, self._toutes_sources())
+        calcules: dict[int, np.ndarray | None] = {}
+
+        def scores(vecteur):
+            # Un seul parcours de l'index par vecteur et par question, partage par les deux groupes.
+            if id(vecteur) not in calcules:
+                calcules[id(vecteur)] = self._scores(vecteur)
+            return calcules[id(vecteur)]
+
         return assembler(
             refs,
-            self._groupe(question, textes, k, query_vector, complement, reclasseur),
-            self._groupe(question, juris, k, query_vector, complement, reclasseur),
+            self._groupe(question, textes, k, query_vector, complement, reclasseur, scores, durees),
+            self._groupe(question, juris, k, query_vector, complement, reclasseur, scores, durees),
             k,
         )
 

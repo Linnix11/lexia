@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 import unicodedata
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -50,12 +51,33 @@ class Reclasseur(Protocol):
     def reordonner(self, question: str, hits: list[Hit]) -> list[Hit]: ...
 
 
+def ajouter_duree(durees: dict[str, float] | None, etape: str, debut: float) -> None:
+    """Ajoute a durees[etape] les millisecondes ecoulees depuis debut (time.perf_counter)."""
+    if durees is not None:
+        durees[etape] = durees.get(etape, 0.0) + (time.perf_counter() - debut) * 1000
+
+
+class ReclasseurChronometre:
+    """Reclasseur dont la duree (attente d'une place comprise, api/rerank.py) s'ajoute a durees["reclassement"]."""
+
+    def __init__(self, reclasseur: Reclasseur, durees: dict[str, float]):
+        self._reclasseur, self._durees = reclasseur, durees
+        self.model = getattr(reclasseur, "model", "")
+
+    def reordonner(self, question: str, hits: list[Hit]) -> list[Hit]:
+        debut = time.perf_counter()
+        try:
+            return self._reclasseur.reordonner(question, hits)
+        finally:
+            ajouter_duree(self._durees, "reclassement", debut)
+
+
 class Retriever(Protocol):
     mode: str
 
     def search(self, question: str, *, sources: tuple[str, ...] | None, k: int,
                query_vector: list[float] | None = None, complement: Complement | None = None,
-               reclasseur: Reclasseur | None = None) -> list[Hit]: ...
+               reclasseur: Reclasseur | None = None, durees: dict[str, float] | None = None) -> list[Hit]: ...
 
     def get(self, passage_id: str) -> dict | None: ...
 
