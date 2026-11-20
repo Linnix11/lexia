@@ -260,6 +260,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     paiement_actif = bool(comptes is not None and settings.stripe_secret_key and settings.stripe_webhook_secret
                           and settings.url_publique)
     if paiement_actif:
+        from api.cgu_texte import texte_cgu
         from api.paiement import Paiements, creer_routes_paiement
 
         app.include_router(creer_routes_paiement(
@@ -268,7 +269,10 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             client=client_stripe, admin_requis=admin_requis,
             vendeur=", ".join(v for v in (settings.legal.get("editeur"), settings.legal.get("adresse"),
                                           settings.contact_email) if v),
-            identite=identite_vendeur(settings)), prefix="/paiement")
+            identite=identite_vendeur(settings),
+            # CGU de la version acceptee jointes a la confirmation du contrat (D110)
+            texte_cgu=lambda version: texte_cgu(version, settings.legal, settings.contact_email,
+                                                settings.url_publique)), prefix="/paiement")
     app.include_router(routes_formules())
 
     def _utilisateur(request: Request) -> Utilisateur | None:

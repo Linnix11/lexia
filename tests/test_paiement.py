@@ -217,7 +217,7 @@ def statut(comptes, session):
 @pytest.fixture
 def courriels(monkeypatch):
     envoyes = []
-    monkeypatch.setattr("api.courriel.envoyer", lambda dest, sujet, texte, html: envoyes.append((dest, sujet, texte)))
+    monkeypatch.setattr("api.courriel.envoyer", lambda dest, sujet, texte, html, jointes=None: envoyes.append((dest, sujet, texte, jointes)))
     return envoyes
 
 
@@ -370,7 +370,7 @@ def test_a5_confirmation_du_contrat_par_email(env, courriels):
     demander(client, "intensif", 3)
     payer(client, evenement("cs_test_1", 2997))
     assert len(courriels) == 1
-    dest, sujet, texte = courriels[0]
+    dest, sujet, texte, _ = courriels[0]
     assert dest == "etu@exemple.fr"
     for attendu in ("Intensif", "3 mois", "29,97", VERSION_CGU, "accès immédiat", "Renoncer au contrat ici",
                     "formulaire de rétractation",
@@ -563,7 +563,7 @@ def test_jur7_accuse_en_echec_dit_a_l_ecran_puis_renvoye(env, monkeypatch):
     # Le lendemain, Resend repond : l'accuse part (avec le contenu de la declaration) et n'est plus renvoye
     envoyes = []
     monkeypatch.setenv("RESEND_API_KEY", "re_essai")
-    monkeypatch.setattr("api.courriel.envoyer", lambda dest, sujet, texte, html: envoyes.append((dest, sujet, texte)))
+    monkeypatch.setattr("api.courriel.envoyer", lambda dest, sujet, texte, html, jointes=None: envoyes.append((dest, sujet, texte, jointes)))
     for tache in comptes.taches_quotidiennes:
         tache()
     assert len(envoyes) == 1   # l'accuse ; pas de confirmation pour un contrat dont on s'est retracte
@@ -608,3 +608,61 @@ def test_jur11_export_des_donnees_du_compte(env):
     assert [p["formule"] for p in d["paiements"]] == ["etudiant"] and d["paiements"][0]["statut"] == "paye"
     assert d["cours_deposes"] == [] and "navigateur" in d["dans_votre_navigateur"]
     assert TestClient(client.app).get("/compte/export").status_code == 401   # sans session
+
+
+# --- D110 : texte des CGU joint a la confirmation du contrat ------------------------------------------------
+
+def test_d110_fichier_des_cgu_de_la_version_en_vigueur():
+    """Le fichier produit par web/src/site/cguTexte.test.tsx existe pour la version que le serveur accepte."""
+    from api.cgu_texte import DOSSIER, fichier_version, texte_cgu
+    assert fichier_version("20 novembre 2026") == "20-novembre-2026.json"
+    assert fichier_version("1er décembre 2026") == "1er-decembre-2026.json"
+    assert (DOSSIER / fichier_version(VERSION_CGU)).is_file()
+    legal = {"editeur": "Jean Dupont", "tva": "TVA non applicable, art. 293 B du CGI", "mediateur": "",
+             "gemini_payant": True, "groq": False}
+    t = texte_cgu(VERSION_CGU, legal, "contact@exemple.fr", "https://lexia.exemple")
+    assert "Jean Dupont" in t and "contact@exemple.fr" in t and "TVA non applicable" in t
+    assert "{{" not in t and "[non renseigné]" in t   # mediateur absent : dit, jamais un repere brut
+    assert "Au niveau payant" in t and "niveau gratuit" not in t
+    gratuit = texte_cgu(VERSION_CGU, {**legal, "gemini_payant": False}, "c@e.fr", "")
+    assert "niveau gratuit" in gratuit
+    assert texte_cgu("1er janvier 2000", legal, "", "") is None
+
+
+def test_d110_confirmation_avec_les_cgu_jointes(env, courriels):
+    client, _, _ = env
+    demander(client, "etudiant", 1)
+    payer(client, evenement("cs_test_1", 499))
+    _, _, texte, jointes = courriels[0]
+    assert "texte complet joint" in texte
+    assert len(jointes) == 1
+    nom, contenu = jointes[0]
+    assert nom == f"CGU-Lexia-{VERSION_CGU.replace(' ', '-')}.txt"
+    contenu = contenu.decode("utf-8")
+    assert contenu.startswith(f"Lexia, conditions générales d'utilisation et de vente acceptées, version du {VERSION_CGU}")
+    for attendu in ("Droit de rétractation", "Renoncer au contrat ici", "Rayez la mention inutile"):
+        assert attendu in contenu
+    assert "{{" not in contenu
+
+
+def test_d110_piece_jointe_envoyee_en_base64_a_resend(monkeypatch):
+    import base64
+
+    from api import courriel
+    envoi = {}
+
+    class Reponse:
+        status_code = 200
+        text = ""
+
+    def post(url, **kw):
+        envoi.update(kw["json"])
+        return Reponse()
+
+    monkeypatch.setenv("RESEND_API_KEY", "re_essai")
+    monkeypatch.setattr(courriel.httpx, "post", post)
+    courriel.envoyer("a@exemple.fr", "s", "t", "<p>t</p>", [("CGU.txt", "é".encode())])
+    assert envoi["attachments"] == [{"filename": "CGU.txt", "content": base64.b64encode("é".encode()).decode()}]
+    envoi.clear()
+    courriel.envoyer("a@exemple.fr", "s", "t", "<p>t</p>")
+    assert envoi and "attachments" not in envoi   # sans piece jointe : champ absent

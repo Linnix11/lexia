@@ -423,7 +423,10 @@ EN_COURS = ("Un paiement précédent est en cours de confirmation : attendez que
 
 def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_origine, *, cle: str, secret_webhook: str,
                           url_publique: str, journal=None, client: httpx.Client | None = None,
-                          admin_requis=None, vendeur: str = "", identite: str = "") -> APIRouter:
+                          admin_requis=None, vendeur: str = "", identite: str = "",
+                          texte_cgu=None) -> APIRouter:
+    """texte_cgu(version) : texte des CGU de cette version joint a la confirmation du contrat (api/cgu_texte.py),
+    ou None."""
     router = APIRouter()
     http = client or httpx.Client(timeout=15)
 
@@ -547,7 +550,8 @@ def creer_routes_paiement(paiements: Paiements, utilisateur_requis, verifier_ori
                     acces_immediat_le=datetime.fromisoformat(p["execution_immediate_le"]).astimezone(FUSEAU)
                     .strftime("le %d/%m/%Y à %H:%M"),
                     retractation_jusquau=date_fr(fin_retractation(p["paye_le"])),
-                    url_publique=url_publique, vendeur=vendeur, identite=identite)
+                    url_publique=url_publique, vendeur=vendeur, identite=identite,
+                    cgu_texte=texte_cgu(p["cgu_version"] or "") if texte_cgu else None)
                 paiements.noter_envoi("confirmation_envoyee_le", [session])
             elif p["statut"] == "a_rembourser":
                 courriel.envoyer_paiement_non_active(p["email"], formule=f.nom, prix=euros(p["montant_centimes"]))

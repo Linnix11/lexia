@@ -48,7 +48,7 @@ def _compte_ancien(c: Comptes, email: str, jours_inactif: int):
 def envois(monkeypatch):
     envoyes = []
     monkeypatch.setattr(courriel, "configure", lambda: True)
-    monkeypatch.setattr(courriel, "envoyer", lambda dest, sujet, texte, html: envoyes.append((dest, sujet, texte)))
+    monkeypatch.setattr(courriel, "envoyer", lambda dest, sujet, texte, html, jointes=None: envoyes.append((dest, sujet, texte)))
     return envoyes
 
 

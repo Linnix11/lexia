@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cgu": "ECRIRE_CGU=1 vitest run src/site/cguTexte.test.tsx"
   },
   "dependencies": {
     "qrcode": "1.5.4",

@@ -9,11 +9,14 @@ transmis, jamais le mot de passe ni les questions posees (politique de confident
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
 import re
 
 import httpx
+
+from api.cgu_texte import fichier_version
 
 log = logging.getLogger("lexia")
 
@@ -35,15 +38,19 @@ def _expediteur() -> str:
     return os.environ.get("RESEND_EXPEDITEUR", "").strip() or EXPEDITEUR_DEFAUT
 
 
-def envoyer(destinataire: str, sujet: str, texte: str, html: str) -> None:
-    """Envoie un e-mail. Leve ErreurCourriel si Resend refuse ou ne repond pas."""
+def envoyer(destinataire: str, sujet: str, texte: str, html: str,
+            pieces_jointes: list[tuple[str, bytes]] | None = None) -> None:
+    """Envoie un e-mail. Leve ErreurCourriel si Resend refuse ou ne repond pas. Pieces jointes : (nom du fichier,
+    contenu), envoyees en Base64 ; Resend deduit le type du nom du fichier."""
     cle = os.environ.get("RESEND_API_KEY", "").strip()
     if not cle:
         raise ErreurCourriel("L'envoi d'e-mails n'est pas configuré.")
     try:
         r = httpx.post(API, timeout=DELAI, headers={"Authorization": f"Bearer {cle}"},
                        json={"from": _expediteur(), "to": [destinataire], "subject": sujet,
-                             "text": texte, "html": html})
+                             "text": texte, "html": html,
+                             **({"attachments": [{"filename": nom, "content": base64.b64encode(contenu).decode()}
+                                                 for nom, contenu in pieces_jointes]} if pieces_jointes else {})})
     except httpx.HTTPError as e:
         log.warning("resend injoignable : %s", e)
         raise ErreurCourriel("Service d'envoi indisponible.") from None
@@ -130,16 +137,17 @@ FORMULAIRE_RETRACTATION = (
 )
 
 
-def _envoyer_texte(destinataire: str, sujet: str, texte: str) -> None:
+def _envoyer_texte(destinataire: str, sujet: str, texte: str, pieces_jointes: list[tuple[str, bytes]] | None = None) -> None:
     """E-mail sans lien a cliquer : le HTML reprend le texte, ligne par ligne."""
     html = ('<div style="font-family:-apple-system,Segoe UI,sans-serif;color:#202724;max-width:560px">'
             + "<br>".join(_echapper(ligne) for ligne in texte.splitlines()) + "</div>")
-    envoyer(destinataire, sujet, texte, html)
+    envoyer(destinataire, sujet, texte, html, pieces_jointes)
 
 
 def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int, prix: str, fin: str,
                                   cgu_version: str, acces_immediat_le: str, retractation_jusquau: str,
-                                  url_publique: str, vendeur: str, identite: str = "") -> None:
+                                  url_publique: str, vendeur: str, identite: str = "",
+                                  cgu_texte: str | None = None) -> None:
     """Confirmation du contrat sur support durable (art. L. 221-13 du Code de la consommation), avec les
     informations de L. 221-5 : identite et coordonnees de l'editeur, garantie legale, mediateur (audit JUR-8)."""
     texte = (
@@ -149,8 +157,9 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
         f"Durée : {mois} mois, sans reconduction automatique\n"
         f"Prix payé : {prix} TTC, en une fois\n"
         f"Formule active jusqu'au : {fin}\n"
-        f"Conditions générales d'utilisation et de vente acceptées : version du {cgu_version} ({url_publique}/cgu)\n"
-        f"Demande d'accès immédiat : {acces_immediat_le}. Vous avez demandé que la formule commence avant la fin "
+        f"Conditions générales d'utilisation et de vente acceptées : version du {cgu_version}"
+        + (", texte complet joint à cet e-mail (fichier texte à conserver)\n" if cgu_texte else f" ({url_publique}/cgu)\n")
+        + f"Demande d'accès immédiat : {acces_immediat_le}. Vous avez demandé que la formule commence avant la fin "
         "du délai de rétractation.\n\n"
         f"Droit de rétractation : vous pouvez vous rétracter sans motif jusqu'au {retractation_jusquau} inclus, "
         f"avec le bouton « Renoncer au contrat ici » de la page Mon compte ({url_publique}/compte) ou en "
@@ -164,7 +173,13 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
         + (f"{identite}\n\n" if identite else "")
         + FORMULAIRE_RETRACTATION.format(vendeur=vendeur or "Lexia")
     )
-    _envoyer_texte(destinataire, "Confirmation de votre formule Lexia", texte)
+    # CGU jointes : un lien vers la page n'est pas un support durable (audit JUR-8, D110)
+    jointes = None
+    if cgu_texte:
+        nom = "CGU-Lexia-" + fichier_version(cgu_version).removesuffix(".json") + ".txt"
+        jointes = [(nom, (f"Lexia, conditions générales d'utilisation et de vente acceptées, version du {cgu_version}\n\n"
+                          + cgu_texte).encode("utf-8"))]
+    _envoyer_texte(destinataire, "Confirmation de votre formule Lexia", texte, jointes)
 
 
 def envoyer_accuse_retractation(destinataire: str, *, nom: str, envoye_le: str, contrats: list[str]) -> None:
