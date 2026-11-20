@@ -190,7 +190,7 @@ def meme_loi(citee: frozenset[str], nom_texte: str) -> bool:
     return bool(citee & cles)
 
 
-def en_vigueur_aujourdhui(meta: dict, source_id: str) -> bool | None:
+def en_vigueur_aujourdhui(meta: dict, source_id: str, aujourdhui: str | None = None) -> bool | None:
     """Etat « en vigueur » d'un passage, recalcule a la date du jour.
 
     L'etat stocke a ete fige au moment de l'import : un article dont l'abrogation etait deja
@@ -198,9 +198,10 @@ def en_vigueur_aujourdhui(meta: dict, source_id: str) -> bool | None:
     Le corpus en compte 4 789, dont 182 s'abrogent d'ici fin 2026 et 696 en 2027 (D71).
     Symetriquement, une version dont l'entree en vigueur etait a venir a l'import (`en_vigueur_le`, pose par
     ingest.sources.legi) l'est des cette date, sans attendre la reconstruction de l'index (audit B8).
+    aujourdhui : date ISO de reference (tests), le jour meme par defaut.
     """
     valeur = meta.get("en_vigueur", True if source_id == "constitution_1958" else None)
-    aujourdhui = date.today().isoformat()
+    aujourdhui = aujourdhui or date.today().isoformat()
     debut = str(meta.get("en_vigueur_le") or "")
     if valeur is False and debut and debut <= aujourdhui:
         valeur = True
@@ -208,3 +209,8 @@ def en_vigueur_aujourdhui(meta: dict, source_id: str) -> bool | None:
     if valeur and fin and fin <= aujourdhui:
         return False
     return valeur
+
+
+def dates_de_bascule(meta: dict) -> tuple[str, ...]:
+    """Dates ou l'etat calcule par en_vigueur_aujourdhui change : entree en vigueur programmee, date de fin."""
+    return tuple(d for d in (str(meta.get("en_vigueur_le") or ""), str(meta.get("date_fin") or "")) if d[:4].isdigit())

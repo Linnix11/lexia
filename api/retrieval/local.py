@@ -15,7 +15,7 @@ import numpy as np
 
 from api import lexique
 from api.references import extraire, variantes
-from api.textes import SOURCES_A_PART, SOURCES_CASSATION, cibles_article, meme_loi
+from api.textes import SOURCES_A_PART, SOURCES_CASSATION, cibles_article, en_vigueur_aujourdhui, meme_loi
 from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur, assembler,
                                 construire_groupe,
                                 groupes, jeton_source, paires, termes)
@@ -104,11 +104,15 @@ class LocalRetriever:
         return self._con.execute(sql, params).fetchall()
 
     def _par_numero(self, src: str, num: str) -> list[dict]:
-        """Versions en vigueur d'un article (R421-1 trouve aussi R*421-1, B3)."""
+        """Versions en vigueur d'un article (R421-1 trouve aussi R*421-1, B3), a la date du jour : une version
+        entree en vigueur depuis la construction de l'index est trouvee, une version finie depuis ne l'est plus,
+        sans attendre la reconstruction (SRC-3)."""
         nums = variantes(num)
         rows = self._q(f"SELECT data FROM passages WHERE source_id = ? AND numero IN ({','.join('?' * len(nums))})"
-                       " AND (en_vigueur IS NULL OR en_vigueur = 1)", (src, *nums))
-        return [json.loads(r[0]) for r in rows]
+                       " AND (en_vigueur IS NULL OR en_vigueur = 1"
+                       " OR json_extract(data, '$.meta.en_vigueur_le') IS NOT NULL)", (src, *nums))
+        passages = [json.loads(r[0]) for r in rows]
+        return [p for p in passages if en_vigueur_aujourdhui(p.get("meta") or {}, src) is not False]
 
     @staticmethod
     def _filtre_sql(sources: tuple[str, ...]) -> tuple[str, tuple]:

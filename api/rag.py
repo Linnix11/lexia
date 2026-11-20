@@ -240,6 +240,10 @@ class Lexia:
                                      complement=complement, reclasseur=self.reclasseur)
         # Article d'une matiere speciale (successions...) dont la question ne parle pas : ecarte, sauf s'il est cite.
         hits = [h for h in hits if "reference" in h.via or not lexique.hors_matiere(h.passage, texte)]
+        # Version finie depuis la construction de l'index (fin le 1er janvier...) : l'index la croit en vigueur
+        # jusqu'a la reconstruction de la nuit, elle n'est pas envoyee au modele (SRC-3).
+        hits = [h for h in hits if h.passage["source_id"] not in SOURCES_TEXTES
+                or en_vigueur_aujourdhui(h.passage.get("meta") or {}, h.passage["source_id"]) is not False]
         passages = [h.passage for h in hits]
         if anciens and (sources is None or "code_civil" in sources):
             # Texte d'avant la reforme, place juste apres les references citees : le modele peut le comparer.

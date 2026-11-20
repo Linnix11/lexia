@@ -17,6 +17,7 @@ import base64
 import json
 import sqlite3
 import sys
+from datetime import date
 from pathlib import Path
 
 from api import textes
@@ -31,6 +32,9 @@ from ingest.env import load_env
 ROOT = Path(__file__).resolve().parent.parent
 PASSAGES_DIR = ROOT / "data" / "passages"
 INDEX_DIR = ROOT / "data" / "index"
+# Premiere date, apres la construction, ou une version entre en vigueur ou cesse de l'etre : la colonne
+# en_vigueur et l'index plein texte sont alors perimes, la mise a jour nocturne reconstruit (SRC-3).
+BASCULE = "prochaine_bascule.txt"
 
 SCHEMA = """
 CREATE TABLE passages (
@@ -66,16 +70,19 @@ def doc_id(p: dict) -> str:
     return meta.get("id_dila") or meta.get("id_legi") or p["id"]
 
 
-def en_vigueur(p: dict):
+def en_vigueur(p: dict, aujourdhui: str | None = None):
     """Colonne servant a ecarter de la recherche les textes qui ne s'appliquent plus.
     La date de fin est relue ici : l'etat stocke a ete fige le jour de l'import (D71)."""
-    valeur = textes.en_vigueur_aujourdhui(p.get("meta") or {}, p["source_id"])
+    valeur = textes.en_vigueur_aujourdhui(p.get("meta") or {}, p["source_id"], aujourdhui)
     return None if valeur is None else int(bool(valeur))
 
 
 def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_dir: Path = CACHE_DIR,
-          model: str | None = None) -> None:
-    """model : seuls les vecteurs de ce modele sont repris (par defaut EMBED_MODEL)."""
+          model: str | None = None, aujourdhui: str | None = None) -> None:
+    """model : seuls les vecteurs de ce modele sont repris (par defaut EMBED_MODEL).
+    aujourdhui : date ISO de l'etat « en vigueur » (tests), le jour meme par defaut."""
+    aujourdhui = aujourdhui or date.today().isoformat()
+    bascule = ""
     if model is None:
         load_env(ROOT / ".env")
         model = embedders.config_env()[1]
@@ -102,15 +109,19 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
                         continue
                     vus_doc.add(p["empreinte"])
                 n += 1
+                vigueur = en_vigueur(p, aujourdhui)
+                for d in textes.dates_de_bascule(p.get("meta") or {}):
+                    if d > aujourdhui and (not bascule or d < bascule):
+                        bascule = d
                 con.execute(
                     "INSERT INTO passages (rowid, id, source_id, type, numero, doc_id, en_vigueur, empreinte, data)"
                     " VALUES (?,?,?,?,?,?,?,?,?)",
-                    (n, p["id"], p["source_id"], p["type"], p.get("numero"), doc_id(p), en_vigueur(p),
+                    (n, p["id"], p["source_id"], p["type"], p.get("numero"), doc_id(p), vigueur,
                      p["empreinte"], json.dumps(p, ensure_ascii=False)),
                 )
                 con.executemany("INSERT INTO pourvois (numero, passage) VALUES (?,?)",
                                 ((pv, n) for pv in (p.get("meta") or {}).get("numeros_pourvoi") or ()))
-                if en_vigueur(p) != 0:
+                if vigueur != 0:
                     con.execute("INSERT INTO passages_fts (rowid, entete, texte, source) VALUES (?,?,?,?)",
                                 (n, p.get("entete", ""), p["texte"], jeton_source(p["source_id"])))
                 empreintes[p["id"]] = p["empreinte"]
@@ -121,6 +132,7 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
     con.commit()
     con.close()
     tmp.replace(index_dir / "lexia.sqlite")
+    (index_dir / BASCULE).write_text(f"{bascule}\n")   # vide : aucune date programmee
 
     # Vecteurs ecrits directement dans vectors.npy, projete en memoire, en deux passes sur le cache
     # (ids retenus, puis valeurs) : le serveur construit l'index la nuit a cote du service en marche,

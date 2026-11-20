@@ -8,7 +8,8 @@ Etapes :
   1. telecharge dans data/raw/dila les archives LEGI, CASS, JADE et CONSTIT absentes : l'archive globale
      la plus recente et les archives quotidiennes publiees depuis. Une nouvelle archive globale remplace
      l'ancienne, ses archives quotidiennes et son extraction ;
-  2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives ;
+  2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives, sauf si une version
+     est entree en vigueur ou a pris fin depuis sa construction (date de bascule franchie, SRC-3) ;
   3. reimporte les sources DILA (data/passages). Les autres (Constitution, page du Conseil constitutionnel)
      gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; une source hors DILA active dans
      le registre mais absente de l'index (traites de l'Union, D98) est telechargee une fois, sans bloquer la
@@ -31,6 +32,7 @@ import shutil
 import sqlite3
 import sys
 from argparse import Namespace
+from datetime import date
 from pathlib import Path
 
 import httpx
@@ -195,6 +197,21 @@ def amorcer_cache(index_dir: Path, cache_dir: Path) -> int:
     return ajoutes
 
 
+def bascule_franchie(index_dir: Path, aujourdhui: str | None = None) -> bool:
+    """Une version est-elle entree en vigueur, ou a-t-elle pris fin, depuis la construction de l'index ?
+
+    L'etat « en vigueur » de la recherche est fige a la construction : le 1er janvier 2027, 1 870 versions
+    commencent et 949 finissent, sans nouvelle archive DILA ce jour-la (audit du 2026-11-19, SRC-3). Index
+    construit avant ce controle (sans le fichier) : reconstruit une fois pour connaitre sa date."""
+    if not (index_dir / "lexia.sqlite").exists():
+        return False
+    fichier = index_dir / build_index.BASCULE
+    if not fichier.exists():
+        return True
+    bascule = fichier.read_text().strip()
+    return bool(bascule) and bascule <= (aujourdhui or date.today().isoformat())
+
+
 def compter(index_dir: Path) -> tuple[int, int, set[str]]:
     con = sqlite3.connect(index_dir / "lexia.sqlite")
     n = con.execute("SELECT count(*) FROM passages").fetchone()[0]
@@ -234,8 +251,11 @@ def main(argv: list[str] | None = None) -> int:
     lues = archives_lues(RAW_DIR)
     deja = (INDEX / ARCHIVES).read_text().split() if (INDEX / ARCHIVES).exists() else []
     if lues == deja and not args.forcer:
-        print("Rien de nouveau : l'index actuel a ete construit avec ces archives.")
-        return RIEN_DE_NOUVEAU
+        if not bascule_franchie(INDEX):
+            print("Rien de nouveau : l'index actuel a ete construit avec ces archives.")
+            return RIEN_DE_NOUVEAU
+        print("Archives inchangees, mais une version est entree en vigueur ou a pris fin depuis la construction :"
+              " reconstruction.")
 
     print("== Import des sources", flush=True)
     for s in sources_dila():

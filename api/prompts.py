@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from api.concordance import note as note_concordance
+from api.textes import en_vigueur_aujourdhui
 
 MAX_CHARS_EXTRAIT = 3000
 
@@ -148,6 +149,20 @@ def schema_reponse(mode: str) -> dict:
                "required": ["texte", "sources", "rubrique"]}
     return {**SCHEMA_REPONSE, "properties": {**SCHEMA_REPONSE["properties"], "explication": {"type": "array", "items": element}}}
 
+def _etat_du_jour(p: dict) -> str:
+    """L'en-tete dit l'etat du jour de l'import (« en vigueur », « pas encore en vigueur ») : corrige quand une
+    date de debut ou de fin est passee depuis (SRC-3)."""
+    meta = p.get("meta") or {}
+    if "en_vigueur" not in meta:
+        return ""
+    stocke, aujourdhui = bool(meta["en_vigueur"]), en_vigueur_aujourdhui(meta, p.get("source_id") or "")
+    if stocke and aujourdhui is False:
+        return f" [ATTENTION : plus en vigueur depuis le {meta.get('date_fin')}]"
+    if not stocke and aujourdhui:
+        return f" [en vigueur depuis le {meta.get('en_vigueur_le')}]"
+    return ""
+
+
 def format_extraits(passages: list[dict]) -> str:
     blocs = []
     for i, p in enumerate(passages, start=1):
@@ -156,7 +171,7 @@ def format_extraits(passages: list[dict]) -> str:
             texte = texte[:MAX_CHARS_EXTRAIT] + " [...]"
         nature = {"sommaire": "Sommaire officiel", "dispositif": "Dispositif", "motifs": "Motifs",
                   "cours": "cours de l'étudiant, source non officielle"}.get(p["type"], "")
-        entete = p.get("entete") or p.get("titre") or p["id"]
+        entete = (p.get("entete") or p.get("titre") or p["id"]) + _etat_du_jour(p)
         blocs.append(f"[S{i}] {entete}" + (f" ({nature})" if nature else "") + f"\n{texte}")
     return "\n\n".join(blocs)
 
