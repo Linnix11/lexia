@@ -1,3 +1,4 @@
+import { VERSION_CGU } from '../lib/cgu'
 import { useEffect, useState } from 'react'
 import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
@@ -42,12 +43,17 @@ export function Formules() {
           action = <Payer formule={f} principal={miseEnAvant} />
         } else if (config?.contact_email) {
           const sujet = encodeURIComponent(`Lexia - formule ${f.nom}`)
-          const corps = encodeURIComponent(`Bonjour,\n\nJe souhaite passer à la formule ${f.nom}.\nAdresse de mon compte Lexia : ${profil?.email ?? ''}\n`)
+          // Demande expresse d'acces immediat dans le corps du mail (C. consom. L. 221-25 ; audit du 2026-11-19, JUR-14) :
+          // la formule n'est activee qu'apres reception de cette demande. L'etudiant peut la retirer avant d'envoyer.
+          const corps = encodeURIComponent(`Bonjour,\n\nJe souhaite passer à la formule ${f.nom}.\nAdresse de mon compte Lexia : ${profil?.email ?? ''}\n\n`
+            + 'Je demande l’accès immédiat à la formule. Si je me rétracte dans les 14 jours, je paierai la part de la période '
+            + 'déjà écoulée. Je reconnais perdre mon droit de rétractation si la formule est entièrement exécutée avant la fin '
+            + `de ce délai. J’accepte les conditions générales (version du ${VERSION_CGU}).\n`)
           action = (
             <>
               <a href={`mailto:${config.contact_email}?subject=${sujet}&body=${corps}`} className={miseEnAvant ? bouton : boutonSecondaire}>Demander cette formule</a>
               {/* Mention au plus pres du bouton (audit du 2026-11-16, point 15) : il ouvre un e-mail, rien n'est paye. */}
-              <p className="mt-2 text-[12px] leading-[1.5] text-muted">Ouvre un e-mail de demande. La formule est activée à la main après réception, sans paiement en ligne pour l’instant.</p>
+              <p className="mt-2 text-[12px] leading-[1.5] text-muted">Ouvre un e-mail de demande, avec votre demande d’accès immédiat. La formule est activée à la main après réception, sans paiement en ligne pour l’instant.</p>
             </>
           )
         } else {

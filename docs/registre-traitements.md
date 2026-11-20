@@ -24,7 +24,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 | N° | Traitement | Base légale | Durée de conservation |
 |---|---|---|---|
 | T1 | Comptes utilisateurs | Exécution du contrat (CGU) | Jusqu'à la suppression du compte, ou deux ans sans visite (avertissement un mois avant) |
-| T2 | Rédaction des réponses par un modèle de langage | Exécution du contrat | Non conservé (mémoire vive 24 h au plus) |
+| T2 | Rédaction des réponses par un modèle de langage | Exécution du contrat | Réponses : mémoire vive 24 h au plus ; questionnaires en cours : base des comptes, 3 h |
 | T3 | Cours déposés | Exécution du contrat | Jusqu'au retrait du cours ou à la suppression du compte |
 | T4 | Limites d'usage et formules | Exécution du contrat | Compteurs : 90 jours ; formule : comme le compte |
 | T5 | Facturation des formules payantes | Obligation légale (comptabilité) | 10 ans (6 ans si activité libérale, à confirmer) |
@@ -53,15 +53,20 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   compte (pré-remplissage de la déclaration de rétractation) et le saluer par son prénom. Base légale : exécution du
   contrat. Lus à part (`Comptes.identite`, hors de l'objet `Utilisateur` qui circule jusqu'aux routes du modèle) :
   jamais transmis à Google ni à Groq (test `test_prenom_et_nom_jamais_envoyes_au_modele`), jamais dans un e-mail
-  (Resend), absents de la liste des comptes de l'administration. Effacés avec la ligne du compte. Minimisation :
+  (Resend), absents de la liste des comptes de l'administration. Seule exception : le nom et le prénom saisis dans
+  une déclaration de rétractation (pré-remplis, modifiables) figurent dans l'accusé de réception (Resend) et restent
+  dix ans dans la table des paiements (T5). Effacés avec la ligne du compte. Minimisation :
   le nom n'est pas indispensable au service (demande de l'éditeur du 2026-11-18) ; à confirmer avec le juriste.
 - Dans le navigateur seulement (rien n'est envoyé au serveur, D85) : conversation en cours (30 derniers messages)
   et dernier questionnaire dans `sessionStorage`, sous une empreinte du compte, effacés à la fermeture de l'onglet,
   à la déconnexion et à la suppression du compte ; fiches, cartes à réviser (D104), semestre et dernière matière choisie (D100) dans
   `localStorage`, fiches, cartes et matière effacées à la suppression du compte. Décrit dans la
   politique de confidentialité (« Données collectées »).
-- Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails de confirmation et de
-  réinitialisation, `api/courriel.py`) ; Cloudflare (acheminement du trafic).
+- Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails, `api/courriel.py` : confirmation
+  d'adresse, réinitialisation, avertissement d'inactivité, confirmation du contrat, accusé de rétractation) ;
+  Cloudflare (acheminement du trafic).
+- Export : `GET /compte/export` (bouton « Télécharger mes données » de Mon compte, `api/export.py`) : compte sans
+  secret, compteurs, cours déposés avec leur texte, paiements (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11).
 - Transferts hors UE : Resend et Cloudflare, États-Unis (voir « Sous-traitants »).
 - Durée : jusqu'à la suppression du compte (depuis « Mon compte » ou par l'éditeur), ou deux ans sans aucune
   visite : la CNIL juge proportionné ce délai, avec avertissement préalable
@@ -82,7 +87,11 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   politique déconseille) et extraits retrouvés.
 - Destinataires : Google (API Gemini) ; Groq en secours si `GROQ_API_KEY` est renseignée (`api/main.py`).
 - Transferts hors UE : États-Unis (voir « Sous-traitants »).
-- Durée chez l'éditeur : non écrit sur disque ; cache en mémoire vive de 24 h au plus, sans lien avec le compte.
+- Durée chez l'éditeur : réponses non écrites sur disque, cache en mémoire vive de 24 h au plus, sans lien avec le
+  compte. Questionnaires en cours (thème, questions, extraits, correction, numéro du compte) : recopiés dans la base
+  des comptes (table `questionnaires`, D5) pour survivre à un redémarrage, 3 heures au plus ; purgés chaque jour et
+  avec le compte (`Comptes.purger_questionnaires`, `Comptes.supprimer`) ; une sauvegarde de nuit peut en contenir
+  jusqu'à son effacement (audit du 2026-11-19, JUR-12).
   Le journal des jetons (`logs/modele.jsonl`) ne contient aucun texte.
 - Point bloquant avant l'ouverture : les conditions de l'API Gemini n'autorisent que les services payants pour
   une application proposée à des utilisateurs de l'Espace économique européen. Passage au niveau payant :
@@ -112,7 +121,8 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Finalité : encaisser le prix, établir les justificatifs, tenir la comptabilité.
 - Données chez l'éditeur (`api/paiement.py`, table `paiements`) : numéro de compte, adresse e-mail, formule,
   nombre de mois, montant, devise, statut, date de la demande d'accès immédiat (droit de rétractation), dates de
-  création et de paiement, identifiants Stripe de la session et du paiement. Jamais le numéro de carte : il est
+  création et de paiement, identifiants Stripe de la session et du paiement ; en cas de rétractation en ligne, nom
+  et prénom déclarés, date et heure, date d'envoi de l'accusé (et de la confirmation du contrat). Jamais le numéro de carte : il est
   saisi sur la page de Stripe. Chez Stripe : données de carte, nom, adresse e-mail.
 - Base légale : exécution du contrat (paiement), obligation légale (comptabilité).
 - Destinataires : éditeur ; Stripe Payments Europe, Limited (Irlande), contractant pour l'Espace économique
@@ -167,7 +177,9 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 
 - Finalité : répondre aux demandes de formule payante, aux réclamations et aux demandes d'exercice des droits.
 - Données : adresse e-mail, contenu des messages.
-- Destinataire : fournisseur de la boîte `CONTACT_EMAIL` (à renseigner ici avec sa localisation).
+- Destinataire : fournisseur de la boîte `CONTACT_EMAIL` : iCloud Mail (Apple), cité dans la politique de
+  confidentialité depuis le 2026-11-20 (audit JUR-18) ; localisation des données et accord de traitement d'Apple
+  à vérifier.
 - Durée : 3 ans après le dernier échange (repère CNIL pour un prospect), annoncée dans la politique de
   confidentialité. Rien d'automatique : l'éditeur trie sa boîte au moins une fois par an. Les signalements de
   contenu illicite (CGU, article 5 bis) et les échanges sur une mesure de suspension (article 6) suivent la même
@@ -185,7 +197,7 @@ recommande la CNIL (https://www.cnil.fr/fr/adequation-des-etats-unis-les-premier
 | Cloudflare, Inc. | Acheminement et protection du trafic (proxy) | Adresse IP, requêtes et réponses qui transitent | États-Unis | Certifié (actif) | Accord de traitement des données Cloudflare : à vérifier et archiver |
 | Google LLC | API Gemini (rédaction des réponses) | Questions, extraits, passages de cours | États-Unis | Certifié (actif) | Conditions de l'API Gemini et avenant sur le traitement des données : le niveau payant est requis (T2) |
 | Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types à vérifier dans l'accord de traitement de Groq (D58) ; option « Zero Data Retention » activée (D58) | Accord de traitement des données Groq : à lire et archiver |
-| Resend | E-mails de confirmation et de réinitialisation | Adresse e-mail, texte du message | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
+| Resend | E-mails : confirmation d'adresse, réinitialisation, avertissement d'inactivité, confirmation du contrat, accusé de rétractation | Adresse e-mail, texte du message (nom déclaré dans un accusé de rétractation) | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
 | Stripe Payments Europe, Limited | Paiement par carte (Stripe Checkout) | T5 | Irlande (UE) ; Stripe, LLC aux États-Unis | Stripe, LLC certifiée (actif) | Contrat de services et accord de traitement des données Stripe, acceptés à l'ouverture du compte : à archiver |
 
 Non sous-traitants : GitHub (surveillance de `/api/sante`, aucune donnée personnelle des utilisateurs).

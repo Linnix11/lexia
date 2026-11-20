@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
 import { effacerCartes } from '../lib/cartes'
 import { effacerFavoris } from '../lib/favoris'
+import { telecharger } from '../lib/exportFiches'
 import { effacerSemestre } from '../lib/semestres'
 import { effacerDerniereMatiere, NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, useRouteur } from '../lib/router'
@@ -171,6 +172,36 @@ function Paiement() {
   )
 }
 
+/** Export des donnees du compte au format JSON (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11). */
+function MesDonnees() {
+  const [etat, setEtat] = useState<'libre' | 'envoi' | 'erreur'>('libre')
+  const exporter = async () => {
+    setEtat('envoi')
+    try {
+      const donnees = await api.exporterDonnees()
+      telecharger('lexia-mes-donnees.json', JSON.stringify(donnees, null, 2), 'application/json;charset=utf-8')
+      setEtat('libre')
+    } catch {
+      setEtat('erreur')
+    }
+  }
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-5">
+      <div className="max-w-[460px]">
+        <h2 className="text-[14px] font-semibold">Mes données</h2>
+        <p className="mt-1 text-[12px] leading-[1.6] text-muted">
+          Un fichier JSON avec votre compte, vos compteurs, le texte de vos cours déposés et vos paiements. Vos fiches
+          restent dans ce navigateur : exportez-les depuis « Fiches & révisions ».
+        </p>
+        {etat === 'erreur' && <p role="alert" className="mt-1 text-[12px] text-[#8c4a36]">Export impossible pour le moment. Réessayez.</p>}
+      </div>
+      <button type="button" onClick={exporter} disabled={etat === 'envoi'} className={boutonSecondaire}>
+        {etat === 'envoi' ? 'Préparation…' : 'Télécharger mes données'}
+      </button>
+    </section>
+  )
+}
+
 /** Prenom et nom (D100, D102) : modifiables, jamais vides une fois enregistres. */
 function Identite() {
   const { profil, majProfil } = useSession()
@@ -205,7 +236,8 @@ function Identite() {
       <h2 className="text-[14px] font-semibold">Prénom et nom</h2>
       <p className="mt-1 text-[12px] leading-[1.6] text-muted">
         Votre prénom sert à vous saluer dans votre espace. Ni votre prénom ni votre nom ne sont transmis à l’IA ni
-        utilisés dans les e-mails.
+        utilisés dans les e-mails. Le nom indiqué dans une déclaration de rétractation figure dans son accusé de
+        réception et reste avec le paiement.
       </p>
       <form onSubmit={enregistrer} className="mt-3 flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-[12px]">
@@ -297,13 +329,15 @@ export function Compte() {
             </div>
           </section>
 
+          <MesDonnees />
+
           <section className="rounded-xl border border-[#ecd9c4] bg-cream p-5">
             <h2 className="text-[14px] font-semibold text-[#5f4f37]">Supprimer mon compte</h2>
             <p className="mt-1 text-[12px] leading-[1.6] text-[#746347]">
               Votre adresse e-mail, vos prénom et nom, votre mot de passe, vos cours déposés et vos compteurs d’utilisation
               sont effacés définitivement, ainsi que les fiches et la dernière matière enregistrées dans ce navigateur
-              (celles d’un autre appareil y restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail)
-              est conservée dix ans, comme toute pièce comptable.
+              (celles d’un autre appareil y restent). Si vous avez payé une formule, la trace du paiement (date, formule, montant, adresse e-mail,
+              et le nom d’une éventuelle déclaration de rétractation) est conservée dix ans, comme toute pièce comptable.
             </p>
             {!suppression ? (
               <button type="button" onClick={() => setSuppression(true)}

@@ -479,6 +479,8 @@ export const api = {
   config: () => requete<ConfigPublique>('/config'),
   formules: () => requete<Formule[]>('/formules'),
   session: () => requete<Profil | null>('/auth/session'),
+  /** Donnees du compte (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11) */
+  exporterDonnees: () => requete<unknown>('/compte/export'),
   inscription: (email: string, mot_de_passe: string, accepte_cgu: boolean, prenom: string, nom: string) =>
     post<Profil>('/auth/inscription', { email, mot_de_passe, accepte_cgu, prenom: prenom.trim(), nom: nom.trim() }),
   changerIdentite: (prenom: string, nom: string) => post<Profil>('/auth/identite', { prenom: prenom.trim(), nom: nom.trim() }),

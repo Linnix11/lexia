@@ -232,6 +232,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         cours = Cours(comptes.chemin, embedder)
         lexia.cours = cours
         app.include_router(creer_routes_cours(cours, utilisateur_requis))
+        from api.export import creer_route_export
+
+        app.include_router(creer_route_export(comptes, utilisateur_requis))   # RGPD art. 15 et 20 (JUR-11)
         # Cours de sites tiers sous licence libre : page a part, jamais dans les reponses (docs/cours-libres.md)
         catalogue = Catalogue(settings.cours_recuperes)
         app.include_router(creer_routes_cours_recuperes(catalogue, utilisateur_requis,

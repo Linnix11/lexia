@@ -19,6 +19,7 @@ import re
 import secrets
 import sqlite3
 import threading
+import time
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -124,6 +125,8 @@ INACTIVITE = timedelta(days=730)
 PREAVIS_INACTIVITE = timedelta(days=30)
 # Compteurs d'usage : ne servent qu'au quota du jour et aux statistiques des 30 derniers jours.
 USAGE_CONSERVE = timedelta(days=90)
+# Comme TTL_SECONDES de api/quiz.py (questionnaires recopies dans la base des comptes, D5)
+QUESTIONNAIRES_CONSERVES_S = 3 * 3600
 # Prenom (D100) et nom (D102) : demandes a l'inscription depuis le site, vides pour les comptes plus anciens (invites
 # a les completer dans Mon compte, sans blocage). Le prenom sert a saluer l'etudiant dans son espace. Jamais envoyes
 # au modele, dans un e-mail ni a l'administration ; effaces avec le compte (ligne supprimee).
@@ -557,9 +560,26 @@ class Comptes:
                                   "DO UPDATE SET supprime_le = excluded.supprime_le",
                                   (_hash_jeton(forme_canonique(u.email)), _maintenant().isoformat(timespec="seconds")))
             self._con.execute("DELETE FROM utilisateurs WHERE id = ?", (uid,))
+            # Questionnaires du compte recopies en base (api/quiz.py, D5) : effaces avec lui (audit JUR-12)
+            if self._table_existe("questionnaires"):
+                self._con.execute("DELETE FROM questionnaires WHERE json_extract(donnees, '$.proprietaire') = ?",
+                                  (uid,))
         # anciennes versions des pages recopiees dans le journal WAL : journal vide (comme Cours.supprimer)
         with self._lock:
             self._con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+    def _table_existe(self, nom: str) -> bool:
+        return self._con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+                                 (nom,)).fetchone() is not None
+
+    def purger_questionnaires(self) -> int:
+        """Questionnaires de plus de 3 heures (QuizStore ne purge qu'a la creation ou a la lecture d'un autre) :
+        aussi chaque jour, pour qu'une sauvegarde de nuit n'en garde pas d'anciens (audit JUR-12)."""
+        with self._lock, self._con:
+            if not self._table_existe("questionnaires"):
+                return 0
+            return self._con.execute("DELETE FROM questionnaires WHERE cree < ?",
+                                     (time.time() - QUESTIONNAIRES_CONSERVES_S,)).rowcount
 
     def confirmer_email(self, uid: int) -> None:
         """Adresse confirmee sans lien (compte cree sur le serveur par la commande d'administration)."""
@@ -707,6 +727,7 @@ class Comptes:
         try:
             self.purger_usage()
             self.purger_inactifs()
+            self.purger_questionnaires()
         except Exception:  # une purge ratee se refait le lendemain ; elle ne doit pas casser le service
             log.exception("purge quotidienne des comptes")
         for tache in self.taches_quotidiennes:

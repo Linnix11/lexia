@@ -46,8 +46,8 @@ export function fichesEnMarkdown(liste: Favori[]): string {
 }
 
 /** Fait telecharger un texte Markdown par le navigateur. */
-export function telecharger(nom: string, contenu: string): void {
-  const url = URL.createObjectURL(new Blob([contenu], { type: 'text/markdown;charset=utf-8' }))
+export function telecharger(nom: string, contenu: string, type = 'text/markdown;charset=utf-8'): void {
+  const url = URL.createObjectURL(new Blob([contenu], { type }))
   const lien = document.createElement('a')
   lien.href = url
   lien.download = nom

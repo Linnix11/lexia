@@ -593,3 +593,18 @@ def test_jur8_identite_du_vendeur():
                     "Médiateur X"):
         assert attendu in bloc
     assert "Immatriculation" not in bloc   # champ vide : ligne absente
+
+
+def test_jur11_export_des_donnees_du_compte(env):
+    """RGPD art. 15 et 20 : compte (sans secret), compteurs, cours et paiements dans un fichier JSON."""
+    client, comptes, _ = env
+    demander(client)
+    payer(client, evenement("cs_test_1", 499))
+    r = client.get("/compte/export")
+    assert r.status_code == 200 and "attachment" in r.headers["content-disposition"]
+    d = r.json()
+    assert d["compte"]["email"] == "etu@exemple.fr" and d["compte"]["prenom"] == "Léa" and d["compte"]["nom"] == "Martin"
+    assert "mdp" not in d["compte"] and "mdp" not in r.text and "scrypt" not in r.text
+    assert [p["formule"] for p in d["paiements"]] == ["etudiant"] and d["paiements"][0]["statut"] == "paye"
+    assert d["cours_deposes"] == [] and "navigateur" in d["dans_votre_navigateur"]
+    assert TestClient(client.app).get("/compte/export").status_code == 401   # sans session

@@ -85,9 +85,16 @@ export function MentionsLegales() {
         <p>
           Les textes et décisions affichés proviennent des données ouvertes publiées par la Direction de l’information
           légale et administrative (DILA : bases LEGI, CONSTIT, CASS et JADE), réutilisées selon la Licence Ouverte /
-          Open Licence d’Etalab, et du site du Conseil constitutionnel pour la Constitution. Chaque source est
-          accompagnée de sa date de mise à jour et d’un lien vers sa version officielle. Seule la publication sur
-          Légifrance fait foi.
+          Open Licence d’Etalab, et du site du Conseil constitutionnel pour la Constitution. Les traités de l’Union
+          européenne et la Charte des droits fondamentaux proviennent d’EUR-Lex (© Union européenne,
+          https://eur-lex.europa.eu), réutilisés selon la décision 2011/833/UE. Chaque source est accompagnée de sa
+          date de mise à jour et d’un lien vers sa version officielle. Seule la publication sur Légifrance (et, pour
+          le droit de l’Union, au Journal officiel de l’Union européenne) fait foi.
+        </p>
+        <p>
+          La page « Cours récupérés » reprend, sans modification de leur texte, des fiches pratiques de
+          service-public.gouv.fr (Service Public / DILA), sous Licence Ouverte 2.0 : chaque fiche indique sa source,
+          sa date de mise à jour et un lien vers l’original. Elles ne sont pas rédigées par Lexia.
         </p>
         <p>
           Les décisions de justice sont diffusées sous la forme pseudonymisée publiée par la DILA ; toute tentative de
@@ -149,8 +156,9 @@ export function Cgu() {
         </p>
         <p>
           La création d’un compte est réservée aux personnes âgées de 15 ans ou plus, qui le déclarent à
-          l’inscription. Si vous avez moins de 18 ans, la souscription d’une formule payante suppose l’accord
-          d’un titulaire de l’autorité parentale (article 1148 du Code civil).
+          l’inscription. Un mineur non émancipé ne peut pas contracter seul (article 1146 du Code civil), sauf pour
+          les actes courants conclus à des conditions normales (article 1148) : si vous avez moins de 18 ans, la
+          souscription d’une formule payante suppose l’accord d’un titulaire de l’autorité parentale.
         </p>
       </section>
       <section>
@@ -363,7 +371,17 @@ export function Cgu() {
         </p>
       </section>
       <section>
-        <h2>8. Droit applicable</h2>
+        <h2>8. Modification des conditions</h2>
+        <p>
+          L’éditeur peut modifier ces conditions, par exemple pour suivre une évolution de la loi ou du service. La
+          date de la version en vigueur figure en tête de cette page. Toute modification importante vous est
+          annoncée par e-mail ou dans votre espace au moins quinze jours avant de s’appliquer ; si vous la refusez,
+          vous pouvez supprimer votre compte avant cette date, et la part non utilisée d’une formule payante en cours
+          vous est remboursée. Une formule déjà payée reste régie par la version acceptée lors de son achat.
+        </p>
+      </section>
+      <section>
+        <h2>9. Droit applicable</h2>
         <p>
           Les présentes conditions sont soumises au droit français. En cas de litige, l’utilisateur consommateur
           peut recourir gratuitement à un médiateur de la consommation : <V v={l?.mediateur} manque="Nom et coordonnées du médiateur de la consommation" />.
@@ -377,7 +395,7 @@ export function Cgu() {
 export function Confidentialite() {
   const { l, contact, paiement } = useLegal()
   return (
-    <Page titre="Politique de confidentialité" maj="18 novembre 2026">
+    <Page titre="Politique de confidentialité" maj="20 novembre 2026">
       <section>
         <h2>Responsable du traitement</h2>
         <p>
@@ -388,7 +406,9 @@ export function Confidentialite() {
         <h2>Données collectées</h2>
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création, date de la dernière visite (pour supprimer les comptes inutilisés).</li>
-          <li><strong>Prénom et nom</strong> : demandés à l’inscription. Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte (il pré-remplit par exemple la déclaration de rétractation). Ils ne sont jamais transmis à l’intelligence artificielle, ni à un autre service, ni utilisés dans les e-mails. Vous pouvez les corriger à tout moment dans « Mon compte ».</li>
+          <li><strong>Prénom et nom</strong> : demandés à l’inscription. Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte (il pré-remplit par exemple la déclaration de rétractation). Ils ne sont jamais transmis à l’intelligence artificielle ni à l’administration du site, et ne figurent dans aucun e-mail. Vous pouvez les corriger à tout moment dans « Mon compte ».</li>
+          <li><strong>Déclaration de rétractation</strong> (si vous en faites une en ligne) : le nom et le prénom que vous y indiquez, la date et l’heure ; ils figurent dans l’accusé de réception envoyé par e-mail et sont gardés avec le paiement, comme pièce comptable.</li>
+          <li><strong>Questionnaires</strong> : thème, questions, extraits et correction d’un questionnaire en cours, gardés 3 heures au plus pour pouvoir le corriger, y compris après un redémarrage du serveur, puis effacés (et avec le compte).</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
           <li><strong>Formule payante</strong> (si vous en souscrivez une) : formule choisie, date de fin, et éléments de facturation (adresse e-mail, montant, date et moyen de paiement).</li>
@@ -436,10 +456,12 @@ export function Confidentialite() {
               dans notre compte Groq : la question n’est pas conservée après la réponse.
             </>
           )}
-          {l?.courriel ? <>{' '}Votre adresse e-mail est transmise à Resend (États-Unis) pour l’envoi des messages de
-          confirmation d’adresse et de réinitialisation du mot de passe ; ni votre mot de passe, ni vos prénom et nom,
-          ni vos questions ne lui sont communiqués.</> : null}{' '}
-          Vos prénom et nom ne font jamais partie de ce qui est transmis.{' '}
+          {l?.courriel ? <>{' '}Votre adresse e-mail et le texte des messages sont transmis à Resend (États-Unis) pour
+          l’envoi des e-mails : confirmation d’adresse, réinitialisation du mot de passe, avertissement avant la
+          suppression d’un compte inutilisé et, si vous payez une formule, confirmation du contrat et accusé de
+          réception d’une rétractation (qui contient le nom et le prénom indiqués dans la déclaration). Ni votre mot
+          de passe ni vos questions ne lui sont communiqués.</> : null}{' '}
+          Vos prénom et nom ne sont jamais transmis à l’intelligence artificielle.{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
         </p>
         <p>
@@ -447,9 +469,8 @@ export function Confidentialite() {
           (décision d’adéquation de la Commission européenne du 10 juillet 2023), auquel Google
           {l?.courriel ? <>, Resend</> : null} et Cloudflare sont certifiés.
           {l?.groq ? (
-            <>{' '}Groq n’y est pas certifié :{' '}
-            <A>[garantie du transfert (clauses contractuelles types de la Commission européenne) à vérifier dans
-            l’accord de traitement des données de Groq]</A></>
+            <>{' '}Groq n’y est pas certifié : le transfert vers Groq repose sur les clauses contractuelles types de la
+            Commission européenne, intégrées à son accord de traitement des données.</>
           ) : null}
         </p>
       </section>
@@ -460,7 +481,9 @@ export function Confidentialite() {
           Hostinger (hébergement du site et des données de compte), Cloudflare (acheminement et protection du trafic
           entre votre navigateur et le serveur), Google (rédaction des réponses, voir
           ci-dessus){l?.groq ? <>, Groq (rédaction des réponses en secours)</> : null}
-          {l?.courriel ? <>, Resend (envoi des e-mails de confirmation d’adresse et de réinitialisation du mot de passe)</> : null}.
+          {l?.courriel ? <>, Resend (envoi des e-mails, voir ci-dessus)</> : null}. Les e-mails que vous écrivez à
+          l’adresse de contact sont reçus et conservés par le service de messagerie de l’éditeur (iCloud Mail
+          d’Apple).
         </p>
         {paiement && (
           <p>
@@ -495,8 +518,9 @@ export function Confidentialite() {
           <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
           <li>Journaux du serveur web : 14 jours.</li>
           <li>Après une suppression de compte depuis le site : une empreinte de l’adresse e-mail (pas l’adresse elle-même), 48 heures au plus.</li>
-          <li>Sauvegardes de la base des comptes : 14 jours glissants sur le serveur ; une copie de secours, conservée par l’éditeur hors du serveur, 60 jours glissants.</li>
-          <li>Formules payantes : pièces comptables (paiements, justificatifs) pendant 10 ans, durée imposée par les obligations comptables ; elles sont gardées même après la suppression du compte.</li>
+          <li>Sauvegardes de la base des comptes : 14 jours glissants sur le serveur ; une copie de secours, conservée par l’éditeur hors du serveur : les 60 dernières copies (environ 60 jours).</li>
+          <li>Formules payantes : pièces comptables (paiements, justificatifs, et le cas échéant nom, prénom, date et heure d’une déclaration de rétractation) pendant 10 ans, durée imposée par les obligations comptables ; elles sont gardées même après la suppression du compte.</li>
+          <li>Questionnaires en cours : 3 heures ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement.</li>
           <li>Échanges par e-mail avec l’éditeur (demandes, réclamations, exercice de vos droits) : 3 ans après le dernier échange.</li>
         </ul>
       </section>
@@ -504,7 +528,10 @@ export function Confidentialite() {
         <h2>Cookies</h2>
         <p>
           Lexia n’utilise qu’un cookie strictement nécessaire : le cookie de session qui vous garde connecté. Aucun
-          cookie publicitaire ni de mesure d’audience.
+          cookie publicitaire ni de mesure d’audience. Le stockage local et le stockage de session du navigateur
+          décrits plus haut (fiches, semestre, dernière matière, conversation en cours) servent seulement au
+          fonctionnement que vous demandez : comme le cookie de session, ils ne demandent pas de consentement
+          (article 82 de la loi du 6 janvier 1978).
         </p>
       </section>
       <section>
@@ -513,7 +540,8 @@ export function Confidentialite() {
           Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
           portabilité, ainsi que le droit de définir des directives sur le sort de vos données après votre décès
           (article 85 de la loi du 6 janvier 1978). Vous pouvez supprimer votre compte vous-même depuis « Mon
-          compte », ou écrire à <Contact adresse={contact} />. Vous pouvez aussi saisir la CNIL (www.cnil.fr).
+          compte », et télécharger vos données (compte, cours déposés, paiements) au format JSON depuis la même
+          page. Vous pouvez aussi écrire à <Contact adresse={contact} /> ou saisir la CNIL (www.cnil.fr).
         </p>
       </section>
     </Page>

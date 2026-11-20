@@ -163,3 +163,24 @@ def test_migration_reprend_la_derniere_activite(tmp_path):
         con.execute("ALTER TABLE utilisateurs DROP COLUMN actif_le")
     c = Comptes(chemin)
     assert c._q("SELECT actif_le FROM utilisateurs") == [("2026-03-04",)]
+
+
+def test_jur12_questionnaires_effaces_avec_le_compte_et_purges_chaque_jour(tmp_path):
+    """Audit du 2026-11-19, JUR-12 : questionnaires recopies en base (D5) jamais gardes au-dela de 3 h ni apres
+    la suppression du compte."""
+    import time as _time
+
+    from api.comptes import QUESTIONNAIRES_CONSERVES_S, Comptes
+    from api.quiz import TTL_SECONDES, Quiz, QuizStore
+
+    assert QUESTIONNAIRES_CONSERVES_S == TTL_SECONDES
+    comptes = Comptes(tmp_path / "comptes.db")
+    a = comptes.creer("a@exemple.fr", "motdepasse-solide")
+    b = comptes.creer("b@exemple.fr", "motdepasse-solide")
+    store = QuizStore(chemin=comptes.chemin)
+    for i, (uid, cree) in enumerate([(a.id, _time.time()), (b.id, _time.time()), (b.id, _time.time() - 4 * 3600)]):
+        store._ecrire(Quiz(id=f"q{i}", format="qcm", theme="t", questions=[], table={}, cree=cree, proprietaire=uid))
+    restants = lambda: sorted(r[0] for r in comptes._q("SELECT id FROM questionnaires"))  # noqa: E731
+    assert comptes.purger_questionnaires() == 1 and restants() == ["q0", "q1"]
+    comptes.supprimer(a.id)
+    assert restants() == ["q1"]

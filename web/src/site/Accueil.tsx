@@ -107,8 +107,10 @@ export function Accueil() {
 
       <Section className="pb-16">
         <div className="rounded-xl border-l-2 border-[#c8a16d] bg-cream px-5 py-4 text-[13px] leading-[1.6] text-[#746347]">
-          Lexia est un outil d’étude. Il ne donne pas de conseil sur une situation personnelle et ne remplace ni vos
-          cours ni un professionnel du droit. Vérifiez toujours les sources citées.
+          Lexia est un outil d’étude. Des faits que vous racontez sont traités comme un cas pratique : Lexia expose
+          les règles qui s’y appliquent, sans rédiger de courrier, prédire l’issue d’un litige ni décider de vos
+          démarches. Cette analyse générale ne remplace ni vos cours ni un professionnel du droit. Vérifiez toujours
+          les sources citées.
         </div>
       </Section>
     </PublicLayout>
