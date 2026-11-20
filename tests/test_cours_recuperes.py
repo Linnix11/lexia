@@ -292,3 +292,12 @@ def test_fiche_xml_illisible_ignoree(tmp_path, monkeypatch):
     monkeypatch.setattr(cr, "SPE_ZIP", tmp_path / "absent.zip")
     monkeypatch.setattr(cr, "_archive", lambda client, url, cible: cible.exists())
     assert [c["id"] for c in cr.service_public(None)] == ["sp-f9999"]
+
+def test_vigueur_d_une_fiche_n_en_fait_pas_une_decision(index_mixte):
+    """Audit du 2026-11-19, SRC-9."""
+    from api.rag import Lexia
+    from api.retrieval.local import LocalRetriever
+    r = LocalRetriever(index_mixte)
+    fiche = r.rechercher_a_part("divorce juge")[0]
+    v = Lexia(r, None).vigueur(fiche["id"])
+    assert v["applicable"] is False and "Fiche explicative" in v["message"] and "décision" not in v["message"]

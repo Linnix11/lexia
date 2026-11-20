@@ -1,0 +1,46 @@
+# Cas pratiques reserves - version 1 (2026-11-20)
+#
+# Pourquoi ce fichier (audit du 2026-11-19, SRC-6) : les jeux de controle 1 a 4 ont tous servi, apres leur premiere
+# mesure, a regler le lexique (api/lexique.py). Ils ne disent donc plus rien des questions nouvelles : le
+# quatrieme passait de 9/15 a 15/15 apres reglage. Ce jeu est le temoin.
+#
+# REGLE : ne JAMAIS modifier le lexique, la consigne ou la recherche pour faire passer un cas de ce fichier. Un
+# echec se corrige en ecrivant un cas proche dans un autre jeu et en reglant sur celui-la ; le cas reserve reste
+# tel quel et sa mesure suivante dit si le reglage generalise. Le mesurer aussi avec reformulation par Gemini
+# quand un quota le permet (non fait le 2026-11-20 : aucune API payante en developpement).
+#
+# Memes regles d'ecriture que cas_pratiques.yaml : des faits, sans numero d'article ni nom de notion. Une seule
+# source attendue suffit. Articles verifies presents et en vigueur dans l'index local le 2026-11-20.
+# STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+
+cas:
+  - {id: res-01, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1719, code_civil:1720],
+     question: "Depuis le début de l’hiver, le chauffage de l’appartement que loue Inès ne fonctionne plus. Son propriétaire doit-il le faire réparer ?"}
+  - {id: res-02, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1641],
+     question: "Quelques mois après avoir acheté une maison, un couple découvre que la charpente est rongée par des termites. Peuvent-ils se retourner contre le vendeur ?"}
+  - {id: res-03, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1359],
+     question: "Hugo a prêté 3 000 euros à un ami sans rien écrire. L’ami prétend aujourd’hui n’avoir jamais rien reçu. Comment Hugo peut-il prouver sa créance ?"}
+  - {id: res-04, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1146, code_civil:1148],
+     question: "Un lycéen de 16 ans achète une moto d’occasion avec ses économies, sans en parler à ses parents. Ceux-ci peuvent-ils faire annuler la vente ?"}
+  - {id: res-05, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:222-11],
+     question: "À la sortie d’un bar, un homme frappe un inconnu au visage ; la victime ne peut pas travailler pendant quinze jours. Que risque l’auteur ?"}
+  - {id: res-06, matiere: droit_social, mode: cas_pratique, attendu: [reponse], sources: [code_travail:L1232-2],
+     question: "Une vendeuse apprend son licenciement par un simple message sur son téléphone, sans avoir été reçue par son employeur. La procédure est-elle régulière ?"}
+  - {id: res-07, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:229-1],
+     question: "Deux époux veulent se séparer et sont d’accord sur tout, y compris la garde des enfants. Doivent-ils obligatoirement passer devant un juge ?"}
+  - {id: res-08, matiere: droit_de_la_famille, mode: cas_pratique, attendu: [reponse], sources: [code_civil:768, code_civil:804],
+     question: "Le père de Malik vient de mourir en laissant surtout des dettes. Malik est-il obligé de les payer ?"}
+  - {id: res-09, matiere: droit_des_affaires, mode: cas_pratique, attendu: [reponse], sources: [code_commerce:L110-4],
+     question: "Un grossiste réclame à un restaurateur une facture impayée qui date d’il y a sept ans. Le restaurateur doit-il encore payer ?"}
+  - {id: res-10, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:545],
+     question: "En construisant son garage, un voisin a bâti un mur qui dépasse de trente centimètres sur le terrain d’à côté. Le propriétaire voisin peut-il obtenir sa démolition ?"}
+  - {id: res-11, matiere: droit_penal, mode: cas_pratique, attendu: [reponse], sources: [code_penal:311-1],
+     question: "Une cliente part avec le portefeuille qu’un autre client avait oublié sur la table d’un café. A-t-elle commis une infraction ?"}
+  - {id: res-12, matiere: procedure_penale, mode: cas_pratique, attendu: [reponse], sources: [code_procedure_penale:63-1],
+     question: "Un homme est retenu au commissariat pendant plusieurs heures pour être interrogé, sans qu’on lui dise qu’il peut se taire ni voir un avocat. Est-ce régulier ?"}
+  - {id: res-13, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_consommation:L221-18],
+     question: "Léa a commandé un aspirateur sur un site internet. Dix jours après la livraison, il ne lui plaît plus. Peut-elle le renvoyer sans donner de raison ?"}
+  - {id: res-14, matiere: droit_des_biens, mode: cas_pratique, attendu: [reponse], sources: [code_civil:2272, code_civil:2258],
+     question: "Depuis quarante ans, une famille habite et entretient une maison abandonnée par son propriétaire, qui réapparaît aujourd’hui. Qui est propriétaire ?"}
+  - {id: res-15, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:2224],
+     question: "Un artisan a mal posé une fenêtre il y a six ans ; le client s’en plaint seulement maintenant. Peut-il encore agir en justice ?"}

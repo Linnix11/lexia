@@ -58,7 +58,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CONSTIT/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: hebdomadaire
+  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
   perimetre: decisions DC et QPC (contentieux electoral exclu)
   matieres:
   - droit_constitutionnel
@@ -81,7 +81,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: hebdomadaire
+  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
   perimetre: arrets publies depuis 2000 ; de 1960 a 1999, sommaire officiel seul (D82) ; moyens annexes exclus
   matieres:
   - droit_civil
@@ -911,7 +911,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: hebdomadaire
+  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
   matieres:
   - droit_penal
   - libertes_fondamentales
@@ -930,7 +930,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: hebdomadaire
+  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
   matieres:
   - droit_social
   niveaux:
@@ -947,7 +947,7 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: hebdomadaire
+  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
   matieres:
   - droit_des_affaires
   - droit_des_contrats

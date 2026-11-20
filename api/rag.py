@@ -20,7 +20,7 @@ from api.llm.base import LLM, ContenuRefuse, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
 from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, groupes
-from api.textes import SOURCES_TEXTES, en_vigueur_aujourdhui
+from api.textes import SOURCES_A_PART, SOURCES_TEXTES, en_vigueur_aujourdhui
 
 AVERTISSEMENT = (
     "Réponse générée par une intelligence artificielle. Lexia est un outil d'étude, pas un avis juridique : "
@@ -455,6 +455,11 @@ class Lexia:
         if p["source_id"] == "constitution_1958":
             return {**base, "applicable": True, "en_vigueur": True, "version_en_vigueur": None,
                     "message": "Texte en vigueur selon la dernière synchronisation. Confirmez sur le site du Conseil constitutionnel."}
+        if p["source_id"] in SOURCES_A_PART:
+            # Fiche explicative (service-public.gouv.fr) : elle n'est ni un texte ni une decision (SRC-9).
+            return {**base, "applicable": False, "en_vigueur": None, "version_en_vigueur": None,
+                    "message": ("Fiche explicative, non officielle : elle n'a pas de version en vigueur. Vérifiez sa "
+                                "date de mise à jour et les textes qu'elle cite sur Légifrance.")}
         return {**base, "applicable": False, "en_vigueur": None, "version_en_vigueur": None,
                 "message": ("Une décision de justice n'a pas de version en vigueur. Vérifiez sa portée actuelle : "
                             "revirement de jurisprudence, réforme des textes appliqués.")}

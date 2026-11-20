@@ -402,9 +402,26 @@ def test_b7_route_publique_en_cache(tmp_path, index_b, monkeypatch):
     assert f["sources"]["judilibre"] == {"nom": "Cour de cassation : chambres civiles, Assemblée plénière, chambre mixte",
                                          "date": "2026-09-17", "nature": "jurisprudence"}
     assert f["sources"]["code_civil"] == {"nom": "Code civil", "date": "2026-11-17", "nature": "textes"}
-    assert "constitution_1958" not in f["sources"]
+    assert "constitution_1958" not in f["sources"]   # absente de cet index
     c.get("/fraicheur")
     assert appels == [1]   # calcule une fois, puis servi depuis le cache
+
+
+def test_src5_constitution_datee(tmp_path, monkeypatch):
+    """Audit du 2026-11-19, SRC-5 : la Constitution n'avait aucune date dans la fraicheur des sources."""
+    from api.config import Settings
+    from api.main import create_app
+
+    class Index:
+        def get(self, pid):
+            return {"date_recuperation": "2026-11-11T02:10:30+00:00"} if pid == "constitution_1958:preambule" else None
+
+        def dernieres_decisions(self):
+            return {}
+    monkeypatch.setattr(fraicheur, "date_textes", lambda d: "2026-11-17")
+    c = TestClient(create_app(Settings(index_dir=tmp_path, logs_dir=tmp_path / "logs"), retriever=Index(), llm=object()))
+    assert c.get("/fraicheur").json()["sources"]["constitution_1958"] == {
+        "nom": "Constitution de 1958", "date": "2026-11-11", "nature": "textes"}
 
 
 def test_b7_dernieres_decisions_index_sans_table(index_b, tmp_path):

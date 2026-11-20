@@ -157,3 +157,21 @@ def test_traites_de_l_union_ajoutes_une_fois_cedh_et_onu_jamais(tmp_path):
     lus.clear()
     assert mise_a_jour.ajouter_nouvelles(passages, actives, importer) == ([], ["tfue"])   # seul l'echec est retente
     assert lus == ["tfue"]
+
+
+def test_constitution_relue_chaque_mois_sans_bloquer(tmp_path):
+    """Audit du 2026-11-19, SRC-5 : la Constitution, hors DILA, n'etait jamais relue."""
+    from datetime import date
+    f = tmp_path / "constitution_1958.jsonl"
+    f.write_text(json.dumps({"id": "c", "date_recuperation": "2026-11-11T02:10:30+00:00"}) + "\n")
+    appels = []
+    assert mise_a_jour.rafraichir(tmp_path, aujourdhui=date(2026, 12, 1), importer=appels.append) == ([], [])
+    assert mise_a_jour.rafraichir(tmp_path, aujourdhui=date(2026, 12, 20), importer=appels.append) == (
+        ["constitution_1958"], [])
+    assert appels == ["constitution_1958"]
+
+    def en_panne(_s):
+        raise RuntimeError("site indisponible")
+    assert mise_a_jour.rafraichir(tmp_path, aujourdhui=date(2026, 12, 20), importer=en_panne) == (
+        [], ["constitution_1958"])
+    assert "2026-11-11" in f.read_text()          # fichier precedent garde

@@ -11,7 +11,8 @@ Etapes :
   2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives, sauf si une version
      est entree en vigueur ou a pris fin depuis sa construction (date de bascule franchie, SRC-3) ;
   3. reimporte les sources DILA (data/passages). Les autres (Constitution, page du Conseil constitutionnel)
-     gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; une source hors DILA active dans
+     gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; la Constitution est relue quand sa
+     recuperation date de plus de 30 jours ; une source hors DILA active dans
      le registre mais absente de l'index (traites de l'Union, D98) est telechargee une fois, sans bloquer la
      mise a jour si son site ne repond pas ;
   4. calcule les embeddings des seuls passages nouveaux ou modifies (cache data/embeddings, amorce depuis
@@ -158,6 +159,35 @@ def ajouter_nouvelles(passages_dir: Path, actives: set[str], importer=None) -> t
     return ajoutees, echecs
 
 
+RAFRAICHIR = ("constitution_1958",)   # hors DILA, jamais relue apres son premier import (audit SRC-5)
+AGE_MAX_JOURS = 30
+
+
+def rafraichir(passages_dir: Path, sources: tuple[str, ...] = RAFRAICHIR, aujourdhui: date | None = None,
+               importer=None) -> tuple[list[str], list[str]]:
+    """Relit une source hors DILA recuperee il y a plus de AGE_MAX_JOURS (date_recuperation de son premier
+    passage). Un echec garde le fichier precedent et ne bloque pas la mise a jour. Renvoie (relues, en echec)."""
+    importer = importer or (lambda s: run.ingest(s, Namespace(html=None)))
+    aujourdhui = aujourdhui or date.today()
+    relues, echecs = [], []
+    for s in sources:
+        f = passages_dir / f"{s}.jsonl"
+        try:
+            with f.open(encoding="utf-8") as fh:
+                recuperee = date.fromisoformat(str(json.loads(fh.readline()).get("date_recuperation"))[:10])
+        except (OSError, ValueError, json.JSONDecodeError):
+            recuperee = date.min
+        if (aujourdhui - recuperee).days <= AGE_MAX_JOURS:
+            continue
+        try:
+            importer(s)
+            relues.append(s)
+        except Exception as e:  # site indisponible, page changee (ParseError)...
+            print(f"  {s} non relue, fichier precedent garde : {e}", file=sys.stderr)
+            echecs.append(s)
+    return relues, echecs
+
+
 def amorcer_cache(index_dir: Path, cache_dir: Path) -> int:
     """Premier passage sur une machine (le serveur) : ajoute au cache les vecteurs de l'index en service
     qui y manquent (meme id, meme empreinte), pour ne calculer ensuite que les passages nouveaux ou modifies.
@@ -265,6 +295,9 @@ def main(argv: list[str] | None = None) -> int:
     ajoutees, _ = ajouter_nouvelles(build_index.PASSAGES_DIR, sources_actives())
     if ajoutees:
         print(f"  nouvelles sources : {', '.join(ajoutees)}")
+    relues, _ = ([], []) if args.sans_telechargement else rafraichir(build_index.PASSAGES_DIR)
+    if relues:
+        print(f"  relues (plus de {AGE_MAX_JOURS} jours) : {', '.join(relues)}")
 
     # Fiches de service-public.gouv.fr pour la page « Cours recuperes » (D103) : catalogue de la page et passages
     # a part du corpus officiel. Un echec garde les fiches de la veille et ne bloque jamais l'index.

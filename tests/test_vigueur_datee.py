@@ -143,6 +143,7 @@ def test_mise_a_jour_refuse_un_index_trop_petit(tmp_path, index, monkeypatch):
     monkeypatch.setattr(mise_a_jour, "sources_dila", lambda: [])
     monkeypatch.setattr(mise_a_jour, "reconstituer", lambda *a: [])
     monkeypatch.setattr(mise_a_jour, "ajouter_nouvelles", lambda *a: ([], []))
+    monkeypatch.setattr(mise_a_jour, "rafraichir", lambda *a: ([], []))
     monkeypatch.setattr(mise_a_jour.cours_recuperes, "main", lambda *a: 0)
     monkeypatch.setattr(mise_a_jour.embed, "main", lambda *a: 0)
     vide = tmp_path / "passages_vides"

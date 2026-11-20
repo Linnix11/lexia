@@ -49,15 +49,23 @@ def _norm_num(n: str) -> str:
     """Forme de comparaison : « L. 2223-1 » -> L2223-1, « R.* 421-1 » -> R421-1 (asterisque ignoree, voir
     variantes), « L.O. 119 » -> LO119, « D45-2-1 BIS » -> D45-2-1 bis (l'index ecrit les suffixes en minuscules)."""
     n = re.sub(r"\s+", " ", n.replace(".", "").replace("*", "").strip()).lower()
+    if n.endswith("1er") and not n[-4:-3].isdigit():
+        n = n[:-2]   # « 1er » des lois (SRC-8)
     m = re.match(r"^(l ?o|[lrda]) ?(?=\d)", n)
     return m.group(1).replace(" ", "").upper() + n[m.end():] if m else n
 
 
 def variantes(num: str) -> tuple[str, ...]:
     """Numeros a chercher dans l'index pour un numero normalise : R421-1 n'y existe souvent que sous la forme
-    R*421-1 (1 058 articles en vigueur, ex. code de l'urbanisme)."""
-    m = re.match(r"^([RD])(\d.*)$", num)
-    return (num, f"{m.group(1)}*{m.group(2)}") if m else (num,)
+    R*421-1 (1 058 articles en vigueur, ex. code de l'urbanisme), parfois « R 1424-59 » (21 articles du CGCT et
+    du code de l'environnement) ; l'article 1 parfois « 1er » (lois, SRC-8)."""
+    if num == "1":
+        return ("1", "1er")
+    m = re.match(r"^(LO|[LRDA])(\d.*)$", num)
+    if not m:
+        return (num,)
+    out = (num, f"{m.group(1)} {m.group(2)}")
+    return out + ((f"{m.group(1)}*{m.group(2)}",) if m.group(1) in "RD" else ())
 
 
 def extraire(texte: str) -> References:

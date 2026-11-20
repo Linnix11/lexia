@@ -130,3 +130,28 @@ def test_element_retire_quand_le_code_ne_correspond_pas():
                             {"S1": {"id": "civ", **CIV_1240}}, c, exiger_source=True)
     assert [e["texte"] for e in out] == ["L'article 1240 du Code civil impose réparation."]
     assert c.elements_retires == 1 and c.references_non_verifiees == ["article 1240"]
+
+
+# --- Numeros avec espace, « 1er », Charte (audit du 2026-11-19, SRC-7, SRC-8) -----------------------------------
+
+from api.references import _norm_num, reference_couverte, variantes  # noqa: E402
+from api.retrieval.base import Hit, diversifier, doc_de  # noqa: E402
+
+
+def test_numeros_avec_espace_et_premier():
+    assert "R 1424-59" in variantes("R1424-59") and "R*1424-59" in variantes("R1424-59")
+    assert variantes("1") == ("1", "1er") and variantes("1240") == ("1240",)
+    assert _norm_num("R 1424-59") == "R1424-59" and _norm_num("1er") == "1" and _norm_num("A 1er") == "A1"
+    assert reference_couverte("article", "R1424-59", [{"source_id": "code_collectivites_territoriales",
+                                                       "numero": "R 1424-59", "texte": "", "entete": ""}])
+    assert reference_couverte("article", "1", [{"source_id": "lois", "numero": "1er", "texte": "", "entete": ""}])
+    assert not reference_couverte("article", "11", [{"source_id": "lois", "numero": "1er", "texte": "", "entete": ""}])
+
+
+def test_charte_plusieurs_articles_par_reponse():
+    charte = [{"id": f"charte_environnement:LEGIARTI1:{n}", "type": "article", "meta": {"id_legi": "LEGIARTI1"}}
+              for n in ("1", "5", "7")]
+    assert len({doc_de(p) for p in charte}) == 3
+    assert len(diversifier([Hit(p, 1.0) for p in charte], 8, doc_de)) == 3
+    arret = [{"id": f"judilibre:X:{i}", "type": "motifs", "meta": {"id_dila": "JURITEXT1"}} for i in range(3)]
+    assert len(diversifier([Hit(p, 1.0) for p in arret], 8, doc_de)) == 1     # une decision : un passage

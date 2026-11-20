@@ -365,6 +365,11 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             if textes:
                 sources |= {s: {"nom": NOMS[s], "date": textes, "nature": "textes"} for s in SOURCES_TEXTES
                             if s not in HORS_LEGI}   # Constitution (Conseil constitutionnel), traites (EUR-Lex)
+            # Constitution, recuperee sur le site du Conseil constitutionnel : date de sa derniere lecture (SRC-5).
+            constitution = (retriever.get("constitution_1958:preambule") or {}).get("date_recuperation") or ""
+            if constitution[:4].isdigit():
+                sources["constitution_1958"] = {"nom": NOMS["constitution_1958"], "date": constitution[:10],
+                                                "nature": "textes"}
             fraicheur_cache.update(expire=time.monotonic() + 3600, valeur={"textes": textes, "sources": sources})
         return fraicheur_cache["valeur"]
 

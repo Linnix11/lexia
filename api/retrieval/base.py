@@ -199,5 +199,9 @@ def diversifier(hits: list[Hit], k: int, cle_doc) -> list[Hit]:
 
 
 def doc_de(p: dict) -> str:
+    """Document d'un passage, pour en limiter le nombre par reponse. Un article est son propre document : les
+    11 passages de la Charte de l'environnement partagent un id_legi, un seul passait (audit SRC-7)."""
+    if p.get("type") == "article":
+        return p["id"]
     meta = p.get("meta") or {}
     return meta.get("id_dila") or meta.get("id_legi") or p["id"]
