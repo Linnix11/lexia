@@ -1,0 +1,18 @@
+{
+ "transactions": [
+  {
+   "id": "6a0000000000000000000001",
+   "action": "updated",
+   "date": "2026-11-21"
+  },
+  {
+   "id": "6a0000000000000000000002",
+   "action": "deleted",
+   "date": "2026-11-21"
+  }
+ ],
+ "page_size": 500,
+ "total": 2,
+ "query_date": "2026-11-21",
+ "next_page": null
+}

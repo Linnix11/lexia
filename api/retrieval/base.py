@@ -203,5 +203,5 @@ def doc_de(p: dict) -> str:
     11 passages de la Charte de l'environnement partagent un id_legi, un seul passait (audit SRC-7)."""
     if p.get("type") == "article":
         return p["id"]
-    meta = p.get("meta") or {}
-    return meta.get("id_dila") or meta.get("id_legi") or p["id"]
+    meta = p.get("meta") or {}   # id_source : decision recente hors archive DILA (D113)
+    return meta.get("id_dila") or meta.get("id_legi") or meta.get("id_source") or p["id"]

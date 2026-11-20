@@ -1,0 +1,68 @@
+{
+ "batch": 1,
+ "batch_size": 1000,
+ "query": {
+  "type": [
+   "arret"
+  ],
+  "jurisdiction": [
+   "cc"
+  ],
+  "publication": [
+   "b",
+   "r"
+  ],
+  "date_type": "creation",
+  "date_start": "2026-05-12",
+  "batch_size": 1000,
+  "batch": 1,
+  "resolve_references": false
+ },
+ "total": 5,
+ "took": 12,
+ "previous_batch": "...",
+ "next_batch": null,
+ "results": [
+  {
+   "id": "6a0000000000000000000002",
+   "jurisdiction": "cc",
+   "chamber": "soc",
+   "number": "24-12.345",
+   "numbers": [
+    "24-12.345"
+   ],
+   "ecli": "ECLI:FR:CCASS:2026:SO00950",
+   "formation": "fs",
+   "publication": [
+    "b"
+   ],
+   "decision_date": "2026-10-14",
+   "type": "arret",
+   "solution": "cassation",
+   "update_date": "2026-10-14",
+   "update_datetime": "2026-10-14T10:00:00.000Z",
+   "text": "SOC.\n\nCOUR DE CASSATION\n\nAudience publique du 14 octobre 2026\n\nCassation\n\nM. Huglo, président\n\nFaits et procédure\n\n1. Selon l'arrêt attaqué, M. [D] a été engagé par la société Gamma.\n\n2. Il a saisi la juridiction prud'homale d'une demande en résiliation judiciaire de son contrat de travail.\n\nRéponse de la Cour\n\nVu l'article L. 1231-1 du code du travail :\n\n3. Il résulte de ce texte que le juge doit rechercher si les manquements de l'employeur empêchaient la poursuite du contrat.\n\nPAR CES MOTIFS, la Cour :\n\nCASSE ET ANNULE, en toutes ses dispositions, l'arrêt rendu le 3 avril 2025.\n\nMOYEN ANNEXE au présent arrêt\n\nMoyen produit pour M. [D].\n"
+  },
+  {
+   "id": "6a0000000000000000000003",
+   "jurisdiction": "cc",
+   "chamber": "cr",
+   "number": "26-80.001",
+   "numbers": [
+    "26-80.001"
+   ],
+   "ecli": "ECLI:FR:CCASS:2026:CR01300",
+   "formation": "fs",
+   "publication": [
+    "b"
+   ],
+   "decision_date": "2026-11-04",
+   "type": "arret",
+   "solution": "rejet",
+   "update_date": "2026-11-04",
+   "update_datetime": "2026-11-04T10:00:00.000Z",
+   "text": "supprimee",
+   "to_be_deleted": true
+  }
+ ]
+}

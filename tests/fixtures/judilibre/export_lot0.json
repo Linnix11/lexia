@@ -1,0 +1,132 @@
+{
+ "batch": 0,
+ "batch_size": 1000,
+ "query": {
+  "type": [
+   "arret"
+  ],
+  "jurisdiction": [
+   "cc"
+  ],
+  "publication": [
+   "b",
+   "r"
+  ],
+  "date_type": "creation",
+  "date_start": "2026-05-12",
+  "batch_size": 1000,
+  "batch": 0,
+  "resolve_references": false
+ },
+ "total": 5,
+ "took": 12,
+ "previous_batch": null,
+ "next_batch": "type=arret&jurisdiction=cc&batch=1",
+ "results": [
+  {
+   "id": "6a0000000000000000000001",
+   "jurisdiction": "cc",
+   "chamber": "civ3",
+   "number": "25-17.523",
+   "numbers": [
+    "25-17.523"
+   ],
+   "ecli": "ECLI:FR:CCASS:2026:C300601",
+   "formation": "fs",
+   "publication": [
+    "b"
+   ],
+   "decision_date": "2026-11-19",
+   "type": "arret",
+   "solution": "rejet",
+   "update_date": "2026-11-19",
+   "update_datetime": "2026-11-19T10:00:00.000Z",
+   "themes": [
+    "BAIL COMMERCIAL",
+    "Conclusion",
+    "Diagnostic de performance énergétique",
+    "Défaut d'annexion"
+   ],
+   "summary": "Le défaut d'annexion au bail commercial du diagnostic de performance énergétique n'est pas une cause de nullité du bail.",
+   "text": "CIV. 3\r\n\r\nCOUR DE CASSATION\r\n______________________\r\n\r\nAudience publique du 19 novembre 2026\r\n\r\nRejet\r\n\r\nMme Teiller, président\r\n\r\nArrêt n° 601 FS-B\r\n\r\nPourvoi n° Z 25-17.523\r\n\r\nR É P U B L I Q U E  F R A N Ç A I S E\r\n\r\nAU NOM DU PEUPLE FRANÇAIS\r\n\r\nComposition de la juridiction lors des débats : Mme Teiller, président, M. Boyer, conseiller rapporteur.\r\n\r\nFaits et procédure\r\n\r\n1. Selon l'arrêt attaqué (Paris, 12 mars 2025), la société Alpha a donné à bail commercial des locaux à la société Beta.\r\n\r\n2. La locataire a assigné la bailleresse en nullité du bail pour défaut d'annexion du diagnostic de performance énergétique.\r\n\r\nExamen du moyen\r\n\r\nEnoncé du moyen\r\n\r\n3. La locataire fait grief à l'arrêt de rejeter sa demande, alors « que le défaut d'annexion du diagnostic entraîne la nullité du bail ».\r\n\r\nRéponse de la Cour\r\n\r\n4. Ni la remise ni l'annexion au bail commercial du diagnostic de performance énergétique ne constituent une condition de validité du contrat.\r\n\r\n5. Le moyen n'est donc pas fondé.\r\n\r\nPAR CES MOTIFS, la Cour :\r\n\r\nREJETTE le pourvoi ;\r\n\r\nCondamne la société Beta aux dépens ;\r\n\r\nAinsi fait et jugé par la Cour de cassation, troisième chambre civile, et prononcé par le président en son audience publique du dix-neuf novembre deux mille vingt-six.\r\n\r\nMOYEN ANNEXE au présent arrêt\r\n\r\nMoyen produit par la SCP Durand pour la société Beta.\r\n\r\nIl est fait grief à l'arrêt attaqué d'avoir débouté la société Beta.\r\n",
+   "zones": {
+    "introduction": [
+     {
+      "start": 0,
+      "end": 357
+     }
+    ],
+    "expose": [
+     {
+      "start": 357,
+      "end": 631
+     }
+    ],
+    "moyens": [
+     {
+      "start": 631,
+      "end": 810
+     }
+    ],
+    "motivations": [
+     {
+      "start": 810,
+      "end": 1015
+     }
+    ],
+    "dispositif": [
+     {
+      "start": 1015,
+      "end": 1278
+     }
+    ],
+    "annexes": [
+     {
+      "start": 1278,
+      "end": 1440
+     }
+    ]
+   }
+  },
+  {
+   "id": "6a0000000000000000000004",
+   "jurisdiction": "cc",
+   "chamber": "civ1",
+   "number": "23-10.000",
+   "numbers": [
+    "23-10.000"
+   ],
+   "ecli": "ECLI:FR:CCASS:2025:C100010",
+   "formation": "fs",
+   "publication": [
+    "b"
+   ],
+   "decision_date": "2025-01-10",
+   "type": "arret",
+   "solution": "rejet",
+   "update_date": "2025-01-10",
+   "update_datetime": "2025-01-10T10:00:00.000Z",
+   "text": "ancienne"
+  },
+  {
+   "id": "6a0000000000000000000005",
+   "jurisdiction": "cc",
+   "chamber": "ordo",
+   "number": "26-00.001",
+   "numbers": [
+    "26-00.001"
+   ],
+   "ecli": "ECLI:FR:CCASS:2026:OR00001",
+   "formation": "fs",
+   "publication": [
+    "b"
+   ],
+   "decision_date": "2026-11-12",
+   "type": "arret",
+   "solution": "rejet",
+   "update_date": "2026-11-12",
+   "update_datetime": "2026-11-12T10:00:00.000Z",
+   "text": "ordonnance"
+  }
+ ]
+}

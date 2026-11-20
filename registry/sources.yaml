@@ -58,7 +58,8 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CONSTIT/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
+  frequence_maj: archive DILA irreguliere (globale du 2026-11-08, decisions jusqu'au 16 octobre 2026), completee chaque nuit par les decisions recentes du site du Conseil constitutionnel (D113)
+  complement: site du Conseil constitutionnel (page des dernieres decisions), sans compte ; textes librement reproductibles avec citation du site, mentions legales relues le 2026-11-20 (ingest/sources/constit_site.py)
   perimetre: decisions DC et QPC (contentieux electoral exclu)
   matieres:
   - droit_constitutionnel
@@ -81,7 +82,8 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
+  frequence_maj: archive DILA irreguliere (globale du 2026-11-08, arrets jusqu'au 17 septembre 2026 ; archives hebdomadaires du lundi jusqu'en juillet 2026, aucune depuis la globale), completee chaque nuit par l'API Judilibre des que la cle PISTE est configuree (D113)
+  complement: API Judilibre (PISTE), Licence Ouverte 2.0 et CGU open data de la Cour de cassation ; desactive tant que JUDILIBRE_KEY_ID manque (ingest/sources/judilibre_api.py)
   perimetre: arrets publies depuis 2000 ; de 1960 a 1999, sommaire officiel seul (D82) ; moyens annexes exclus
   matieres:
   - droit_civil
@@ -911,7 +913,8 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
+  frequence_maj: archive DILA irreguliere (globale du 2026-11-08, arrets jusqu'au 17 septembre 2026 ; archives hebdomadaires du lundi jusqu'en juillet 2026, aucune depuis la globale), completee chaque nuit par l'API Judilibre des que la cle PISTE est configuree (D113)
+  complement: API Judilibre (PISTE), Licence Ouverte 2.0 et CGU open data de la Cour de cassation ; desactive tant que JUDILIBRE_KEY_ID manque (ingest/sources/judilibre_api.py)
   matieres:
   - droit_penal
   - libertes_fondamentales
@@ -930,7 +933,8 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
+  frequence_maj: archive DILA irreguliere (globale du 2026-11-08, arrets jusqu'au 17 septembre 2026 ; archives hebdomadaires du lundi jusqu'en juillet 2026, aucune depuis la globale), completee chaque nuit par l'API Judilibre des que la cle PISTE est configuree (D113)
+  complement: API Judilibre (PISTE), Licence Ouverte 2.0 et CGU open data de la Cour de cassation ; desactive tant que JUDILIBRE_KEY_ID manque (ingest/sources/judilibre_api.py)
   matieres:
   - droit_social
   niveaux:
@@ -947,7 +951,8 @@ sources:
   url: https://echanges.dila.gouv.fr/OPENDATA/CASS/
   acces: archive_dila
   licence: Licence Ouverte / Open Licence (Etalab), verifiee sur data.gouv.fr le 2026-11-12
-  frequence_maj: irreguliere (archives globales DILA espacees, aucune archive quotidienne ; derniere globale du 2026-11-08, voir D96 et audit SRC-4)
+  frequence_maj: archive DILA irreguliere (globale du 2026-11-08, arrets jusqu'au 17 septembre 2026 ; archives hebdomadaires du lundi jusqu'en juillet 2026, aucune depuis la globale), completee chaque nuit par l'API Judilibre des que la cle PISTE est configuree (D113)
+  complement: API Judilibre (PISTE), Licence Ouverte 2.0 et CGU open data de la Cour de cassation ; desactive tant que JUDILIBRE_KEY_ID manque (ingest/sources/judilibre_api.py)
   matieres:
   - droit_des_affaires
   - droit_des_contrats

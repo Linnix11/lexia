@@ -378,7 +378,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                 "reclassement_modele": getattr(reclasseur, "model", None)}
 
     # Fraicheur des sources, affichee dans le site (audit B7) : date de la derniere archive LEGI lue pour les
-    # textes, date de la decision la plus recente pour la jurisprudence. Recalculee au plus une fois par heure.
+    # textes, date de la decision la plus recente pour la jurisprudence, et d'ou vient cette decision (archive DILA,
+    # Judilibre ou site du Conseil constitutionnel, D113 : les CGU de la Cour de cassation demandent de citer la
+    # source et la date de mise a jour des donnees). Recalculee au plus une fois par heure.
     fraicheur_cache: dict = {}
 
     @app.get("/fraicheur")
@@ -386,7 +388,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         if fraicheur_cache.get("expire", 0) < time.monotonic():
             textes = fraicheur.date_textes(settings.index_dir)
             dernieres = getattr(retriever, "dernieres_decisions", dict)()
-            sources = {s: {"nom": NOMS.get(s, s), "date": d, "nature": "jurisprudence"} for s, d in dernieres.items()}
+            origines = getattr(retriever, "origines_decisions", dict)()
+            sources = {s: {"nom": NOMS.get(s, s), "date": d, "nature": "jurisprudence"}
+                       | ({"origine": origines[s]} if s in origines else {}) for s, d in dernieres.items()}
             if textes:
                 sources |= {s: {"nom": NOMS[s], "date": textes, "nature": "textes"} for s in SOURCES_TEXTES
                             if s not in HORS_LEGI}   # Constitution (Conseil constitutionnel), traites (EUR-Lex)

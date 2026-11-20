@@ -400,7 +400,8 @@ def test_b7_route_publique_en_cache(tmp_path, index_b, monkeypatch):
     f = c.get("/fraicheur").json()
     assert f["textes"] == "2026-11-17"
     assert f["sources"]["judilibre"] == {"nom": "Cour de cassation : chambres civiles, Assemblée plénière, chambre mixte",
-                                         "date": "2026-09-17", "nature": "jurisprudence"}
+                                         "date": "2026-09-17", "nature": "jurisprudence",
+                                         "origine": "v"}   # version de la decision la plus recente (D113)
     assert f["sources"]["code_civil"] == {"nom": "Code civil", "date": "2026-11-17", "nature": "textes"}
     assert "constitution_1958" not in f["sources"]   # absente de cet index
     c.get("/fraicheur")

@@ -1,0 +1,20 @@
+{
+ "id": "6a0000000000000000000006",
+ "jurisdiction": "cc",
+ "chamber": "civ1",
+ "number": "20-18.893",
+ "numbers": [
+  "20-18.893"
+ ],
+ "ecli": "ECLI:FR:CCASS:2022:C100005",
+ "formation": "fs",
+ "publication": [
+  "b"
+ ],
+ "decision_date": "2022-01-05",
+ "type": "arret",
+ "solution": "rejet",
+ "update_date": "2022-01-05",
+ "update_datetime": "2022-01-05T10:00:00.000Z",
+ "text": "arret deja dans l'archive DILA (cass_moderne.xml)"
+}

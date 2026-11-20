@@ -20,6 +20,7 @@ from pathlib import Path
 from ingest import dila
 from ingest.jurisprudence import compact, decouper, decouper_sommaire
 from ingest.models import Passage
+from ingest.sources import judilibre_api
 
 SOURCE_ID = "judilibre"  # meme id que le registre : jurisprudence de la Cour de cassation
 FONDS = "cass"
@@ -145,9 +146,16 @@ def parse_arret(raw: bytes, *, date_recuperation: str, version: str, seulement: 
 
 
 def collect(raw_dir: Path, *, date_recuperation: str, seulement: str = SOURCE_ID) -> Iterator[Passage]:
+    """Archive DILA, puis arrets recents de Judilibre absents de l'archive (data/raw/judilibre, vide sans cle
+    PISTE ; D113)."""
     version = f"Archive DILA CASS du {dila.date_corpus(raw_dir, FONDS)}"
+    deja: set[str] = set()
     for _, raw in dila.iter_xml_a_jour(raw_dir, FONDS):
-        yield from parse_arret(raw, date_recuperation=date_recuperation, version=version, seulement=seulement)
+        for p in parse_arret(raw, date_recuperation=date_recuperation, version=version, seulement=seulement):
+            deja |= judilibre_api.cles_dila(p.meta)
+            yield p
+    yield from judilibre_api.complements(raw_dir.parent / "judilibre", seulement, deja,
+                                         date_recuperation=date_recuperation)
 
 
 class SourceChambre:

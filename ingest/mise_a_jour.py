@@ -7,8 +7,11 @@ Usage (chaque nuit sur le serveur, par deploy/mettre_a_jour_corpus.sh) :
 Etapes :
   1. telecharge dans data/raw/dila les archives LEGI, CASS, JADE et CONSTIT absentes : l'archive globale
      la plus recente et les archives quotidiennes publiees depuis. Une nouvelle archive globale remplace
-     l'ancienne, ses archives quotidiennes et son extraction ;
-  2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives, sauf si une version
+     l'ancienne, ses archives quotidiennes et son extraction ; puis complete la jurisprudence que ces archives
+     n'ont pas encore (D113) : decisions recentes du site du Conseil constitutionnel, et arrets recents de la
+     Cour de cassation par l'API Judilibre si la cle PISTE (JUDILIBRE_KEY_ID) est configuree ;
+  2. s'arrete (code 3) si l'index actuel a deja ete construit avec exactement ces archives (et ces decisions
+     recentes), sauf si une version
      est entree en vigueur ou a pris fin depuis sa construction (date de bascule franchie, SRC-3) ;
   3. reimporte les sources DILA (data/passages). Les autres (Constitution, page du Conseil constitutionnel)
      gardent leur fichier, reconstitue depuis l'index actuel s'il manque ; la Constitution est relue quand sa
@@ -27,13 +30,15 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
+import os
 import re
 import shutil
 import sqlite3
 import sys
 from argparse import Namespace
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import httpx
@@ -41,6 +46,8 @@ import numpy as np
 import yaml
 
 from ingest import build_index, cours_recuperes, dila, embed, fraicheur, run
+from ingest.env import load_env
+from ingest.sources import constit, constit_site, judilibre_api
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw" / "dila"
@@ -110,7 +117,55 @@ def purger(raw_dir: Path, fonds: str, depuis: str) -> None:
 
 
 def archives_lues(raw_dir: Path) -> list[str]:
-    return sorted(p.name for f in FONDS for p in [dila.latest_archive(raw_dir, f), *dila.increments(raw_dir, f)])
+    """Archives DILA lues et empreinte des decisions recentes en cache (D113) : une decision recente ajoutee,
+    modifiee ou retiree suffit a reconstruire l'index."""
+    noms = sorted(p.name for f in FONDS for p in [dila.latest_archive(raw_dir, f), *dila.increments(raw_dir, f)])
+    for nom, fichiers in (("JUDILIBRE", (raw_dir.parent / "judilibre" / "decisions").glob("*.json")),
+                          ("CONSEIL_CONSTITUTIONNEL", (raw_dir.parent / constit.RAW_SITE).glob("*.htm"))):
+        fichiers = sorted(fichiers)
+        if fichiers:
+            h = hashlib.sha256()
+            for f in fichiers:
+                h.update(f.name.encode() + f.read_bytes())
+            noms.append(f"{nom}_{len(fichiers)}_{h.hexdigest()[:12]}")
+    return noms
+
+
+def jurisprudence_recente(raw_dir: Path, http: httpx.Client) -> list[str]:
+    """Complete les archives DILA figees (D113) : decisions recentes du site du Conseil constitutionnel (sans
+    compte), arrets recents de Judilibre (seulement avec la cle JUDILIBRE_KEY_ID). Un echec garde le cache de la
+    veille, previent l'administrateur et n'arrete jamais la mise a jour. Renvoie les etapes en echec."""
+    echecs = []
+    load_env(ROOT / ".env")
+    if os.environ.get(constit_site.VARIABLE_ARRET) == "0":
+        # Le cache est vide pour que l'index revienne a l'archive DILA seule des la nuit suivante.
+        shutil.rmtree(raw_dir.parent / constit.RAW_SITE, ignore_errors=True)
+        print(f"  Conseil constitutionnel (site) : desactive ({constit_site.VARIABLE_ARRET}=0)", flush=True)
+    else:
+        try:
+            ajoutees = constit_site.synchroniser(http, raw_dir.parent / constit.RAW_SITE,
+                                                 constit.cles_dila(raw_dir))
+            print(f"  Conseil constitutionnel (site) : {len(ajoutees)} decision(s) ajoutee(s)", flush=True)
+        except Exception as e:  # noqa: BLE001  (site indisponible, page changee)
+            echecs.append(f"site du Conseil constitutionnel : {e}")
+    if not (cle := judilibre_api.cle()):
+        print(f"  Judilibre : desactive ({judilibre_api.VARIABLE_CLE} absente)", flush=True)
+    else:
+        try:
+            debut = (date.fromisoformat(dila.archive_date(dila.latest_archive(raw_dir, "cass")))
+                     - timedelta(days=judilibre_api.FENETRE_JOURS)).isoformat()
+            with judilibre_api.client(cle) as api:
+                n = judilibre_api.synchroniser(api, raw_dir.parent / "judilibre", debut)
+            print(f"  Judilibre : {n['ecrites']} arret(s) ecrit(s), {n['retirees']} retire(s)", flush=True)
+        except Exception as e:  # noqa: BLE001  (API en beta, quota, cle refusee)
+            echecs.append(f"Judilibre : {e}")
+    for m in echecs:
+        print(f"  echec, decisions recentes de la veille gardees : {m}", file=sys.stderr)
+        try:
+            fraicheur.alerter(f"Etape de la jurisprudence recente seulement (l'index continue sans elle) : {m}")
+        except Exception as e2:  # noqa: BLE001
+            print(f"  alerte non envoyee : {e2}", file=sys.stderr)
+    return echecs
 
 
 def sources_dila() -> list[str]:
@@ -278,6 +333,8 @@ def main(argv: list[str] | None = None) -> int:
         with httpx.Client(headers={"User-Agent": run.USER_AGENT}, timeout=120, follow_redirects=True) as client:
             for f in FONDS:
                 synchroniser(client, RAW_DIR, f)
+            print("== Jurisprudence recente (hors archives DILA)", flush=True)
+            jurisprudence_recente(RAW_DIR, client)
     lues = archives_lues(RAW_DIR)
     deja = (INDEX / ARCHIVES).read_text().split() if (INDEX / ARCHIVES).exists() else []
     if lues == deja and not args.forcer:

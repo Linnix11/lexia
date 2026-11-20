@@ -349,3 +349,12 @@ class LocalRetriever:
                     " AND json_extract(data, '$.meta.date') < '2999' GROUP BY source_id ORDER BY source_id")
             self._dernieres = {src: d for src, d in rows if d and str(d)[:4].isdigit()}
         return self._dernieres
+
+    def origines_decisions(self) -> dict[str, str]:
+        """Origine de la decision la plus recente de chaque source (« Archive DILA CASS du ... », « Open data de
+        la Cour de cassation (Judilibre), mise a jour du ... », D113). Vide pour un index anterieur."""
+        if not hasattr(self, "_origines"):
+            colonnes = {r[1] for r in self._q("PRAGMA table_info(fraicheur)")}
+            rows = self._q("SELECT source_id, origine FROM fraicheur") if "origine" in colonnes else []
+            self._origines = {src: o for src, o in rows if o}
+        return self._origines

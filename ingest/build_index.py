@@ -56,7 +56,7 @@ CREATE TABLE pourvois (numero TEXT NOT NULL, passage INTEGER NOT NULL);
 CREATE INDEX pourvois_num ON pourvois (numero);
 -- Date de la decision la plus recente de chaque source de jurisprudence (audit B7 : la DILA ne publie pour
 -- CASS et CONSTIT que des archives globales espacees ; la fraicheur reelle doit se lire quelque part).
-CREATE TABLE fraicheur (source_id TEXT PRIMARY KEY, date TEXT NOT NULL);
+CREATE TABLE fraicheur (source_id TEXT PRIMARY KEY, date TEXT NOT NULL, origine TEXT NOT NULL DEFAULT '');
 -- Seuls les passages en vigueur y figurent ; la colonne source porte jeton_source(source_id)
 -- pour filtrer dans l'index lui-meme, sans relire chaque ligne de passages.
 CREATE VIRTUAL TABLE passages_fts USING fts5(
@@ -66,8 +66,8 @@ CREATE VIRTUAL TABLE passages_fts USING fts5(
 
 
 def doc_id(p: dict) -> str:
-    meta = p.get("meta") or {}
-    return meta.get("id_dila") or meta.get("id_legi") or p["id"]
+    meta = p.get("meta") or {}   # id_source : decision recente hors archive DILA (Judilibre, site du Conseil, D113)
+    return meta.get("id_dila") or meta.get("id_legi") or meta.get("id_source") or p["id"]
 
 
 def en_vigueur(p: dict, aujourdhui: str | None = None):
@@ -126,9 +126,12 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
                                 (n, p.get("entete", ""), p["texte"], jeton_source(p["source_id"])))
                 empreintes[p["id"]] = p["empreinte"]
                 d = str((p.get("meta") or {}).get("date") or "")
-                if d[:4].isdigit() and not d.startswith("2999") and d > dernieres.get(p["source_id"], ""):
-                    dernieres[p["source_id"]] = d   # « 2999-01-01 » : date DILA de remplacement (D60)
-    con.executemany("INSERT INTO fraicheur (source_id, date) VALUES (?,?)", dernieres.items())
+                if d[:4].isdigit() and not d.startswith("2999") and d > dernieres.get(p["source_id"], ("",))[0]:
+                    # « 2999-01-01 » : date DILA de remplacement (D60). Origine : version de cette decision
+                    # (archive DILA, Judilibre ou site du Conseil constitutionnel, D113).
+                    dernieres[p["source_id"]] = (d, p.get("version") or "")
+    con.executemany("INSERT INTO fraicheur (source_id, date, origine) VALUES (?,?,?)",
+                    ((s, d, o) for s, (d, o) in dernieres.items()))
     con.commit()
     con.close()
     tmp.replace(index_dir / "lexia.sqlite")

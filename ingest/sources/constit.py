@@ -1,4 +1,5 @@
-"""Decisions du Conseil constitutionnel (DC, QPC et L) depuis l'archive DILA CONSTIT."""
+"""Decisions du Conseil constitutionnel (DC, QPC et L) depuis l'archive DILA CONSTIT, completee des decisions
+recentes lues sur le site du Conseil (constit_site, D113)."""
 
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ from pathlib import Path
 from ingest import dila
 from ingest.jurisprudence import compact, date_fr, decouper
 from ingest.models import Passage
+from ingest.sources import constit_site
 
 SOURCE_ID = "decisions_conseil_constitutionnel"
 FONDS = "constit"
@@ -71,7 +73,30 @@ def parse_decision(raw: bytes, *, date_recuperation: str, version: str) -> list[
     return passages
 
 
-def collect(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
+RAW_SITE = "conseil_constitutionnel"   # data/raw/conseil_constitutionnel : pages des decisions recentes
+
+
+def cles_dila(raw_dir: Path) -> set[str]:
+    """Cles (constit_site.cles) des decisions de l'archive : une decision du site deja dans l'archive est ignoree."""
+    out: set[str] = set()
+    for _, raw in dila.iter_xml_a_jour(raw_dir, FONDS):
+        root = ET.fromstring(raw)
+        out |= constit_site.cles({"numero": dila.text_of(root, "META/META_SPEC/META_JURI/NUMERO"),
+                                  "nature": dila.text_of(root, "META/META_COMMUN/NATURE"),
+                                  "ecli": dila.text_of(root, "META/META_SPEC/META_JURI_CONSTIT/ECLI")})
+    return out
+
+
+def collect_dila(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
     version = f"Archive DILA CONSTIT du {dila.date_corpus(raw_dir, FONDS)}"
     for _, raw in dila.iter_xml_a_jour(raw_dir, FONDS):
         yield from parse_decision(raw, date_recuperation=date_recuperation, version=version)
+
+
+def collect(raw_dir: Path, *, date_recuperation: str) -> Iterator[Passage]:
+    deja: set[str] = set()
+    for p in collect_dila(raw_dir, date_recuperation=date_recuperation):
+        deja |= constit_site.cles(p.meta)
+        yield p
+    yield from constit_site.complements(raw_dir.parent / RAW_SITE, deja, date_recuperation=date_recuperation,
+                                        source_id=SOURCE_ID)
