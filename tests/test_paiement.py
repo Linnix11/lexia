@@ -610,9 +610,9 @@ def test_jur11_export_des_donnees_du_compte(env):
     assert TestClient(client.app).get("/compte/export").status_code == 401   # sans session
 
 
-# --- D110 : texte des CGU joint a la confirmation du contrat ------------------------------------------------
+# --- D111 : texte des CGU joint a la confirmation du contrat ------------------------------------------------
 
-def test_d110_fichier_des_cgu_de_la_version_en_vigueur():
+def test_d111_fichier_des_cgu_de_la_version_en_vigueur():
     """Le fichier produit par web/src/site/cguTexte.test.tsx existe pour la version que le serveur accepte."""
     from api.cgu_texte import DOSSIER, fichier_version, texte_cgu
     assert fichier_version("20 novembre 2026") == "20-novembre-2026.json"
@@ -629,7 +629,7 @@ def test_d110_fichier_des_cgu_de_la_version_en_vigueur():
     assert texte_cgu("1er janvier 2000", legal, "", "") is None
 
 
-def test_d110_confirmation_avec_les_cgu_jointes(env, courriels):
+def test_d111_confirmation_avec_les_cgu_jointes(env, courriels):
     client, _, _ = env
     demander(client, "etudiant", 1)
     payer(client, evenement("cs_test_1", 499))
@@ -645,7 +645,7 @@ def test_d110_confirmation_avec_les_cgu_jointes(env, courriels):
     assert "{{" not in contenu
 
 
-def test_d110_piece_jointe_envoyee_en_base64_a_resend(monkeypatch):
+def test_d111_piece_jointe_envoyee_en_base64_a_resend(monkeypatch):
     import base64
 
     from api import courriel

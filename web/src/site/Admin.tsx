@@ -103,7 +103,7 @@ function PaiementsATraiter() {
   )
 }
 
-/** Comptes revenus 7 et 30 jours apres l'inscription, par semaine d'inscription : des nombres, aucun nom (D110). */
+/** Comptes revenus 7 et 30 jours apres l'inscription, par semaine d'inscription : des nombres, aucun nom (D111). */
 function Fidelite({ lignes }: { lignes: NonNullable<StatsAdmin['fidelite']> }) {
   const taux = (n: number | null, total: number) =>
     n === null ? <span className="text-muted">en cours</span> : total ? `${Math.round((100 * n) / total)} % (${n})` : '-'

@@ -173,7 +173,7 @@ def envoyer_confirmation_paiement(destinataire: str, *, formule: str, mois: int,
         + (f"{identite}\n\n" if identite else "")
         + FORMULAIRE_RETRACTATION.format(vendeur=vendeur or "Lexia")
     )
-    # CGU jointes : un lien vers la page n'est pas un support durable (audit JUR-8, D110)
+    # CGU jointes : un lien vers la page n'est pas un support durable (audit JUR-8, D111)
     jointes = None
     if cgu_texte:
         nom = "CGU-Lexia-" + fichier_version(cgu_version).removesuffix(".json") + ".txt"

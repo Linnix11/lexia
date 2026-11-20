@@ -47,8 +47,8 @@ immatriculation, son e-mail, son téléphone et le médiateur dès qu'ils sont r
 que la garantie légale de conformité ; le corps du mail de demande contient la demande expresse d'accès immédiat
 (L. 221-25) et la version des CGU.
 
-Reste ouvert : joindre le texte complet des CGU à la confirmation (un lien n'est pas un support durable). Il faut
-une version texte des CGU produite à partir de `web/src/site/Legal.tsx` ; à faire avant l'activation de Stripe.
+Fait le 20 novembre (D111) : la confirmation du contrat joint le texte complet des CGU de la version acceptée
+(fichier texte produit à partir de `web/src/site/Legal.tsx`).
 
 ## 3. Avis d'un avocat sur l'analyse de faits personnels (D77, JUR-5, EDI-6)
 

@@ -174,7 +174,7 @@ def creer_routes_admin(comptes: Comptes, utilisateur_requis, journal: Journal, s
         return comptes.clients()
 
     # Recherche dans le corps de la requete : une adresse e-mail dans l'URL finit dans les journaux de nginx,
-    # de Cloudflare et d'uvicorn, et dans l'historique du navigateur (D110).
+    # de Cloudflare et d'uvicorn, et dans l'historique du navigateur (D111).
     @router.post("/clients/recherche", dependencies=[Depends(verifier_origine)])
     def rechercher_clients(req: RechercheClients, _: Utilisateur = Depends(admin_requis)):
         return comptes.clients(req.q)

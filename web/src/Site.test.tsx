@@ -262,7 +262,7 @@ describe('Site', () => {
     expect(screen.getByLabelText('Formule de etu@exemple.fr')).toHaveValue('etudiant')
   })
 
-  it('admin : fidelite par semaine et recherche de client dans le corps de la requete (D110)', async () => {
+  it('admin : fidelite par semaine et recherche de client dans le corps de la requete (D111)', async () => {
     connecte = true
     admin = true
     aller('/admin')

@@ -85,7 +85,7 @@ def test_statistiques_et_clients(env):
     assert s["aujourd_hui"]["questions"] == 3 and s["aujourd_hui"]["actifs"] == 1
     assert len(s["serie"]) == 30 and s["serie"][-1]["inscriptions"] == 2
     assert s["activite"]["dernieres_24h"]["questions"] == 3
-    clients = chef.post("/admin/clients/recherche", json={"q": "etu"}).json()   # dans le corps, pas l'URL (D110)
+    clients = chef.post("/admin/clients/recherche", json={"q": "etu"}).json()   # dans le corps, pas l'URL (D111)
     assert [c["email"] for c in clients] == ["etu@exemple.fr"]
     assert clients[0]["questions_aujourdhui"] == 3 and clients[0]["limite_questions"] == 10
 
@@ -141,7 +141,7 @@ def test_migration_ancienne_base(tmp_path):
 
 
 
-def test_d110_recherche_de_clients_sans_adresse_dans_l_url(env):
+def test_d111_recherche_de_clients_sans_adresse_dans_l_url(env):
     app, _ = env
     client_connecte(app, "etu@exemple.fr")
     chef = client_connecte(app, "chef@exemple.fr")
@@ -154,7 +154,7 @@ def test_d110_recherche_de_clients_sans_adresse_dans_l_url(env):
     assert client_connecte(app, "autre@exemple.fr").post("/admin/clients/recherche", json={"q": ""}).status_code == 403
 
 
-def test_d110_fidelite_par_semaine_d_inscription(env, monkeypatch):
+def test_d111_fidelite_par_semaine_d_inscription(env, monkeypatch):
     from datetime import date, datetime, timedelta
 
     from api import comptes as module

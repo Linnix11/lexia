@@ -270,7 +270,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             vendeur=", ".join(v for v in (settings.legal.get("editeur"), settings.legal.get("adresse"),
                                           settings.contact_email) if v),
             identite=identite_vendeur(settings),
-            # CGU de la version acceptee jointes a la confirmation du contrat (D110)
+            # CGU de la version acceptee jointes a la confirmation du contrat (D111)
             texte_cgu=lambda version: texte_cgu(version, settings.legal, settings.contact_email,
                                                 settings.url_publique)), prefix="/paiement")
     app.include_router(routes_formules())

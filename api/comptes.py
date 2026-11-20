@@ -670,7 +670,7 @@ class Comptes:
         nombre d'inscrits et nombre de comptes revenus au moins 7 jours, puis 30 jours, apres leur jour
         d'inscription (derniere visite, `actif_le`). Une valeur n'est donnee que si tous les comptes de la semaine
         ont eu le temps d'atteindre ce delai, sinon None (« en cours »). Administrateurs exclus ; un compte supprime
-        depuis ne compte plus (D110)."""
+        depuis ne compte plus (D111)."""
         aujourd_hui = datetime.now(FUSEAU).date()
         lundi = aujourd_hui - timedelta(days=aujourd_hui.weekday())
         cohortes = {lundi - timedelta(weeks=i): [0, 0, 0] for i in range(semaines)}

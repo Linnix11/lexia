@@ -231,7 +231,7 @@ export interface StatsAdmin {
     nouveaux_30j: number
   }
   revenu_mensuel_estime: number
-  /** Fidelite par semaine d'inscription, sans donnee nominative ; null : delai pas encore atteint (D110) */
+  /** Fidelite par semaine d'inscription, sans donnee nominative ; null : delai pas encore atteint (D111) */
   fidelite?: { semaine: string; inscrits: number; revenus_7j: number | null; revenus_30j: number | null }[]
   aujourd_hui: JourStats
   serie: JourStats[]
@@ -533,7 +533,7 @@ export const api = {
   admin: {
     stats: () => requete<StatsAdmin>('/admin/stats'),
     paiements: () => requete<PaiementATraiter[]>('/paiement/a-traiter'),
-    // recherche dans le corps de la requete, jamais dans l'adresse (journaux, historique ; D110)
+    // recherche dans le corps de la requete, jamais dans l'adresse (journaux, historique ; D111)
     clients: (q = '') => (q.trim() ? post<ClientAdmin[]>('/admin/clients/recherche', { q }) : requete<ClientAdmin[]>('/admin/clients')),
     formule: (id: number, formule: string, jours: number | null) =>
       post<ClientAdmin>(`/admin/clients/${id}/formule`, { formule, jours }),

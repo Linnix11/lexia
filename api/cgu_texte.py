@@ -1,5 +1,5 @@
 """Texte des conditions generales joint a la confirmation du contrat (C. consom. L. 221-13 : support durable ;
-audit du 2026-11-19, JUR-8 ; D110).
+audit du 2026-11-19, JUR-8 ; D111).
 
 Une seule source : la page Cgu de web/src/site/Legal.tsx. Le test web/src/site/cguTexte.test.tsx la rend et ecrit
 api/cgu/<version>.json (`npm run cgu` dans web/), une variante par etat de la configuration qui change le texte
