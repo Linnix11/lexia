@@ -85,7 +85,7 @@ def test_statistiques_et_clients(env):
     assert s["aujourd_hui"]["questions"] == 3 and s["aujourd_hui"]["actifs"] == 1
     assert len(s["serie"]) == 30 and s["serie"][-1]["inscriptions"] == 2
     assert s["activite"]["dernieres_24h"]["questions"] == 3
-    clients = chef.get("/admin/clients", params={"q": "etu"}).json()
+    clients = chef.post("/admin/clients/recherche", json={"q": "etu"}).json()   # dans le corps, pas l'URL (D110)
     assert [c["email"] for c in clients] == ["etu@exemple.fr"]
     assert clients[0]["questions_aujourdhui"] == 3 and clients[0]["limite_questions"] == 10
 
@@ -138,3 +138,49 @@ def test_migration_ancienne_base(tmp_path):
     comptes = Comptes(chemin)
     assert comptes.par_email("a@b.fr").admin is False
     assert comptes.definir_admin("a@b.fr", True).admin is True
+
+
+
+def test_d110_recherche_de_clients_sans_adresse_dans_l_url(env):
+    app, _ = env
+    client_connecte(app, "etu@exemple.fr")
+    chef = client_connecte(app, "chef@exemple.fr")
+    # l'ancien parametre d'URL est ignore : la liste complete revient, jamais un filtre sur l'adresse
+    assert len(chef.get("/admin/clients", params={"q": "etu"}).json()) == 2
+    assert [c["email"] for c in chef.post("/admin/clients/recherche", json={"q": "etu"}).json()] == ["etu@exemple.fr"]
+    assert chef.post("/admin/clients/recherche", json={"q": "x" * 101}).status_code == 422
+    assert chef.post("/admin/clients/recherche", json={"q": "etu"},
+                     headers={"Origin": "https://pirate.exemple"}).status_code == 403
+    assert client_connecte(app, "autre@exemple.fr").post("/admin/clients/recherche", json={"q": ""}).status_code == 403
+
+
+def test_d110_fidelite_par_semaine_d_inscription(env, monkeypatch):
+    from datetime import date, datetime, timedelta
+
+    from api import comptes as module
+    app, comptes = env
+    aujourd_hui = datetime.now(module.FUSEAU).date()
+    lundi = aujourd_hui - timedelta(days=aujourd_hui.weekday())
+    il_y_a_6 = lundi - timedelta(weeks=4)   # semaine assez ancienne pour 7 jours, pas pour 30
+    il_y_a_8 = lundi - timedelta(weeks=8)   # assez ancienne pour les deux
+
+    def compte(email: str, inscrit: date, vu: date | None):
+        u = comptes.creer(email, "motdepasse-solide")
+        comptes._q("UPDATE utilisateurs SET cree_le = ?, actif_le = ? WHERE id = ?",
+                   (f"{inscrit.isoformat()}T10:00:00+00:00", vu.isoformat() if vu else None, u.id))
+
+    compte("a@exemple.fr", il_y_a_6, il_y_a_6 + timedelta(days=8))     # revenu apres 7 jours
+    compte("b@exemple.fr", il_y_a_6 + timedelta(days=2), il_y_a_6 + timedelta(days=3))   # pas revenu
+    compte("c@exemple.fr", lundi - timedelta(weeks=20), aujourd_hui)    # hors des 12 semaines
+    compte("d@exemple.fr", il_y_a_8, il_y_a_8 + timedelta(days=31))     # revenu apres 30 jours
+    compte("e@exemple.fr", il_y_a_8 + timedelta(days=6), None)          # jamais revenu
+    f = comptes.fidelite(12)
+    assert len(f) == 12 and f[-1]["semaine"] == lundi.isoformat()
+    ligne = next(x for x in f if x["semaine"] == il_y_a_6.isoformat())
+    assert ligne == {"semaine": il_y_a_6.isoformat(), "inscrits": 2, "revenus_7j": 1, "revenus_30j": None}
+    assert next(x for x in f if x["semaine"] == il_y_a_8.isoformat()) == {
+        "semaine": il_y_a_8.isoformat(), "inscrits": 2, "revenus_7j": 1, "revenus_30j": 1}
+    assert f[-1]["revenus_7j"] is None   # semaine en cours
+    assert all("email" not in x for x in f)
+    chef = client_connecte(app, "chef@exemple.fr")
+    assert len(chef.get("/admin/stats").json()["fidelite"]) == 12

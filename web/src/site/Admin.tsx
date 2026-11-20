@@ -103,6 +103,42 @@ function PaiementsATraiter() {
   )
 }
 
+/** Comptes revenus 7 et 30 jours apres l'inscription, par semaine d'inscription : des nombres, aucun nom (D110). */
+function Fidelite({ lignes }: { lignes: NonNullable<StatsAdmin['fidelite']> }) {
+  const taux = (n: number | null, total: number) =>
+    n === null ? <span className="text-muted">en cours</span> : total ? `${Math.round((100 * n) / total)} % (${n})` : '-'
+  const semaine = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  const avecInscrits = lignes.filter((l) => l.inscrits > 0)
+  return (
+    <Carte titre="Fidélité des inscrits (12 dernières semaines)">
+      <p className="mb-3 text-[12px] text-muted">
+        Part des comptes revenus au moins 7 jours, puis 30 jours, après leur inscription (dernière visite). Les comptes
+        supprimés depuis et les administrateurs ne sont pas comptés.
+      </p>
+      {avecInscrits.length === 0 ? <p className="text-[13px] text-muted">Aucune inscription sur la période.</p> : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[12px]">
+            <thead className="text-muted">
+              <tr><th scope="col" className="py-1 pr-3 font-normal">Semaine du</th><th scope="col" className="py-1 pr-3 font-normal">Inscrits</th>
+                <th scope="col" className="py-1 pr-3 font-normal">Revenus après 7 jours</th><th scope="col" className="py-1 font-normal">Revenus après 30 jours</th></tr>
+            </thead>
+            <tbody>
+              {avecInscrits.slice().reverse().map((l) => (
+                <tr key={l.semaine} className="border-t border-line">
+                  <th scope="row" className="py-1.5 pr-3 font-normal">{semaine(l.semaine)}</th>
+                  <td className="py-1.5 pr-3">{l.inscrits}</td>
+                  <td className="py-1.5 pr-3">{taux(l.revenus_7j, l.inscrits)}</td>
+                  <td className="py-1.5">{taux(l.revenus_30j, l.inscrits)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Carte>
+  )
+}
+
 function Apercu({ s }: { s: StatsAdmin }) {
   const a = s.activite.dernieres_24h
   const retours = s.activite.retours
@@ -123,6 +159,8 @@ function Apercu({ s }: { s: StatsAdmin }) {
       <Carte>
         <Histogramme serie={s.serie} titre="Questions posées par jour (30 derniers jours)" />
       </Carte>
+
+      {s.fidelite && <Fidelite lignes={s.fidelite} />}
 
       <div className="grid gap-4 desk:grid-cols-2 [&>*]:min-w-0">
         <Carte titre="Répartition par formule">

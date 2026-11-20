@@ -22,7 +22,7 @@ import threading
 import time
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -664,6 +664,32 @@ class Comptes:
             "aujourd_hui": serie[-1],
             "serie": serie,
         }
+
+    def fidelite(self, semaines: int = 12) -> list[dict]:
+        """Fidelite des inscrits, par semaine d'inscription (du lundi, heure de Paris), sans donnee nominative :
+        nombre d'inscrits et nombre de comptes revenus au moins 7 jours, puis 30 jours, apres leur jour
+        d'inscription (derniere visite, `actif_le`). Une valeur n'est donnee que si tous les comptes de la semaine
+        ont eu le temps d'atteindre ce delai, sinon None (« en cours »). Administrateurs exclus ; un compte supprime
+        depuis ne compte plus (D110)."""
+        aujourd_hui = datetime.now(FUSEAU).date()
+        lundi = aujourd_hui - timedelta(days=aujourd_hui.weekday())
+        cohortes = {lundi - timedelta(weeks=i): [0, 0, 0] for i in range(semaines)}
+        for cree, actif, email, admin in self._q("SELECT cree_le, actif_le, email, admin FROM utilisateurs"):
+            if admin or email in self._admins:
+                continue
+            jour = datetime.fromisoformat(cree).astimezone(FUSEAU).date()
+            c = cohortes.get(jour - timedelta(days=jour.weekday()))
+            if c is None:
+                continue
+            retour = date.fromisoformat(actif) if actif else None
+            c[0] += 1
+            c[1] += bool(retour and retour >= jour + timedelta(days=7))
+            c[2] += bool(retour and retour >= jour + timedelta(days=30))
+        return [{"semaine": s.isoformat(), "inscrits": n,
+                 # dernier inscrit possible de la semaine : le dimanche
+                 "revenus_7j": r7 if aujourd_hui >= s + timedelta(days=6 + 7) else None,
+                 "revenus_30j": r30 if aujourd_hui >= s + timedelta(days=6 + 30) else None}
+                for s, (n, r7, r30) in sorted(cohortes.items())]
 
     def clients(self, recherche: str = "") -> list[dict]:
         jour = _jour()

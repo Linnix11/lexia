@@ -36,6 +36,10 @@ class ChangementAdmin(BaseModel):
     admin: bool
 
 
+class RechercheClients(BaseModel):
+    q: str = Field(default="", max_length=100)
+
+
 def _depuis(heures: float) -> str:
     return (datetime.now(timezone.utc) - timedelta(hours=heures)).isoformat(timespec="seconds")
 
@@ -162,12 +166,18 @@ def creer_routes_admin(comptes: Comptes, utilisateur_requis, journal: Journal, s
 
     @router.get("/stats")
     def stats(_: Utilisateur = Depends(admin_requis)):
-        return {**comptes.statistiques(30), "activite": resume_activite(journal),
+        return {**comptes.statistiques(30), "fidelite": comptes.fidelite(12), "activite": resume_activite(journal),
                 "formules": [f.as_dict() for f in FORMULES.values()]}
 
     @router.get("/clients")
-    def clients(q: str = "", _: Utilisateur = Depends(admin_requis)):
-        return comptes.clients(q[:100])
+    def clients(_: Utilisateur = Depends(admin_requis)):
+        return comptes.clients()
+
+    # Recherche dans le corps de la requete : une adresse e-mail dans l'URL finit dans les journaux de nginx,
+    # de Cloudflare et d'uvicorn, et dans l'historique du navigateur (D110).
+    @router.post("/clients/recherche", dependencies=[Depends(verifier_origine)])
+    def rechercher_clients(req: RechercheClients, _: Utilisateur = Depends(admin_requis)):
+        return comptes.clients(req.q)
 
     @router.post("/clients/{uid}/formule", dependencies=[Depends(verifier_origine)])
     def formule(uid: int, req: ChangementFormule, moi: Utilisateur = Depends(admin_requis)):

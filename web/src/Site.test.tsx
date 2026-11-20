@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
 import { VERSION_CGU } from './lib/cgu'
@@ -17,6 +17,7 @@ const json = (corps: unknown, status = 200) =>
 const STATS = {
   comptes: { total: 3, par_formule: { gratuit: 2, etudiant: 1, intensif: 0 }, payants_actifs: 1, formules_expirees: 0, nouveaux_7j: 2, nouveaux_30j: 3 },
   revenu_mensuel_estime: 4.99,
+  fidelite: [{ semaine: '2026-10-05', inscrits: 4, revenus_7j: 3, revenus_30j: 1 }, { semaine: '2026-11-09', inscrits: 2, revenus_7j: null, revenus_30j: null }],
   aujourd_hui: { jour: '2026-11-11', questions: 7, quiz: 1, actifs: 2, inscriptions: 1 },
   serie: Array.from({ length: 30 }, (_, i) => ({ jour: `2026-10-${String(13 + (i % 18)).padStart(2, '0')}`, questions: i, quiz: 0, actifs: 1, inscriptions: 0 })),
   formules: FORMULES,
@@ -259,6 +260,23 @@ describe('Site', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clients' }))
     expect(await screen.findByText('etu@exemple.fr')).toBeInTheDocument()
     expect(screen.getByLabelText('Formule de etu@exemple.fr')).toHaveValue('etudiant')
+  })
+
+  it('admin : fidelite par semaine et recherche de client dans le corps de la requete (D110)', async () => {
+    connecte = true
+    admin = true
+    aller('/admin')
+    render(<Site />)
+    const carte = (await screen.findByRole('heading', { name: /Fidélité des inscrits/ })).closest('section')!
+    expect(within(carte).getByText('75 % (3)')).toBeInTheDocument()
+    expect(within(carte).getAllByText('en cours')).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Clients' }))
+    fireEvent.change(await screen.findByLabelText('Rechercher un client'), { target: { value: 'etu@exemple.fr' } })
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/admin/clients/recherche'))).toBe(true))
+    const appel = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/admin/clients/recherche'))!
+    expect(appel[1].method).toBe('POST')
+    expect(JSON.parse(String(appel[1].body))).toEqual({ q: 'etu@exemple.fr' })
+    expect(fetchMock.mock.calls.every(([u]) => !String(u).includes('etu%40exemple.fr') && !String(u).includes('?q='))).toBe(true)
   })
 
   it('admin sans double authentification : bouton d’activation, aucune requete admin', async () => {
