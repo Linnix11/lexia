@@ -77,8 +77,8 @@ def test_adresse_admin_ne_s_inscrit_pas_depuis_le_site(env, monkeypatch):
 def test_statistiques_et_clients(env):
     app, _ = env
     etu = client_connecte(app, "etu@exemple.fr")
-    for _ in range(3):
-        assert etu.post("/chat", json={"question": "article 1240"}).status_code == 200
+    for i in range(3):   # questions differentes : une reponse du cache n'est pas decomptee (audit du 23/11, A4)
+        assert etu.post("/chat", json={"question": f"article 1240 ({i})"}).status_code == 200
     chef = client_connecte(app, "chef@exemple.fr")
     chef.post("/chat", json={"question": "article 1240"})   # l'essai d'un administrateur n'est pas compte
     s = chef.get("/admin/stats").json()

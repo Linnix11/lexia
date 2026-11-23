@@ -134,9 +134,9 @@ def test_quota_gratuit_et_remboursement(env):
     assert client.post("/chat", json={"question": "article 1240"}).status_code == 503
     assert client.get("/auth/moi").json()["usage"]["questions"] == 0      # echec du modele : pas decompte
     llm.echec = False
-    for _ in range(10):
-        assert client.post("/chat", json={"question": "article 1240"}).status_code == 200
-    r = client.post("/chat", json={"question": "article 1240"})
+    for i in range(10):   # questions differentes : une reponse du cache n'est pas decomptee (audit du 23/11, A4)
+        assert client.post("/chat", json={"question": f"article 1240 ({i})"}).status_code == 200
+    r = client.post("/chat", json={"question": "article 1240 (10)"})
     assert r.status_code == 402 and "Limite du jour" in r.json()["detail"]
     assert client.get("/auth/moi").json()["usage"]["questions"] == 10
 
