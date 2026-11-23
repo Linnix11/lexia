@@ -46,13 +46,14 @@ Autorisées, vraies au 19 novembre 2026 :
 - 20 matières, de la L1 à la L3, et un niveau d'explication adapté à votre semestre.
 - Déposez vos cours (PDF, Word, PowerPoint, OpenDocument) et confrontez-les au droit en vigueur.
 - Gratuit avec un compte : 10 questions et 2 questionnaires par jour.
-- Ouvert dès 15 ans.
 
 Interdites aujourd'hui : « jurisprudence à jour chaque nuit » ; « vos données ne servent jamais à entraîner une
 IA », « plus respectueux de vos données » ; « hébergé en France » ; « sans erreur », « fiable à 100 % », « validé
 par des enseignants » ; « fiches à retourner », « résumés vocaux », « application mobile », « paiement par carte » ;
 toute comparaison nommée avec Gemini Notebook ou un autre outil ; « le meilleur », « le seul », « n°1 » ;
-« offre limitée » sans limite réelle.
+« offre limitée » sans limite réelle ; « dès 15 ans » ou tout autre âge minimum, et toute réponse qui accepte les
+mineurs : renvoyer aux CGU (article 3) tant que l'éditeur n'a pas tranché entre 15 et 18 ans (audit du
+23 novembre 2026, E1).
 
 ## 1. Calendrier des publications (26)
 
@@ -66,7 +67,7 @@ toute comparaison nommée avec Gemini Notebook ou un autre outil ; « le meilleu
   3. « Chaque réponse cite ses sources. Un clic ouvre le texte officiel. Une affirmation sans source est retirée. »
   4. « Cas pratique, commentaire d'arrêt, dissertation : les méthodes de la licence. »
   5. « 20 matières de la L1 à la L3. Le niveau d'explication suit ton semestre. »
-  6. « Gratuit avec un compte : 10 questions et 2 questionnaires par jour. Dès 15 ans. »
+  6. « Gratuit avec un compte : 10 questions et 2 questionnaires par jour. Conditions d'inscription dans les CGU. »
 - Légende : « On a construit Lexia pour une raison simple : en droit, une réponse sans article ne vaut rien. Lexia
   répond à partir des textes officiels et te montre d'où vient chaque phrase. Il est encore jeune : dis-nous ce qui
   manque. Lien en bio. #droit #etudiantendroit #L1droit #partiels »
@@ -167,8 +168,8 @@ toute comparaison nommée avec Gemini Notebook ou un autre outil ; « le meilleu
   - un numéro d'article, de décision ou de pourvoi absent des extraits fait retirer l'élément ;
   - s'il ne reste rien de sourcé, Lexia s'abstient.
   Cela ne rend pas les réponses infaillibles : le choix des sources et l'explication peuvent encore être
-  imparfaits, et nous cherchons des enseignants pour noter les réponses. Mais une référence inventée ne passe
-  pas. »
+  imparfaits, et nous cherchons des enseignants pour noter les réponses. Mais une référence inventée est
+  retirée quand le contrôle la détecte. »
 - Visuel : schéma simple « question, recherche dans les textes officiels, réponse, contrôle des citations,
   réponse affichée ou abstention ».
 - Appel à l'action : « Enseignants, chargés de TD : écrivez-moi si vous voulez tester. »

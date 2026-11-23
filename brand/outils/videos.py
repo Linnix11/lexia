@@ -121,8 +121,8 @@ def demo():
 
 <div class="carte" style="top:730px;padding:44px 44px 48px;font-size:38px;line-height:1.48;{apparait(3.4)}">
   <div class="surtitre" style="font-size:24px;margin-bottom:18px">Réponse</div>
-  <span style="{fond(3.9, 0.7)}">{reponse_1}</span> <span class="cite active" style="{fond(4.6, 0.3)}">[S1]</span><span style="{fond(4.6, 0.3)}">.</span>
-  <span style="{fond(5.3, 0.7)}">{reponse_2}</span> <span class="cite" style="{fond(6.0, 0.3)}">[S2]</span><span style="{fond(6.0, 0.3)}">.</span>
+  <span style="{fond(3.9, 0.7)}">{reponse_1}</span> <span class="cite active" style="{fond(4.6, 0.3)}">[1]</span><span style="{fond(4.6, 0.3)}">.</span>
+  <span style="{fond(5.3, 0.7)}">{reponse_2}</span> <span class="cite" style="{fond(6.0, 0.3)}">[2]</span><span style="{fond(6.0, 0.3)}">.</span>
 </div>
 
 <div class="carte" style="top:1250px;padding:40px 44px;font-size:32px;line-height:1.45;border-color:var(--foret);{apparait(7.6, 0.7)}">
@@ -147,7 +147,7 @@ def fin():
   <div style="margin-top:-6px">{mot(140, 1.1, m.SURFACE)}</div>
   <div class="serif" style="font-size:70px;line-height:1.1;{apparait(2.0)}">Le droit, sources à l’appui.</div>
   <div style="margin-top:40px;font-size:46px;font-weight:600;border:4px solid var(--or);border-radius:999px;padding:26px 54px;{apparait(2.7)}">lexia-axionstudio.cloud</div>
-  <div style="font-size:34px;line-height:1.45;{apparait(3.4)}">Gratuit avec un compte{INSEC}: 10 questions<br>et 2 questionnaires par jour. Dès 15 ans.</div>
+  <div style="font-size:34px;line-height:1.45;{apparait(3.4)}">Gratuit avec un compte{INSEC}: 10 questions<br>et 2 questionnaires par jour.<br>Conditions d’inscription dans les CGU.</div>
 </div>"""
     return page("Lexia, vidéo 3 : carte de fin", 7, scene, style_scene=f"background:{m.FORET}")
 

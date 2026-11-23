@@ -12,8 +12,9 @@ n'existe encore, chaque futur envoi devra porter un lien de désinscription »).
   service (confirmation d'adresse, sécurité, contrat), qui restent envoyés à tous comme aujourd'hui.
 - **Pourquoi** : un compte gratuit n'est pas un client au sens de l'exception des « produits ou services
   analogues » (CNIL, rappelée dans `docs/marketing/plan.md`, partie 7.4) ; il faut donc le consentement préalable
-  (Code des postes et des communications électroniques, article L. 34-5). Un inscrit de 15 à 17 ans peut consentir
-  seul (loi n° 78-17, article 45).
+  (Code des postes et des communications électroniques, article L. 34-5). Si l'âge minimum des CGU reste inférieur
+  à 18 ans (décision de l'éditeur, EDI-1), un inscrit mineur de 15 ans ou plus peut consentir seul (loi n° 78-17,
+  article 45).
 - **Retrait** : lien de désinscription en un clic dans chaque e-mail, qui fait la même chose que la case de Mon
   compte (`POST /auth/infos-email`). Le retrait arrête la séquence aussitôt, y compris les e-mails déjà
   programmés.
@@ -26,6 +27,26 @@ n'existe encore, chaque futur envoi devra porter un lien de désinscription »).
 - **Registre** : ajouter ce traitement au registre (`docs/registre-traitements.md`, T10 créé par D110), avec la
   durée de conservation du consentement.
 
+## Prérequis : un consentement qui couvre la séquence (audit du 23 novembre 2026, E4)
+
+Le libellé en ligne (`web/src/site/Auth.tsx`, case facultative de l'inscription) dit : « J'accepte de recevoir les
+e-mails d'information de Lexia (nouveautés, quelques fois par an) ». Il ne couvre pas la séquence ci-dessous
+(trois e-mails la première semaine, dont un qui dépend de l'usage, des conseils avant les partiels, puis environ
+quatre par an). Un consentement doit être spécifique et éclairé (RGPD, articles 4.11 et 7 ; Code des postes et des
+communications électroniques, article L. 34-5). L'éditeur choisit l'une des deux options avant toute activation
+(EDI-6) :
+
+- **Option A, élargir le libellé** (session du site, `Auth.tsx` et case de Mon compte), par exemple : « J'accepte
+  de recevoir les e-mails d'information de Lexia : prise en main après l'inscription (3 e-mails la première
+  semaine), conseils avant les partiels et nouveautés (environ 4 par an). Facultatif, modifiable à tout moment dans
+  « Mon compte ». » La politique de confidentialité dit alors que l'e-mail 2 n'est envoyé que si aucune question
+  n'a été posée (seule donnée d'usage lue). Les comptes qui ont consenti sous l'ancien libellé ne reçoivent que
+  les e-mails que celui-ci couvre (option B), sauf nouveau consentement.
+- **Option B, réduire la séquence** au libellé actuel : seulement la lettre des partiels (décembre et mai), qui
+  présente les nouveautés. Les e-mails 1 à 4 ne sont pas envoyés.
+
+Rien n'est envoyé aujourd'hui (D110) : le choix doit être fait avant le développement de l'envoi.
+
 ## Déclencheurs
 
 | E-mail | Quand | Condition en plus du consentement |
@@ -36,7 +57,8 @@ n'existe encore, chaque futur envoi devra porter un lien de désinscription »).
 | 4. Avant les partiels | Une fois par semestre : 7 jours avant la période type des partiels (1er décembre et 20 avril proposés, à caler sur les calendriers des facultés) | Inscrit depuis au moins 7 jours |
 | Lettre des partiels | Une fois en décembre et une fois en mai | Aucune |
 
-Expéditeur : « Lexia » avec l'adresse d'envoi actuelle du site. Réponse : l'adresse de contact des mentions
+Expéditeur : « Lexia » avec l'adresse d'envoi actuelle du site. Signature : « Arthur, éditeur de Lexia » (l'éditeur
+est seul : ne pas écrire « l'équipe », audit du 23 novembre 2026, E16). Réponse : l'adresse de contact des mentions
 légales. Vouvoiement, pas de point d'exclamation, pas de superlatif (ton de la marque).
 
 Pied commun à tous les e-mails (obligatoire) :
@@ -80,7 +102,7 @@ Avec le compte gratuit : 10 questions et 2 questionnaires par jour, 3 cours dép
 
 Lexia est un outil d'étude : vérifiez toujours les sources citées, et suivez la méthode de votre chargé de TD.
 
-L'équipe de Lexia
+Arthur, éditeur de Lexia
 
 ---
 
@@ -105,7 +127,7 @@ en vigueur.
 
 Si Lexia ne trouve aucune source pour répondre, il le dit au lieu d'inventer.
 
-L'équipe de Lexia
+Arthur, éditeur de Lexia
 
 ---
 
@@ -133,7 +155,7 @@ d'un appareil à l'autre.
 
 Avec le compte gratuit : 2 questionnaires par jour.
 
-L'équipe de Lexia
+Arthur, éditeur de Lexia
 
 ---
 
@@ -157,7 +179,7 @@ Les partiels approchent. Une façon d'utiliser Lexia sur la dernière semaine :
 
 Bon courage pour vos partiels.
 
-L'équipe de Lexia
+Arthur, éditeur de Lexia
 
 ---
 
@@ -190,12 +212,14 @@ La jurisprudence de la Cour de cassation et du Conseil constitutionnel a un reta
 
 Bon courage pour vos partiels.
 
-L'équipe de Lexia
+Arthur, éditeur de Lexia
 
 ---
 
 ## Avant d'activer
 
+- [ ] Choisir l'option A ou B du prérequis ci-dessus (EDI-6) ; avec l'option A, changer le libellé dans le site et
+      la politique de confidentialité avant le premier envoi.
 - [ ] Développer l'envoi : file, déclencheurs, désinscription en un clic, journal des envois (session de
       développement).
 - [ ] Mettre à jour la politique de confidentialité (finalité « e-mails d'information », durée, prénom s'il est

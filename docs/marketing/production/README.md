@@ -68,7 +68,10 @@ Celles de `contenus-mois-1.md`, plus trois qui sont devenues vraies depuis le 19
 vos données » ; « hébergé en France » ; « sans erreur », « fiable à 100 % », « validé par des enseignants » ;
 « cartes mentales », « application mobile », « paiement par carte » ou « en ligne » ; « le meilleur », « le seul »,
 « n° 1 » et toute comparaison nommée ; « remplace ton manuel », « avocat dans ta poche », « conseil juridique » ;
-« offre limitée » sans limite réelle ; tout autre chiffre de passages que « plus de 900 000 ».
+« offre limitée » sans limite réelle ; tout autre chiffre de passages que « plus de 900 000 » ; « dès 15 ans » ou tout
+autre âge minimum, et toute réponse qui accepte les mineurs (renvoyer aux CGU, article 3, tant que l'éditeur n'a
+pas tranché entre 15 et 18 ans : audit du 23 novembre 2026, E1) ; « une référence inventée ne passe pas »
+(écrire « est retirée quand le contrôle la détecte », E18).
 
 Contrôle fait sur tous les textes produits (`source/verifier.py`, recherche des formules interdites) : voir la
 dernière partie.

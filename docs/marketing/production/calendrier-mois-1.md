@@ -110,7 +110,8 @@ partiels. #L1droit #methodo #partiels #etudiantendroit
 > - s'il ne reste rien de sourcé, Lexia s'abstient.
 >
 > Cela ne rend pas les réponses infaillibles : le choix des sources et l'explication peuvent encore être
-> imparfaits, et nous cherchons des enseignants pour noter les réponses. Mais une référence inventée ne passe pas.
+> imparfaits, et nous cherchons des enseignants pour noter les réponses. Mais une référence inventée est retirée quand le contrôle la
+> détecte.
 >
 > Enseignants, chargés de TD : écrivez-moi si vous voulez tester.
 

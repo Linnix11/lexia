@@ -28,6 +28,8 @@ INTERDITS = {
     "offre limitée": r"offre limitée",
     "chiffre de passages": r"926\s?(000|481)",
     "fonctions absentes": r"cartes? mentales?|application mobile|paiement (par carte|en ligne)",
+    "âge minimum": r"dès 1[5-8] ans|ouvert à partir de 1[5-8] ans|je suis mineure?\b",
+    "phrase absolue": r"inventée? ne passe|empêche une référence inventée",
 }
 ATTENDUS_A_LA_NEGATIVE = {"fonctions absentes", "remplacement", "conseil", "jurisprudence à jour"}
 EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-⛿✀-➿]")

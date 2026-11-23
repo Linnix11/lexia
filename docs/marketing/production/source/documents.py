@@ -34,7 +34,6 @@ AUTORISEES = [
     "Questionnaires corrigés avec les sources, et cartes à retourner avec répétition espacée.",
     "Résumés à écouter : une réponse, une fiche ou un cours résumé en 2 à 5 minutes, lu par la voix de votre appareil.",
     "Gratuit avec un compte : 10 questions et 2 questionnaires par jour.",
-    "Ouvert dès 15 ans.",
 ]
 INTERDITES = [
     "« Jurisprudence à jour chaque nuit » (vrai pour les codes et lois, pas pour la Cour de cassation ni le Conseil constitutionnel).",
@@ -45,6 +44,7 @@ INTERDITES = [
     "« Le meilleur », « le seul », « n° 1 », et toute comparaison qui nomme un autre outil.",
     "« Remplace ton manuel », « plus besoin de cours », « avocat dans ta poche », « conseil juridique ».",
     "« Offre limitée » sans limite réelle ; un autre chiffre de passages que « plus de 900 000 ».",
+    "« Dès 15 ans » ou tout autre âge minimum, et toute réponse qui accepte les mineurs : renvoyer aux CGU (article 3) tant que l’éditeur n’a pas tranché entre 15 et 18 ans.",
 ]
 
 
@@ -521,7 +521,7 @@ def flyer() -> str:
 <p>{typo("Lexia, l’espace d’étude des étudiants en licence de droit : des explications, des fiches et des questionnaires appuyés sur des sources que tu peux ouvrir et vérifier.")}</p></div>
 <div class="points">{cartes}</div>
 <div class="offre"><div class="qr">{qr}</div><div><h2>{typo("Gratuit avec un compte.")}</h2>
-<p>{typo("10 questions et 2 questionnaires par jour, sans carte bancaire. Dès 15 ans.")}</p><p class="url">{SITE}</p></div></div>
+<p>{typo("10 questions et 2 questionnaires par jour, sans carte bancaire. Conditions d’inscription dans les CGU.")}</p><p class="url">{SITE}</p></div></div>
 <div class="mentions">{typo("Lexia, outil d’étude du droit français, pas un avis juridique. Éditeur : Arthur Champagne-Forterre, entrepreneur individuel, nom commercial Axion Studio, 5 allée des Pommiers, 95680 Montlignon. Imprimé par [nom et adresse de l’imprimeur]. Ne pas jeter sur la voie publique.")}</div></section>"""
 
 
@@ -538,7 +538,6 @@ def presse() -> str:
         ("26", "anciens numéros du Code civil reliés aux articles actuels (1382 vers 1240, 1134 vers 1103...)", "api/concordance.py"),
         ("1 149", "fiches pratiques de l’administration (service-public.gouv.fr, Licence Ouverte), à part des réponses", "Page « Cours récupérés », décision D103"),
         ("0 €, 4,99 €, 9,99 €", "par mois : formules Gratuit, Étudiant et Intensif ; paiement en ligne pas encore actif", "/api/formules et /api/config, lus le 23 novembre 2026"),
-        ("15 ans", "âge minimum d’inscription", "CGU, article 3"),
     ]
     lignes = "".join(f"<tr><td style='width:34mm'><b style='font-family:Gelasio,serif;font-weight:400;font-size:13pt;color:{C['forest']}'>{typo(a)}</b></td>"
                      f"<td>{typo(b)}</td><td style='width:52mm;font-size:7.5pt;color:{C['muted']}'>{typo(c)}</td></tr>"
@@ -549,7 +548,7 @@ def presse() -> str:
 <div style="font-size:9pt;line-height:1.6">{typo(f"Version du {DATE}. Chiffres datés et sources en page 2.")}<br>{typo(f"Contact presse : {CONTACT} · {SITE}")}</div></section>"""
     p2 = f"""<section class="feuille">{tete(T, 2, 4)}<p class="surtitre">Présentation</p>
 <h2>{typo("Ce que fait Lexia")}</h2>
-<p>{typo("En droit, une réponse sans article ne vaut rien. Lexia part de là : l’étudiant pose une question de cours, Lexia cherche dans les textes officiels, rédige une réponse avec un modèle de langage, puis un contrôle sur le serveur retire toute source qui ne vient pas des extraits retrouvés, tout numéro d’article ou de décision inventé et toute affirmation de droit sans source. S’il ne reste rien de sourcé, Lexia s’abstient.")}</p>
+<p>{typo("En droit, une réponse sans article ne vaut rien. Lexia part de là : l’étudiant pose une question de cours, Lexia cherche dans les textes officiels, rédige une réponse avec un modèle de langage, puis un contrôle sur le serveur retire toute source qui ne vient pas des extraits retrouvés, tout numéro d’article ou de décision absent de ces extraits et toute affirmation de droit sans source. S’il ne reste rien de sourcé, Lexia s’abstient.")}</p>
 <p>{typo("Les réponses suivent les méthodes de la licence (cas pratique, commentaire d’arrêt, dissertation, fiche) et le niveau du semestre choisi. L’étudiant peut déposer ses cours, même scannés, et les confronter au droit en vigueur ; un ancien numéro du Code civil y est signalé. Pour réviser : questionnaires corrigés avec les sources, cartes à retourner avec répétition espacée, résumés à écouter.")}</p>
 <h3 style="margin-top:2mm">{typo("Chiffres clés, datés")}</h3><table><tr><th>Chiffre</th><th>Ce que c’est</th><th>Source et date</th></tr>{lignes}</table>
 {pied("Lexia est un outil d’étude, pas un avis juridique.")}</section>"""

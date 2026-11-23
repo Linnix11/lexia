@@ -31,6 +31,22 @@ tout ce qui est public et durable (icône d'application installée, image de par
 - `docs/business/` (pitch deck) : reprendre `brand/logos/svg/lexia-horizontal-couleur.svg` ou
   `lexia-principal-inverse.svg` si le deck affiche un logo.
 
+## Points relevés par l'audit du 23 novembre 2026 (D15), pour la session du site
+
+Ces corrections touchent le code (`web/`, `api/`) : elles reviennent à la session qui intégrera le kit.
+
+- **Test du manifeste** : `web/src/lib/manifeste.test.ts:19` attend exactement 2 icônes. `manifest-exemple.json`
+  en déclare 4 (192 et 512, plus les deux `maskable`) : adapter le test en même temps que le manifeste, sinon
+  `npm test` échoue.
+- **Image de partage générée par le site** : `web/scripts/og-lexia.html` dessine encore le signet « L ». Soit
+  copier `brand/open-graph/og-image-1200x630.png` sous le nom `og-lexia.png` (tableau ci-dessus) et ne plus
+  utiliser ce script, soit y reprendre les tracés de `brand/logos/svg/lexia-symbole-couleur.svg`.
+- **`/favicon.ico`** : en ligne, cette adresse renvoie la page HTML du site (`api/serveur.py:51`, repli vers
+  `index.html`). Copier `brand/icones/favicon.ico` dans `web/public/` et vérifier que le serveur le sert avec le
+  type `image/x-icon`.
+- **Citations** : le kit montre désormais « [1] », comme le site (image de partage et vidéo 2 corrigées le
+  23 novembre 2026). Ne pas réintroduire « [S1] ».
+
 ## Lignes à vérifier dans `web/index.html`
 
 ```html

@@ -53,8 +53,11 @@ filmer les démonstrations sur un compte de test, écrire aux associations seule
   La note Flash n° 11 (juin 2026) donne les effectifs universitaires observés en 2025-2026
   (https://www.enseignementsup-recherche.gouv.fr/sites/default/files/2026-06/nf-sies-2026-11-40399.pdf) ; son
   périmètre « Droit » est à relire avant de citer un chiffre.
-- Âge : la plupart ont 17 à 21 ans. Lexia accepte les inscriptions dès 15 ans (CGU, article 3) : une partie des
-  nouveaux L1 a 17 ans à la rentrée. Les règles sur les mineurs (partie 7.5) s'appliquent donc au cœur de cible.
+- Âge : la plupart ont 17 à 21 ans ; une partie des nouveaux L1 a 17 ans à la rentrée. L'âge minimum d'inscription
+  est fixé par les CGU (article 3) et reste à trancher par l'éditeur entre 15 et 18 ans : les conditions de l'API
+  Gemini excluent un service susceptible d'être utilisé par des moins de 18 ans (audit du 23 novembre 2026, E1 et
+  EDI-1). D'ici là, aucun support n'écrit d'âge minimum ni ne s'adresse aux mineurs : il renvoie aux CGU. Si l'âge
+  reste inférieur à 18 ans, les règles sur les mineurs (partie 7.5) s'appliquent au cœur de cible.
 
 ### Sous-cibles
 
@@ -83,7 +86,7 @@ Constat du comparatif du 19 novembre 2026 :
   en France jusqu'au 31 décembre 2026. Sur ces points, Lexia ne gagne pas et ne doit pas prétendre gagner.
 - Lexia gagne sur : le corpus officiel déjà chargé (environ 916 000 passages), la citation qui prouve la règle et pas
   seulement le document, la version en vigueur vérifiable, les anciens numéros du Code civil reliés aux actuels, les
-  méthodes de la licence, l'ouverture dès 15 ans.
+  méthodes de la licence.
 
 Conséquence pour la communication : **ne jamais nommer Gemini Notebook** (ni un autre outil) dans une publicité.
 Une publicité comparative n'est licite que si elle compare objectivement des caractéristiques vérifiables et
@@ -122,7 +125,7 @@ Seuls les messages vrais et vérifiables au jour de la publication. La liste de 
 | 20 matières de la L1 à la L3, niveau adapté au semestre | `/api/matieres` (20) ; décision D49 | Oui |
 | Déposez vos cours (PDF, Word, PowerPoint, OpenDocument) et confrontez-les au droit en vigueur | `api/extraction.py` ; décision D93 | Non |
 | Gratuit avec un compte : 10 questions et 2 questionnaires par jour | `/api/formules` | Oui, à chaque changement de formule |
-| Ouvert dès 15 ans | CGU, article 3 ; décision D92 | Non |
+| Âge : aucun âge minimum écrit, renvoi aux CGU (« conditions d'inscription dans les CGU ») | CGU, article 3 ; décision de l'éditeur attendue (EDI-1) | Oui : à revoir après la décision sur l'âge |
 
 **À ne pas écrire aujourd'hui** (comparatif, partie 4, et brief) : « jurisprudence à jour chaque nuit » (faux pour la
 Cour de cassation et le Conseil constitutionnel, décisions jusqu'aux 16-17 septembre et 16 octobre 2026) ;
@@ -231,7 +234,11 @@ preuve daté (captures des pages de Google, date, offres comparées) et relectur
 | Professionnels (B2B) : pas de consentement si le message est en rapport avec la fonction du destinataire, s'il est informé et peut s'opposer ; adresses génériques de personnes morales (contact@) hors de ce régime | CNIL, règles de la prospection par courrier électronique : https://www.cnil.fr/fr/les-regles-dor-de-la-prospection-par-courrier-electronique-0 (page ancienne) | Associations : écrire à leur adresse de contact publique, un par un, identité complète, origine de l'adresse, opposition simple (e-mail type). Liste « ne plus contacter » conservée. |
 | Information des personnes (RGPD, art. 13), durée de conservation, registre | CNIL : https://www.cnil.fr/fr/informer-les-personnes ; référentiel « gestion des activités commerciales » : prospects 3 ans à compter du dernier contact actif | Mentions sous le formulaire ambassadeurs ; ajouter au registre (`docs/registre-traitements.md`) : prospection des associations, candidatures d'ambassadeurs, contrats d'ambassadeurs, messages reçus sur les réseaux sociaux. |
 
-### 7.5 Mineurs (inscriptions dès 15 ans)
+### 7.5 Mineurs (si l'âge minimum reste inférieur à 18 ans)
+
+L'éditeur doit trancher entre 15 et 18 ans (EDI-1, audit du 23 novembre 2026). D'ici là, ces règles s'appliquent
+à tout inscrit mineur, et aucun support ne mentionne d'âge minimum ni n'invite les mineurs à s'inscrire. Avec un
+âge minimum de 18 ans, elles ne servent plus que pour les ambassadeurs et les vidéos.
 
 | Règle | Source | Conséquence |
 |---|---|---|

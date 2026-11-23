@@ -402,7 +402,7 @@ POSTS: list[dict] = [
                 "Et pour réviser : questionnaires corrigés, cartes à retourner, résumés à écouter."),
         k_texte("Les matières", "20 matières, de la L1 à la L3.",
                 "Le niveau d’explication suit ton semestre. Tu peux aussi déposer tes cours, même scannés, et les confronter au droit en vigueur."),
-        k_fin("Gratuit avec un compte.", "10 questions et 2 questionnaires par jour. Dès 15 ans.", "Lien en bio"),
+        k_fin("Gratuit avec un compte.", "10 questions et 2 questionnaires par jour. Conditions d’inscription dans les CGU.", "Lien en bio"),
     )},
     {"id": "P2", "date": "2026-11-30", "reseaux": "LinkedIn (profil de l’éditeur)", "type": "Image",
      "titre": "Lancement (post du fondateur)", "visuels": un("linkedin", li(
@@ -460,7 +460,7 @@ POSTS: list[dict] = [
         "Méthode · 45 s", "3 erreurs qui coûtent des points en L1", "Tu en fais combien ?"))},
     {"id": "P10", "date": "2026-12-09", "reseaux": "LinkedIn", "type": "Image",
      "titre": "Le contrôle des citations", "visuels": un("linkedin", li(
-        "Garde-fous", "Une référence inventée ne passe pas.",
+        "Garde-fous", "Une référence inventée est retirée quand le contrôle la détecte.",
         "Le contrôle se fait après le modèle, sur le serveur. Il ne rend pas les réponses infaillibles : le choix des sources et l’explication peuvent rester imparfaits.",
         SCHEMA_CONTROLE))},
     {"id": "P11", "date": "2026-12-10", "reseaux": "TikTok, Reels, Shorts", "type": "Vidéo courte",

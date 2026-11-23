@@ -17,7 +17,7 @@ textes officiels, cités et vérifiables.
 
 [Créer un compte gratuit] · [Voir un exemple de réponse]
 
-Gratuit : 10 questions et 2 questionnaires par jour, sans carte bancaire. Dès 15 ans.
+Gratuit : 10 questions et 2 questionnaires par jour, sans carte bancaire. Conditions d'inscription dans les CGU.
 
 ## Trois erreurs fréquentes, et ce que fait Lexia
 
@@ -58,11 +58,11 @@ matières pour la L2 et la L3. Le niveau d'explication suit votre semestre.
 article, à vous entraîner et à confronter votre cours au droit en vigueur.
 
 **Les réponses peuvent-elles contenir des erreurs ?** Oui, comme tout outil : vérifiez toujours les sources citées.
-Le contrôle des citations empêche une référence inventée de s'afficher, mais le choix des sources et l'explication
+Le contrôle des citations retire une référence inventée quand il la détecte, mais le choix des sources et l'explication
 peuvent rester imparfaits. Les réponses n'ont pas encore été notées par un enseignant.
 
-**Je suis mineur, puis-je m'inscrire ?** Oui, dès 15 ans. Les formules payantes demandent l'accord d'un parent avant
-18 ans (CGU, article 3).
+**Qui peut s'inscrire ?** Les conditions d'inscription, dont l'âge, sont dans les conditions d'utilisation (CGU,
+article 3).
 
 **Puis-je poser une question sur ma situation personnelle ?** Lexia explique le droit, il ne donne pas de conseil
 sur une situation personnelle : adressez-vous à un professionnel du droit ou à un point-justice.

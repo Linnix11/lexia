@@ -31,7 +31,7 @@ retours.
 - Plus de 900 000 passages officiels ; codes et lois mis à jour chaque nuit.
 - Les méthodes de la licence : cas pratique, commentaire d'arrêt, dissertation ; 20 matières de la L1 à la L3.
 - Questionnaires corrigés, cartes à retourner, résumés à écouter, cours déposés confrontés au droit en vigueur.
-- Gratuit avec un compte : 10 questions et 2 questionnaires par jour ; ouvert dès 15 ans.
+- Gratuit avec un compte : 10 questions et 2 questionnaires par jour ; conditions d'inscription dans les CGU.
 
 ## Ce que nous ne faisons pas encore
 
