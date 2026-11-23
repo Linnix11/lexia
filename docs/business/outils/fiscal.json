@@ -1,0 +1,24 @@
+{
+  "TAUX_COTIS": 0.256,
+  "COTIS_SOURCE": "Prestations liberales non reglementees (BNC, SSI) : 25,6 % ; https://entreprendre.service-public.gouv.fr/vosdroits/F36232 (verifiee au 01/01/2026), lu le 23/11/2026. Retenu par prudence : si l'activite est classee BIC prestations de services, 21,2 %. Classement a faire confirmer par l'Urssaf. Une page economie.gouv.fr citee par une recherche donne 26,1 % (non lue, refusee aux robots).",
+  "TAUX_CFP": 0.002,
+  "CFP_SOURCE": "Activite liberale : 0,2 % du CA ; https://entreprendre.service-public.gouv.fr/vosdroits/F23459, lu le 23/11/2026 (ajoutee par prudence : une autre page la dit incluse)",
+  "TAUX_VL": 0.022,
+  "VL_SOURCE": "BNC : 2,2 % (BIC services : 1,7 %) ; https://entreprendre.service-public.gouv.fr/vosdroits/F23267, lu le 23/11/2026 ; option avant le 30 septembre de l'annee precedente, sous condition de revenu fiscal de reference",
+  "SEUIL_BASE": 37500,
+  "SEUIL_MAJORE": 41250,
+  "TVA_SOURCE": "Prestations de services : 37 500 € (base), 41 250 € (majore) ; reforme du seuil unique de 25 000 € abandonnee ; https://entreprendre.service-public.gouv.fr/vosdroits/F21746, lu le 23/11/2026",
+  "PLAFOND_MICRO": 83600,
+  "PLAFOND_SOURCE": "Prestations de services : 83 600 € HT ; https://entreprendre.service-public.gouv.fr/vosdroits/F23267, lu le 23/11/2026",
+  "MEDIATEUR_SOURCE": "SMP, vente en ligne, CA sous 60 000 € : 25 € HT pour 3 ans, mediation facturee en plus si elle a lieu (150 ou 350 € HT) ; https://www.mediateur-consommation-smp.fr/grille-tarifaire/, lu le 23/11/2026",
+  "INPI_SOURCE": "190 € la premiere classe, 40 € par classe supplementaire ; https://www.inpi.fr/realiser-demarches/propriete-intellectuelle/deposant-et-cout-dune-marque, lu le 23/11/2026",
+  "SOURCES_LISTE": [
+    "Cotisations micro-entreprise 2026 (BIC services 21,2 %, BNC SSI 25,6 %) : https://entreprendre.service-public.gouv.fr/vosdroits/F36232",
+    "Formation professionnelle (0,2 % liberal) : https://entreprendre.service-public.gouv.fr/vosdroits/F23459",
+    "Versement liberatoire et plafond micro 83 600 € : https://entreprendre.service-public.gouv.fr/vosdroits/F23267",
+    "Franchise en base de TVA (37 500 € et 41 250 €) : https://entreprendre.service-public.gouv.fr/vosdroits/F21746",
+    "Mediateur SMP : https://www.mediateur-consommation-smp.fr/grille-tarifaire/",
+    "Depot de marque INPI : https://www.inpi.fr/realiser-demarches/propriete-intellectuelle/deposant-et-cout-dune-marque",
+    "Les autres sources (Gemini, Groq, Stripe, Hostinger, Resend, Cloudflare, Apple, taux de change) sont dans la colonne F de la feuille Hypotheses et dans docs/business/sources.md."
+  ]
+}
