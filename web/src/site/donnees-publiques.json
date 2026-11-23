@@ -1,0 +1,546 @@
+{
+ "formules": [
+  {
+   "id": "gratuit",
+   "nom": "Gratuit",
+   "prix_mensuel_euros": 0,
+   "questions_par_jour": 10,
+   "quiz_par_jour": 2,
+   "cours_max": 3,
+   "description": "Pour découvrir Lexia : il suffit de créer un compte.",
+   "avantages": [
+    "10 questions par jour",
+    "2 questionnaires par jour",
+    "3 cours déposés",
+    "Tous les modes : explication, fiche, méthode",
+    "Sources officielles citées et vérifiables"
+   ]
+  },
+  {
+   "id": "etudiant",
+   "nom": "Étudiant",
+   "prix_mensuel_euros": 4.99,
+   "questions_par_jour": 100,
+   "quiz_par_jour": 20,
+   "cours_max": 30,
+   "description": "Pour réviser régulièrement pendant le semestre.",
+   "avantages": [
+    "100 questions par jour",
+    "20 questionnaires par jour",
+    "30 cours déposés",
+    "Tous les modes et toutes les matières"
+   ]
+  },
+  {
+   "id": "intensif",
+   "nom": "Intensif",
+   "prix_mensuel_euros": 9.99,
+   "questions_par_jour": 300,
+   "quiz_par_jour": 100,
+   "cours_max": 100,
+   "description": "Pour les périodes de partiels et de concours.",
+   "avantages": [
+    "300 questions par jour",
+    "Questionnaires en usage intensif (100 par jour)",
+    "100 cours déposés",
+    "Tous les modes et toutes les matières"
+   ]
+  }
+ ],
+ "matieres": [
+  {
+   "id": "introduction_au_droit",
+   "libelle": "Introduction au droit",
+   "annee": "L1",
+   "mots": [
+    "institutions juridictionnelles",
+    "sources du droit",
+    "méthodologie"
+   ],
+   "principales": [
+    "code_civil",
+    "constitution_1958"
+   ],
+   "sources": [
+    "constitution_1958",
+    "code_civil",
+    "code_organisation_judiciaire",
+    "ddhc_1789",
+    "lois"
+   ]
+  },
+  {
+   "id": "droit_constitutionnel",
+   "libelle": "Droit constitutionnel",
+   "annee": "L1",
+   "mots": [
+    "Ve République",
+    "institutions politiques",
+    "contentieux constitutionnel",
+    "QPC"
+   ],
+   "principales": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "code_electoral",
+    "ddhc_1789",
+    "charte_environnement",
+    "preambule_1946",
+    "lois",
+    "tue"
+   ]
+  },
+  {
+   "id": "droit_civil",
+   "libelle": "Droit civil",
+   "annee": "L1",
+   "mots": [
+    "droit des personnes",
+    "droit privé",
+    "responsabilité civile",
+    "contrats spéciaux",
+    "sûretés"
+   ],
+   "principales": [
+    "code_civil",
+    "judilibre"
+   ],
+   "sources": [
+    "code_civil",
+    "judilibre",
+    "code_consommation",
+    "code_assurances",
+    "code_construction_habitation",
+    "code_sante_publique",
+    "lois"
+   ]
+  },
+  {
+   "id": "droit_de_la_famille",
+   "libelle": "Droit de la famille",
+   "annee": "L1",
+   "mots": [
+    "mariage",
+    "divorce",
+    "filiation",
+    "autorité parentale",
+    "régimes matrimoniaux",
+    "successions",
+    "libéralités",
+    "droit patrimonial de la famille"
+   ],
+   "principales": [
+    "code_civil",
+    "judilibre"
+   ],
+   "sources": [
+    "code_civil",
+    "judilibre",
+    "code_action_sociale_familles",
+    "lois"
+   ]
+  },
+  {
+   "id": "droit_des_biens",
+   "libelle": "Droit des biens",
+   "annee": "L1",
+   "mots": [
+    "propriété",
+    "possession",
+    "servitudes",
+    "usufruit"
+   ],
+   "principales": [
+    "code_civil",
+    "judilibre"
+   ],
+   "sources": [
+    "code_civil",
+    "judilibre",
+    "code_expropriation",
+    "code_rural",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "droit_des_contrats",
+   "libelle": "Droit des contrats",
+   "annee": "L2",
+   "mots": [
+    "droit des obligations",
+    "régime général de l'obligation",
+    "contrats spéciaux",
+    "droit de la consommation"
+   ],
+   "principales": [
+    "code_civil",
+    "judilibre"
+   ],
+   "sources": [
+    "code_civil",
+    "judilibre",
+    "code_consommation",
+    "lois",
+    "cass_commerciale"
+   ]
+  },
+  {
+   "id": "droit_administratif",
+   "libelle": "Droit administratif",
+   "annee": "L2",
+   "mots": [
+    "actes administratifs",
+    "service public",
+    "police administrative",
+    "responsabilité administrative",
+    "contrats administratifs"
+   ],
+   "principales": [
+    "code_relations_public_administration",
+    "conseil_etat"
+   ],
+   "sources": [
+    "constitution_1958",
+    "code_justice_administrative",
+    "code_relations_public_administration",
+    "code_collectivites_territoriales",
+    "code_propriete_personnes_publiques",
+    "code_commande_publique",
+    "code_fonction_publique",
+    "code_urbanisme",
+    "code_environnement",
+    "code_entree_sejour_etrangers",
+    "charte_environnement",
+    "code_securite_interieure",
+    "code_expropriation",
+    "code_sante_publique",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "droit_europeen",
+   "libelle": "Droit européen",
+   "annee": "L2",
+   "mots": [
+    "droit de l'Union européenne",
+    "institutions européennes",
+    "TUE",
+    "TFUE",
+    "Charte des droits fondamentaux",
+    "marché intérieur",
+    "renvoi préjudiciel"
+   ],
+   "principales": [
+    "tfue",
+    "tue"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "judilibre",
+    "lois",
+    "cass_commerciale",
+    "conseil_etat",
+    "tue",
+    "tfue",
+    "charte_droits_fondamentaux_ue"
+   ]
+  },
+  {
+   "id": "droit_penal",
+   "libelle": "Droit pénal",
+   "annee": "L2",
+   "mots": [
+    "droit pénal général",
+    "droit pénal spécial",
+    "infractions",
+    "peines",
+    "sciences criminelles"
+   ],
+   "principales": [
+    "code_penal",
+    "cass_criminelle"
+   ],
+   "sources": [
+    "code_penal",
+    "code_procedure_penale",
+    "code_justice_penale_mineurs",
+    "code_penitentiaire",
+    "code_route",
+    "code_douanes",
+    "lois",
+    "cass_criminelle"
+   ]
+  },
+  {
+   "id": "droit_des_affaires",
+   "libelle": "Droit des affaires",
+   "annee": "L2",
+   "mots": [
+    "droit commercial",
+    "commerçant",
+    "fonds de commerce",
+    "concurrence",
+    "consommation"
+   ],
+   "principales": [
+    "code_commerce",
+    "cass_commerciale"
+   ],
+   "sources": [
+    "code_commerce",
+    "code_monetaire_financier",
+    "code_consommation",
+    "code_propriete_intellectuelle",
+    "code_assurances",
+    "code_rural",
+    "lois",
+    "cass_commerciale",
+    "tfue"
+   ]
+  },
+  {
+   "id": "finances_publiques",
+   "libelle": "Finances publiques",
+   "annee": "L2",
+   "mots": [
+    "droit budgétaire",
+    "lois de finances",
+    "Cour des comptes"
+   ],
+   "principales": [
+    "constitution_1958",
+    "code_juridictions_financieres"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "code_juridictions_financieres",
+    "code_impositions_biens_services",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "procedure_civile",
+   "libelle": "Procédure civile",
+   "annee": "L3",
+   "mots": [
+    "droit judiciaire privé",
+    "procès civil",
+    "voies d'exécution"
+   ],
+   "principales": [
+    "code_procedure_civile",
+    "judilibre"
+   ],
+   "sources": [
+    "judilibre",
+    "code_procedure_civile",
+    "code_organisation_judiciaire",
+    "code_procedures_civiles_execution",
+    "lois"
+   ]
+  },
+  {
+   "id": "procedure_penale",
+   "libelle": "Procédure pénale",
+   "annee": "L3",
+   "mots": [
+    "procès pénal",
+    "enquête",
+    "garde à vue",
+    "instruction",
+    "action publique",
+    "justice pénale des mineurs"
+   ],
+   "principales": [
+    "code_procedure_penale",
+    "cass_criminelle"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "code_procedure_penale",
+    "code_justice_penale_mineurs",
+    "ddhc_1789",
+    "lois",
+    "cass_criminelle"
+   ]
+  },
+  {
+   "id": "droit_social",
+   "libelle": "Droit social",
+   "annee": "L3",
+   "mots": [
+    "droit du travail",
+    "relations individuelles",
+    "relations collectives",
+    "sécurité sociale",
+    "protection sociale"
+   ],
+   "principales": [
+    "code_travail",
+    "cass_sociale"
+   ],
+   "sources": [
+    "code_travail",
+    "code_securite_sociale",
+    "preambule_1946",
+    "code_action_sociale_familles",
+    "lois",
+    "cass_sociale"
+   ]
+  },
+  {
+   "id": "droit_des_societes",
+   "libelle": "Droit des sociétés",
+   "annee": "L3",
+   "mots": [
+    "sociétés commerciales",
+    "SARL",
+    "SAS",
+    "société anonyme",
+    "groupements"
+   ],
+   "principales": [
+    "code_commerce",
+    "code_civil"
+   ],
+   "sources": [
+    "code_civil",
+    "judilibre",
+    "code_commerce",
+    "code_monetaire_financier",
+    "lois",
+    "cass_commerciale"
+   ]
+  },
+  {
+   "id": "contentieux_administratif",
+   "libelle": "Contentieux administratif",
+   "annee": "L3",
+   "mots": [
+    "juge administratif",
+    "recours pour excès de pouvoir",
+    "référés",
+    "justice administrative"
+   ],
+   "principales": [
+    "code_justice_administrative",
+    "conseil_etat"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "code_justice_administrative",
+    "code_relations_public_administration",
+    "code_collectivites_territoriales",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "droit_administratif_des_biens",
+   "libelle": "Droit administratif des biens",
+   "annee": "L3",
+   "mots": [
+    "domaine public",
+    "propriétés publiques",
+    "expropriation",
+    "biens publics"
+   ],
+   "principales": [
+    "code_propriete_personnes_publiques",
+    "code_expropriation"
+   ],
+   "sources": [
+    "code_collectivites_territoriales",
+    "code_propriete_personnes_publiques",
+    "code_expropriation",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "droit_international",
+   "libelle": "Droit international",
+   "annee": "L3",
+   "mots": [
+    "droit international public",
+    "droit international privé",
+    "traités",
+    "conflits de lois",
+    "relations internationales"
+   ],
+   "principales": [
+    "constitution_1958",
+    "code_civil"
+   ],
+   "sources": [
+    "constitution_1958",
+    "code_civil",
+    "decisions_conseil_constitutionnel",
+    "judilibre",
+    "lois",
+    "conseil_etat"
+   ]
+  },
+  {
+   "id": "libertes_fondamentales",
+   "libelle": "Libertés fondamentales",
+   "annee": "L3",
+   "mots": [
+    "droits fondamentaux",
+    "droits de l'homme"
+   ],
+   "principales": [
+    "ddhc_1789",
+    "decisions_conseil_constitutionnel"
+   ],
+   "sources": [
+    "constitution_1958",
+    "decisions_conseil_constitutionnel",
+    "ddhc_1789",
+    "charte_environnement",
+    "preambule_1946",
+    "code_securite_interieure",
+    "code_sante_publique",
+    "lois",
+    "cass_criminelle",
+    "conseil_etat",
+    "charte_droits_fondamentaux_ue"
+   ]
+  },
+  {
+   "id": "droit_fiscal",
+   "libelle": "Droit fiscal",
+   "annee": "L3",
+   "mots": [
+    "impôts",
+    "fiscalité",
+    "contentieux fiscal"
+   ],
+   "principales": [
+    "code_general_impots",
+    "livre_procedures_fiscales"
+   ],
+   "sources": [
+    "decisions_conseil_constitutionnel",
+    "code_general_impots",
+    "livre_procedures_fiscales",
+    "code_douanes",
+    "code_impositions_biens_services",
+    "lois",
+    "cass_commerciale",
+    "conseil_etat"
+   ]
+  }
+ ]
+}

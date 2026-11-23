@@ -23,6 +23,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between gap-2 px-4 tab:px-6">
           <Logo />
           <nav aria-label="Navigation du site" className="flex items-center gap-1 tab:gap-3">
+            {/* Matieres et guides : en-tete a partir de la tablette, pied de page partout (D116) */}
+            <Lien href="/matieres" className="hidden min-h-11 items-center rounded-md px-2 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:inline-flex">Matières</Lien>
+            <Lien href="/guides" className="hidden min-h-11 items-center rounded-md px-2 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:inline-flex">Guides</Lien>
             <Lien href="/tarifs" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Tarifs</Lien>
             {profil ? (
               <Lien href="/app" className={`${bouton} whitespace-nowrap`}>
@@ -43,6 +46,11 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1100px] flex-col gap-3 px-4 py-6 text-[12px] text-muted tab:flex-row tab:items-center tab:justify-between tab:px-6">
           <span>Lexia · outil d’étude du droit français, pas un avis juridique.</span>
+          <nav aria-label="Découvrir Lexia" className="flex flex-wrap gap-x-4 gap-y-1">
+            <Lien href="/matieres" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Matières</Lien>
+            <Lien href="/guides" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Guides de méthode</Lien>
+            <Lien href="/tarifs" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Tarifs</Lien>
+          </nav>
           <nav aria-label="Informations légales" className="flex flex-wrap gap-x-4 gap-y-1">
             {/* liens de 44 px de haut sur mobile (WEB-9) */}
             <Lien href="/mentions-legales" className="inline-flex min-h-11 items-center hover:text-forest tab:min-h-0">Mentions légales</Lien>

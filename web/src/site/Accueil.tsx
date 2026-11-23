@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
-import { Formules } from './Tarifs'
+import { FORMULES_PUBLIQUES, Formules } from './Tarifs'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 const PILIERS = [
@@ -23,7 +23,7 @@ export function Accueil() {
   // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
   const supprime = new URLSearchParams(window.location.search).has('compte-supprime')
   // Limites de la formule gratuite lues sur le serveur, pas ecrites en dur (audit du 2026-11-18, D12)
-  const [gratuit, setGratuit] = useState<Formule | null>(null)
+  const [gratuit, setGratuit] = useState<Formule | null>(FORMULES_PUBLIQUES.find((x) => x.id === 'gratuit') ?? null)
   useEffect(() => {
     api.formules().then((f) => setGratuit(f.find((x) => x.id === 'gratuit') ?? null)).catch(() => undefined)
   }, [])

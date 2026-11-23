@@ -9,6 +9,10 @@ npm test         # tests (Vitest + Testing Library)
 npm run build    # production : définir VITE_API_URL=https://… avant le build
 ```
 
+`npm run build` compile aussi les pages publiques en HTML (prérendu, D116) : `dist/pages/`, `dist/sitemap.xml`
+et `dist/llms.txt`. Contenu des matières et des guides : `src/site/contenu/` ; balises : `src/site/seo.ts` ;
+données tirées de l'API : `python -m api.donnees_publiques` (voir `docs/seo-geo.md`).
+
 L'API doit tourner à côté : depuis la racine du dépôt, `uvicorn api.main:app --port 8000`.
 Autre adresse en développement : `LEXIA_API=http://… npm run dev`.
 

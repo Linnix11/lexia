@@ -4,21 +4,26 @@ import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Payer } from './Payer'
+import { formules as formulesDuDepot } from './donnees-publiques.json'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
+
+/** Formules ecrites par `python -m api.donnees_publiques` (api/plans.py) : affichees avant la reponse de l'API. */
+export const FORMULES_PUBLIQUES = formulesDuDepot as Formule[]
 
 const prix = (f: Formule) =>
   f.prix_mensuel_euros === 0 ? '0 €' : `${f.prix_mensuel_euros.toFixed(2).replace('.', ',')} €`
 
 export function Formules() {
   const { profil, config } = useSession()
-  const [formules, setFormules] = useState<Formule[] | null>(null)
+  // Formules du depot d'abord (page prerendue, D116), puis celles du serveur, qui font foi
+  const [formules, setFormules] = useState<Formule[] | null>(FORMULES_PUBLIQUES)
   const [erreur, setErreur] = useState(false)
 
   useEffect(() => {
     api.formules().then(setFormules).catch(() => setErreur(true))
   }, [])
 
-  if (erreur) return <p className="text-[13px] text-muted">Les formules sont momentanément indisponibles.</p>
+  if (erreur && !formules) return <p className="text-[13px] text-muted">Les formules sont momentanément indisponibles.</p>
   if (!formules) {
     return (
       <div className="grid animate-pulse gap-4 tab:grid-cols-3" aria-label="Chargement des formules">

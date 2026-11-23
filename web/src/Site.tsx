@@ -4,6 +4,7 @@ import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
+import { CHEMINS_GUIDES, CHEMINS_MATIERES, TITRES_PUBLICS } from './site/routesPubliques'
 import { VerifierEmail } from './site/VerifierEmail'
 import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
 import { SessionProvider, useSession } from './state/session'
@@ -20,6 +21,11 @@ const CoursRecuperes = lazy(() => import('./site/CoursRecuperes').then((m) => ({
 const Cgu = lazy(() => import('./site/Legal').then((m) => ({ default: m.Cgu })))
 const Confidentialite = lazy(() => import('./site/Legal').then((m) => ({ default: m.Confidentialite })))
 const MentionsLegales = lazy(() => import('./site/Legal').then((m) => ({ default: m.MentionsLegales })))
+// Pages de contenu (matieres, guides ; D116) : texte charge a part, routes et titres dans un module leger.
+const IndexMatieres = lazy(() => import('./site/PagesContenu').then((m) => ({ default: m.IndexMatieres })))
+const PageMatiere = lazy(() => import('./site/PagesContenu').then((m) => ({ default: m.PageMatiere })))
+const IndexGuides = lazy(() => import('./site/PagesContenu').then((m) => ({ default: m.IndexGuides })))
+const PageGuide = lazy(() => import('./site/PagesContenu').then((m) => ({ default: m.PageGuide })))
 
 const PUBLIQUES: Record<string, () => ReactNode> = {
   '/': () => <Accueil />,
@@ -30,6 +36,10 @@ const PUBLIQUES: Record<string, () => ReactNode> = {
   '/verifier-email': () => <VerifierEmail />,
   '/mot-de-passe-oublie': () => <MotDePasseOublie />,
   '/nouveau-mot-de-passe': () => <NouveauMotDePasse />,
+  '/matieres': () => <IndexMatieres />,
+  '/guides': () => <IndexGuides />,
+  ...Object.fromEntries(CHEMINS_MATIERES.map((c) => [c, () => <PageMatiere slug={c.slice('/matieres/'.length)} />])),
+  ...Object.fromEntries(CHEMINS_GUIDES.map((c) => [c, () => <PageGuide slug={c.slice('/guides/'.length)} />])),
 }
 const INVITES: Record<string, () => ReactNode> = {
   '/connexion': () => <Connexion />,
@@ -57,6 +67,7 @@ const TITRES: Record<string, string> = {
   '/compte': 'Mon compte',
   '/cours-recuperes': 'Fiches pratiques de l’administration',
   '/admin': 'Administration',
+  ...TITRES_PUBLICS, // pages referencees : titres ecrits aussi dans le HTML prerendu (D116)
 }
 
 function Chargement() {

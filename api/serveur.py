@@ -32,14 +32,22 @@ def creer_serveur(dist: Path = DIST, api: FastAPI | None = None) -> FastAPI:
 
     racine.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
-    @racine.get("/{chemin:path}", include_in_schema=False)
+    pages = (dist / "pages").resolve()
+
+    # HEAD aussi : des robots et des verificateurs de liens testent une adresse par HEAD (405 avant D116).
+    @racine.api_route("/{chemin:path}", methods=["GET", "HEAD"], include_in_schema=False)
     async def front(chemin: str):  # async : ne prend pas de thread, le site reste servi si Gemini est lent
-        # fichiers publics (favicon...) sinon index.html : l'application gere elle-meme ses ecrans
+        # fichiers publics (favicon, sitemap.xml, llms.txt...) ; dist/pages/ n'est servi que par son adresse publique
         fichier = (dist / chemin).resolve()
-        if chemin and fichier.is_file() and dist.resolve() in fichier.parents:
+        if chemin and fichier.is_file() and dist.resolve() in fichier.parents and pages not in fichier.parents:
             return FileResponse(fichier)
         if chemin.startswith("api/"):
             raise HTTPException(404)
+        # Page publique prerendue a la compilation (D116) : /tarifs -> dist/pages/tarifs/index.html
+        prerendue = (pages / chemin.strip("/") / "index.html").resolve()
+        if prerendue.is_file() and (prerendue.parent == pages or pages in prerendue.parents):
+            return FileResponse(prerendue, headers={"Cache-Control": "no-cache"})
+        # sinon index.html : l'application gere elle-meme ses ecrans
         return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
 
     return racine
