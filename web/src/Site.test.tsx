@@ -30,6 +30,9 @@ const SERVEUR = { version: 'abc1234', demarre_le: '2026-11-11T10:00:00+00:00', u
   processeurs: 2, memoire_service: 2e9, memoire_systeme: { total: 8e9, disponible: 6e9 }, disque: { total: 1e11, libre: 9e10 }, python: '3.12.3',
   systeme: 'Linux 6.8', index: { moteur: 'local', passages: 45277, embeddings: 41779, couverture: 1 }, modeles: { generation: ['gemini'] }, etat_modele: 'ok' }
 
+const A_TRAITER = [{ session: 'cs_1', email: 'etu@exemple.fr', formule: 'etudiant', mois: 1, montant_centimes: 499, statut: 'a_rembourser',
+  motif: 'retractation', cree_le: '2026-11-20T10:00:00+00:00', paye_le: '2026-11-20T10:00:00+00:00', retractation_le: '2026-11-20T11:00:00+00:00',
+  accuse_envoye_le: '2026-11-20T11:00:00+00:00', paiement_stripe: null }]
 let admin = false
 let deuxFacteurs = true
 let connecte = false
@@ -252,11 +255,20 @@ describe('Site', () => {
   it('tableau de bord admin : indicateurs et clients', async () => {
     connecte = true
     admin = true
+    const parDefaut = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/paiement/a-traiter')) return json(A_TRAITER)
+      if (url.endsWith('/config')) return json({ comptes: true, paiement: true, contact_email: 'contact@exemple.fr' })
+      return parDefaut(url, init)
+    })
     aller('/admin')
     render(<Site />)
     expect(await screen.findByText('Revenu mensuel théorique')).toBeInTheDocument()
     expect(screen.getAllByText(/^4,99\s€$/).length).toBeGreaterThan(0)
     expect(screen.getByRole('img', { name: /Questions posées par jour/ })).toBeInTheDocument()
+    // Statut accentue, jamais « a rembourser » (recette du 2026-11-20, D-6)
+    const paiements = (await screen.findByRole('heading', { name: 'Paiements à traiter' })).closest('section')!
+    expect(within(paiements).getByText(/^à rembourser : rétractation \(rembourser au prorata\)/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Clients' }))
     expect(await screen.findByText('etu@exemple.fr')).toBeInTheDocument()
     expect(screen.getByLabelText('Formule de etu@exemple.fr')).toHaveValue('etudiant')

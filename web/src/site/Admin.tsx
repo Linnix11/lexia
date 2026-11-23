@@ -78,6 +78,19 @@ const MOTIFS: Record<string, string> = {
   retractation: 'rétractation (rembourser au prorata)',
 }
 
+// Libelles accentues des statuts (recette du 2026-11-20, D-6) ; un statut inconnu reste lisible.
+const STATUTS: Record<string, string> = {
+  a_rembourser: 'à rembourser',
+  rembourse_partiel: 'remboursé en partie',
+  rembourse: 'remboursé',
+  ecarte: 'écarté',
+  litige: 'litige',
+  paye: 'payé',
+  en_attente: 'en attente',
+}
+// eslint-disable-next-line react-refresh/only-export-components
+export const libelleStatut = (statut: string) => STATUTS[statut] ?? statut.replaceAll('_', ' ')
+
 /** Paiements a rembourser ou a verifier dans le tableau de bord Stripe (audit du 2026-11-18, A6). */
 function PaiementsATraiter() {
   const [lignes, setLignes] = useState<PaiementATraiter[] | null>(null)
@@ -91,7 +104,7 @@ function PaiementsATraiter() {
             <li key={p.session} className="flex flex-wrap justify-between gap-2 border-b border-line pb-2">
               <span>{p.email} · {NOMS_FORMULES[p.formule] ?? p.formule} {p.mois} mois · {euros(p.montant_centimes / 100)}</span>
               <span className="text-muted">
-                {p.statut.replace('_', ' ')}{p.motif ? ` : ${MOTIFS[p.motif] ?? p.motif}` : ''} · payé le {date(p.paye_le)}
+                {libelleStatut(p.statut)}{p.motif ? ` : ${MOTIFS[p.motif] ?? p.motif}` : ''} · payé le {date(p.paye_le)}
                 {p.paiement_stripe ? ` · ${p.paiement_stripe}` : ''}
                 {p.retractation_le && p.accuse_envoye_le === null ? ' · accusé de rétractation non envoyé (renvoi quotidien)' : ''}
               </span>

@@ -80,14 +80,31 @@ def test_statistiques_et_clients(env):
     for _ in range(3):
         assert etu.post("/chat", json={"question": "article 1240"}).status_code == 200
     chef = client_connecte(app, "chef@exemple.fr")
+    chef.post("/chat", json={"question": "article 1240"})   # l'essai d'un administrateur n'est pas compte
     s = chef.get("/admin/stats").json()
-    assert s["comptes"]["total"] == 2 and s["comptes"]["par_formule"]["gratuit"] == 2
+    # Administrateurs exclus, comme pour la fidelite (recette du 2026-11-20, D-7)
+    assert s["comptes"]["total"] == 1 and s["comptes"]["par_formule"]["gratuit"] == 1
+    assert s["comptes"]["nouveaux_7j"] == 1
     assert s["aujourd_hui"]["questions"] == 3 and s["aujourd_hui"]["actifs"] == 1
-    assert len(s["serie"]) == 30 and s["serie"][-1]["inscriptions"] == 2
-    assert s["activite"]["dernieres_24h"]["questions"] == 3
+    assert len(s["serie"]) == 30 and s["serie"][-1]["inscriptions"] == 1
+    assert s["activite"]["dernieres_24h"]["questions"] == 4   # activite technique du serveur : toutes les requetes
     clients = chef.post("/admin/clients/recherche", json={"q": "etu"}).json()   # dans le corps, pas l'URL (D111)
     assert [c["email"] for c in clients] == ["etu@exemple.fr"]
     assert clients[0]["questions_aujourdhui"] == 3 and clients[0]["limite_questions"] == 10
+
+
+def test_recherche_de_clients_sans_jokers(env):
+    """`_` et `%` sont cherches tels quels, pas comme des jokers de LIKE (recette du 2026-11-20, D-5)."""
+    app, _ = env
+    for adresse in ("zoe_test@exemple.fr", "zoextest@exemple.fr", "cent%pour@exemple.fr", "anti\\slash@exemple.fr"):
+        client_connecte(app, adresse)
+    chef = client_connecte(app, "chef@exemple.fr")
+    trouver = lambda q: sorted(c["email"] for c in chef.post("/admin/clients/recherche", json={"q": q}).json())  # noqa: E731
+    assert trouver("zoe_test") == ["zoe_test@exemple.fr"]
+    assert trouver("_") == ["zoe_test@exemple.fr"]
+    assert trouver("%") == ["cent%pour@exemple.fr"]
+    assert trouver("\\") == ["anti\\slash@exemple.fr"]
+    assert len(trouver("exemple")) == 5
 
 
 def test_changer_formule_role_et_suppression(env):

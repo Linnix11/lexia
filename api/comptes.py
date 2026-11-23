@@ -634,16 +634,23 @@ class Comptes:
     def statistiques(self, jours: int = 30) -> dict:
         aujourd_hui = datetime.now(FUSEAU).date()
         debut = (aujourd_hui - timedelta(days=jours - 1)).isoformat()
-        par_formule = dict(self._q("SELECT formule, count(*) FROM utilisateurs GROUP BY formule"))
-        expirees = self._q("SELECT count(*) FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin < ?",
-                           (aujourd_hui.isoformat(),))[0][0]
-        total = self._q("SELECT count(*) FROM utilisateurs")[0][0]
-        nouveaux = lambda n: self._q("SELECT count(*) FROM utilisateurs WHERE cree_le >= ?",  # noqa: E731
-                                     ((datetime.now(timezone.utc) - timedelta(days=n)).isoformat(timespec="seconds"),))[0][0]
+        # Etudiants seulement : administrateurs (colonne ou ADMIN_EMAILS) exclus des comptes, des inscriptions et
+        # de l'usage, comme pour la fidelite (recette du 2026-11-20, D-7).
+        admins = sorted(self._admins)
+        hors = f"admin = 0 AND email NOT IN ({','.join('?' * len(admins))})" if admins else "admin = 0"
+        etudiants = f"(SELECT * FROM utilisateurs WHERE {hors})"
+        p = tuple(admins)
+        par_formule = dict(self._q(f"SELECT formule, count(*) FROM {etudiants} GROUP BY formule", p))
+        expirees = self._q(f"SELECT count(*) FROM {etudiants} WHERE formule != 'gratuit' AND formule_fin < ?",
+                           (*p, aujourd_hui.isoformat()))[0][0]
+        total = self._q(f"SELECT count(*) FROM {etudiants}", p)[0][0]
+        nouveaux = lambda n: self._q(f"SELECT count(*) FROM {etudiants} WHERE cree_le >= ?",  # noqa: E731
+                                     (*p, (datetime.now(timezone.utc) - timedelta(days=n)).isoformat(timespec="seconds")))[0][0]
         usage = {r[0]: r[1:] for r in self._q(
-            "SELECT jour, sum(questions), sum(quiz), count(*) FROM usage WHERE jour >= ? GROUP BY jour", (debut,))}
+            f"SELECT jour, sum(questions), sum(quiz), count(*) FROM usage WHERE jour >= ? "
+            f"AND utilisateur IN (SELECT id FROM {etudiants}) GROUP BY jour", (debut, *p))}
         inscriptions: dict[str, int] = {}
-        for (cree,) in self._q("SELECT cree_le FROM utilisateurs WHERE cree_le >= ?", (debut,)):
+        for (cree,) in self._q(f"SELECT cree_le FROM {etudiants} WHERE cree_le >= ?", (*p, debut)):
             j = datetime.fromisoformat(cree).astimezone(FUSEAU).date().isoformat()
             inscriptions[j] = inscriptions.get(j, 0) + 1
         serie = []
@@ -654,8 +661,8 @@ class Comptes:
         payants = sum(n for f, n in par_formule.items() if f != "gratuit") - expirees
         # Formules en cours avec une date de fin : une formule donnee sans fin n'est pas payee (audit A9)
         revenu = sum(FORMULES[f].prix_mensuel_euros for (f,) in self._q(
-            "SELECT formule FROM utilisateurs WHERE formule != 'gratuit' AND formule_fin >= ?",
-            (aujourd_hui.isoformat(),)) if f in FORMULES)
+            f"SELECT formule FROM {etudiants} WHERE formule != 'gratuit' AND formule_fin >= ?",
+            (*p, aujourd_hui.isoformat())) if f in FORMULES)
         return {
             "comptes": {"total": total, "par_formule": {f: par_formule.get(f, 0) for f in FORMULES},
                         "payants_actifs": payants, "formules_expirees": expirees,
@@ -703,8 +710,10 @@ class Comptes:
                "FROM utilisateurs u")
         params: tuple = (jour, jour, il_y_a_30j)
         if recherche:
-            sql += " WHERE email LIKE ?"
-            params += (f"%{recherche.strip().lower()}%",)
+            # `%`, `_` et `\` cherches tels quels, pas comme jokers (recette du 2026-11-20, D-5)
+            motif = recherche.strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            sql += " WHERE email LIKE ? ESCAPE '\\'"
+            params += (f"%{motif}%",)
         out = []
         n = len(COLONNES_U.split(","))  # les colonnes du compte, puis les quatre agregats ci-dessus
         for r in self._q(sql + " ORDER BY cree_le DESC", params):
