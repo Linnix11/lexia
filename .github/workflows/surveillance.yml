@@ -1,19 +1,28 @@
-# Alerte de panne : interroge le site toutes les 15 minutes. Si la reponse n'est pas {"statut":"ok"}
+# Alerte de panne : interroge le site toutes les 2 heures (a 17 minutes de l'heure paire, UTC). Si la reponse n'est pas {"statut":"ok"}
 # apres trois essais, l'execution echoue et GitHub envoie un e-mail au proprietaire du depot (reglage par
 # defaut des notifications Actions). Aucun compte ni service supplementaire.
 # Echoue aussi si la mise a jour nocturne du corpus n'a pas reussi depuis plus de 36 h ("corpus_a_jour":false,
 # audit du 2026-11-18, B8).
 #
+# Frequence (audit du 2026-11-23, G1) : le depot devient prive. Sur un depot prive, GitHub Free inclut
+# 12 USD de calcul par mois, soit 2 000 minutes de runner Linux 2 coeurs a 0,006 USD la minute, et chaque job
+# est arrondi a la minute superieure (docs.github.com, billing/concepts/product-billing/github-actions et
+# billing/reference/actions-runner-pricing, lues le 2026-11-23). Toutes les 15 min : 96 x 31 = 2 976 minutes,
+# au-dela du quota. Toutes les 2 h : 12 x 31 = 372 executions ; une execution normale compte 1 minute
+# (372 min par mois), une execution en echec au plus 3 minutes (3 essais, 2 pauses de 30 s, curl de 20 s au
+# plus : 1 116 min dans le pire des cas, mois entier en panne). Reste sous 2 000 dans tous les cas.
+# Le Mac de l'editeur fait la surveillance fine en local (agent launchd fr.axionstudio.veille).
+#
 # A savoir :
 # - GitHub ne garantit pas l'heure exacte des taches planifiees (retards de quelques minutes possibles).
-# - Sur un depot public, les taches planifiees sont suspendues apres 60 jours sans activite sur le depot :
+# - Sur un depot public seulement, les taches planifiees sont suspendues apres 60 jours sans activite sur le depot :
 #   GitHub previent par e-mail, un clic les reactive.
 # - Lancement a la main : onglet Actions > Surveillance du site > Run workflow.
 name: Surveillance du site
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "17 */2 * * *"
   workflow_dispatch:
   push:
     paths:
