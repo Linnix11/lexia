@@ -44,6 +44,10 @@ export function Formules() {
             : <Lien href="/inscription" className={bouton}>Créer un compte</Lien>
         } else if (actuelle) {
           action = <span className={`${boutonSecondaire} cursor-default`}>Votre formule actuelle</span>
+        } else if (!config) {
+          // Configuration pas encore lue (page prerendue, premier rendu) : lien neutre plutot qu'un « Bientot
+          // disponible » faux, lu par les moteurs (audit du 2026-11-23, D1). Le vrai bouton suit la configuration.
+          action = <Lien href="/inscription" className={miseEnAvant ? bouton : boutonSecondaire}>Créer un compte</Lien>
         } else if (config?.paiement) {
           action = <Payer formule={f} principal={miseEnAvant} />
         } else if (config?.contact_email) {
@@ -101,13 +105,14 @@ export function Tarifs() {
         <Formules />
         <p className="mt-6 text-[12px] text-muted">
           Prix toutes taxes comprises, par mois.{' '}
-          {config?.legal?.tva ?? <mark className="rounded bg-[#fbf0d9] px-1 text-[#7a5a1e]">[Mention TVA : à compléter]</mark>}{' '}
+          {/* encart « a completer » seulement une fois la configuration lue : jamais dans le HTML prerendu (D1) */}
+          {config?.legal?.tva ?? (config && <mark className="rounded bg-[#fbf0d9] px-1 text-[#7a5a1e]">[Mention TVA : à compléter]</mark>)}{' '}
           Conditions de vente : <Lien href="/cgu" className="underline">conditions générales</Lien>, section 4.
         </p>
         <p className="mt-2 text-[12px] text-muted">
-          {config?.paiement
+          {config && (config.paiement
             ? 'Paiement par carte sur la page sécurisée de Stripe : Lexia ne voit pas vos coordonnées bancaires. La formule s’active dès la confirmation du paiement.'
-            : 'Le paiement en ligne arrive bientôt.'}{' '}
+            : 'Le paiement en ligne arrive bientôt.')}{' '}
           Sans engagement.
         </p>
       </Section>

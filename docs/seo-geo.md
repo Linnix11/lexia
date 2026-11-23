@@ -185,6 +185,10 @@ tout le texte des pages publiques et de `llms.txt`).
   connaître toutes les routes de l'application ; à faire en même temps que la piste précédente.
 - Les extraits enrichis « FAQ » sont réservés par Google, depuis 2023, à des sites officiels et de santé : le
   balisage FAQPage sert ici à la compréhension par les moteurs et les assistants, pas à un affichage particulier.
+- Tarifs et accueil : tant que la configuration du serveur n'est pas lue (HTML prérendu), les formules payantes
+  proposent « Créer un compte » au lieu du bouton de demande, et la mention de TVA n'apparaît pas (audit du
+  23 novembre, D1). Les citations sont lues dans l'index du Mac : les relire depuis l'index du serveur après
+  chaque reconstruction (audit du 23 novembre, C5 et D10, non fait).
 - Inscription, connexion et mot de passe oublié ne sont pas prérendus (leur écran dépend de la session).
 - Pas de date de mise à jour dans le sitemap pour les pages qui n'en ont pas de fiable (seuls les guides en ont).
 

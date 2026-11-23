@@ -166,6 +166,15 @@ describe('pages dans le site', () => {
     expect(screen.getByRole('navigation', { name: 'Fil d’Ariane' })).toHaveTextContent('Guides')
   })
 
+  it('tarifs avant la configuration (HTML prerendu) : ni « à compléter », ni « Bientôt disponible » (audit du 23/11, D1)', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)))   // l'API ne repond pas : premier rendu
+    window.history.replaceState(null, '', '/tarifs')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/à compléter|Bientôt disponible|arrive bientôt/)
+    expect(screen.getByText('4,99 €')).toBeInTheDocument()
+  })
+
   it('matiere inconnue : page introuvable', async () => {
     window.history.replaceState(null, '', '/matieres/astrologie')
     render(<Site />)

@@ -40,7 +40,8 @@ def creer_serveur(dist: Path = DIST, api: FastAPI | None = None) -> FastAPI:
         # fichiers publics (favicon, sitemap.xml, llms.txt...) ; dist/pages/ n'est servi que par son adresse publique
         fichier = (dist / chemin).resolve()
         if chemin and fichier.is_file() and dist.resolve() in fichier.parents and pages not in fichier.parents:
-            return FileResponse(fichier)
+            # robots.txt, sitemap.xml, llms.txt : relus a chaque publication, pas gardes 4 h par Cloudflare (D11)
+            return FileResponse(fichier, headers={"Cache-Control": "no-cache"} if fichier.suffix in (".txt", ".xml") else None)
         if chemin.startswith("api/"):
             raise HTTPException(404)
         # Page publique prerendue a la compilation (D116) : /tarifs -> dist/pages/tarifs/index.html

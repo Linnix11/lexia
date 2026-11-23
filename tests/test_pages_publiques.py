@@ -65,6 +65,7 @@ def test_pages_prerendues_servies_a_leur_adresse(tmp_path):
     assert c.get("/tarifs").headers["cache-control"] == "no-cache"
     assert c.get("/app").text == "<html>coquille</html>"            # page non prerendue : coquille de l'application
     assert c.get("/sitemap.xml").text == "<urlset/>"
+    assert c.get("/sitemap.xml").headers["cache-control"] == "no-cache"   # audit du 2026-11-23, D11
     # dist/pages/ n'est pas une seconde adresse des memes pages
     assert c.get("/pages/tarifs/index.html").text == "<html>coquille</html>"
     assert "ne pas servir" not in c.get("/../secret").text
