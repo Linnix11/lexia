@@ -300,6 +300,30 @@ describe('Site', () => {
     expect(screen.getByRole('link', { name: 'Se connecter' })).toBeInTheDocument()
   })
 
+  it('connecte, le lien confirme l’adresse malgre le remontage de l’espace (recette du 2026-11-20, D-1)', async () => {
+    // L'espace est monte avec la cle '' pendant le chargement de la session, puis avec l'adresse : la page
+    // est remontee. Le jeton ne sert qu'une fois cote API, un second appel renverrait 422.
+    connecte = true
+    let appels = 0
+    const parDefaut = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/email/verifier')) {
+        appels += 1
+        return appels === 1
+          ? json({ ...PROFIL, email_verifie: true })
+          : json({ detail: 'Ce lien n\'est plus valable : demandez un nouvel e-mail de confirmation.' }, 422)
+      }
+      return parDefaut(url, init)
+    })
+    aller('/verifier-email#jeton=j-connecte')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Adresse confirmée' })).toBeInTheDocument()
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)) })
+    expect(screen.queryByRole('heading', { name: 'Lien non valable' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ouvrir mon espace' })).toBeInTheDocument()
+    expect(appels).toBe(1)
+  })
+
   it('mot de passe oublie : lien depuis la connexion, puis meme message pour toute adresse', async () => {
     aller('/connexion')
     render(<Site />)

@@ -1,10 +1,25 @@
 // Page ouverte depuis le lien de l'e-mail de confirmation (/verifier-email#jeton=...).
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, ApiError } from '../lib/api'
+import type { Profil } from '../lib/api'
 import { Lien, jetonDuLien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { Carte } from './Auth'
 import { bouton, boutonSecondaire } from './Public'
+
+// Un appel par jeton pour toute la vie de la page : l'espace etudiant est remonte quand la session se
+// charge (cle du compte), et un useRef repartait a false. Le second appel tombait sur le jeton deja
+// consomme et affichait « Lien non valable » alors que l'adresse etait confirmee (recette du 2026-11-20, D-1).
+const verifications = new Map<string, Promise<Profil | null>>()
+
+function verifierUneFois(jeton: string): Promise<Profil | null> {
+  let p = verifications.get(jeton)
+  if (!p) {
+    p = api.verifierEmail(jeton)
+    verifications.set(jeton, p)
+  }
+  return p
+}
 
 export function VerifierEmail() {
   const { majProfil } = useSession()
@@ -14,20 +29,22 @@ export function VerifierEmail() {
   // pas de session (il contournerait le mot de passe et la double authentification).
   const [etat, setEtat] = useState<'verification' | 'ok' | 'connexion' | 'echec'>(jeton ? 'verification' : 'echec')
   const [erreur, setErreur] = useState(jeton ? '' : 'Ce lien est incomplet : ouvrez-le depuis l’e-mail reçu.')
-  const lance = useRef(false)
 
   useEffect(() => {
-    if (!jeton || lance.current) return // le jeton ne sert qu'une fois : jamais deux appels
-    lance.current = true
-    api.verifierEmail(jeton)
+    if (!jeton) return
+    let actif = true
+    verifierUneFois(jeton) // le jeton ne sert qu'une fois : jamais deux appels, meme apres un remontage
       .then((p) => {
+        if (!actif) return
         if (p) majProfil(p)
         setEtat(p ? 'ok' : 'connexion')
       })
       .catch((e) => {
+        if (!actif) return
         setErreur(e instanceof ApiError ? e.message : 'Vérification impossible pour le moment.')
         setEtat('echec')
       })
+    return () => { actif = false }
   }, [jeton, majProfil])
 
   if (etat === 'verification') {
