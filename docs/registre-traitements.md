@@ -195,7 +195,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Données : journaux du serveur web nginx (adresse IP, date, page demandée, navigateur) ; adresses IP et réseaux
   IPv6 /64 gardés en mémoire par le limiteur de débit ; empreinte de l'adresse e-mail d'un compte supprimé
   depuis le site (table `suppressions`), qui empêche de se réinscrire dans les 24 h pour remettre son quota à zéro ;
-  compteurs des e-mails envoyés et des codes de double authentification incorrects (table `compteurs_jour`, D117) :
+  compteurs des e-mails envoyés et des codes de double authentification incorrects (table `compteurs_jour`, D119) :
   empreinte de la clé (numéro du compte, adresse IP ou réseau IPv6 /48, jamais en clair) et instant, pour les
   plafonds sur 24 h qui survivent à un redémarrage.
 - Destinataires : éditeur, Hostinger, Cloudflare.
