@@ -74,7 +74,9 @@ class QuotaResumes:
                                     (uid, _jour())).fetchone()
         return row[0] if row else 0
 
-    def reserver(self, uid: int) -> bool:
+    def reserver(self, uid: int) -> str | None:
+        """Compte un resume (ou une carte) si la limite du jour le permet ; renvoie le jour decompte, a rendre a
+        rembourser, ou None si la limite est atteinte."""
         jour = _jour()
         ancien = (date.fromisoformat(jour) - timedelta(days=CONSERVATION_JOURS)).isoformat()
         with self._lock, self._con:
@@ -82,12 +84,14 @@ class QuotaResumes:
             self._con.execute(f"INSERT OR IGNORE INTO {self._t} (utilisateur, jour) VALUES (?, ?)", (uid, jour))
             cur = self._con.execute(f"UPDATE {self._t} SET nombre = nombre + 1 WHERE utilisateur = ? "
                                     "AND jour = ? AND nombre < ?", (uid, jour, self.par_jour))
-            return cur.rowcount == 1
+            return jour if cur.rowcount == 1 else None
 
-    def rembourser(self, uid: int) -> None:
+    def rembourser(self, uid: int, jour: str | None = None) -> None:
+        """jour : celui de la reservation. Reserve a 23 h 59 et rate apres minuit, le resume etait rendu sur le
+        lendemain (audit du 23/11, A5 ; meme defaut que SRV-13 pour les questions)."""
         with self._lock, self._con:
             self._con.execute(f"UPDATE {self._t} SET nombre = MAX(nombre - 1, 0) WHERE utilisateur = ? "
-                              "AND jour = ?", (uid, _jour()))
+                              "AND jour = ?", (uid, jour or _jour()))
 
 
 class DocumentIntrouvable(LookupError):
@@ -255,16 +259,17 @@ def creer_routes_resumes_vocaux(service: ResumesVocaux, quota: QuotaResumes, uti
             titre, morceaux = service.document(d, u.id)
         except DocumentIntrouvable as e:
             raise HTTPException(404, str(e)) from None
-        if not quota.reserver(u.id):
+        jour = quota.reserver(u.id)
+        if jour is None:
             raise HTTPException(402, f"Limite du jour atteinte : {quota.par_jour} résumés vocaux par jour. "
                                      "Elle se renouvelle à minuit.")
         try:
             res = place_libre(lambda: service.resumer(d, titre, morceaux))
         except Exception:
-            quota.rembourser(u.id)  # le modele n'a pas repondu (ou plus de place) : pas decompte
+            quota.rembourser(u.id, jour)  # le modele n'a pas repondu (ou plus de place) : pas decompte
             raise
         if not res["paragraphes"]:
-            quota.rembourser(u.id)
+            quota.rembourser(u.id, jour)
         return {**res, "restants": max(0, quota.par_jour - quota.utilises(u.id))}
 
     @routes.get("/resume-vocal/quota")

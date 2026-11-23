@@ -161,7 +161,18 @@ class Disjoncteur:
         self._echecs, self._jusqua, self._essai = 0, 0.0, 0.0
         self._lock = threading.Lock()
 
+    def en_pause(self) -> bool:
+        """Pause en cours, sans effet de bord : pour la recherche et /sante, qui n'appellent pas le modele.
+
+        ouvert() reserve l'essai de fin de pause : appele aussi par rechercher() avant generer(), il donnait
+        l'essai a la recherche, generer() trouvait l'essai pris et envoyait la question au secours, sans succes
+        ni echec ; Gemini n'etait plus jamais rappele jusqu'au redemarrage (audit du 23/11, A1)."""
+        with self._lock:
+            return self._horloge() < self._jusqua
+
     def ouvert(self) -> bool:
+        """Faut-il passer directement au secours ? A n'appeler qu'avant un appel au modele principal : en fin
+        de pause, la reponse « ferme » reserve l'essai unique, a conclure par succes(), echec() ou relacher()."""
         with self._lock:
             maintenant = self._horloge()
             if maintenant < self._jusqua:
@@ -181,6 +192,11 @@ class Disjoncteur:
                 self._jusqua = self._horloge() + self.pause
                 log.warning("disjoncteur ouvert : modele de secours seul pendant %.0f s", self.pause)
 
+    def relacher(self) -> None:
+        """Essai de fin de pause rate par un appel qui ne compte pas ses echecs (A2) : une question le refera."""
+        with self._lock:
+            self._essai = 0.0
+
     def succes(self) -> None:
         with self._lock:
             self._echecs, self._jusqua, self._essai = 0, 0.0, 0.0
@@ -189,8 +205,12 @@ class Disjoncteur:
 class Lexia:
     def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
                  expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None,
-                 secours: LLM | None = None, disjoncteur: Disjoncteur | None = None):
+                 secours: LLM | None = None, disjoncteur: Disjoncteur | None = None, compter_echecs: bool = True):
         self.secours = secours        # None : pas de modele de secours (Groq)
+        # False : appels a budget reduit (cartes mentales en 25 s, resumes vocaux plafonnes en jetons). Leurs
+        # echecs n'ouvrent pas le disjoncteur des questions : une reponse Gemini lente mais reussie pour une
+        # question depasse le budget d'une carte (audit du 23/11, A2). Leurs succes le referment.
+        self.compter_echecs = compter_echecs
         self.disjoncteur = disjoncteur if disjoncteur is not None else Disjoncteur()
         self.delai_reformulation = delai_reformulation
         self.cache = cache if cache is not None else CacheReponses()
@@ -222,7 +242,8 @@ class Lexia:
         etapes: dict[str, float] = {}
         fin_reformulation: list[float] = []
         # Disjoncteur ouvert : Gemini est en panne, la reformulation ferait attendre pour rien.
-        en_panne = self.secours is not None and self.disjoncteur.ouvert()
+        # en_pause() et non ouvert() : la recherche ne doit pas prendre l'essai de fin de pause (A1).
+        en_panne = self.secours is not None and self.disjoncteur.en_pause()
         if self.expanseur is not None and refs.vide and not en_panne and _FILS_REFORMULATION.acquire(blocking=False):
             debut_reformulation = time.perf_counter()
             futur = _REFORMULATIONS.submit(self.expanseur.etendre, texte)
@@ -344,7 +365,11 @@ class Lexia:
             except LLMError as e:
                 if self.secours is None:
                     raise
-                if not isinstance(e, ContenuRefuse):  # une question bloquee n'est pas une panne de Gemini
+                if isinstance(e, ContenuRefuse) or not self.compter_echecs:
+                    # Question bloquee (pas une panne de Gemini) ou appel a budget reduit (A2) : pas d'echec
+                    # compte, mais l'essai de fin de pause eventuel est rendu.
+                    self.disjoncteur.relacher()
+                else:
                     self.disjoncteur.echec()
                 log.warning("modele principal indisponible (%s) : modele de secours", str(e)[:200])
                 erreur_principal = e
@@ -368,8 +393,10 @@ class Lexia:
         if deja is not None:
             self.journal.ecrire("requetes", route="chat", reponse_id=reponse_id, mode=mode, matiere=matiere,
                                 statut=deja["statut"], cache=True, duree_ms=int((time.monotonic() - debut) * 1000))
-            deja["controle"]["cache"] = True
-            return {**deja, "reponse_id": reponse_id}
+            # Copie : l'entree du cache n'est pas modifiee. modele_appele False : la reponse n'a rien coute, elle
+            # n'est pas decomptee (question coupee par Cloudflare puis reposee ; audit du 23/11, A4).
+            return {**deja, "reponse_id": reponse_id,
+                    "controle": {**deja["controle"], "cache": True, "modele_appele": False}}
         conseil_demande = conseil.demande_de_conseil(question)
         if conseil_demande:
             # Demande de conseil personnel (rediger, predire, chiffrer, decider des demarches, D77) :

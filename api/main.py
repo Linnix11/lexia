@@ -183,6 +183,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                   secours=secours, disjoncteur=Disjoncteur(settings.disjoncteur_seuil, settings.disjoncteur_pause))
     quiz = QuizService(lexia, llm, journal=journal)
     limite = LimiteRequetes(settings.rate_limit_per_minute)
+    # Avis a part : 5 avis puis 6 questions dans la minute donnaient un 429 (audit du 23/11, A6).
+    limite_avis = LimiteRequetes(settings.rate_limit_per_minute)
     # Les routes synchrones partagent 40 threads avec tout le site : quand Gemini est lent, chaque appel
     # en garde un jusqu'a ~100 s. Au-dela de ce plafond, reponse 503 immediate pour garder des threads libres.
     appels_modele = threading.BoundedSemaphore(max(1, settings.appels_modele_simultanes))
@@ -252,7 +254,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         else:
             llm_resume = _construire_llm(settings, journal, max_jetons=MAX_JETONS_RESUME)
             secours_resume = _construire_secours(settings, journal, max_jetons=MAX_JETONS_RESUME)
-        lexia_resume = Lexia(retriever, llm_resume, journal, secours=secours_resume, disjoncteur=lexia.disjoncteur)
+        lexia_resume = Lexia(retriever, llm_resume, journal, secours=secours_resume, disjoncteur=lexia.disjoncteur,
+                             compter_echecs=False)
         resumes = ResumesVocaux(lexia_resume, retriever, journal, cours, catalogue)
         app.include_router(creer_routes_resumes_vocaux(
             resumes, QuotaResumes(comptes.chemin, settings.resumes_vocaux_par_jour), utilisateur_requis, limite,
@@ -268,7 +271,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                                         delai=settings.cartes_mentales_delai)
             secours_carte = _construire_secours(settings, journal, max_jetons=MAX_JETONS_CARTE,
                                                 delai=settings.cartes_mentales_delai)
-        lexia_carte = Lexia(retriever, llm_carte, journal, secours=secours_carte, disjoncteur=lexia.disjoncteur)
+        lexia_carte = Lexia(retriever, llm_carte, journal, secours=secours_carte, disjoncteur=lexia.disjoncteur,
+                             compter_echecs=False)
         app.include_router(creer_routes_cartes_mentales(
             CartesMentales(lexia_carte, retriever, resumes, chercheur=lexia, journal=journal),
             QuotaResumes(comptes.chemin, settings.cartes_mentales_par_jour, table="cartes_mentales"),
@@ -372,7 +376,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
         return {**public, **retriever.stats(), "corpus_mis_a_jour_le": maj.isoformat() if maj else None,
                 "modeles": list(settings.gemini_models),
                 "secours": getattr(secours, "model", None),
-                "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.ouvert() else "ferme",
+                # en_pause() : lire l'etat ne doit pas prendre l'essai de fin de pause (A1)
+                "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.en_pause() else "ferme",
                 "embeddings_modele": getattr(embedder, "model", None),
                 "reformulation_modele": settings.expansion_model or None,
                 "reclassement_modele": getattr(reclasseur, "model", None)}
@@ -473,7 +478,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             raise HTTPException(404, "Source introuvable.")
         return {**fiche_source(p), "texte": p["texte"], "titre": p.get("titre"), "meta": p.get("meta") or {}}
 
-    @app.post("/feedback", status_code=204, dependencies=[Depends(verifier_origine), Depends(limite)])
+    @app.post("/feedback", status_code=204, dependencies=[Depends(verifier_origine), Depends(limite_avis)])
     def feedback(req: FeedbackRequest, request: Request):
         # Compte a l'adresse confirmee et limite de debit : un compte jetable ecrivait des milliers de lignes
         # par minute et faussait les statistiques (second audit du 2026-11-16, point 14).

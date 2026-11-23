@@ -243,16 +243,17 @@ def creer_routes_cartes_mentales(service: CartesMentales, quota: QuotaResumes, u
             document = service.verifier(d, u.id)
         except DocumentIntrouvable as e:
             raise HTTPException(404, str(e)) from None
-        if not quota.reserver(u.id):
+        jour = quota.reserver(u.id)
+        if jour is None:
             raise HTTPException(402, f"Limite du jour atteinte : {quota.par_jour} cartes mentales par jour. "
                                      "Elle se renouvelle à minuit.")
         try:
             res = place_libre(lambda: service.carte(d, document))
         except Exception:
-            quota.rembourser(u.id)  # le modele n'a pas repondu (ou plus de place) : pas decompte
+            quota.rembourser(u.id, jour)  # le modele n'a pas repondu (ou plus de place) : pas decompte
             raise
         if not res["branches"]:
-            quota.rembourser(u.id)
+            quota.rembourser(u.id, jour)  # jour de la reservation, meme apres minuit (A5)
         return {**res, "restants": max(0, quota.par_jour - quota.utilises(u.id))}
 
     @routes.get("/carte-mentale/quota")
