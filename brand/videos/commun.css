@@ -1,6 +1,6 @@
 /* Styles communs des videos verticales Lexia (scene de 1080 x 1920 px). */
-@font-face { font-family: "Source Serif 4"; src: url("../typographies/SourceSerif4[opsz,wght].ttf"); font-weight: 200 900; }
-@font-face { font-family: "Inter"; src: url("../typographies/Inter[opsz,wght].ttf"); font-weight: 100 900; }
+@font-face { font-family: "Source Serif 4"; src: url("../typographies/SourceSerif4-Variable.ttf"); font-weight: 200 900; }
+@font-face { font-family: "Inter"; src: url("../typographies/Inter-Variable.ttf"); font-weight: 100 900; }
 
 :root {
   --foret: #315e4b; --foret-fonce: #244735; --or: #bd8951; --papier: #f5f4ef; --surface: #fffefa;

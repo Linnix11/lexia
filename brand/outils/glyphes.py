@@ -1,6 +1,6 @@
 """Extrait les contours des glyphes utilises par le logo (lettres de « lexia » et signe §).
 
-Source : Source Serif 4 (SIL Open Font License 1.1), fichier brand/typographies/SourceSerif4[opsz,wght].ttf.
+Source : Source Serif 4 (SIL Open Font License 1.1), fichier brand/typographies/SourceSerif4-Variable.ttf.
 Le logo n'embarque aucune police : les lettres deviennent des tracés, ce que la licence OFL permet
 (usage de la police dans un document ou une image). Aucune police modifiee n'est redistribuee.
 
@@ -18,7 +18,7 @@ from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
 ICI = Path(__file__).resolve().parent
-POLICE = ICI.parent / "typographies" / "SourceSerif4[opsz,wght].ttf"
+POLICE = ICI.parent / "typographies" / "SourceSerif4-Variable.ttf"
 
 # Reglages du logo : graisse 500 (Medium), taille optique 60 (coupe « Display », la plus fine).
 REGLAGES = {"wght": 500, "opsz": 60}

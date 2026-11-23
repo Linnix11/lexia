@@ -17,8 +17,8 @@ MINI = 200
 TYPOS = Path(__file__).resolve().parent.parent / "typographies"
 
 POLICES_CSS = f"""
-@font-face {{ font-family: "Source Serif 4"; src: url("file://{TYPOS}/SourceSerif4[opsz,wght].ttf"); font-weight: 200 900; }}
-@font-face {{ font-family: "Inter"; src: url("file://{TYPOS}/Inter[opsz,wght].ttf"); font-weight: 100 900; }}
+@font-face {{ font-family: "Source Serif 4"; src: url("file://{TYPOS}/SourceSerif4-Variable.ttf"); font-weight: 200 900; }}
+@font-face {{ font-family: "Inter"; src: url("file://{TYPOS}/Inter-Variable.ttf"); font-weight: 100 900; }}
 """
 
 

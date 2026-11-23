@@ -5,6 +5,9 @@ réserve) et le logotype « lexia » en Source Serif 4. Règles d'usage : `chart
 encore vérifié comme marque (`charte.md`, partie 0) : rien n'est publié, imprimé ni déposé avec ce kit avant
 l'avis d'un conseil.
 
+Présentation visuelle de tout le kit, avec les animations et les vidéos : page claude.ai privée « Kit de marque
+Lexia », https://claude.ai/artifact/FY4UyEAcFJEDTGTGzkGX4y (à partager depuis son menu Partager).
+
 ## Contenu
 
 | Dossier | Contenu |

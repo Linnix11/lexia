@@ -5,8 +5,8 @@ joints. Aucun outil ni service payant n'est utilisé.
 
 | Élément | Fichier | Licence | Titulaire | Provenance |
 |---|---|---|---|---|
-| Source Serif 4 (police variable, axes graisse 200 à 900 et taille optique 8 à 60) | `SourceSerif4[opsz,wght].ttf`, licence `SourceSerif4-OFL.txt` | SIL Open Font License 1.1 | © 2014-2021 Adobe Systems Incorporated, nom réservé « Source » | Dépôt google/fonts, dossier `ofl/sourceserif4` (https://github.com/google/fonts/tree/main/ofl/sourceserif4), projet d'origine https://github.com/adobe-fonts/source-serif |
-| Inter (police variable, axes graisse 100 à 900 et taille optique 14 à 32) | `Inter[opsz,wght].ttf`, licence `Inter-OFL.txt` | SIL Open Font License 1.1 | © 2016 The Inter Project Authors | Dépôt google/fonts, dossier `ofl/inter` (https://github.com/google/fonts/tree/main/ofl/inter), projet d'origine https://github.com/rsms/inter |
+| Source Serif 4 (police variable, axes graisse 200 à 900 et taille optique 8 à 60) | `SourceSerif4-Variable.ttf`, licence `SourceSerif4-OFL.txt` | SIL Open Font License 1.1 | © 2014-2021 Adobe Systems Incorporated, nom réservé « Source » | Dépôt google/fonts, dossier `ofl/sourceserif4` (https://github.com/google/fonts/tree/main/ofl/sourceserif4), projet d'origine https://github.com/adobe-fonts/source-serif |
+| Inter (police variable, axes graisse 100 à 900 et taille optique 14 à 32) | `Inter-Variable.ttf`, licence `Inter-OFL.txt` | SIL Open Font License 1.1 | © 2016 The Inter Project Authors | Dépôt google/fonts, dossier `ofl/inter` (https://github.com/google/fonts/tree/main/ofl/inter), projet d'origine https://github.com/rsms/inter |
 | lottie-web 5.12.2 (lecture du logo Lottie dans les pages de démonstration) | chargé depuis https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js, non copié | MIT | Airbnb | https://github.com/airbnb/lottie-web |
 | Georgia (titres du site actuel) | aucun : police installée sur l'appareil du lecteur | Police système de Microsoft, non redistribuable | Microsoft | Non utilisée dans les fichiers du kit |
 
