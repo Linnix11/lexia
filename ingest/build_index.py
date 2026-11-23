@@ -27,7 +27,7 @@ import numpy as np
 from api.retrieval.base import jeton_source
 from ingest import embedders
 from ingest.embed import CACHE_DIR, iter_cache
-from ingest.env import load_env
+from ingest.env import aujourdhui_paris, load_env
 
 ROOT = Path(__file__).resolve().parent.parent
 PASSAGES_DIR = ROOT / "data" / "passages"
@@ -81,7 +81,7 @@ def build(passages_dir: Path = PASSAGES_DIR, index_dir: Path = INDEX_DIR, cache_
           model: str | None = None, aujourdhui: str | None = None) -> None:
     """model : seuls les vecteurs de ce modele sont repris (par defaut EMBED_MODEL).
     aujourdhui : date ISO de l'etat « en vigueur » (tests), le jour meme par defaut."""
-    aujourdhui = aujourdhui or date.today().isoformat()
+    aujourdhui = aujourdhui or aujourdhui_paris().isoformat()
     bascule = ""
     if model is None:
         load_env(ROOT / ".env")

@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
-from datetime import date
+
+from ingest.env import aujourdhui_paris
 
 
 @dataclass(frozen=True)
@@ -201,7 +202,7 @@ def en_vigueur_aujourdhui(meta: dict, source_id: str, aujourdhui: str | None = N
     aujourdhui : date ISO de reference (tests), le jour meme par defaut.
     """
     valeur = meta.get("en_vigueur", True if source_id == "constitution_1958" else None)
-    aujourdhui = aujourdhui or date.today().isoformat()
+    aujourdhui = aujourdhui or aujourdhui_paris().isoformat()
     debut = str(meta.get("en_vigueur_le") or "")
     if valeur is False and debut and debut <= aujourdhui:
         valeur = True

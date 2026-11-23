@@ -17,7 +17,8 @@ exec 9>"${LEXIA_VERROU_MAJ:-/run/lexia-mise-a-jour.lock}"
 flock -n 9 || { echo "$(date -Is) deja en cours"; exit 0; }
 cd "$APP"
 
-en_lexia() { runuser -u lexia -- env HF_HOME="$APP/.cache/huggingface" TOKENIZERS_PARALLELISM=false "$@"; }
+# TZ : date du jour a l'heure de Paris pour l'index, comme le service (audit du 2026-11-23, C4).
+en_lexia() { runuser -u lexia -- env HF_HOME="$APP/.cache/huggingface" TOKENIZERS_PARALLELISM=false TZ=Europe/Paris "$@"; }
 attendre() {
   for _ in $(seq 1 60); do curl -sf "$SANTE" >/dev/null && return 0; sleep 5; done
   return 1
@@ -80,5 +81,11 @@ echo "$(date -Is) ERREUR : le service ne repond plus, retour a l'index precedent
 alerte "le service ne repondait plus avec le nouvel index, retour a l'index precedent"
 en_lexia bash -c 'rm -rf data/index.echec && mv data/index data/index.echec && mv data/index.precedent data/index'
 systemctl restart lexia
-attendre && echo "$(date -Is) index precedent remis en service" || echo "$(date -Is) ERREUR : service toujours muet" >&2
+if attendre; then
+  echo "$(date -Is) index precedent remis en service"
+else
+  # L'e-mail precedent laissait croire que tout etait rentre dans l'ordre (audit du 2026-11-23, C2).
+  echo "$(date -Is) ERREUR : service toujours muet" >&2
+  alerte "le service ne repond toujours pas avec l'index precedent : site hors service, intervention necessaire"
+fi
 exit 1

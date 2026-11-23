@@ -46,7 +46,7 @@ import numpy as np
 import yaml
 
 from ingest import build_index, cours_recuperes, dila, embed, fraicheur, run
-from ingest.env import load_env
+from ingest.env import aujourdhui_paris, load_env
 from ingest.sources import constit, constit_site, judilibre_api
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -223,7 +223,7 @@ def rafraichir(passages_dir: Path, sources: tuple[str, ...] = RAFRAICHIR, aujour
     """Relit une source hors DILA recuperee il y a plus de AGE_MAX_JOURS (date_recuperation de son premier
     passage). Un echec garde le fichier precedent et ne bloque pas la mise a jour. Renvoie (relues, en echec)."""
     importer = importer or (lambda s: run.ingest(s, Namespace(html=None)))
-    aujourdhui = aujourdhui or date.today()
+    aujourdhui = aujourdhui or aujourdhui_paris()
     relues, echecs = [], []
     for s in sources:
         f = passages_dir / f"{s}.jsonl"
@@ -294,7 +294,7 @@ def bascule_franchie(index_dir: Path, aujourdhui: str | None = None) -> bool:
     if not fichier.exists():
         return True
     bascule = fichier.read_text().strip()
-    return bool(bascule) and bascule <= (aujourdhui or date.today().isoformat())
+    return bool(bascule) and bascule <= (aujourdhui or aujourdhui_paris().isoformat())
 
 
 def compter(index_dir: Path) -> tuple[int, int, set[str]]:

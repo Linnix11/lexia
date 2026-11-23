@@ -97,7 +97,15 @@ dpkg -s tesseract-ocr tesseract-ocr-fra poppler-utils >/dev/null 2>&1 || { apt-g
 # Python et pip tournent en tant que lexia : root n'execute jamais du code modifiable par le service.
 runuser -u lexia -- bash -c 'test -d .venv || python3 -m venv .venv'
 runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --upgrade pip
-runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir -r deploy/requirements-serveur.txt
+# Versions figees avec empreintes (deploy/figer_dependances.py, audit du 2026-11-23, B5) : un seul index par
+# fichier (plus de --extra-index-url, qui laissait pip choisir entre PyPI et l'index de PyTorch), --no-deps
+# (l'arbre complet est deja dans les fichiers), roues seulement, puis pip check.
+runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --require-hashes --no-deps --only-binary=:all: \
+  --index-url https://download.pytorch.org/whl/cpu -r deploy/requirements-torch.txt
+runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --require-hashes --no-deps --only-binary=:all: \
+  --index-url https://pypi.org/simple -r deploy/requirements-serveur.txt
+# Paquet ancien reste dans le .venv (plus dans la liste) : avertissement, sans arreter la publication en route.
+runuser -u lexia -- .venv/bin/pip check || echo "  ATTENTION : pip check signale des dependances incoherentes (ci-dessus)"
 cp deploy/lexia.service /etc/systemd/system/lexia.service
 chmod 755 deploy/sauvegarder_comptes.sh
 # Mise a jour nocturne du corpus (D78) : lancee par root, donc copie appartenant a root, hors de /opt/lexia.
@@ -115,6 +123,11 @@ systemctl daemon-reload
 systemctl enable lexia >/dev/null
 systemctl restart lexia
 EOF
+
+echo "== Configuration nginx"
+# Le fichier du site est modifie par certbot sur le serveur : publier.sh ne le remplace pas. Les limites de
+# debit (B9) et la route des codes de connexion (SEC-10) sont donc comparees a celles du depot.
+nginx_a_jour || true
 
 echo "== Attente du demarrage (le premier lancement telecharge les modeles)"
 for i in $(seq 1 60); do

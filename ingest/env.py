@@ -3,7 +3,17 @@
 from __future__ import annotations
 
 import os
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+FUSEAU = ZoneInfo("Europe/Paris")
+
+
+def aujourdhui_paris() -> date:
+    """Date du jour a Paris, quel que soit le fuseau de la machine : un VPS en UTC passait au 1er janvier une
+    heure apres la France, et l'etat « en vigueur » des articles avec lui (audit du 2026-11-23, C4)."""
+    return datetime.now(FUSEAU).date()
 
 
 def load_env(path: Path) -> None:

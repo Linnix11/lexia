@@ -1,0 +1,18 @@
+# Dependances directes du serveur de production (sans outils de test ni d'ingestion lourde).
+# Apres modification : .venv/bin/python deploy/figer_dependances.py, qui ecrit requirements-serveur.txt et
+# requirements-torch.txt (versions figees avec empreintes, audit du 2026-11-23, B5).
+# PyTorch en version CPU uniquement (evite plusieurs Go de bibliotheques GPU), installe a part depuis son index.
+torch==2.15.0+cpu
+
+fastapi==0.162.4
+uvicorn==0.54.0
+httpx==0.28.1
+numpy==2.5.4
+PyYAML==6.0.2
+sentence-transformers==6.2.0
+# Cours deposes : lecture des PDF (api/cours.py)
+pypdf==7.0.1
+# Chiffrement des secrets gardes en base (api/coffre.py)
+cryptography==50.0.2
+# Mise a jour nocturne du corpus (D78) : ingest.run importe aussi la source HTML de la Constitution
+beautifulsoup4==4.13.5

@@ -1,4 +1,4 @@
-"""Bascule de l'index par deploy/mettre_a_jour_corpus.sh (audit du 19/11, SRV-8, TST-4).
+"""Bascule de l'index par deploy/mettre_a_jour_corpus.sh (audit du 19/11, SRV-8, TST-4 ; audit du 23/11, C2, T8).
 
 Le serveur est simule : dossiers temporaires, et faux runuser, flock, ionice, systemctl, curl, df, date et
 python (le vrai calcul de l'index n'est pas lance)."""
@@ -35,7 +35,10 @@ exit "${CODE_MAJ:-0}\"""")
     outil(faux, "ionice", 'shift; exec "$@"')
     outil(faux, "date", "echo 2026-11-20T04:30:00+01:00")
     outil(faux, "systemctl", 'echo "$@" >> "$JOURNAL/systemctl"')
-    outil(faux, "curl", '[ "${SANTE_OK:-1}" = 1 ] && echo "{}" || exit 7')
+    # SANTE_OK=1 : repond ; 0 : muet ; ancien : ne repond qu'avec l'ancien index (retour reussi)
+    outil(faux, "curl", '[ "${SANTE_OK:-1}" = 1 ] && { echo "{}"; exit 0; }; '
+                        '[ "${SANTE_OK:-1}" = ancien ] && grep -qx ancien data/index/lexia.sqlite && { echo "{}"; exit 0; }; '
+                        'exit 7')
     outil(faux, "sleep", "exit 0")
     outil(faux, "df", 'echo "Filesystem 1024-blocks Used Available Capacity Mounted"; '
                       'echo "disque 100000000 0 ${LIBRE_KO:-99999999} 0% /"')
@@ -79,10 +82,42 @@ def test_mv_rate_l_ancien_index_revient_et_alerte(serveur):
 
 def test_service_muet_retour_a_l_index_precedent(serveur):
     app, env, journal = serveur
-    r = lancer(env, SANTE_OK="0")
+    r = lancer(env, SANTE_OK="ancien")
     assert r.returncode == 1
     assert contenu(app, "index") == "ancien" and contenu(app, "index.echec") == "nouveau"
-    assert "ne repondait plus" in alertes(journal)
+    assert "ne repondait plus" in alertes(journal) and "toujours" not in alertes(journal)
+    assert "index precedent remis en service" in r.stdout
+    assert (journal / "systemctl").read_text().count("restart lexia") == 2
+
+
+def test_service_toujours_muet_apres_le_retour_alerte_aussi(serveur):
+    """C2 : le premier e-mail laissait croire que tout etait rentre dans l'ordre (audit du 2026-11-23)."""
+    app, env, journal = serveur
+    r = lancer(env, SANTE_OK="0")
+    assert r.returncode == 1 and contenu(app, "index") == "ancien"
+    lignes = alertes(journal).splitlines()
+    assert len(lignes) == 2 and "ne repondait plus" in lignes[0]
+    assert "toujours" in lignes[1] and "hors service" in lignes[1]
+
+
+def test_rien_de_nouveau_code_3_pas_de_bascule(serveur):
+    """T8 : code 3 de Python, rien a faire : ni bascule ni redemarrage ni alerte, passage note reussi."""
+    app, env, journal = serveur
+    r = lancer(env, CODE_MAJ="3")
+    assert r.returncode == 0, r.stderr
+    assert contenu(app, "index") == "ancien" and not (app / "data" / "index.precedent").exists()
+    assert not (journal / "systemctl").exists() and alertes(journal) == ""
+    assert (app / "data" / "mise_a_jour_reussie").exists()
+
+
+def test_echec_de_python_code_1_alerte_index_inchange(serveur):
+    """T8 : code 1 de Python : alerte avec le code, index en service inchange, passage non note reussi."""
+    app, env, journal = serveur
+    r = lancer(env, CODE_MAJ="1")
+    assert r.returncode == 1
+    assert contenu(app, "index") == "ancien" and not (app / "data" / "index.precedent").exists()
+    assert "code 1" in alertes(journal) and not (journal / "systemctl").exists()
+    assert not (app / "data" / "mise_a_jour_reussie").exists()
 
 
 def test_disque_trop_plein_rien_n_est_lance(serveur):

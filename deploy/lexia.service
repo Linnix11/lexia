@@ -34,6 +34,38 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/opt/lexia/logs /opt/lexia/.cache /opt/lexia/donnees
+# Suite du durcissement (audit du 2026-11-23, B4). A verifier sur le serveur : systemd-analyze security lexia.
+# Pas de MemoryDenyWriteExecute ni de SystemCallFilter sans essai (PyTorch, tesseract).
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RemoveIPC=true
+# Ecoute locale, appels HTTPS sortants (Gemini, Groq, Resend, DILA) ; AF_NETLINK pour getaddrinfo de la glibc.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+# Modeles (~2 Go) et deux OCR simultanes : au-dela, le service est freine puis arrete et relance par systemd,
+# au lieu de laisser l'OOM killer du noyau choisir un autre processus (nginx, sshd). En pourcentage de la
+# memoire du VPS (8 Go conseilles, deploy/DEPLOIEMENT.md).
+MemoryHigh=65%
+MemoryMax=75%
+# Un lecteur de fichier (OCR) tue par manque de memoire ne doit pas arreter l'API : seul l'arret du processus
+# principal fait relancer le service (Restart=on-failure).
+OOMPolicy=continue
+TasksMax=512
+# Dates (journaux, date du jour par defaut) a l'heure de Paris, quel que soit le fuseau du VPS (C4). Le code
+# calcule deja l'etat « en vigueur » a l'heure de Paris (ingest.env.aujourdhui_paris).
+Environment=TZ=Europe/Paris
 
 [Install]
 WantedBy=multi-user.target

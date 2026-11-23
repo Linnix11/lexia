@@ -13,10 +13,10 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from collections.abc import Iterator
-from datetime import date
 from pathlib import Path
 
 from ingest import dila
+from ingest.env import aujourdhui_paris
 from ingest.jurisprudence import date_fr
 from ingest.models import Passage
 
@@ -136,7 +136,7 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
     nota_el = root.find("NOTA/CONTENU")
     nota = " ".join(dila.contenu_lines(ET.tostring(nota_el, encoding="unicode"))) if nota_el is not None else ""
 
-    aujourdhui = date.today().isoformat()
+    aujourdhui = aujourdhui_paris().isoformat()
     en_vigueur, statut = etat_reel(etat, debut, fin, aujourdhui)
     chemin = plan(root, debut)
     if nom is None:

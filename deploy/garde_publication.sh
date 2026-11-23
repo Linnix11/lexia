@@ -9,7 +9,9 @@
 #   - contient_le_serveur : refuse si le commit publie ne contient pas celui deja en ligne (VERSION) ;
 #   - prendre_verrou      : un seul envoi a la fois (dossier /run/lexia-publication sur le serveur, efface
 #                           au redemarrage de la machine) ; attend qu'il se libere, 30 min au plus ;
-#   - rendre_verrou       : le libere, seulement s'il est a nous.
+#   - rendre_verrou       : le libere, seulement s'il est a nous ;
+#   - nginx_a_jour        : signale les limites de debit et routes protegees du depot absentes de la
+#                           configuration nginx en service (fichier modifie par certbot, jamais remplace).
 # LEXIA_FORCER=1 passe outre les deux premieres verifications (jamais le verrou).
 
 VERROU="${LEXIA_VERROU:-/run/lexia-publication}"
@@ -70,4 +72,27 @@ rendre_verrou() {
   [ -z "$JETON_VERROU" ] && return 0
   ssh "$SERVEUR" "grep -q '^$JETON_VERROU ' '$VERROU/qui' 2>/dev/null && rm -r '$VERROU'" || true
   JETON_VERROU=""
+}
+
+# Lignes de deploy/nginx-lexia.conf a retrouver telles quelles dans « nginx -T » du serveur : table des cles de
+# limite (B9), zones, route des codes de connexion (SEC-10) et rafales. Avant, elles n'arrivaient sur le serveur
+# que recopiees a la main, sans que rien ne le rappelle (audit du 2026-11-23, B9). Avertit, ne bloque pas.
+_lignes_nginx() {
+  grep -E '^[[:space:]]*(map |"~|default \$binary_remote_addr|limit_req_zone |limit_req |location ~ )' \
+    "${LEXIA_NGINX_DEPOT:-deploy/nginx-lexia.conf}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
+nginx_a_jour() {
+  local en_ligne manque=""
+  en_ligne=$(ssh "$SERVEUR" "nginx -T 2>/dev/null" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//') || true
+  while IFS= read -r ligne; do
+    grep -qxF -- "$ligne" <<<"$en_ligne" || manque+="  $ligne"$'\n'
+  done < <(_lignes_nginx)
+  if [ -n "$manque" ]; then
+    echo "ATTENTION : configuration nginx du serveur differente du depot (deploy/nginx-lexia.conf). Absent :" >&2
+    printf '%s' "$manque" >&2
+    echo "Recopier ces lignes dans /etc/nginx/sites-available/lexia, puis : nginx -t && systemctl reload nginx" >&2
+    return 1
+  fi
+  echo "  limites nginx identiques au depot"
 }
