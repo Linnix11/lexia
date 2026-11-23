@@ -114,6 +114,25 @@ describe('Bêta fermée', () => {
     expect(screen.queryByRole('button', { name: 'Donner mon avis' })).not.toBeInTheDocument()
   })
 
+  it('l’administration supprime un code après confirmation', async () => {
+    profil = { ...PROFIL, email: 'chef@exemple.fr', admin: true, double_authentification: true }
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/admin/beta/codes/7/supprimer')) return json({ supprime: true })
+      if (url.endsWith('/admin/beta/codes'))
+        return json([{ id: 7, libelle: 'TD 1', plafond: 5, inscriptions: 1, comptes: 1, actif: true, cree_le: '2026-11-23T10:00:00+00:00' }])
+      return normal(url, init)
+    })
+    window.history.pushState({}, '', '/admin')
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Bêta' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer « TD 1 »' }))
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/supprimer'))).toBe(false)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Confirmer la suppression de « TD 1 »' })) })
+    expect(fetchMock.mock.calls.some(([u, i]) => String(u).endsWith('/admin/beta/codes/7/supprimer') && i?.method === 'POST')).toBe(true)
+    await waitFor(() => expect(screen.queryByText('TD 1')).not.toBeInTheDocument())
+  })
+
   it('l’administration crée un code, affiche le suivi d’usage et les avis', async () => {
     profil = { ...PROFIL, email: 'chef@exemple.fr', admin: true, double_authentification: true }
     const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>

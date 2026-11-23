@@ -628,6 +628,7 @@ export const api = {
       creerCode: (libelle: string, plafond: number, code?: string) =>
         post<CodeBeta>('/admin/beta/codes', code ? { libelle, plafond, code } : { libelle, plafond }),
       desactiverCode: (id: number) => post<CodeBeta>(`/admin/beta/codes/${id}/desactiver`, {}),
+      supprimerCode: (id: number) => post<{ supprime: boolean }>(`/admin/beta/codes/${id}/supprimer`, {}),
       avis: () => requete<{ avis: AvisBetaLu[]; note_moyenne: number | null }>('/admin/beta/avis'),
       usage: (jours = 14) => requete<UsageBeta>(`/admin/beta/usage?jours=${jours}`),
     },

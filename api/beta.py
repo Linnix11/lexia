@@ -140,8 +140,14 @@ def creer_code(comptes: Comptes, libelle: str, plafond: int, code: str | None = 
                                    "(les tirets et espaces ne comptent pas).")
     try:
         with comptes._lock, comptes._con:
-            cur = comptes._con.execute("INSERT INTO codes_beta (empreinte, libelle, plafond, cree_le) "
-                                       "VALUES (?, ?, ?, ?)", (empreinte_code(code), libelle, plafond, _maintenant()))
+            # Numero jamais reutilise : un code supprime laisse son numero sur ses comptes (profil « beta »), et
+            # SQLite redonnerait le plus grand numero libere au code suivant.
+            (suivant,) = comptes._con.execute(
+                "SELECT 1 + MAX(COALESCE((SELECT MAX(id) FROM codes_beta), 0), "
+                "COALESCE((SELECT MAX(code_beta) FROM utilisateurs), 0))").fetchone()
+            cur = comptes._con.execute("INSERT INTO codes_beta (id, empreinte, libelle, plafond, cree_le) "
+                                       "VALUES (?, ?, ?, ?, ?)",
+                                       (suivant, empreinte_code(code), libelle, plafond, _maintenant()))
     except sqlite3.IntegrityError:  # empreinte UNIQUE : meme code, meme apres un code desactive
         raise CodeIndisponible("Ce code existe déjà : choisissez-en un autre.") from None
     return {**lire_code(comptes, cur.lastrowid), "code": code}
@@ -164,6 +170,13 @@ def lister_codes(comptes: Comptes) -> list[dict]:
 def desactiver_code(comptes: Comptes, cid: int) -> dict | None:
     comptes._q("UPDATE codes_beta SET actif = 0 WHERE id = ?", (cid,))
     return lire_code(comptes, cid)
+
+
+def supprimer_code(comptes: Comptes, cid: int) -> bool:
+    """Retire le code de la liste : plus personne ne peut s'inscrire avec. Les comptes deja crees le gardent
+    (profil « beta », questionnaire) ; le meme code peut etre recree ensuite."""
+    with comptes._lock, comptes._con:
+        return comptes._con.execute("DELETE FROM codes_beta WHERE id = ?", (cid,)).rowcount == 1
 
 
 # --- avis ------------------------------------------------------------------------------
@@ -354,6 +367,13 @@ def creer_routes_beta(comptes: Comptes, utilisateur_requis, admin_requis, journa
             raise HTTPException(404, "Code introuvable.")
         journal.ecrire("admin", action="code_beta_desactive", par=moi.id, cible=cid)
         return res
+
+    @router.post("/admin/beta/codes/{cid}/supprimer", dependencies=[Depends(verifier_origine)])
+    def supprimer(cid: int, moi: Utilisateur = Depends(admin_requis)):
+        if not supprimer_code(comptes, cid):
+            raise HTTPException(404, "Code introuvable.")
+        journal.ecrire("admin", action="code_beta_supprime", par=moi.id, cible=cid)
+        return {"supprime": True}
 
     @router.get("/admin/beta/avis")
     def avis(_: Utilisateur = Depends(admin_requis)):

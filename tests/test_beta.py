@@ -274,3 +274,29 @@ def test_code_vide_tire_au_hasard(env):
     chef = client_connecte(app, "chef@exemple.fr")
     r = chef.post("/admin/beta/codes", json={"libelle": "Groupe", "plafond": 3, "code": "  "})
     assert r.status_code == 201 and len(beta.normaliser_code(r.json()["code"])) == beta.LONGUEUR_CODE
+
+
+def test_code_supprime_ne_sert_plus_et_ses_comptes_restent_en_beta(env):
+    app, comptes = env
+    chef = client_connecte(app, "chef@exemple.fr")
+    cree = chef.post("/admin/beta/codes", json={"libelle": "TD 1", "plafond": 5, "code": "TD1-ASSAS-26"}).json()
+    etu, r = inscrire(app, "lea@exemple.fr", code="TD1-ASSAS-26")
+    assert r.status_code in (200, 201)
+    assert chef.post(f"/admin/beta/codes/{cree['id']}/supprimer").json() == {"supprime": True}
+    assert chef.get("/admin/beta/codes").json() == []
+    assert chef.post(f"/admin/beta/codes/{cree['id']}/supprimer").status_code == 404
+    _, r = inscrire(app, "hugo@exemple.fr", code="TD1-ASSAS-26")
+    assert r.status_code == 403
+    assert etu.get("/auth/session").json()["beta"] is True
+    # Code recree : nouveau numero, sans compter les comptes de l'ancien
+    neuf = chef.post("/admin/beta/codes", json={"libelle": "TD 1 bis", "plafond": 5, "code": "TD1-ASSAS-26"}).json()
+    assert neuf["id"] != cree["id"] and neuf["comptes"] == 0
+
+
+def test_suppression_reservee_aux_administrateurs(env):
+    app, _ = env
+    chef = client_connecte(app, "chef@exemple.fr")
+    cree = nouveau_code(chef)
+    etu, _ = inscrire(app, "lea@exemple.fr", code=cree["code"])
+    assert etu.post(f"/admin/beta/codes/{cree['id']}/supprimer").status_code == 403
+    assert len(chef.get("/admin/beta/codes").json()) == 1

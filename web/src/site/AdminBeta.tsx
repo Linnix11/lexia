@@ -37,6 +37,7 @@ function Codes() {
   const [choisi, setChoisi] = useState('')
   const [nouveau, setNouveau] = useState<CodeBeta | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [aSupprimer, setASupprimer] = useState<number | null>(null) // second clic pour confirmer
   const charger = useCallback(() => { api.admin.beta.codes().then(setCodes).catch(() => setCodes([])) }, [])
   useEffect(charger, [charger])
 
@@ -61,11 +62,21 @@ function Codes() {
     }
   }
 
+  const supprimer = async (id: number) => {
+    try {
+      await api.admin.beta.supprimerCode(id)
+      setASupprimer(null)
+      setCodes((l) => l?.filter((x) => x.id !== id) ?? l)
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : 'Suppression impossible.')
+    }
+  }
+
   return (
     <Carte titre="Codes d’accès">
       <p className="mb-3 text-[12px] text-muted">
         Avec <code>BETA_FERMEE=1</code> dans le .env du serveur, l’inscription demande un de ces codes. Le code
-        n’est affiché qu’une fois, à sa création : notez-le. Un compte supprimé ne rend pas sa place.
+        n’est affiché qu’une fois, à sa création : notez-le. Un compte supprimé ne rend pas sa place. Supprimer un code empêche toute nouvelle inscription avec lui ; les comptes déjà créés restent dans la bêta.
       </p>
       <form onSubmit={creer} className="mb-3 flex flex-wrap items-end gap-2">
         <label className="grid flex-1 gap-1 text-[12px] text-muted">Nom du groupe
@@ -115,9 +126,19 @@ function Codes() {
                   <td className="py-1.5 pr-3">{c.comptes}</td>
                   <td className="py-1.5 pr-3">{date(c.cree_le)}</td>
                   <td className="py-1.5">
-                    {c.actif ? (
-                      <button type="button" onClick={() => desactiver(c.id)} className="text-[#8c4a36] hover:underline">Désactiver « {c.libelle} »</button>
-                    ) : <span className="text-muted">désactivé</span>}
+                    <span className="flex flex-wrap gap-x-3 gap-y-1">
+                      {c.actif ? (
+                        <button type="button" onClick={() => desactiver(c.id)} className="text-[#8c4a36] hover:underline">Désactiver « {c.libelle} »</button>
+                      ) : <span className="text-muted">désactivé</span>}
+                      {aSupprimer === c.id ? (
+                        <>
+                          <button type="button" onClick={() => supprimer(c.id)} className="rounded-md bg-[#8c4a36] px-2 text-white">Confirmer la suppression de « {c.libelle} »</button>
+                          <button type="button" onClick={() => setASupprimer(null)} className="text-muted hover:underline">Annuler</button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => setASupprimer(c.id)} className="text-[#8c4a36] hover:underline">Supprimer « {c.libelle} »</button>
+                      )}
+                    </span>
                   </td>
                 </tr>
               ))}
