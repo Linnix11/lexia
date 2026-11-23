@@ -183,8 +183,10 @@ export function CoursRecuperes() {
           <div className="mt-5 grid gap-3 tab:grid-cols-2">
             <label className="grid gap-1 text-[11px] text-muted">
               Matière
-              <select value={choisie} disabled={!!mots} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }}
+              {/* Une recherche porte sur toutes les matieres : le menu le dit (recette du 2026-11-20, D-8) */}
+              <select value={mots ? '' : choisie} disabled={!!mots} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }}
                 className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink disabled:opacity-60">
+                {mots && <option value="">Toutes les matières</option>}
                 {groupes.map(([id, g]) => <option key={id} value={id}>{g.libelle} ({g.cours.length})</option>)}
               </select>
             </label>

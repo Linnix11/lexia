@@ -925,6 +925,22 @@ describe('Depots de cours, version 2 (D107)', () => {
     expect(await within(liste).findByText(/déposé \(12 pages, 30 passages\)\. Page 2 lue par reconnaissance/)).toBeInTheDocument()
     expect(await within(liste).findByText(/Ce document scanné est illisible/)).toBeInTheDocument()
     expect(envois.map((e) => e.entetes['X-Lexia-Titre'])).toEqual(['chapitre3', 'scan'])
+  })
+
+  it('plusieurs fichiers de meme nom : titres distingues par le format (recette du 2026-11-20, D-10)', async () => {
+    const envois = simulerEnvoi(() => ({ status: 201, corps: COURS }))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: [
+      new File(['%PDF'], 'cours-contrats.pdf', { type: 'application/pdf' }), new File(['x'], 'cours-contrats.docx'),
+      new File(['x'], 'cours-contrats.rtf')] } })
+    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Déposer 3 cours' }))
+    })
+    await waitFor(() => expect(envois).toHaveLength(3))
+    expect(envois.map((e) => decodeURIComponent(e.entetes['X-Lexia-Titre'])))
+      .toEqual(['cours-contrats (PDF)', 'cours-contrats (DOCX)', 'cours-contrats (RTF)'])
     expect(envois[0].url).toContain('matiere=droit_civil')
     expect(envois[0].url).not.toContain('chapitre3')
   })

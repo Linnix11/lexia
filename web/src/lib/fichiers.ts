@@ -13,6 +13,25 @@ export const formatAccepte = (f: File) => EXTENSIONS.some((e) => f.name.toLowerC
 export const STATUTS = { traitement: 'en préparation…', pret: 'prêt', erreur: 'mots-clés seulement, nouvel essai bientôt' }
 export const sansExtension = (nom: string) => nom.replace(/\.[^.]+$/, '')
 
+/** Titres des cours deposes ensemble : le nom sans extension, suivi du format quand deux fichiers portent le meme
+ * nom, puis d'un numero si besoin. Trois « cours-contrats » se confondaient (recette du 2026-11-20, D-10). */
+export function titresDistincts(noms: string[]): string[] {
+  const cle = (t: string) => t.toLocaleLowerCase('fr')
+  const bases = noms.map(sansExtension)
+  const nombre = new Map<string, number>()
+  for (const b of bases) nombre.set(cle(b), (nombre.get(cle(b)) ?? 0) + 1)
+  const titres = noms.map((nom, i) => {
+    const ext = /\.([^.]+)$/.exec(nom)?.[1]
+    return (nombre.get(cle(bases[i])) ?? 0) > 1 && ext ? `${bases[i]} (${ext.toUpperCase()})` : bases[i]
+  })
+  const vus = new Map<string, number>()
+  return titres.map((t) => {
+    const n = (vus.get(cle(t)) ?? 0) + 1
+    vus.set(cle(t), n)
+    return n > 1 ? `${t} ${n}` : t
+  })
+}
+
 /** Refus d'un fichier avant l'envoi (format, taille, fichier vide), en clair ; null s'il peut partir. */
 export function refusFichier(f: File): string | null {
   if (!formatAccepte(f)) {

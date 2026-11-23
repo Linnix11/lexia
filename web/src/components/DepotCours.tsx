@@ -2,7 +2,7 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useApp } from '../state/contexte'
-import { ACCEPT, FORMATS_LISIBLES, fichiersDeposes, refusFichier, sansExtension } from '../lib/fichiers'
+import { ACCEPT, FORMATS_LISIBLES, fichiersDeposes, refusFichier, sansExtension, titresDistincts } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 import { OptionsMatieres } from './OptionsMatieres'
 
@@ -46,6 +46,8 @@ export function DepotCours() {
     setEnvoi(true)
     let deposes = 0
     let restant = place
+    const distincts = titresDistincts(aEnvoyer.map((l) => l.fichier.name))
+    const titres = new Map(aEnvoyer.map((l, k) => [l, distincts[k]]))
     // Un fichier apres l'autre : le serveur ne lit qu'un depot a la fois par compte.
     for (const [i, l] of lignes.entries()) {
       if (l.etat.etape !== 'attente') continue
@@ -55,7 +57,7 @@ export function DepotCours() {
       }
       maj(i, { etape: 'envoi', part: 0 })
       try {
-        const nom = aEnvoyer.length === 1 ? titre.trim() : sansExtension(l.fichier.name)
+        const nom = aEnvoyer.length === 1 ? titre.trim() : titres.get(l) ?? sansExtension(l.fichier.name)
         const depose = await api.cours.deposerAvecProgres(l.fichier, matiere, nom, (part) =>
           maj(i, part >= 1 ? { etape: 'lecture' } : { etape: 'envoi', part }))
         deposes += 1

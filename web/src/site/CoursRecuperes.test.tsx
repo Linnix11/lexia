@@ -72,6 +72,12 @@ describe('Cours récupérés', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'penal' } })
     expect(screen.getByText('Pénal 00')).toBeInTheDocument()
     expect(screen.getAllByRole('article')).toHaveLength(1)
+    // Pendant la recherche, le menu dit qu'elle porte sur toutes les matieres (recette du 2026-11-20, D-8)
+    const menu = screen.getByLabelText('Matière') as HTMLSelectElement
+    expect(menu).toBeDisabled()
+    expect(menu.selectedOptions[0].textContent).toBe('Toutes les matières')
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } })
+    expect((screen.getByLabelText('Matière') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Civil (25)')
   })
 
   it('ajoute après les titres les cours dont le texte répond à la recherche', async () => {
