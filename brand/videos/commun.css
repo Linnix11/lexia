@@ -1,0 +1,60 @@
+/* Styles communs des videos verticales Lexia (scene de 1080 x 1920 px). */
+@font-face { font-family: "Source Serif 4"; src: url("../typographies/SourceSerif4[opsz,wght].ttf"); font-weight: 200 900; }
+@font-face { font-family: "Inter"; src: url("../typographies/Inter[opsz,wght].ttf"); font-weight: 100 900; }
+
+:root {
+  --foret: #315e4b; --foret-fonce: #244735; --or: #bd8951; --papier: #f5f4ef; --surface: #fffefa;
+  --encre: #202724; --gris: #666e69; --menthe: #e7efe9; --ligne: #e4e4dc;
+  --doux: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 16px; background: #e9e8e2; font-family: Inter, system-ui, sans-serif; color: var(--encre);
+}
+.cadre { position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.scene {
+  position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0;
+  background: var(--papier); -webkit-font-smoothing: antialiased;
+}
+.serif { font-family: "Source Serif 4", Georgia, serif; font-weight: 400; font-variation-settings: "opsz" 60; }
+.surtitre { font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: var(--foret); }
+sup { font-size: .68em; line-height: 0; }
+
+.commandes { display: flex; gap: 12px; align-items: center; font-size: 14px; flex-wrap: wrap; justify-content: center; }
+.commandes button, .commandes a {
+  font: 500 14px/1 Inter, system-ui, sans-serif; padding: 10px 14px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--foret); background: var(--foret); color: #fff; text-decoration: none;
+}
+.commandes a { background: #fffefa; color: var(--foret); border-color: #d6d8cf; }
+.commandes [data-horloge] { color: #4a524d; font-variant-numeric: tabular-nums; min-width: 110px; }
+.commandes :focus-visible { outline: 2px solid var(--foret); outline-offset: 2px; }
+.avis-mouvement { max-width: 560px; font-size: 14px; color: #4a524d; text-align: center; margin: 0; }
+
+/* Capture et enregistrement : rien d'autre que la scene. */
+.capture body { padding: 0; display: block; background: none; }
+.capture .cadre { box-shadow: none; width: 1080px; height: 1920px; }
+.capture .commandes, .capture .avis-mouvement, .enregistrer .commandes, .enregistrer .avis-mouvement { display: none; }
+.enregistrer body { background: #000; }
+.enregistrer .cadre { box-shadow: none; }
+
+/* Briques d'animation (toutes en remplissage « both » : l'etat avant et apres est defini). */
+.car { opacity: 0; animation: car .01s linear both; }
+@keyframes car { to { opacity: 1; } }
+@keyframes apparait { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes fond { from { opacity: 0; } to { opacity: 1; } }
+@keyframes disparait { from { opacity: 1; } to { opacity: 0; } }
+@keyframes deroule { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes etend { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes monte { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes lettre { from { opacity: 0; transform: translateX(-3px); } to { opacity: 1; transform: none; } }
+.signet .corps { transform-box: fill-box; transform-origin: 50% 0; animation: deroule .8s var(--doux) both; }
+.signet .lisere { transform-box: fill-box; transform-origin: 0 50%; animation: etend .5s var(--doux) both; }
+.signet .signe { animation: monte .5s var(--doux) both; }
+.mot path { animation: lettre .5s var(--doux) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .commandes [data-rejouer], .commandes [data-horloge] { display: none; }
+}

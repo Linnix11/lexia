@@ -1,0 +1,18 @@
+/* Palette de la marque Lexia, generee par brand/outils/contrastes.py */
+:root {
+  --lexia-foret: #315e4b;
+  --lexia-papier: #f5f4ef;
+  --lexia-encre: #202724;
+  --lexia-or: #bd8951;
+  --lexia-foret-fonce: #244735;
+  --lexia-surface: #fffefa;
+  --lexia-menthe: #e7efe9;
+  --lexia-sauge: #e2e8e1;
+  --lexia-creme: #fbf7ef;
+  --lexia-ligne: #e4e4dc;
+  --lexia-gris: #666e69;
+  --lexia-brique: #8c4a36;
+  --lexia-brique-fond: #f6e9e4;
+  --lexia-ocre: #746347;
+  --lexia-or-texte: #8a6534;
+}

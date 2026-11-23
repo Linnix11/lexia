@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo animé Lexia</title>
+<style>
+  :root { --foret: #315e4b; --papier: #f5f4ef; --surface: #fffefa; --encre: #202724; --gris: #666e69; --ligne: #e4e4dc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 16px; background: var(--papier); color: var(--encre);
+         font: 15px/1.6 Inter, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 24px; }
+  h1 { font: 400 32px/1.2 Georgia, serif; margin: 0; }
+  section { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 24px; }
+  h2 { font: 400 20px/1.3 Georgia, serif; margin: 0 0 12px; }
+  .zone { display: grid; place-items: center; min-height: 200px; }
+  .zone img, #lottie { width: min(100%, 420px); }
+  button { font: 500 14px/1 inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--foret);
+           background: var(--foret); color: #fff; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--foret); outline-offset: 2px; }
+  p { margin: 8px 0 0; color: var(--gris); }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Logo animé</h1>
+  <section>
+    <h2>SVG et CSS (<code>logo-anime.svg</code>)</h2>
+    <div class="zone"><img id="svg" src="logo-anime.svg" alt="lexia"></div>
+    <button type="button" id="rejouer-svg">Rejouer</button>
+    <p>Fichier autonome de 8 Ko : il s'anime dans une balise <code>&lt;img&gt;</code>, sans script. Si le système
+    demande moins de mouvement, il s'affiche directement dans son état final.</p>
+  </section>
+  <section>
+    <h2>Lottie (<code>logo-anime.lottie.json</code>)</h2>
+    <div class="zone"><div id="lottie" role="img" aria-label="lexia"></div></div>
+    <button type="button" id="rejouer-lottie">Rejouer</button>
+    <p id="note-lottie">Lecture avec lottie-web 5.12.2 (licence MIT). Ouvrir cette page par un serveur local
+    (<code>python3 -m http.server</code> dans <code>brand/</code>), car le navigateur refuse de lire le JSON depuis un
+    fichier ouvert par double-clic.</p>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script>
+  var reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("rejouer-svg").addEventListener("click", function () {
+    var img = document.getElementById("svg");
+    img.src = "logo-anime.svg?" + Date.now();
+  });
+  var anim = lottie.loadAnimation({
+    container: document.getElementById("lottie"), renderer: "svg", loop: false, autoplay: !reduit,
+    path: "logo-anime.lottie.json"
+  });
+  anim.addEventListener("DOMLoaded", function () { if (reduit) anim.goToAndStop(anim.totalFrames - 1, true); });
+  document.getElementById("rejouer-lottie").addEventListener("click", function () { anim.goToAndPlay(0, true); });
+</script>
+</body>
+</html>

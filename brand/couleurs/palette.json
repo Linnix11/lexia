@@ -1,0 +1,272 @@
+{
+  "couleurs": [
+    {
+      "nom": "foret",
+      "hex": "#315e4b",
+      "role": "principale",
+      "usage": "Couleur de marque : signet, boutons, liens, fonds des visuels pleins."
+    },
+    {
+      "nom": "papier",
+      "hex": "#f5f4ef",
+      "role": "principale",
+      "usage": "Fond de page et fond clair des visuels. Jamais de blanc pur en grand aplat."
+    },
+    {
+      "nom": "encre",
+      "hex": "#202724",
+      "role": "principale",
+      "usage": "Texte et logotype sur fond clair."
+    },
+    {
+      "nom": "or",
+      "hex": "#bd8951",
+      "role": "principale",
+      "usage": "Liseré du signet et filets. Accent rare, jamais pour du texte."
+    },
+    {
+      "nom": "foret-fonce",
+      "hex": "#244735",
+      "role": "secondaire",
+      "usage": "Survol des boutons, fond des visuels sombres."
+    },
+    {
+      "nom": "surface",
+      "hex": "#fffefa",
+      "role": "secondaire",
+      "usage": "Cartes posées sur papier ; texte et signet sur fond forêt."
+    },
+    {
+      "nom": "menthe",
+      "hex": "#e7efe9",
+      "role": "secondaire",
+      "usage": "Fond d'une puce active, d'une citation au survol, d'un badge."
+    },
+    {
+      "nom": "sauge",
+      "hex": "#e2e8e1",
+      "role": "secondaire",
+      "usage": "Survol sur fond menthe."
+    },
+    {
+      "nom": "creme",
+      "hex": "#fbf7ef",
+      "role": "secondaire",
+      "usage": "Encadrés d'information douce."
+    },
+    {
+      "nom": "ligne",
+      "hex": "#e4e4dc",
+      "role": "secondaire",
+      "usage": "Bordures des cartes et champs. Décoratif uniquement."
+    },
+    {
+      "nom": "gris",
+      "hex": "#666e69",
+      "role": "secondaire",
+      "usage": "Texte secondaire (« muted » du site)."
+    },
+    {
+      "nom": "brique",
+      "hex": "#8c4a36",
+      "role": "fonctionnelle",
+      "usage": "Erreurs et actions destructrices."
+    },
+    {
+      "nom": "brique-fond",
+      "hex": "#f6e9e4",
+      "role": "fonctionnelle",
+      "usage": "Fond des messages d'erreur."
+    },
+    {
+      "nom": "ocre",
+      "hex": "#746347",
+      "role": "fonctionnelle",
+      "usage": "Texte des encadrés crème."
+    },
+    {
+      "nom": "or-texte",
+      "hex": "#8a6534",
+      "role": "ajout",
+      "usage": "Or assombri pour un mot ou un chiffre en or sur fond clair (texte)."
+    }
+  ],
+  "contrastes": [
+    {
+      "premier_plan": "encre",
+      "fond": "papier",
+      "rapport": 13.85,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte courant"
+    },
+    {
+      "premier_plan": "encre",
+      "fond": "surface",
+      "rapport": 15.11,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte courant sur carte"
+    },
+    {
+      "premier_plan": "encre",
+      "fond": "menthe",
+      "rapport": 13.01,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte sur badge"
+    },
+    {
+      "premier_plan": "foret",
+      "fond": "papier",
+      "rapport": 6.73,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Liens, surtitres, titres verts"
+    },
+    {
+      "premier_plan": "foret",
+      "fond": "surface",
+      "rapport": 7.34,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Liens et boutons secondaires"
+    },
+    {
+      "premier_plan": "foret",
+      "fond": "menthe",
+      "rapport": 6.33,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Puce active"
+    },
+    {
+      "premier_plan": "surface",
+      "fond": "foret",
+      "rapport": 7.34,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte et logotype sur fond forêt"
+    },
+    {
+      "premier_plan": "surface",
+      "fond": "foret-fonce",
+      "rapport": 10.26,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte sur fond forêt foncé"
+    },
+    {
+      "premier_plan": "papier",
+      "fond": "encre",
+      "rapport": 13.85,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte clair sur fond encre"
+    },
+    {
+      "premier_plan": "gris",
+      "fond": "papier",
+      "rapport": 4.77,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte secondaire sur papier"
+    },
+    {
+      "premier_plan": "gris",
+      "fond": "surface",
+      "rapport": 5.2,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Texte secondaire sur carte"
+    },
+    {
+      "premier_plan": "brique",
+      "fond": "surface",
+      "rapport": 6.61,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Message d'erreur"
+    },
+    {
+      "premier_plan": "brique",
+      "fond": "brique-fond",
+      "rapport": 5.62,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Message d'erreur sur son fond"
+    },
+    {
+      "premier_plan": "ocre",
+      "fond": "creme",
+      "rapport": 5.43,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Encadré crème"
+    },
+    {
+      "premier_plan": "or-texte",
+      "fond": "papier",
+      "rapport": 4.78,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Mot en or sur papier"
+    },
+    {
+      "premier_plan": "or-texte",
+      "fond": "surface",
+      "rapport": 5.21,
+      "seuil": 4.5,
+      "verdict": "conforme AA",
+      "usage": "Mot en or sur carte"
+    },
+    {
+      "premier_plan": "or",
+      "fond": "foret",
+      "rapport": 2.42,
+      "seuil": 3.0,
+      "verdict": "non conforme : usage interdit",
+      "usage": "Texte or sur forêt : interdit (le liseré reste décoratif)"
+    },
+    {
+      "premier_plan": "foret",
+      "fond": "papier",
+      "rapport": 6.73,
+      "seuil": 3.0,
+      "verdict": "conforme AA",
+      "usage": "Signet sur papier (élément graphique)"
+    },
+    {
+      "premier_plan": "surface",
+      "fond": "foret",
+      "rapport": 7.34,
+      "seuil": 3.0,
+      "verdict": "conforme AA",
+      "usage": "Signet clair sur fond forêt (élément graphique)"
+    },
+    {
+      "premier_plan": "or",
+      "fond": "papier",
+      "rapport": 2.78,
+      "seuil": null,
+      "verdict": "décoratif",
+      "usage": "Liseré or sur papier (décoratif, non requis)"
+    },
+    {
+      "premier_plan": "or",
+      "fond": "surface",
+      "rapport": 3.03,
+      "seuil": 4.5,
+      "verdict": "non conforme : usage interdit",
+      "usage": "Texte or sur blanc : interdit"
+    },
+    {
+      "premier_plan": "ligne",
+      "fond": "surface",
+      "rapport": 1.27,
+      "seuil": null,
+      "verdict": "décoratif",
+      "usage": "Bordure de carte (décorative, non requise)"
+    }
+  ]
+}
