@@ -5,7 +5,7 @@ import { useApp } from '../state/contexte'
 import { ACCEPT, FORMATS_LISIBLES, fichiersDeposes, refusFichier, sansExtension, titresDistincts } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 import { OptionsMatieres } from './OptionsMatieres'
-import { Chargement, Rond } from './Chargement'
+import { Rond } from './Chargement'
 
 type Etat =
   | { etape: 'attente' }
