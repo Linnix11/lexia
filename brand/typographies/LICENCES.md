@@ -10,6 +10,12 @@ joints. Aucun outil ni service payant n'est utilisé.
 | lottie-web 5.12.2 (lecture du logo Lottie dans les pages de démonstration) | chargé depuis https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js, non copié | MIT | Airbnb | https://github.com/airbnb/lottie-web |
 | Georgia (titres du site actuel) | aucun : police installée sur l'appareil du lecteur | Police système de Microsoft, non redistribuable | Microsoft | Non utilisée dans les fichiers du kit |
 
+Écarts entre les fichiers (relevés par l'audit du 23 novembre 2026, D15, revérifiés le même jour) : les mentions
+du tableau sont celles de la table `name` des polices. Le texte de licence joint à Inter (copie du dépôt
+google/fonts) date le copyright de 2020, la police de 2016 ; celui de Source Serif 4 ne reprend pas le nom réservé
+« Source », que la police déclare (« with Reserved Font Name ‘Source’ »). Par prudence, le nom réservé est
+respecté : une version modifiée ne s'appelle pas « Source ».
+
 ## Ce que permet la licence OFL 1.1
 
 Texte complet : https://openfontlicense.org (copie jointe pour chaque police).

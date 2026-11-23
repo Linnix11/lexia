@@ -16,7 +16,14 @@ describe('PWA et icones', () => {
 
   it('le manifeste pointe vers des icones presentes', () => {
     expect(manifeste).toMatchObject({ short_name: 'Lexia', display: 'standalone', start_url: '/app', lang: 'fr' })
-    expect(manifeste.icons.map((i) => i.sizes)).toEqual(['192x192', '512x512'])
+    // Kit de marque (brand/icones, D118) : icones ordinaires et masquables (zone sure d'Android)
+    expect(manifeste.icons.map((i) => `${i.sizes} ${i.purpose}`)).toEqual(['192x192 any', '512x512 any', '192x192 maskable', '512x512 maskable'])
     for (const i of manifeste.icons) expect(icones).toContain(i.src)
+  })
+
+  it('favicon.ico present et declare : /favicon.ico ne doit pas repondre la page HTML (audit du 2026-11-23, D15)', () => {
+    expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="48x48" />')
+    expect(Object.keys(import.meta.glob('../../public/favicon.ico'))).toHaveLength(1)
+    expect(Object.keys(import.meta.glob('../../public/favicon.svg'))).toHaveLength(1)
   })
 })

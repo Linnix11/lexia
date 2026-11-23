@@ -1,4 +1,11 @@
-# Note d'intégration du nouveau logo dans le site (pour une session ultérieure)
+# Note d'intégration du nouveau logo dans le site
+
+**Fait le 23 novembre 2026 (D118, `docs/decisions.md`)** : fichiers de `web/public/` remplacés (tableau ci-dessous,
+manifeste du kit à 4 icônes, test `web/src/lib/manifeste.test.ts` mis à jour), `favicon.ico` déclaré dans
+`web/index.html`, composant `Logo.tsx` en tracés (signet § et logotype), image de partage avec « [1] » comme le
+site, `web/scripts/og-lexia.html` (signet « L ») supprimé. Georgia reste la police des titres (option 1 ci-dessous).
+Restent : écran de chargement animé (non fait, l'écran actuel clignote doucement), contrôle sur un vrai téléphone et
+aperçu d’un lien partagé, publication Instagram du kit qui montre encore « [S1] », icône de l'app iOS.
 
 Rédigée le 23 novembre 2026. Rien n'est intégré : les sessions « recette » et « SEO et GEO » modifient `web/` en ce
 moment. À faire après leur fusion dans `main`, et après l'avis sur la marque (`brand/charte.md`, partie 0) pour

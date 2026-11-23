@@ -52,7 +52,7 @@ def carte_reponse(taille):
   <div class="surtitre" style="font-size:{taille * .62}px">Question</div>
   <div class="serif" style="font-size:{taille * 1.45}px;line-height:1.2;margin:.3em 0 .7em">Qu’est-ce que le dol{INSEC}?</div>
   <div>Le dol est le fait pour un contractant d’obtenir le consentement de l’autre par des manœuvres ou
-  des mensonges <span class="cite">[S1]</span>.</div>
+  des mensonges <span class="cite">[1]</span>.</div>
   <div style="border-top:2px solid #eeede7;margin-top:1em;padding-top:1em" class="source">
     <span class="signe">§</span>
     <span><span class="entete">Code civil, article 1137</span>

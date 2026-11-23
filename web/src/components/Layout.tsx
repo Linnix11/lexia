@@ -4,7 +4,7 @@ import { BandeauEmail } from '../site/VerifierEmail'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
 import { useApp, type Vue } from '../state/contexte'
 import { useSession } from '../state/session'
-import { Signet } from './Logo'
+import { LogoHorizontal, Signet } from './Logo'
 
 // court : libelle visible sous l'icone dans la barre du bas du mobile (audit du 2026-11-18, D7), contenu
 // dans le libelle complet qui reste le nom accessible.
@@ -70,10 +70,10 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
                  desk:items-stretch desk:px-[17px] desk:py-[26px]"
     >
       <div className="hidden items-center gap-2.5 tab:flex desk:px-2">
-        <Signet hauteur={34} />
+        <Signet hauteur={34} className="desk:hidden" />
         <div className="hidden desk:block">
-          <div className="font-display text-[21px] tracking-[-.4px]">lexia</div>
-          <div className="mt-0.5 text-[11px] text-muted">L’espace d’étude juridique</div>
+          <LogoHorizontal hauteur={45} />
+          <div className="mt-1 text-[11px] text-muted">L’espace d’étude juridique</div>
         </div>
       </div>
 
