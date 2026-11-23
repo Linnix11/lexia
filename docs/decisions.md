@@ -250,3 +250,4 @@ Mesure sur 8 questions de cours (`eval/recherche.py`) : l'article de principe at
 - 2026-11-20 : recherche vectorielle un seul parcours de l'index par vecteur et sans tri complet, deux reclassements a la fois, durees par etape et de la generation dans le journal des questions (D114).
 - 2026-11-23 : corrections des 11 defauts de la recette du 20 novembre, politique de confidentialite et registre completes (resumes vocaux, cartes mentales, decisions de justice), texte de la politique tire de la page, cas pratique qui examine chaque responsable (D115).
 - 2026-11-23 : referencement, pages publiques prerendues avec balises et JSON-LD, 20 pages de matieres et 5 guides sources, sitemap, robots.txt et llms.txt (D116).
+- 2026-11-23 : cinq guides publics de plus, dissertation, fiche d'arret, plan en deux parties, sources du droit et hierarchie des normes, organisation juridictionnelle ; 68 articles cites (D116).

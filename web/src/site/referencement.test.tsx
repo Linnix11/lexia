@@ -60,9 +60,8 @@ describe('contenu des pages publiques', () => {
     expect(libelleCitation(citation('ordonnance_58_1067:23-2'))).toBe('Ordonnance n° 58-1067 du 7 novembre 1958, art. 23-2')
   })
 
-  it('3 a 5 guides, chacun avec une reponse directe, des sections et des articles cites', () => {
-    expect(GUIDES.length).toBeGreaterThanOrEqual(3)
-    expect(GUIDES.length).toBeLessThanOrEqual(5)
+  it('guides avec une reponse directe, des sections et des articles cites', () => {
+    expect(GUIDES.length).toBe(10)
     expect(GUIDES.map((g) => g.slug)).toEqual(GUIDES_LISTE.map((g) => g.slug))
     for (const g of GUIDES) {
       expect(g.enBref.length).toBeGreaterThan(150)

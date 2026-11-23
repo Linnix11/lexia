@@ -60,21 +60,26 @@ def ecrire(fichier: Path = FICHIER) -> None:
 # passage quand le numero ne suffit pas (plusieurs lois ont un article 23-2).
 CITATIONS: dict[str, tuple[str, str] | str] = {
     **{f"code_civil:{n}": ("code_civil", n) for n in (
-        "2", "9", "371-1", "544", "1101", "1103", "1104", "1112", "1112-1", "1128", "1130", "1132", "1137", "1140",
-        "1178", "1217", "1219", "1231-1", "1240", "1241", "1242", "1353", "1832")},
-    **{f"constitution_1958:{n}": ("constitution_1958", n) for n in ("47", "55", "61", "61-1", "62", "88-1")},
-    **{f"code_procedure_civile:{n}": ("code_procedure_civile", n) for n in ("12", "455", "604")},
-    **{f"code_organisation_judiciaire:{n}": ("code_organisation_judiciaire", n) for n in ("L411-1", "L411-2", "L411-3")},
+        "1", "2", "4", "5", "9", "371-1", "544", "1101", "1103", "1104", "1112", "1112-1", "1128", "1130", "1132", "1137", "1140",
+        "1178", "1195", "1217", "1219", "1231-1", "1240", "1241", "1242", "1353", "1832")},
+    **{f"constitution_1958:{n}": ("constitution_1958", n) for n in (
+        "34", "37", "38", "47", "55", "61", "61-1", "62", "64", "66", "88-1")},
+    **{f"code_procedure_civile:{n}": ("code_procedure_civile", n) for n in ("12", "455", "542", "561", "604")},
+    **{f"code_organisation_judiciaire:{n}": ("code_organisation_judiciaire", n) for n in (
+        "L111-1", "L211-3", "L311-1", "L411-1", "L411-2", "L411-3")},
     **{f"code_penal:{n}": ("code_penal", n) for n in ("111-3", "121-1", "121-3", "122-5")},
     "ordonnance_58_1067:23-2": "lois:LEGIARTI000021450778",
     "code_relations_public_administration:L231-1": ("code_relations_public_administration", "L231-1"),
     "code_commerce:L121-1": ("code_commerce", "L121-1"),
     "code_procedure_penale:62-2": ("code_procedure_penale", "62-2"),
     "code_travail:L1221-1": ("code_travail", "L1221-1"),
+    **{f"code_justice_administrative:{n}": ("code_justice_administrative", n) for n in ("L111-1", "L211-1", "L211-2")},
     "code_justice_administrative:L521-2": ("code_justice_administrative", "L521-2"),
     "code_justice_administrative:R421-1": ("code_justice_administrative", "R421-1"),
     "code_propriete_personnes_publiques:L2111-1": ("code_propriete_personnes_publiques", "L2111-1"),
+    "ddhc_1789:6": ("ddhc_1789", "6"),
     "ddhc_1789:11": ("ddhc_1789", "11"),
+    "ddhc_1789:16": ("ddhc_1789", "16"),
     "ddhc_1789:13": ("ddhc_1789", "13"),
 }
 FICHIER_CITATIONS = ROOT / "web" / "src" / "site" / "contenu" / "citations.json"

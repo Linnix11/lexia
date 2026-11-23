@@ -1,4 +1,15 @@
 {
+ "code_civil:1": {
+  "texte": "Code civil",
+  "numero": "1",
+  "alineas": [
+   "Les lois et, lorsqu'ils sont publiés au Journal officiel de la République française, les actes administratifs entrent en vigueur à la date qu'ils fixent ou, à défaut, le lendemain de leur publication. Toutefois, l'entrée en vigueur de celles de leurs dispositions dont l'exécution nécessite des mesures d'application est reportée à la date d'entrée en vigueur de ces mesures.",
+   "En cas d'urgence, entrent en vigueur dès leur publication les lois dont le décret de promulgation le prescrit et les actes administratifs pour lesquels le Gouvernement l'ordonne par une disposition spéciale.",
+   "Les dispositions du présent article ne sont pas applicables aux actes individuels."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006419280",
+  "version": "Version depuis le 1er juin 2004, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
  "code_civil:2": {
   "texte": "Code civil",
   "numero": "2",
@@ -6,6 +17,24 @@
    "La loi ne dispose que pour l'avenir ; elle n'a point d'effet rétroactif."
   ],
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006419281",
+  "version": "Version depuis le 21 mars 1804, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_civil:4": {
+  "texte": "Code civil",
+  "numero": "4",
+  "alineas": [
+   "Le juge qui refusera de juger, sous prétexte du silence, de l'obscurité ou de l'insuffisance de la loi, pourra être poursuivi comme coupable de déni de justice."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006419283",
+  "version": "Version depuis le 21 mars 1804, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_civil:5": {
+  "texte": "Code civil",
+  "numero": "5",
+  "alineas": [
+   "Il est défendu aux juges de prononcer par voie de disposition générale et réglementaire sur les causes qui leur sont soumises."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006419284",
   "version": "Version depuis le 21 mars 1804, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
  "code_civil:9": {
@@ -154,6 +183,16 @@
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032041243",
   "version": "Version depuis le 1er octobre 2016, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
+ "code_civil:1195": {
+  "texte": "Code civil",
+  "numero": "1195",
+  "alineas": [
+   "Si un changement de circonstances imprévisible lors de la conclusion du contrat rend l'exécution excessivement onéreuse pour une partie qui n'avait pas accepté d'en assumer le risque, celle-ci peut demander une renégociation du contrat à son cocontractant. Elle continue à exécuter ses obligations durant la renégociation.",
+   "En cas de refus ou d'échec de la renégociation, les parties peuvent convenir de la résolution du contrat, à la date et aux conditions qu'elles déterminent, ou demander d'un commun accord au juge de procéder à son adaptation. A défaut d'accord dans un délai raisonnable, le juge peut, à la demande d'une partie, réviser le contrat ou y mettre fin, à la date et aux conditions qu'il fixe."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032041302",
+  "version": "Version depuis le 1er octobre 2016, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
  "code_civil:1217": {
   "texte": "Code civil",
   "numero": "1217",
@@ -242,6 +281,47 @@
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006444041",
   "version": "Version depuis le 13 juillet 1985, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
+ "constitution_1958:34": {
+  "texte": "Constitution du 4 octobre 1958",
+  "numero": "34",
+  "alineas": [
+   "La loi fixe les règles concernant :",
+   "- les droits civiques et les garanties fondamentales accordées aux citoyens pour l'exercice des libertés publiques ; la liberté, le pluralisme et l'indépendance des médias ; les sujétions imposées par la défense nationale aux citoyens en leur personne et en leurs biens ;\n- la nationalité, l'état et la capacité des personnes, les régimes matrimoniaux, les successions et libéralités ;\n- la détermination des crimes et délits ainsi que les peines qui leur sont applicables ; la procédure pénale ; l'amnistie ; la création de nouveaux ordres de juridiction et le statut des magistrats ;\n- l'assiette, le taux et les modalités de recouvrement des impositions de toutes natures ; le régime d'émission de la monnaie.",
+   "La loi fixe également les règles concernant :",
+   "- le régime électoral des assemblées parlementaires, des assemblées locales et des instances représentatives des Français établis hors de France ainsi que les conditions d'exercice des mandats électoraux et des fonctions électives des membres des assemblées délibérantes des collectivités territoriales ;\n- la création de catégories d'établissements publics ;\n- les garanties fondamentales accordées aux fonctionnaires civils et militaires de l'État ;\n- les nationalisations d'entreprises et les transferts de propriété d'entreprises du secteur public au secteur privé.",
+   "La loi détermine les principes fondamentaux :",
+   "- de l'organisation générale de la défense nationale ;\n- de la libre administration des collectivités territoriales, de leurs compétences et de leurs ressources ;\n- de l'enseignement ;\n- de la préservation de l'environnement ;\n- du régime de la propriété, des droits réels et des obligations civiles et commerciales ;\n- du droit du travail, du droit syndical et de la sécurité sociale.",
+   "La loi détermine les conditions dans lesquelles s’exerce la liberté garantie à la femme d’avoir recours à une interruption volontaire de grossesse.",
+   "Les lois de finances déterminent les ressources et les charges de l'État dans les conditions et sous les réserves prévues par une loi organique.",
+   "Les lois de financement de la sécurité sociale déterminent les conditions générales de son équilibre financier et, compte tenu de leurs prévisions de recettes, fixent ses objectifs de dépenses, dans les conditions et sous les réserves prévues par une loi organique.",
+   "Des lois de programmation déterminent les objectifs de l'action de l'État.",
+   "Les orientations pluriannuelles des finances publiques sont définies par des lois de programmation. Elles s'inscrivent dans l'objectif d'équilibre des comptes des administrations publiques.",
+   "Les dispositions du présent article pourront être précisées et complétées par une loi organique."
+  ],
+  "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_34",
+  "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
+ },
+ "constitution_1958:37": {
+  "texte": "Constitution du 4 octobre 1958",
+  "numero": "37",
+  "alineas": [
+   "Les matières autres que celles qui sont du domaine de la loi ont un caractère réglementaire.",
+   "Les textes de forme législative intervenus en ces matières peuvent être modifiés par décrets pris après avis du Conseil d'État. Ceux de ces textes qui interviendraient après l'entrée en vigueur de la présente Constitution ne pourront être modifiés par décret que si le Conseil constitutionnel a déclaré qu'ils ont un caractère réglementaire en vertu de l'alinéa précédent."
+  ],
+  "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_37",
+  "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
+ },
+ "constitution_1958:38": {
+  "texte": "Constitution du 4 octobre 1958",
+  "numero": "38",
+  "alineas": [
+   "Le Gouvernement peut, pour l'exécution de son programme, demander au Parlement l'autorisation de prendre par ordonnances, pendant un délai limité, des mesures qui sont normalement du domaine de la loi.",
+   "Les ordonnances sont prises en conseil des ministres après avis du Conseil d'État. Elles entrent en vigueur dès leur publication mais deviennent caduques si le projet de loi de ratification n'est pas déposé devant le Parlement avant la date fixée par la loi d'habilitation. Elles ne peuvent être ratifiées que de manière expresse.",
+   "A l'expiration du délai mentionné au premier alinéa du présent article, les ordonnances ne peuvent plus être modifiées que par la loi dans les matières qui sont du domaine législatif."
+  ],
+  "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_38",
+  "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
+ },
  "constitution_1958:47": {
   "texte": "Constitution du 4 octobre 1958",
   "numero": "47",
@@ -297,6 +377,28 @@
   "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_62",
   "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
  },
+ "constitution_1958:64": {
+  "texte": "Constitution du 4 octobre 1958",
+  "numero": "64",
+  "alineas": [
+   "Le Président de la République est garant de l'indépendance de l'autorité judiciaire.",
+   "Il est assisté par le Conseil supérieur de la magistrature.",
+   "Une loi organique porte statut des magistrats.",
+   "Les magistrats du siège sont inamovibles."
+  ],
+  "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_64",
+  "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
+ },
+ "constitution_1958:66": {
+  "texte": "Constitution du 4 octobre 1958",
+  "numero": "66",
+  "alineas": [
+   "Nul ne peut être arbitrairement détenu.",
+   "L'autorité judiciaire, gardienne de la liberté individuelle, assure le respect de ce principe dans les conditions prévues par la loi."
+  ],
+  "url": "https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur#article_66",
+  "version": "Texte intégral en vigueur à jour de la révision constitutionnelle du 8 mars 2024"
+ },
  "constitution_1958:88-1": {
   "texte": "Constitution du 4 octobre 1958",
   "numero": "88-1",
@@ -329,6 +431,25 @@
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000054560947",
   "version": "Version depuis le 1er octobre 2026, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
+ "code_procedure_civile:542": {
+  "texte": "Code de procédure civile",
+  "numero": "542",
+  "alineas": [
+   "L'appel tend, par la critique du jugement rendu par une juridiction du premier degré, à sa réformation ou à son annulation par la cour d'appel."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000034757135",
+  "version": "Version depuis le 1er septembre 2017, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_procedure_civile:561": {
+  "texte": "Code de procédure civile",
+  "numero": "561",
+  "alineas": [
+   "L'appel remet la chose jugée en question devant la juridiction d'appel.",
+   "Il est statué à nouveau en fait et en droit dans les conditions et limites déterminées aux livres premier et deuxième du présent code."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000034757141",
+  "version": "Version depuis le 1er septembre 2017, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
  "code_procedure_civile:604": {
   "texte": "Code de procédure civile",
   "numero": "604",
@@ -337,6 +458,34 @@
   ],
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006410951",
   "version": "Version depuis le 1er janvier 1980, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_organisation_judiciaire:L111-1": {
+  "texte": "Code de l'organisation judiciaire",
+  "numero": "L111-1",
+  "alineas": [
+   "Les juridictions judiciaires rendent leurs décisions au nom du peuple français."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006572056",
+  "version": "Version depuis le 9 juin 2006, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_organisation_judiciaire:L211-3": {
+  "texte": "Code de l'organisation judiciaire",
+  "numero": "L211-3",
+  "alineas": [
+   "Le tribunal judiciaire connaît de toutes les affaires civiles et commerciales pour lesquelles compétence n'est pas attribuée, en raison de la nature de la demande, à une autre juridiction."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000038314073",
+  "version": "Version depuis le 1er janvier 2020, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_organisation_judiciaire:L311-1": {
+  "texte": "Code de l'organisation judiciaire",
+  "numero": "L311-1",
+  "alineas": [
+   "La cour d'appel connaît, sous réserve des compétences attribuées à d'autres juridictions, des décisions judiciaires, civiles et pénales, rendues en premier ressort.",
+   "La cour d'appel statue souverainement sur le fond des affaires."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006572170",
+  "version": "Version depuis le 9 juin 2006, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
  "code_organisation_judiciaire:L411-1": {
   "texte": "Code de l'organisation judiciaire",
@@ -470,6 +619,34 @@
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006900839",
   "version": "Version depuis le 1er mai 2008, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
+ "code_justice_administrative:L111-1": {
+  "texte": "Code de justice administrative",
+  "numero": "L111-1",
+  "alineas": [
+   "Le Conseil d'Etat est la juridiction administrative suprême. Il statue souverainement sur les recours en cassation dirigés contre les décisions rendues en dernier ressort par les diverses juridictions administratives ainsi que sur ceux dont il est saisi en qualité de juge de premier ressort ou de juge d'appel."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006449167",
+  "version": "Version depuis le 1er janvier 2001, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_justice_administrative:L211-1": {
+  "texte": "Code de justice administrative",
+  "numero": "L211-1",
+  "alineas": [
+   "Les tribunaux administratifs sont, en premier ressort et sous réserve des compétences attribuées aux autres juridictions administratives, juges de droit commun du contentieux administratif."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000024967312",
+  "version": "Version depuis le 15 décembre 2011, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "code_justice_administrative:L211-2": {
+  "texte": "Code de justice administrative",
+  "numero": "L211-2",
+  "alineas": [
+   "Les cours administratives d'appel connaissent des jugements rendus en premier ressort par les tribunaux administratifs, sous réserve des compétences attribuées au Conseil d'Etat en qualité de juge d'appel et de celles définies aux articles L. 552-1 et L. 552-2.",
+   "Elles connaissent en premier et dernier ressort des litiges dont la compétence leur est attribuée par décret en Conseil d'Etat à raison de leur objet ou de l'intérêt d'une bonne administration."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032442838",
+  "version": "Version depuis le 22 avril 2016, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
  "code_justice_administrative:L521-2": {
   "texte": "Code de justice administrative",
   "numero": "L521-2",
@@ -499,6 +676,15 @@
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006361178",
   "version": "Version depuis le 1er juillet 2006, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
+ "ddhc_1789:6": {
+  "texte": "Déclaration des droits de l'homme et du citoyen de 1789",
+  "numero": "6",
+  "alineas": [
+   "La loi est l'expression de la volonté générale. Tous les citoyens ont droit de concourir personnellement, ou par leurs représentants, à sa formation. Elle doit être la même pour tous, soit qu'elle protège, soit qu'elle punisse. Tous les citoyens étant égaux à ses yeux sont également admissibles à toutes dignités, places et emplois publics, selon leur capacité, et sans autre distinction que celle de leurs vertus et de leurs talents."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006527432",
+  "version": "Version depuis le 26 août 1789, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
  "ddhc_1789:11": {
   "texte": "Déclaration des droits de l'homme et du citoyen de 1789",
   "numero": "11",
@@ -506,6 +692,15 @@
    "La libre communication des pensées et des opinions est un des droits les plus précieux de l'homme : tout citoyen peut donc parler, écrire, imprimer librement, sauf à répondre de l'abus de cette liberté dans les cas déterminés par la loi."
   ],
   "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006527437",
+  "version": "Version depuis le 26 août 1789, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
+ },
+ "ddhc_1789:16": {
+  "texte": "Déclaration des droits de l'homme et du citoyen de 1789",
+  "numero": "16",
+  "alineas": [
+   "Toute société dans laquelle la garantie des droits n'est pas assurée, ni la séparation des pouvoirs déterminée, n'a point de constitution."
+  ],
+  "url": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006527443",
   "version": "Version depuis le 26 août 1789, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)"
  },
  "ddhc_1789:13": {

@@ -138,7 +138,7 @@ export function PageMatiere({ slug }: { slug: string }) {
   const principales = new Set(m.principales ?? [])
   const sources = [...m.sources].sort((a, b) => Number(principales.has(b)) - Number(principales.has(a)))
   const memeAnnee = MATIERES_PUBLIQUES.filter((x) => x.annee === m.annee && x.id !== m.id)
-  const guides = GUIDES.filter((g) => m.guides?.includes(g.slug))
+  const guides = GUIDES.filter((g) => m.guides?.includes(g.slug) || g.matieres.includes(m.id))
   return (
     <PublicLayout>
       <Section className="py-12">

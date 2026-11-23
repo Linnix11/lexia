@@ -14,9 +14,9 @@ recherche sont des estimations qualitatives, signalées comme telles.
   `<div id="root">` vide, le même titre et la même description. Google lit le JavaScript, mais en différé.
 - Le site n'avait que 4 pages publiques utiles (accueil, tarifs, deux pages légales), sans aucune page qui réponde
   à une recherche d'étudiant (« cas pratique droit des contrats », « méthode commentaire d'arrêt »...).
-- D116 compile en HTML, à la publication, 29 pages publiques (accueil, tarifs, 20 matières, 5 guides, 2 index) avec
+- D116 compile en HTML, à la publication, 34 pages publiques (accueil, tarifs, 20 matières, 10 guides, 2 index) avec
   titre, description, adresse canonique, Open Graph, carte Twitter et données structurées, et ajoute `sitemap.xml`
-  (32 adresses), `llms.txt` et une image de partage.
+  (37 adresses), `llms.txt` et une image de partage.
 - Ce qui reste à l'éditeur (partie 8) : Google Search Console, Bing Webmaster Tools, vérification des réglages
   Cloudflare pour les robots, premiers liens entrants. Rien de cela ne coûte d'argent.
 
@@ -49,11 +49,11 @@ sont corrects. La politique de sécurité du contenu (`script-src 'self'`) n'emp
 |---|---|---|---|
 | Pages publiques compilées en HTML à la publication (prérendu), reprises par React sans redessin (`hydrateRoot`) | Très fort : contenu lisible par tous les robots, affichage immédiat | Moyen | Oui |
 | Une page par matière (20) : présentation, notions, question de cours avec l'article officiel cité, sources, questions fréquentes, lien d'inscription | Fort : répond aux recherches « droit X L1 », « fiche droit X » | Moyen | Oui |
-| 5 guides sourcés (partie 5) | Fort : requêtes de méthode, saisonnières aux partiels | Moyen | Oui |
+| 10 guides sourcés (partie 5) | Fort : requêtes de méthode, saisonnières aux partiels | Moyen | Oui |
 | Titre, description et adresse canonique uniques par page | Fort | Faible | Oui |
 | JSON-LD : Organization, WebSite, WebApplication (avec les 3 offres), LearningResource, FAQPage, Article (avec les articles cités en `Legislation`), BreadcrumbList, CollectionPage | Moyen (compréhension, extraits enrichis possibles) | Faible | Oui |
 | Open Graph et carte Twitter, image 1200 x 630 (`web/public/og-lexia.png`) | Moyen (partages sur les réseaux, messageries) | Faible | Oui |
-| `sitemap.xml` (32 adresses) et `robots.txt` avec la ligne `Sitemap` | Moyen | Faible | Oui |
+| `sitemap.xml` (37 adresses) et `robots.txt` avec la ligne `Sitemap` | Moyen | Faible | Oui |
 | `llms.txt` (format llmstxt.org) | Faible à moyen, adoption encore inégale par les assistants | Faible | Oui |
 | Liens Matières et Guides dans l'en-tête (tablette et ordinateur) et le pied de page (partout) | Moyen : maillage interne | Faible | Oui |
 | HEAD accepté par le serveur | Faible | Faible | Oui |
@@ -62,10 +62,10 @@ Avant et après, sur la compilation locale :
 
 | Mesure | Avant | Après |
 |---|---|---|
-| Pages avec contenu lisible sans JavaScript | 0 | 29 (3 pages légales : tête seule, partie 6) |
+| Pages avec contenu lisible sans JavaScript | 0 | 34 avec les 10 guides (3 pages légales : tête seule, partie 6) |
 | Mots lisibles sans JavaScript, accueil | 0 | 512 |
 | Mots lisibles sans JavaScript, toutes pages | 0 | environ 18 000 |
-| Adresses dans le sitemap | 0 | 32 |
+| Adresses dans le sitemap | 0 | 37 |
 | JavaScript principal (compressé) | 86,6 Ko | 89,9 Ko (titres et chemins des pages publiques, formules) |
 | Texte des matières et des guides | sans objet | fichier à part de 22 Ko compressés, chargé par ces pages seulement |
 
@@ -100,6 +100,10 @@ quelques semaines.
 | cas pratique droit pénal | Méthode | /guides/methode-cas-pratique-droit-penal | Moyenne | Moyenne | 1 |
 | fiche droit L1, fiche introduction au droit | Révision | /matieres/introduction-au-droit, /guides | Moyenne | Forte | 2 |
 | responsabilité civile pour faute fiche, article 1240 code civil | Révision, article | /guides/fiche-responsabilite-civile-pour-faute | Moyenne | Forte (Légifrance en tête sur le numéro) | 2 |
+| méthode dissertation juridique, plan en deux parties droit | Méthode | /guides/methode-dissertation-juridique, /guides/methode-plan-en-deux-parties | Forte, pic aux partiels | Forte | 1 |
+| fiche d'arrêt méthode, faire une fiche d'arrêt | Méthode | /guides/methode-fiche-arret | Forte | Forte | 1 |
+| hiérarchie des normes fiche, sources du droit L1 | Révision | /guides/fiche-sources-du-droit-hierarchie-des-normes | Forte | Forte | 2 |
+| organisation juridictionnelle française, ordre judiciaire et administratif | Révision | /guides/fiche-organisation-juridictionnelle | Moyenne | Forte | 2 |
 | QPC fiche, question prioritaire de constitutionnalité conditions | Révision | /guides/fiche-question-prioritaire-de-constitutionnalite | Moyenne | Moyenne | 2 |
 | conditions de validité du contrat, dol article 1137 | Question de cours | /matieres/droit-des-contrats, guide contrats | Moyenne | Forte | 2 |
 | droit administratif L2, contentieux administratif L3 | Découverte de la matière | pages des matières | Faible à moyenne | Moyenne | 3 |
@@ -131,7 +135,7 @@ Maillage : chaque matière renvoie à ses guides, aux autres matières de la mê
 guide renvoie aux matières concernées et liste ses textes cités ; l'en-tête et le pied de page relient Matières,
 Guides et Tarifs.
 
-### Guides publiés (D116)
+### Guides publiés (D116 ; 5 premiers le 23 novembre 2026, 5 suivants le même jour)
 
 | Guide | Niveau | Articles cités (version en vigueur lue dans l'index) |
 |---|---|---|
@@ -140,6 +144,11 @@ Guides et Tarifs.
 | Fiche : la responsabilité civile pour faute | L1, L2 | C. civ. 1240, 1241, 1242 (version du 25 juin 2025) |
 | Fiche : la question prioritaire de constitutionnalité | L1 | Constitution 61, 61-1, 62 ; ordonnance n° 58-1067, art. 23-2 |
 | Méthode du cas pratique en droit pénal | L2 | C. pén. 111-3, 121-1, 121-3, 122-5 |
+| Méthode de la dissertation juridique | L1, L2 | C. civ. 4, 5 ; CPC 12 |
+| Méthode de la fiche d'arrêt | L1 | COJ L. 411-2 ; CPC 455, 542, 561, 604 ; C. civ. 1241 |
+| Le plan en deux parties : méthode et exemples | L1 à L3 | C. pén. 122-5 ; C. civ. 1195 |
+| Fiche : les sources du droit et la hiérarchie des normes | L1 | DDHC 6, 16 ; Constitution 34, 37, 38, 55, 61-1, 88-1 ; C. civ. 1, 2, 4, 5 |
+| Fiche : l'organisation juridictionnelle française | L1 | COJ L. 111-1, L. 211-3, L. 311-1, L. 411-1, L. 411-2 ; CJA L. 111-1, L. 211-1, L. 211-2 ; Constitution 61-1, 64, 66 ; CPC 542, 604 |
 
 Chaque guide commence par un paragraphe « En bref » qui répond directement à la question, puis suit des sections
 numérotées, un exemple quand il est utile, des questions fréquentes et la liste des textes cités avec leur lien
@@ -151,9 +160,9 @@ mettrait en avant.
 
 Par ordre de priorité, au rythme d'un ou deux guides par semaine avant les partiels :
 
-1. Méthode de la dissertation juridique ; la fiche d'arrêt seule ; le plan en deux parties.
-2. Fiches de L1 : sources du droit et hiérarchie des normes, organisation juridictionnelle, Ve République
-   (Président, Gouvernement, Parlement), personnalité juridique.
+1. Fait le 23 novembre 2026 : méthode de la dissertation juridique, fiche d'arrêt, plan en deux parties, fiches
+   sur les sources du droit et la hiérarchie des normes et sur l'organisation juridictionnelle.
+2. Fiches de L1 restantes : Ve République (Président, Gouvernement, Parlement), personnalité juridique.
 3. Cas pratiques de L2 : responsabilité administrative, inexécution du contrat, droit de la famille (divorce,
    autorité parentale).
 4. Pages des grands arrêts déjà désignés par leur nom dans Lexia (D90), avec le texte officiel de la décision et
@@ -224,6 +233,6 @@ Par ordre de priorité. Aucune ne coûte d'argent.
    sur les réseaux du plan marketing (docs/marketing/plan.md). Attendre l'avis sur la marque avant d'en faire
    beaucoup.
 6. Mesure : chaque mois, impressions, clics, taux de clic et position des requêtes de la partie 4 dans la Search
-   Console ; pages indexées (32 attendues) ; inscriptions dont l'origine déclarée est un moteur ou un assistant
+   Console ; pages indexées (37 attendues) ; inscriptions dont l'origine déclarée est un moteur ou un assistant
    (question facultative sur l'origine de l'inscription, D110).
 7. Faire relire les cinq guides par un enseignant de droit, puis valider le plan de contenu (partie 5).
