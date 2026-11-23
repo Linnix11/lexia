@@ -48,6 +48,14 @@ _MANQUE = (r"(?:ne (?:livre|paie|paye|fournit|execute)\w* (?:pas|plus)|pas (?:li
 _AGE = (r"(?:\benfants?\b|\bfils\b|\bfille\b|\bmineure?s?\b|adolescent|\b(?:[2-9]|1[0-7]) ans\b"
         r"|\b(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|dix-sept) ans\b)")
 
+# Choses (sans moteur) qui peuvent causer un dommage dans un cas pratique : la garde de la chose (art. 1242 al. 1)
+# n'etait jamais developpee, 0 cas sur 6 (D115). Vehicule a moteur exclu : loi du 5 juillet 1985, pas 1242 al. 1.
+_CHOSE = (r"\b(?:ballons?|balles?|skate(?:board)?s?|planches? a roulettes|trottinettes?|velos?|bicyclettes?"
+    r"|rollers?|patins?|pierres?|cailloux|caillou|lance-pierres?|petards?|fusees?|boules?|raquettes?|batte"
+    r"|frisbees?|drones?|cerfs?-volants?|pots? de fleurs?|echelles?|branches?)\b")
+_CHOSES = re.compile(_CHOSE.replace("(?:", "(?P<chose>", 1))
+
+
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # --- introduction au droit -------------------------------------------------
     (r"entree en vigueur d.{0,6}loi|publication des lois|lois? .{0,40}opposable", ((CC, "1"),)),
@@ -252,6 +260,9 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # suggestion hors des sources de la matiere choisie est ignoree par la recherche.
     # Responsabilite civile
     (_AGE + r".{0,80}" + _DOMMAGE, ((CC, "1242"), (CC, "1240"))),
+    # Chose (sans moteur) et dommage sans age dit : « Leo brise la vitrine en jouant au ballon » ne recevait pas
+    # l'article 1242, ni donc la garde de la chose (D119).
+    (_CHOSE + r".{0,80}" + _DOMMAGE + r"|" + _DOMMAGE + r".{0,80}" + _CHOSE, ((CC, "1242"), (CC, "1240"))),
     (r"(?:salarie|employe|prepose|livreur|chauffeur|ouvrier|apprenti)\w*.{0,120}" + _DOMMAGE
      + r"|" + _DOMMAGE + r".{0,120}(?:son employeur|l.entreprise|la (?:societe|compagnie))", ((CC, "1242"),)),
     (r"(?:glisse|trebuch)\w* (?:sur|dans)\b.{0,80}(?:magasin|supermarche|escalier|flaque|chantier|piscine|sol)"
@@ -595,6 +606,13 @@ MATIERES_SPECIALES: tuple[tuple[str, re.Pattern], ...] = (
     ("Des libéralités", re.compile(r"liberalit|donation|testament|\blegs\b|legataire|reserve hereditaire|quotite disponible")),
     ("régimes matrimoniaux", re.compile(r"regimes? matrimoni|contrat de mariage|epoux|conjoint|communaute")),
 )
+
+
+def chose_en_cause(question: str) -> str | None:
+    """Chose nommee dans des faits ou un dommage est cause (« casse la vitre avec son ballon »), ou None."""
+    q = normaliser(question)
+    m = _CHOSES.search(q)
+    return m.group("chose") if m and re.search(_DOMMAGE, q) else None
 
 
 def hors_matiere(passage: dict, question: str) -> bool:

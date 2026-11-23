@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from api import lexique
 from api.concordance import note as note_concordance
 from api.textes import en_vigueur_aujourdhui
 
@@ -216,6 +217,21 @@ def consigne_cours(cours: str | None) -> str:
     return CONSIGNES_COURS[cours] + "\n" if cours in CONSIGNES_COURS else ""
 
 
+def note_garde(question: str, passages: list[dict]) -> str:
+    """Note au modele quand les faits mettent en cause une chose et que l'article 1242 est fourni.
+
+    La consigne du cas pratique cite deja le gardien de la chose parmi les responsables (D115) : il n'etait
+    developpe dans aucun des 6 cas de responsabilite. Une phrase de plus dans la consigne generale faisait perdre
+    l'article 1240 : la note n'est ajoutee qu'a ces faits-la, comme celle des anciens numeros (D53)."""
+    chose = lexique.chose_en_cause(question)
+    if chose is None or not any(p.get("source_id") == "code_civil" and p.get("numero") == "1242" for p in passages):
+        return ""
+    return (f"Note : les faits mettent en cause une chose ({chose}). En plus de la responsabilité de l'auteur et de "
+            "celle des personnes qui répondent de lui, examine dans la majeure et la mineure la responsabilité du "
+            "fait des choses (article 1242, alinéa 1, dans les extraits) : qui avait la garde de la chose au moment "
+            "du dommage et quel rôle elle y a joué. La conclusion dit aussi contre qui agir sur ce fondement.")
+
+
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
                 semestre: int | None = None, anciens: dict | None = None, cours: str | None = None) -> str:
     consigne = (public(niveau, semestre) + consigne_cours(cours) + MODES[mode]
@@ -223,6 +239,8 @@ def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | No
                 + consigne_reponse_directe(mode))
     if anciens:
         consigne += "\n" + note_concordance(anciens)
+    if mode == "cas_pratique" and (garde := note_garde(question, passages)):
+        consigne += "\n" + garde
     return (
         f"{consigne}\n\n<extraits>\n{format_extraits(passages)}\n</extraits>\n\n"
         f"<question>\n{question}\n</question>"
