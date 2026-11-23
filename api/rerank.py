@@ -4,6 +4,7 @@ Par defaut : antoinelouis/crossencoder-camembert-base-mmarcoFR (licence MIT, ent
 Retenu apres comparaison sur des questions de cours (voir docs/decisions.md, D27) : meilleur
 compromis gain / vitesse face a mMiniLM et bge-reranker-v2-m3. Reglage (D47) : 10 candidats par groupe,
 256 jetons, soit ~4 s par question sur le VPS (2 processeurs) au lieu de ~21 s avec 30 candidats / 512 jetons.
+Mesure des reglages (8 candidats, jetons, int8) : eval/reclassement.py, D122.
 Configuration : RERANK_MODEL (vide = desactive).
 """
 
@@ -28,11 +29,13 @@ ATTENTE_MAX = 10.0
 
 
 class CrossEncoderReclasseur:
-    def __init__(self, model: str, max_length: int = 256):
+    def __init__(self, model: str, max_length: int = 256, device: str | None = None):
+        """device : None = choix de sentence-transformers (processeur sur le VPS) ; « cpu » pour mesurer sur un Mac,
+        ou le GPU (MPS) serait pris (eval/reclassement.py)."""
         from sentence_transformers import CrossEncoder  # import lourd : seulement si active
 
         self.model = model
-        self._ce = CrossEncoder(model, max_length=max_length)
+        self._ce = CrossEncoder(model, max_length=max_length, device=device)
 
     def reordonner(self, question: str, hits: list[Hit]) -> list[Hit]:
         if not hits:

@@ -134,6 +134,14 @@ def borner(morceaux: list[dict], maximum: int = MAX_CARACTERES_DOCUMENT) -> tupl
     return garde, False
 
 
+def document_partiel(morceaux: list[dict], envoyes: list[dict]) -> bool:
+    """Du texte du document lui-meme n'a pas ete envoye au modele. Les extraits cites d'une reponse ou les passages
+    d'une matiere laisses au modele principal quand le secours prend le relais (4 morceaux, rag.pour_secours) n'en
+    sont pas : une reponse de quelques paragraphes etait dite « trop longue » (recette du 23/11, R-4)."""
+    ids = {m["id"] for m in envoyes}
+    return any(m.get("source_id") == "document" and m["id"] not in ids for m in morceaux)
+
+
 def nettoyer(brut: dict, document: list[dict], controle: Controle) -> list[str]:
     """Paragraphes verifies, sans repere S1, coupes a MAX_MOTS a la fin d'un paragraphe (ou d'une phrase)."""
     gardes: list[str] = []
@@ -228,15 +236,16 @@ class ResumesVocaux:
         titre_resume = str(brut.get("titre") or "").strip()[:200]
         if not verifier_texte(titre_resume, envoyes, controle):
             titre_resume = ""
+        partiel = partiel or document_partiel(morceaux, envoyes)
         self.journal.ecrire("requetes", route="resume_vocal", type=d.type, modele=modele, mots=mots,
-                            partiel=partiel or len(envoyes) < len(morceaux), controle=controle.as_dict(),
+                            partiel=partiel, controle=controle.as_dict(),
                             duree_ms=int((time.monotonic() - debut) * 1000))
         return {
             "titre": titre_resume or titre,
             "paragraphes": paragraphes if valide else [],
             "mots": mots if valide else 0,
             "duree_estimee_s": round(mots * 60 / MOTS_PAR_MINUTE) if valide else 0,
-            "partiel": partiel or len(envoyes) < len(morceaux),
+            "partiel": partiel,
             "message": "" if valide else "Impossible de produire un résumé vérifiable de ce document.",
             "avertissement": AVERTISSEMENT,
             "controle": {**controle.as_dict(), "modele_appele": True},

@@ -194,6 +194,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     docs = {} if settings.api_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
     app = FastAPI(title="Lexia API", version="0.2.0", **docs,
                   description="Assistant d'étude en droit français : réponses fondées sur des sources officielles citées.")
+    app.state.lexia = lexia  # amorce au demarrage du serveur de production (api/serveur.py, R-2)
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                        allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
@@ -385,7 +386,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
                 "disjoncteur": "ouvert" if secours is not None and lexia.disjoncteur.en_pause() else "ferme",
                 "embeddings_modele": getattr(embedder, "model", None),
                 "reformulation_modele": settings.expansion_model or None,
-                "reclassement_modele": getattr(reclasseur, "model", None)}
+                "reclassement_modele": getattr(reclasseur, "model", None),
+                # premier parcours des vecteurs au demarrage (R-2) : etat et duree par etape
+                "amorce": lexia.amorce}
 
     # Fraicheur des sources, affichee dans le site (audit B7) : date de la derniere archive LEGI lue pour les
     # textes, date de la decision la plus recente pour la jurisprudence, et d'ou vient cette decision (archive DILA,

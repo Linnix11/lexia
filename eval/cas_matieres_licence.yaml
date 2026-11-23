@@ -64,5 +64,7 @@ cas:
   - {id: fam-03, matiere: droit_de_la_famille, question: "Quels sont les droits du conjoint survivant dans la succession ?", attendu: [reponse], sources: [code_civil:757, code_civil:756]}
   - {id: fam-04, matiere: droit_de_la_famille, question: "Quelles sont les conditions de validité d'un testament olographe ?", attendu: [reponse], sources: [code_civil:970]}
   - {id: fam-05, matiere: droit_de_la_famille, question: "Un époux peut-il vendre seul le logement de la famille ?", attendu: [reponse], sources: [code_civil:215]}
+  # Dossier enseignant, question 5 (2026-11-23, D122) : la difference de sexe etait donnee pour condition du mariage
+  - {id: fam-06, matiere: droit_de_la_famille, question: "Quelles sont les conditions de fond du mariage en droit français ?", attendu: [reponse], sources: [code_civil:143]}
   - {id: soc-sec-01, matiere: droit_social, question: "Qu'est-ce qu'un accident du travail ?", attendu: [reponse], sources: [code_securite_sociale:L411-1]}
   - {id: soc-sec-02, matiere: droit_social, question: "Qu'est-ce que la faute inexcusable de l'employeur ?", attendu: [reponse], sources: [code_securite_sociale:L452-1]}

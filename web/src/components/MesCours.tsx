@@ -13,8 +13,8 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
   const { mesCours, rafraichirCours, setCoursChoisis, setMatiere, setVue, coursChoisis, notifier } = useApp()
   const liste = mesCours.filter((c) => c.matiere === matiere)
   if (liste.length === 0) return null
-  const retirer = (id: number, titre: string) => {
-    if (!window.confirm(`Retirer définitivement le cours « ${titre} » ?`)) return
+  // Second clic « Confirmer le retrait », comme les fiches et la revision ; plus de window.confirm (recette du 23/11, R-8)
+  const retirer = (id: number) => {
     api.cours.supprimer(id)
       .then(() => {
         setCoursChoisis(coursChoisis.filter((c) => c !== id))
@@ -29,7 +29,7 @@ export function ListeCoursMatiere({ matiere }: { matiere: string }) {
       <ul className="grid gap-2">
         {liste.map((c) => (
           <CoursLigne key={c.id} cours={c} onReviser={() => { setCoursChoisis([c.id]); setMatiere(matiere); setVue('assistant') }}
-            onRetirer={() => retirer(c.id, c.titre)} />
+            onRetirer={() => retirer(c.id)} />
         ))}
       </ul>
     </div>
@@ -46,6 +46,7 @@ function CoursLigne({ cours: c, onReviser, onRetirer }: { cours: CoursDepose; on
   const [titre, setTitre] = useState(c.titre)
   const [matiere, setMatiereCours] = useState(c.matiere)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [aRetirer, setARetirer] = useState(false)
 
   const basculerApercu = () => {
     if (apercu) return setApercu(null)
@@ -83,7 +84,17 @@ function CoursLigne({ cours: c, onReviser, onRetirer }: { cours: CoursDepose; on
           <button type="button" onClick={basculerApercu} aria-expanded={apercu !== null} className={lien}>Aperçu</button>
           <button type="button" onClick={() => { setEdition(!edition); setTitre(c.titre); setMatiereCours(c.matiere) }}
             aria-expanded={edition} className={lien}>Modifier</button>
-          <button type="button" onClick={onRetirer} className="text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+          <button type="button"
+            onClick={() => {
+              if (!aRetirer) return setARetirer(true)
+              setARetirer(false)
+              onRetirer()
+            }}
+            onBlur={() => setARetirer(false)}
+            aria-label={aRetirer ? `Confirmer le retrait du cours « ${c.titre} »` : `Retirer le cours « ${c.titre} »`}
+            className={`text-[11px] hover:text-[#8c4a36] ${aRetirer ? 'font-semibold text-[#8c4a36]' : 'text-muted'}`}>
+            {aRetirer ? 'Confirmer le retrait' : 'Retirer'}
+          </button>
         </span>
       </div>
       <div className="flex flex-wrap items-start gap-2">
@@ -163,9 +174,13 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
     rafraichirCours()
     if (deposes.length) {
       setCoursChoisis(deposes) // tous les cours deposes deviennent les cours de travail
-      notifier(deposes.length > 1 ? 'Cours ajoutés : posez-leur vos questions.' : 'Cours ajouté : posez-lui vos questions.')
+      const fait = deposes.length > 1 ? 'Cours ajoutés : posez-leur vos questions.' : 'Cours ajouté : posez-lui vos questions.'
+      notifier([fait, ...avertissements].join(' '))
     }
-    if (echecs.length || avertissements.length) setErreurs([...echecs, ...avertissements])
+    // Un depot reussi ferme le formulaire, meme avec un avertissement (page lue par reconnaissance de caracteres) :
+    // reste ouvert, il laissait croire qu'il fallait deposer de nouveau (recette du 2026-11-23, R-7). Seul un echec
+    // le garde ouvert, avec ses raisons.
+    if (echecs.length) setErreurs([...echecs, ...avertissements])
     else onFermer()
   }
 

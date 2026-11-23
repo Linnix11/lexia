@@ -55,6 +55,8 @@ cas:
   - {id: intro-38, matiere: introduction_au_droit, question: "Comment publie-t-on les lois et à partir de quand sont-elles opposables ?", attendu: [reponse], sources: [code_civil:1]}
   - {id: intro-39, matiere: introduction_au_droit, question: "Que prévoit le Code civil sur l'absence d'une personne ?", attendu: [reponse], sources: [code_civil:112]}
   - {id: intro-40, matiere: introduction_au_droit, question: "Qu'est-ce que la filiation et comment est-elle établie ?", attendu: [reponse], sources: [code_civil:310-1, code_civil:310-3]}
+  # Dossier enseignant, question 25 (2026-11-23, D122) : l'art. 1100 (sources des obligations) pris pour les sources du droit
+  - {id: intro-41, matiere: introduction_au_droit, mode: dissertation, question: "Propose-moi un plan de dissertation sur le sujet : « La jurisprudence est-elle une source du droit ? »", attendu: [reponse], sources: [code_civil:5, code_civil:4], toutes: true}
 
   # ===================================================================== DROIT CONSTITUTIONNEL (40)
   - {id: const-01, matiere: droit_constitutionnel, question: "À qui appartient la souveraineté nationale ?", attendu: [reponse], sources: [constitution:3]}
@@ -236,6 +238,8 @@ cas:
   - {id: proc-03, matiere: procedure_civile, question: "Le juge doit-il faire respecter le principe du contradictoire ?", attendu: [reponse], sources: [code_procedure_civile:16]}
   - {id: proc-04, matiere: procedure_civile, question: "Que doit contenir une assignation ?", attendu: [reponse], sources: [code_procedure_civile:56]}
   - {id: proc-05, matiere: procedure_civile, question: "Qu'est-ce qu'une fin de non-recevoir ?", attendu: [reponse], sources: [code_procedure_civile:122]}
+  # Dossier enseignant, question 12 (D122) : l'art. 1355 du Code civil n'etait pas cherche en procedure civile
+  - {id: proc-06, matiere: procedure_civile, question: "Qu'est-ce que l'autorité de la chose jugée en matière civile et quelles sont ses conditions ?", attendu: [reponse], sources: [code_civil:1355]}
   # ===================================================================== AJOUT DU 2026-11-13 : 15 CAS (nouvelles matieres)
   - {id: lib-01, matiere: libertes_fondamentales, question: "Que protège l'article 11 de la Déclaration de 1789 ?", attendu: [reponse], sources: [ddhc_1789:11]}
   - {id: lib-02, matiere: libertes_fondamentales, question: "Qu'est-ce que la séparation des pouvoirs selon la Déclaration de 1789 ?", attendu: [reponse], sources: [ddhc_1789:16]}
@@ -251,4 +255,7 @@ cas:
   - {id: fam-02, matiere: droit_de_la_famille, question: "Comment divorcer par consentement mutuel ?", attendu: [reponse], sources: [code_civil:229]}
   - {id: fam-03, matiere: droit_de_la_famille, question: "Les enfants doivent-ils des aliments à leurs parents ?", attendu: [reponse], sources: [code_civil:205]}
   - {id: bie-01, matiere: droit_des_biens, question: "Qu'est-ce que l'usufruit ?", attendu: [reponse], sources: [code_civil:578]}
+  # Dossier enseignant, question 6 (D122) : ni les droits (fruits) ni l'extinction de l'usufruit (617 est dans les 8 extraits ;
+  # le secours n'a que 3 textes)
+  - {id: bie-06, matiere: droit_des_biens, question: "Qu'est-ce que l'usufruit et quels sont les droits et obligations de l'usufruitier ?", attendu: [reponse], sources: [code_civil:578, code_civil:582], toutes: true}
   - {id: bie-02, matiere: droit_des_biens, question: "Quelle indemnité reçoit un propriétaire exproprié ?", attendu: [reponse], sources: [code_expropriation:L321-1]}

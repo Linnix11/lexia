@@ -94,8 +94,10 @@ class LocalRetriever:
             rang = {pid: i for i, pid in enumerate(self._ids)}
             arts = sorted({a for _, liste in lexique.NOTIONS for a in liste})
             for src, num in arts:
-                for (pid,) in self._q("SELECT id FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1",
-                                      (src, num)):
+                # article de loi non codifiee : par son identifiant (lexique.LOI_1985, R-1)
+                sql = ("SELECT id FROM passages WHERE source_id = ? AND id = ? AND en_vigueur = 1" if num.startswith("LEGI")
+                       else "SELECT id FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1")
+                for (pid,) in self._q(sql, (src, f"{src}:{num}" if num.startswith("LEGI") else num)):
                     if pid in rang:
                         self._principes.append((pid, src))
             if self._principes:
@@ -294,8 +296,16 @@ class LocalRetriever:
         out: list[dict] = []
         for src, num in complement.suggestions:
             if src in sources:
-                out.extend(self._par_numero(src, num))
+                out.extend(self.article(src, num))
         return out
+
+    def article(self, src: str, num: str) -> list[dict]:
+        """Article propose par le lexique : par numero dans un code, par identifiant LEGIARTI dans une loi non
+        codifiee, ou des milliers de lois ont un « article 1 » (loi du 5 juillet 1985, recette du 23/11, R-1)."""
+        if not num.startswith("LEGIARTI"):
+            return self._par_numero(src, num)
+        p = self.get(f"{src}:{num}")
+        return [p] if p and en_vigueur_aujourdhui(p.get("meta") or {}, src) is not False else []
 
     def _par_ids(self, ids: list[str]) -> list[tuple[str, dict]]:
         out = []

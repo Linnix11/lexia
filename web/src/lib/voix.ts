@@ -9,10 +9,25 @@ export function decouperPhrases(paragraphes: string[]): string[][] {
       .filter(Boolean))
 }
 
-/** Voix francaises, fr-FR d'abord. Une voix en ligne (voix Google de Chrome...) envoie le texte lu a l'editeur du
- * navigateur : seules les voix de l'appareil sont proposees quand il y en a (recette du 2026-11-20, D-11). */
+// Voix fantaisie de macOS (Eloquence et voix « novelty ») : proposees en francais de France et du Canada, elles
+// remplissaient la liste (recette du 2026-11-23, R-6). Safari les reconnait a leur voiceURI, Chrome a leur nom.
+const FANTAISIE = new Set(['eddy', 'flo', 'grandma', 'grandpa', 'reed', 'rocko', 'sandy', 'shelley', 'albert',
+  'bad news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos', 'fred', 'good news', 'jester', 'junior', 'kathy',
+  'organ', 'ralph', 'superstar', 'trinoids', 'whisper', 'wobble', 'zarvox'])
+
+function fantaisie(v: SpeechSynthesisVoice): boolean {
+  const uri = (v.voiceURI || '').toLowerCase()
+  const nom = v.name.toLowerCase().replace(/\s*\(.*$/, '').trim()
+  return uri.includes('eloquence') || uri.includes('speech.synthesis.voice') || FANTAISIE.has(nom)
+}
+
+/** Voix francaises, fr-FR d'abord, sans les voix fantaisie de macOS. Une voix en ligne (voix Google de Chrome...)
+ * envoie le texte lu a l'editeur du navigateur : seules les voix de l'appareil sont proposees quand il y en a
+ * (recette du 2026-11-20, D-11). */
 export function voixFrancaises(voix: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
-  const francaises = voix.filter((v) => v.lang.toLowerCase().startsWith('fr'))
+  const toutes = voix.filter((v) => v.lang.toLowerCase().startsWith('fr'))
+  const serieuses = toutes.filter((v) => !fantaisie(v))
+  const francaises = serieuses.length ? serieuses : toutes
   const locales = francaises.filter((v) => v.localService)
   const rang = (v: SpeechSynthesisVoice) => (v.lang.replace('_', '-').toLowerCase() === 'fr-fr' ? 0 : 1)
   return (locales.length ? locales : francaises).sort((a, b) => rang(a) - rang(b))

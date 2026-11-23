@@ -41,6 +41,16 @@ cas:
   - {id: cp-34, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1242], toutes: true,
      question: "En faisant du skate sur le parking, une collégienne de 14 ans heurte une voiture et raye la carrosserie. Le propriétaire de la voiture veut être indemnisé : contre qui peut-il agir ?"}
 
+  # Accident de la circulation (recette du 2026-11-23, R-1) : un vehicule terrestre a moteur cause le dommage. La loi
+  # n° 85-677 du 5 juillet 1985 s'applique seule et ecarte 1240 a 1242 ; la reponse etait faite sur 1240 a 1242.
+  # Source attendue : article 1er de la loi (champ d'application), par identifiant.
+  - {id: cp-35, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [lois:LEGIARTI000006839396],
+     question: "Marc gare sa voiture dans une rue en pente sans serrer le frein à main. La voiture dévale la pente et renverse Julie, une piétonne, qui est blessée. Julie peut-elle obtenir réparation, et auprès de qui ?"}
+  - {id: cp-36, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [lois:LEGIARTI000006839396],
+     question: "Un automobiliste renverse un piéton qui traversait en dehors du passage protégé. Le piéton, blessé, peut-il être indemnisé malgré son imprudence ?"}
+  - {id: cp-37, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [lois:LEGIARTI000006839396],
+     question: "Lucas est passager de la moto de son ami. La moto percute un muret et Lucas est blessé. Qui doit l’indemniser ?"}
+
   # ===================================================================== CONTRATS
   - {id: cp-08, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137],
      question: "Paul a vendu sa voiture à Marie en lui cachant qu’elle avait été gravement accidentée. Marie peut-elle faire annuler la vente ?"}

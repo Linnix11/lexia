@@ -20,11 +20,12 @@ from pydantic import BaseModel, Field
 from api import prompts
 from api.auth import verifier_origine
 from api.citations import Controle, verifier_texte
+from api.concordance import DATE_REFORME, REFORME_2016
 from api.journal import Journal
 from api.matieres import MATIERES
 from api.references import _norm_num, articles_cites, extraire, variantes
 from api.resumes_vocaux import (MAX_CARACTERES_REPONSE, MAX_SOURCES_REPONSE, DemandeResume, DocumentIntrouvable,
-                                QuotaResumes, ResumesVocaux, borner)
+                                QuotaResumes, ResumesVocaux, borner, document_partiel)
 from api.textes import en_vigueur_aujourdhui
 
 AVERTISSEMENT = "Carte générée automatiquement : vérifiez avec les textes."
@@ -61,6 +62,30 @@ def _libelle(brut) -> str:
     return texte
 
 
+def _hors_du_document(texte: str, envoyes: list[dict]) -> bool:
+    """Article de la feuille qui n'est ni un extrait envoye (par son numero) ni cite dans le texte du document
+    lui-meme : seulement mentionne dans le texte d'une decision citee. Une carte de la responsabilite civile
+    montrait les articles 1733 et 1734 (incendie dans un bail), cites par un arret (recette du 23/11, R-5)."""
+    numeros = {_norm_num(p.get("numero") or "") for p in envoyes if p.get("numero")}
+    texte_document = "\n".join(p["texte"] for p in envoyes if p.get("source_id") == "document")
+    du_document = {n for n, _ in articles_cites(texte_document)}
+    return any(n not in numeros and n not in du_document for n, _ in articles_cites(texte))
+
+
+def _ancien_numero(texte: str, envoyes: list[dict]) -> tuple[str, tuple[str, ...]] | None:
+    """(ancien numero, articles actuels) quand la feuille cite un numero du Code civil d'avant le 1er octobre 2016
+    (« Article 1382 ») sans qu'un article actuel de ce numero soit parmi les extraits : la carte le donnait sans dire
+    qu'il est renumerote (recette du 23/11, R-5). L'article 1382 actuel (presomptions) fourni en extrait reste tel quel."""
+    actuels = {_norm_num(p.get("numero") or "") for p in envoyes if p.get("numero")
+               and (p.get("meta") or {}).get("en_vigueur") is not False
+               and (p.get("meta") or {}).get("date_fin") != DATE_REFORME}
+    for n, code in articles_cites(texte):
+        nouveaux = REFORME_2016.get(n)
+        if nouveaux and nouveaux != (n,) and code in (None, "code_civil") and n not in actuels:
+            return n, nouveaux
+    return None
+
+
 def _noeud(brut, envoyes: list[dict], controle: Controle) -> dict | None:
     if not isinstance(brut, dict):   # forme deja controlee (api/llm/forme.py) ; filet
         controle.elements_retires += 1
@@ -77,10 +102,17 @@ def _noeud(brut, envoyes: list[dict], controle: Controle) -> dict | None:
         if not texte or any(x["texte"] == texte for x in articles):
             continue
         # Une feuille est une reference (article, decision, pourvoi) presente dans les extraits envoyes.
-        if extraire(texte).vide or not verifier_texte(texte, envoyes, controle):
+        if extraire(texte).vide or not verifier_texte(texte, envoyes, controle) or _hors_du_document(texte, envoyes):
             controle.citations_retirees += 1
             continue
-        articles.append({"texte": texte})
+        if ancien := _ancien_numero(texte, envoyes):
+            n, nouveaux = ancien
+            mot = "article" if len(nouveaux) == 1 else "articles"
+            texte = f"{texte} (ancien numéro, aujourd'hui {mot} {', '.join(nouveaux)})"
+            # lien vers l'article actuel, pas vers l'ancienne version (lu puis retire par carte())
+            articles.append({"texte": texte, "actuel": f"article {nouveaux[0]} du Code civil"})
+        else:
+            articles.append({"texte": texte})
         if len(articles) >= MAX_ARTICLES:
             break
     return {"libelle": libelle, "articles": articles}
@@ -204,12 +236,12 @@ class CartesMentales:
         for n in branches:
             for x in [n, *n["enfants"]]:
                 for a in x["articles"]:
-                    a["lien"] = self.lien(a["texte"], candidats)
+                    a["lien"] = self.lien(a.pop("actuel", None) or a["texte"], candidats)
                     liens += a["lien"] is not None
         titre_carte = _libelle(brut.get("titre"))
         if not verifier_texte(titre_carte, envoyes, controle):
             titre_carte = ""
-        partiel = partiel or len(envoyes) < len(morceaux)
+        partiel = partiel or document_partiel(morceaux, envoyes)
         valide = len(branches) >= MIN_BRANCHES
         self.journal.ecrire("requetes", route="carte_mentale", type=d.type, modele=modele,
                             branches=len(branches), noeuds=sum(1 + len(b["enfants"]) for b in branches),

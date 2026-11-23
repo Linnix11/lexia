@@ -55,14 +55,40 @@ _CHOSE = (r"\b(?:ballons?|balles?|skate(?:board)?s?|planches? a roulettes|trotti
     r"|frisbees?|drones?|cerfs?-volants?|pots? de fleurs?|echelles?|branches?)\b")
 _CHOSES = re.compile(_CHOSE.replace("(?:", "(?P<chose>", 1))
 
+# Accident de la circulation : un vehicule terrestre a moteur cause le dommage. La loi n° 85-677 du 5 juillet 1985
+# s'applique seule et ecarte les articles 1240 a 1242 ; Lexia repondait sur 1240 a 1242 (recette du 23/11, R-1).
+# Le vehicule doit etre l'auteur du heurt, pas la chose abimee : « des tuiles abiment une voiture garee » (cp-06) et
+# « heurte une voiture et raye la carrosserie » (cp-34) restent au Code civil. Sans moteur (velo, cp-04) : non plus.
+# Articles de loi par identifiant : des milliers de lois ont un « article 1 » (api/retrieval/local.py).
+LOIS = "lois"
+_VTM = (r"\b(?P<vehicule>voitures?|automobiles?|autos|motos?|motocyclettes?|scooters?|camions?|camionnettes?"
+        r"|poids lourds?|vehicules?|autocars?|autobus|bus|tracteurs?|quads?|cyclomoteurs?|mobylettes?"
+        r"|voiturettes?|automobilistes?|motards?)\b")
+# Heurt cause par le vehicule ; ni « raye » ni « abime », qui disent le dommage subi par une chose
+_HEURT = (r"(?:\brenvers|\bpercut|\bfauch|\bheurt|\bbless|\becras|\baccroch|\bdeval|\btamponn|\bpercussion"
+          r"|\btuee?s?\b|\broule sur|\brecule sur)")
+# Question de droit penal (« quelle est sa responsabilite penale ? », ctl4-11) : l'indemnisation n'est pas posee
+_PENAL = r"(?:penal|infraction|\bdelits?\b|homicide|\bpeines?\b|contravention)"
+_ACCIDENT = re.compile(
+    r"^(?![\s\S]*" + _PENAL + r")[\s\S]*?(?:"
+    + _VTM + r"[^?]{0,150}?" + _HEURT
+    + r"|" + _HEURT + r"\w* (?:par|contre) (?:une?|la|le|sa|son|leur) " + _VTM.replace("?P<vehicule>", "?P<vehicule2>")
+    + r"|(?P<accident>accidents? de (?:la )?(?:circulation|route)|accidents? (?:de|en) (?:voiture|moto|scooter|camion)"
+    r"|loi badinter|vehicules? terrestres? a moteur))")
+# Article 1 (champ : accident de la circulation, vehicule terrestre a moteur implique), 3 (victime non conductrice,
+# seule sa faute inexcusable cause exclusive lui est opposable), 2 (ni force majeure ni fait d'un tiers opposables)
+LOI_1985 = ((LOIS, "LEGIARTI000006839396"), (LOIS, "LEGIARTI000006839422"), (LOIS, "LEGIARTI000006839413"))
+
 
 NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # --- introduction au droit -------------------------------------------------
     (r"entree en vigueur d.{0,6}loi|publication des lois|lois? .{0,40}opposable", ((CC, "1"),)),
     (r"retroactiv", ((CC, "2"),)),
     (r"deni de justice|loi (?:est )?obscure|silence de la loi|insuffisance de la loi", ((CC, "4"),)),
+    # article 4 (deni de justice) : le juge doit juger, fondement du pouvoir createur de la jurisprudence (question 25
+    # du dossier enseignant, D122)
     (r"arrets? de reglement|lie par ses (?:propres )?decisions|precedents? judiciaires?|jurisprudence.{0,20}source",
-     ((CC, "5"), (CC, "1355"))),
+     ((CC, "5"), (CC, "1355"), (CC, "4"))),
     (r"autorite de (?:la )?chose jugee", ((CC, "1355"),)),
     (r"ordre public|bonnes moeurs", ((CC, "6"), (CC, "1102"), (CC, "1162"))),
     (r"vie privee", ((CC, "9"),)),
@@ -139,6 +165,9 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"obligations? du bailleur|obligations? du loueur", ((CC, "1719"), (CC, "1720"))),
     # --- responsabilite et quasi-contrats ---------------------------------------
     (r"responsabilite (?:civile )?(?:pour faute|du fait personnel|delictuelle)|faute.{0,40}(?:dommage|responsab)", ((CC, "1240"), (CC, "1241"))),
+    # fait des choses : la fiche ne disait pas que les accidents de la circulation en sont exclus (loi du 5 juillet
+    # 1985, article 1er ; question 22 du dossier enseignant, D122)
+    (r"fait des choses|gard(?:e|ien) de la chose", ((CC, "1242"), LOI_1985[0])),
     (r"fait des choses|fait d.autrui|\bparents\b.{0,40}(?:responsab|enfants?)", ((CC, "1242"),)),
     (r"\banimal|\banimaux", ((CC, "1243"),)),
     (r"produits? defectueux", ((CC, "1245"),)),
@@ -245,7 +274,9 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"aide sociale a l.enfance|\base\b", ((CASF, "L221-1"),)),
     (r"protection de l.enfance", ((CASF, "L112-3"),)),
     # --- droit des biens (Code civil, expropriation) --------------------------------------------
-    (r"\busufruit", ((CC, "578"),)),
+    # droits (fruits, 582), obligations (entretien, 605) et extinction (617) : la question 6 du dossier enseignant
+    # n'avait que la definition et l'inventaire (D122)
+    (r"\busufruit", ((CC, "578"), (CC, "582"), (CC, "605"), (CC, "617"))),
     (r"\bservitude", ((CC, "637"),)),
     (r"prescription acquisitive|usucapion", ((CC, "2258"), (CC, "2272"), (CC, "2261"))),
     (r"\bpossession", ((CC, "2255"), (CC, "2261"))),
@@ -259,6 +290,9 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # Faits decrits sans le nom de la notion. Apres les notions de cours, qui restent prioritaires ; une
     # suggestion hors des sources de la matiere choisie est ignoree par la recherche.
     # Responsabilite civile
+    # Accident de la circulation d'abord : la loi de 1985 ecarte 1240 a 1242 (R-1). Trois articles, une place
+    # reste pour le Code civil (le modele dit pourquoi il ne s'applique pas).
+    (_ACCIDENT.pattern, LOI_1985),
     (_AGE + r".{0,80}" + _DOMMAGE, ((CC, "1242"), (CC, "1240"))),
     # Chose (sans moteur) et dommage sans age dit : « Leo brise la vitrine en jouant au ballon » ne recevait pas
     # l'article 1242, ni donc la garde de la chose (D119).
@@ -591,6 +625,14 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"loi applicable au mariage|mariage.{0,40}(?:etranger|international)|epoux de nationalites? differentes?",
      ((CC, "202-1"),)),
     (r"adoption internationale|adoption.{0,40}(?:etranger|loi applicable)", ((CC, "370-3"),)),
+    # Conditions de fond du mariage, hors questions internationales (ti-06 garde 202-1 seul). Sans l'article 143, la
+    # reponse donnait la difference de sexe pour condition, abandonnee par la loi du 17 mai 2013 (dossier enseignant,
+    # question 5 ; D122).
+    (r"^(?![\s\S]*(?:loi applicable|nationalit|etranger|international))[\s\S]*?(?:"
+     r"conditions? (?:de fond |de validite |requises? )?(?:du|au|pour (?:le|se)|d.un) mari|empechements? (?:a|au) mari"
+     r"|qualites? et conditions.{0,30}mari|mariage pour tous|(?:meme sexe|homosexu|deux (?:hommes|femmes))\w*.{0,60}mari"
+     r"|mari\w*.{0,60}(?:meme sexe|homosexu)|(?:conditions?|faut-il).{0,40}se marier)",
+     ((CC, "143"), (CC, "146"), (CC, "144"), (CC, "147"))),
     # --- notions generales : en dernier, pour laisser la place aux notions precises de la question ---
     (r"droit des contrats|theorie generale du contrat", ((CC, "1101"), (CC, "1103"), (CC, "1104"), (CC, "1128"))),
 )
@@ -606,6 +648,12 @@ MATIERES_SPECIALES: tuple[tuple[str, re.Pattern], ...] = (
     ("Des libéralités", re.compile(r"liberalit|donation|testament|\blegs\b|legataire|reserve hereditaire|quotite disponible")),
     ("régimes matrimoniaux", re.compile(r"regimes? matrimoni|contrat de mariage|epoux|conjoint|communaute")),
 )
+# Articles 1100 a 1100-2 (sources des obligations) : remontes par le mot « source » pour un sujet sur les sources du
+# droit, ils ont ete pris pour une liste des sources du droit (question 25 du dossier enseignant, D122). Ecartes quand
+# la question ne parle ni d'obligation ni d'acte ou de fait juridique. Le titre « Des sources d'obligations » couvre
+# tout le droit des contrats et de la responsabilite : le filtre vise ces trois numeros seulement.
+SOURCES_DES_OBLIGATIONS = ("1100", "1100-1", "1100-2")
+_OBLIGATIONS = re.compile(r"obligation|actes? juridiques?|faits? juridiques?|contrat|engagement|quasi|responsabilit")
 
 
 def chose_en_cause(question: str) -> str | None:
@@ -615,12 +663,23 @@ def chose_en_cause(question: str) -> str | None:
     return m.group("chose") if m and re.search(_DOMMAGE, q) else None
 
 
+def vehicule_en_cause(question: str) -> str | None:
+    """Vehicule terrestre a moteur auteur du dommage (« la voiture devale la pente et renverse une pietonne »),
+    ou accident de la circulation nomme ; None sinon (R-1)."""
+    m = _ACCIDENT.search(normaliser(question))
+    if m is None:
+        return None
+    return m.group("vehicule") or m.group("vehicule2") or "accident de la circulation"
+
+
 def hors_matiere(passage: dict, question: str) -> bool:
     """Article du Code civil d'une matiere speciale dont la question ne parle pas."""
     if passage.get("source_id") != CC:
         return False
     plan = " ".join((passage.get("meta") or {}).get("plan") or [])
     q = normaliser(question)
+    if passage.get("numero") in SOURCES_DES_OBLIGATIONS and not _OBLIGATIONS.search(q):
+        return True
     return any(titre in plan and not mots.search(q) for titre, mots in MATIERES_SPECIALES)
 
 

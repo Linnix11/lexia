@@ -224,12 +224,51 @@ def note_garde(question: str, passages: list[dict]) -> str:
     developpe dans aucun des 6 cas de responsabilite. Une phrase de plus dans la consigne generale faisait perdre
     l'article 1240 : la note n'est ajoutee qu'a ces faits-la, comme celle des anciens numeros (D53)."""
     chose = lexique.chose_en_cause(question)
-    if chose is None or not any(p.get("source_id") == "code_civil" and p.get("numero") == "1242" for p in passages):
+    # un camion percute un velo : la garde du velo n'est pas le fondement, la loi de 1985 l'est (R-1)
+    if chose is None or lexique.vehicule_en_cause(question) or not any(
+            p.get("source_id") == "code_civil" and p.get("numero") == "1242" for p in passages):
         return ""
     return (f"Note : les faits mettent en cause une chose ({chose}). En plus de la responsabilité de l'auteur et de "
             "celle des personnes qui répondent de lui, examine dans la majeure et la mineure la responsabilité du "
             "fait des choses (article 1242, alinéa 1, dans les extraits) : qui avait la garde de la chose au moment "
             "du dommage et quel rôle elle y a joué. La conclusion dit aussi contre qui agir sur ce fondement.")
+
+
+def note_circulation(question: str, passages: list[dict]) -> str:
+    """Note au modele quand un vehicule terrestre a moteur cause le dommage et que la loi du 5 juillet 1985 est
+    fournie (recette du 23/11, R-1) : la reponse appliquait 1240 a 1242 et citait un arret de 1984, anterieur a
+    la loi. Tous les modes : une question d'explication sur un accident de voiture appelle le meme regime."""
+    vehicule = lexique.vehicule_en_cause(question)
+    if vehicule is None or not any("85-677" in ((p.get("meta") or {}).get("code") or "") for p in passages):
+        return ""
+    return (f"Note : les faits décrivent un dommage causé par un véhicule terrestre à moteur ({vehicule}). Avant tout "
+            "fondement du Code civil, vérifie si un régime spécial s'applique : la loi n° 85-677 du 5 juillet 1985 "
+            "(dans les extraits) régit seule l'indemnisation des victimes d'un accident de la circulation où un tel "
+            "véhicule est impliqué, même à l'arrêt, et écarte alors les articles 1240 à 1242 du Code civil, "
+            "responsabilité du fait des choses comprise. Examine l'accident de la circulation, l'implication du "
+            "véhicule, la qualité de la victime (conducteur ou non) et la faute qui peut lui être opposée ; la "
+            "conclusion dit contre qui agir (conducteur ou gardien du véhicule). Ne raisonne sur les articles 1240 "
+            "à 1242 que si la loi ne s'applique pas, en disant pourquoi. Une décision antérieure au 1er janvier "
+            "1986 sur un accident de la circulation n'est plus le droit positif.")
+
+
+def note_mariage(question: str, passages: list[dict]) -> str:
+    """Note au modele quand la question parle du mariage et que l'article 143 actuel est fourni (D122). Dossier
+    enseignant, question 5 : la reponse donnait la difference de sexe pour condition du mariage, d'apres un arret de
+    2007 et sa propre memoire, alors que la loi du 17 mai 2013 l'a supprimee."""
+    if "mari" not in lexique.normaliser(question) or not any(
+            p.get("source_id") == "code_civil" and p.get("numero") == "143"
+            and (p.get("meta") or {}).get("en_vigueur") is not False for p in passages):
+        return ""
+    note = ("Note : selon l'article 143 du Code civil (dans les extraits), en vigueur depuis le 19 mai 2013, le mariage "
+            "est contracté par deux personnes de sexe différent ou de même sexe : la différence de sexe n'est plus une "
+            "condition du mariage. Ne la présente jamais comme une exigence actuelle ; une décision antérieure qui "
+            "l'exigeait n'est plus le droit positif sur ce point.")
+    if any(p.get("source_id") == "code_civil" and p.get("numero") == "148" for p in passages):
+        # dossier enseignant, question 5 : l'article 148 etait donne pour condition principale
+        note += (" Le consentement des parents (article 148) ne concerne qu'un mineur autorisé à se marier par une "
+                 "dispense d'âge : ce n'est pas une condition générale du mariage.")
+    return note
 
 
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
@@ -239,6 +278,10 @@ def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | No
                 + consigne_reponse_directe(mode))
     if anciens:
         consigne += "\n" + note_concordance(anciens)
+    if circulation := note_circulation(question, passages):
+        consigne += "\n" + circulation
+    if mariage := note_mariage(question, passages):
+        consigne += "\n" + mariage
     if mode == "cas_pratique" and (garde := note_garde(question, passages)):
         consigne += "\n" + garde
     return (

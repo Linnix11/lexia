@@ -996,4 +996,51 @@ describe('Depots de cours, version 2 (D107)', () => {
     expect(JSON.parse(String(appel[1].body))).toEqual({ titre: 'Les vices', matiere: 'droit_civil' })
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Modifier « Chapitre 3 »' })).not.toBeInTheDocument())
   })
+
+  it('depot reussi avec un avertissement (scan lu par OCR) : le formulaire se ferme (recette du 2026-11-23, R-7)', async () => {
+    const lu = { ...COURS, avertissement: 'Page 1 lue par reconnaissance de caractères.' }
+    let liste: unknown[] = []
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/cours?') && init?.method === 'POST') {
+        liste = [lu]
+        return repondre(lu, 201)
+      }
+      if (url.endsWith('/cours')) return repondre({ cours: liste, maximum: 3, formats: ['.pdf'] })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))
+    fireEvent.change(screen.getByTestId('ajout-cours'), { target: { files: [new File(['%PDF'], 'scan.pdf', { type: 'application/pdf' })] } })
+    const panneau = await screen.findByRole('form', { name: 'Ajouter un cours' })
+    fireEvent.change(within(panneau).getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await act(async () => {
+      fireEvent.click(within(panneau).getByRole('button', { name: 'Déposer' }))
+    })
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Ajouter un cours' })).not.toBeInTheDocument())
+    expect(await screen.findByText(/Cours ajouté.*Page 1 lue par reconnaissance de caractères/)).toBeInTheDocument()
+  })
+
+  it('retirer un cours demande un second clic, sans fenetre du navigateur (recette du 2026-11-23, R-8)', async () => {
+    const confirmer = vi.spyOn(window, 'confirm')
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/cours')) return repondre({ cours: [COURS], maximum: 3, formats: ['.pdf'] })
+      if (url.endsWith('/cours/7/supprimer')) return repondre(null, 204)
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    await screen.findByText(/12 pages · 30 passages · prêt/)
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer le cours « Chapitre 3 »' }))
+    expect(confirmer).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/cours/7/supprimer'))).toBe(false)
+    const confirmation = screen.getByRole('button', { name: 'Confirmer le retrait du cours « Chapitre 3 »' })
+    expect(confirmation).toHaveTextContent('Confirmer le retrait')
+    await act(async () => {
+      fireEvent.click(confirmation)
+    })
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/cours/7/supprimer'))).toBe(true)
+    confirmer.mockRestore()
+  })
 })

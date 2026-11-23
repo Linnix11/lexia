@@ -46,6 +46,8 @@ sources:
   - droit_des_biens
   - droit_des_societes
   - droit_international
+  # autorite de la chose jugee (art. 1355), prescription : la question 12 du dossier enseignant n'avait pas l'art. 1355 (D122)
+  - procedure_civile
   niveaux:
   - L1
   ingestion: ingest/sources/legi.py

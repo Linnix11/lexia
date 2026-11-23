@@ -45,6 +45,8 @@ _REFORMULATIONS = ThreadPoolExecutor(max_workers=20, thread_name_prefix="reformu
 # Tous les fils occupes : la question partirait en file d'attente et ferait patienter l'etudiant tout le delai
 # pour rien ; la recherche part aussitot sans reformulation (audit du 2026-11-18, D6).
 _FILS_REFORMULATION = threading.BoundedSemaphore(20)
+# Question de l'amorce au demarrage (R-2) : des mots courants du droit, pour lire aussi un peu du plein texte
+QUESTION_AMORCE = "Quelles sont les conditions de la responsabilité civile et de la formation du contrat ?"
 CACHE_REPONSES = 500           # reponses gardees en memoire (identiques pour une meme question)
 CACHE_DUREE_S = 24 * 3600      # l'index ne change qu'a la publication, qui redemarre le service
 
@@ -221,6 +223,36 @@ class Lexia:
         self.expanseur = expanseur    # None : pas de reformulation de la question
         self.reclasseur = reclasseur  # None : pas de reclassement
         self.cours = None             # api.cours.Cours : cours deposes par les etudiants (avec les comptes)
+        self.amorce: dict | None = None  # etat de l'amorce au demarrage (amorcer), dans /sante en local
+
+    def amorcer(self) -> dict:
+        """Une recherche complete sans question d'etudiant, au demarrage du service (recette du 23/11, R-2).
+
+        Les vecteurs (2 Go) sont en memoire mappee : le premier parcours les lit sur le disque, 17 s sur le VPS pour
+        la premiere question apres chaque publication (753 ms ensuite). L'amorce fait ce premier parcours, la premiere
+        vectorisation et le premier reclassement dans un fil a part (api/serveur.py). Memoire : les pages lues sont du
+        cache de fichier, que le noyau peut reprendre ; c'est l'etat que la premiere question atteignait deja.
+        Ni reformulation (appel Gemini), ni journal, ni cache de reponses."""
+        self.amorce = {"etat": "en_cours"}
+        debut = time.perf_counter()
+        etapes: dict[str, float] = {}
+        try:
+            vecteur = None
+            if self.embedder is not None:
+                t = time.perf_counter()
+                vecteur = self.embedder.embed_query(QUESTION_AMORCE)
+                ajouter_duree(etapes, "vectorisation", t)
+            # Toutes les sources : un parcours de tous les vecteurs, les deux groupes (textes, jurisprudence)
+            self.retriever.search(QUESTION_AMORCE, sources=None, k=K_CHAT, query_vector=vecteur,
+                                  reclasseur=self.reclasseur, durees=etapes)
+            etat = "terminee"
+        except Exception:  # noqa: BLE001 - l'amorce ne doit jamais empecher le service de demarrer
+            log.exception("amorce de la recherche en echec : la premiere question fera le premier parcours")
+            etat = "echec"
+        self.amorce = {"etat": etat, "duree_ms": int((time.perf_counter() - debut) * 1000),
+                       "etapes_ms": {e: int(ms) for e, ms in etapes.items()}}
+        log.info("amorce de la recherche : %s", self.amorce)
+        return self.amorce
 
     def rechercher(self, texte: str, matiere: str | None, k: int) -> tuple[list[dict], dict]:
         """Renvoie les passages et un resume de la recherche (pour le controle et les journaux)."""

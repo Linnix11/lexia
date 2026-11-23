@@ -13,7 +13,8 @@
 | `rapport.py` | Synthèse (indicateurs, seuils, cas à examiner) et grille de relecture CSV |
 | `recherche.py` | Banc d'essai rapide de la recherche seule (sans appel au modèle de réponse) |
 | `essai_api.py` | Quelques questions contre une API lancée, pour un contrôle visuel |
-| `responsables.py` | Cas pratiques de responsabilité : auteur, parents et gardien de la chose examinés (D115, D119) |
+| `responsables.py` | Cas pratiques de responsabilité : auteur, parents et gardien de la chose examinés, loi du 5 juillet 1985 pour les accidents de la circulation (D115, D119, D122) |
+| `reclassement.py` | Réglages du reclassement (candidats, jetons, int8) : durée et qualité de la recherche (D122) |
 | `comparatif_notebooklm.py` | Comparatif à l'aveugle Lexia / NotebookLM sur 30 cas (protocole : `COMPARATIF_NOTEBOOKLM.md`) |
 
 ## Lancer

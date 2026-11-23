@@ -11,6 +11,7 @@ Un seul processus, un seul domaine : pas de CORS a configurer.
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -56,10 +57,24 @@ def creer_serveur(dist: Path = DIST, api: FastAPI | None = None) -> FastAPI:
     return racine
 
 
+def demarrer_amorce(api: FastAPI) -> threading.Thread | None:
+    """Premier parcours des vecteurs et premier reclassement dans un fil a part, des le demarrage (recette du 23/11,
+    R-2) : la premiere question apres une publication ne paie plus ~17 s. Le service repond pendant l'amorce ; une
+    question posee pendant ce temps fait le meme parcours qu'avant, sans attendre l'amorce."""
+    lexia = getattr(api.state, "lexia", None)
+    if lexia is None:
+        return None
+    fil = threading.Thread(target=lexia.amorcer, name="amorce", daemon=True)
+    fil.start()
+    return fil
+
+
 def __getattr__(name: str):
     if name == "app":
         logging.basicConfig(level=logging.INFO)
         global app
-        app = creer_serveur()
+        api = create_app()
+        app = creer_serveur(api=api)
+        demarrer_amorce(api)
         return app
     raise AttributeError(name)

@@ -16,7 +16,10 @@ MAX_PAR_DOCUMENT = 1  # evite qu'une seule decision occupe tous les resultats
 # En dessous de cette part de passages vectorises, la recherche vectorielle biaiserait les
 # resultats vers le sous-ensemble deja calcule : on reste en lexical pour ce groupe de sources.
 SEUIL_COUVERTURE = 0.9
-N_RECLASSEMENT = 10  # candidats relus par le modele de reclassement, par groupe de sources (D47)
+# Candidats relus par le modele de reclassement, par groupe de sources (D47). 8 garderait la source attendue sur 257 cas
+# avec un reclassement 20 % plus court, mais changerait les extraits de 169 cas sur 257 : non applique sans evaluation
+# des reponses (eval/reclassement.py, D122).
+N_RECLASSEMENT = 10
 # Articles de principe (lexique) proches de la question par le sens, ajoutes a la fenetre du reclassement
 # quand le lexique ne reconnait aucune notion : un cas pratique raconte sans vocabulaire juridique
 # ne les faisait jamais remonter. Gardes seulement si le reclassement les juge pertinents (D73).

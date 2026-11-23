@@ -132,6 +132,19 @@ describe('lib/voix', () => {
     expect(voixFrancaises([voix('Google français', 'fr-FR', false)]).map((x) => x.name)).toEqual(['Google français'])
   })
 
+  it('écarte les voix fantaisie de macOS, en double France et Canada (recette du 2026-11-23, R-6)', () => {
+    const fantaisie = (name: string, lang: string) =>
+      ({ ...voix(`${name} (français (${lang === 'fr-FR' ? 'France' : 'Canada'}))`, lang),
+        voiceURI: `com.apple.eloquence.${lang}.${name}` }) as SpeechSynthesisVoice
+    // Chrome donne le nom pour voiceURI : le nom suffit a reconnaitre une voix fantaisie
+    const v = voixFrancaises([fantaisie('Grandma', 'fr-FR'), fantaisie('Grandpa', 'fr-CA'), fantaisie('Rocko', 'fr-FR'),
+      fantaisie('Shelley', 'fr-CA'), voix('Shelley', 'fr-FR'), voix('Thomas', 'fr-FR'), voix('Amélie', 'fr-CA'),
+      ({ ...voix('Albert', 'fr-FR'), voiceURI: 'com.apple.speech.synthesis.voice.Albert' }) as SpeechSynthesisVoice])
+    expect(v.map((x) => x.name)).toEqual(['Thomas', 'Amélie'])
+    // Rien que des voix fantaisie : elles restent (sinon aucune voix française à choisir)
+    expect(voixFrancaises([fantaisie('Grandma', 'fr-FR')]).length).toBe(1)
+  })
+
   it('prévient quand la voix choisie est une voix en ligne', async () => {
     synth.getVoices = () => [voix('Google français', 'fr-FR', false)]
     render(<ResumeVocal demande={demande} />)

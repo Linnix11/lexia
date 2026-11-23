@@ -61,6 +61,8 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
         sql, params = ("SELECT data FROM passages WHERE source_id = 'decisions_conseil_constitutionnel'"
                        " AND json_extract(data, '$.meta.numero') = ? AND json_extract(data, '$.meta.nature') = ?",
                        (num, nature))
+    elif genre == "lois":  # loi non codifiee, par identifiant (« lois:LEGIARTI000006839396 », R-1)
+        sql, params = ("SELECT data FROM passages WHERE id = ?", (ref,))
     elif genre.startswith("code_") or genre in AUTRES_TEXTES:  # code_penal:122-5, ddhc_1789:11...
         sql, params = ("SELECT data FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1", (genre, valeur))
     else:
@@ -71,6 +73,8 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
 def correspond(ref: str, passage: dict) -> bool:
     """Le passage (fourni ou cite) correspond-il a la source attendue ?"""
     genre, _, valeur = ref.partition(":")
+    if genre == "lois":
+        return passage["id"] == ref
     if genre.startswith("code_") or genre in AUTRES_TEXTES:
         return passage["source_id"] == genre and passage.get("numero") == valeur
     if genre == "constitution":

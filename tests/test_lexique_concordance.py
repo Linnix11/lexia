@@ -210,6 +210,8 @@ def retriever_reel():
 
 
 def _en_vigueur(r, src, num):
+    if num.startswith("LEGIARTI"):  # article de loi non codifiee, par identifiant (R-1)
+        return r.article(src, num)
     return [v for v in r.versions(src, num) if (v.get("meta") or {}).get("en_vigueur") or src == CONST]
 
 

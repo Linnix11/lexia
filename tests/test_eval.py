@@ -5,7 +5,7 @@ from eval.cas import charger, correspond
 
 def test_jeu_bien_forme():
     cas = charger()
-    assert len(cas) == 215
+    assert len(cas) == 218
     assert sum(1 for c in cas if c.piege) == 30
     for c in cas:
         assert c.attendu and c.question.strip()
