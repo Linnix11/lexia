@@ -44,7 +44,10 @@ export function dateLongue(iso: string): string {
 
 /** « version du 17 novembre 2026 » (textes) ou « décisions jusqu'au 17 septembre 2026 » (jurisprudence). */
 export function libelleFraicheur(s: FraicheurSource): string {
-  return s.nature === 'textes' ? `version du ${dateLongue(s.date)}` : `décisions jusqu’au ${dateLongue(s.date)}`
+  if (s.nature === 'textes') return `version du ${dateLongue(s.date)}`
+  // Source et date de mise a jour citees, comme le demandent les CGU open data de la Cour de cassation et les
+  // mentions du site du Conseil constitutionnel (D113 ; audit du 2026-11-23, E7)
+  return `décisions jusqu’au ${dateLongue(s.date)}${s.origine ? ` (source : ${s.origine})` : ''}`
 }
 
 /** Date la plus recente parmi plusieurs sources (ex. les quatre formations de la Cour de cassation). */

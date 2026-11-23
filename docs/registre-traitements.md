@@ -76,10 +76,15 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   `localStorage`, fiches, cartes et matière effacées à la suppression du compte. Décrit dans la
   politique de confidentialité (« Données collectées »).
 - Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails, `api/courriel.py` : confirmation
-  d'adresse, réinitialisation, avertissement d'inactivité, confirmation du contrat, accusé de rétractation) ;
-  Cloudflare (acheminement du trafic).
+  d'adresse, réinitialisation, alerte de code de double authentification incorrect (`envoyer_alerte_code_faux`),
+  avertissement d'inactivité, confirmation du contrat, paiement qui n'active aucune formule
+  (`envoyer_paiement_non_active`), accusé de rétractation ; audit du 2026-11-23, E6) ; Cloudflare (acheminement du
+  trafic).
 - Export : `GET /compte/export` (bouton « Télécharger mes données » de Mon compte, `api/export.py`) : compte sans
-  secret, compteurs, cours déposés avec leur texte, paiements (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11).
+  secret, état de la double authentification et nombre de codes de secours restants, sessions ouvertes (date
+  d'expiration), compteurs, cours déposés avec leur texte, paiements (RGPD art. 15 et 20 ; audit du 2026-11-19,
+  JUR-11, et du 2026-11-23, E12). Le questionnaire en cours n'est lié à aucun compte (`api/quiz.py`) : l'export
+  le dit au lieu de le contenir.
 - Transferts hors UE : Resend et Cloudflare, États-Unis (voir « Sous-traitants »).
 - Durée : jusqu'à la suppression du compte (depuis « Mon compte » ou par l'éditeur), ou deux ans sans aucune
   visite : la CNIL juge proportionné ce délai, avec avertissement préalable
@@ -245,8 +250,9 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   `occultations.courdecassation@justice.fr` (`docs/jurisprudence-recente.md`).
 - Destinataires : utilisateurs de Lexia ; Google ou Groq pour les extraits retenus pour une réponse (T2).
 - Durée : tant que la source publie la décision.
-- À faire : aucun outil ne retire ou n'occulte une décision précise de l'index ; à la première demande, l'éditeur
-  la retire à la main (procédure à écrire, voir « Actions restantes »).
+- Demande d'occultation ou de retrait : procédure dans `docs/procedure-occultation.md` (audit du 2026-11-23, E10) ;
+  réponse dans un mois (RGPD art. 12.3). Aucun outil ne retire encore une décision précise de l'index : la liste
+  d'exclusion lue à l'indexation reste à écrire dans `ingest/` (voir « Actions restantes »).
 
 ### T9. Échanges par e-mail
 
@@ -271,8 +277,9 @@ recommande la CNIL (https://www.cnil.fr/fr/adequation-des-etats-unis-les-premier
 | Hostinger International Ltd | Hébergement du serveur (VPS) | Toutes les données du serveur | Chypre (UE) ; centre de données du VPS à vérifier dans le panneau Hostinger | Sans objet si le centre de données est dans l'UE | Accord de traitement des données de Hostinger : à vérifier et archiver |
 | Cloudflare, Inc. | Acheminement et protection du trafic (proxy) | Adresse IP, requêtes et réponses qui transitent | États-Unis | Certifié (actif) | Accord de traitement des données Cloudflare : à vérifier et archiver |
 | Google LLC | API Gemini (rédaction des réponses) | Questions, extraits, passages de cours | États-Unis | Certifié (actif) | Conditions de l'API Gemini et avenant sur le traitement des données : le niveau payant est requis (T2) |
-| Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types intégrées à l'accord de traitement de Groq du 15/10/2025 (§ 8.2, relu à l'audit du 2026-11-19, JUR-10), accord à archiver ; option « Zero Data Retention » activée (D58) | Accord de traitement des données Groq : à lire et archiver |
-| Resend | E-mails : confirmation d'adresse, réinitialisation, avertissement d'inactivité, confirmation du contrat, accusé de rétractation | Adresse e-mail, texte du message (nom déclaré dans un accusé de rétractation) | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
+| Groq, Inc. | Modèle de secours | Question et quelques extraits | États-Unis | **Non certifié** : clauses contractuelles types intégrées à l'accord de traitement de Groq du 15/10/2025 (§ 8.2, relu à l'audit du 2026-11-19, JUR-10), accord à archiver ; option « Zero Data Retention » demandée (D58), **à vérifier** dans la console et à archiver : la politique de confidentialité dit « demandée » tant que ce n'est pas fait (audit du 2026-11-23, E5) | Accord de traitement des données Groq : à lire et archiver |
+| Resend | E-mails : confirmation d'adresse, réinitialisation, alerte de code de double authentification incorrect, avertissement d'inactivité, confirmation du contrat, paiement qui n'active aucune formule, accusé de rétractation | Adresse e-mail, texte du message (nom déclaré dans un accusé de rétractation) | États-Unis | Certifié (« actif, re-certification en cours d'examen » le 17 novembre 2026) | Accord de traitement des données Resend : à vérifier et archiver |
+| Apple (iCloud Mail) | Boîte de l'adresse de contact (`CONTACT_EMAIL`) : demandes, réclamations, exercice des droits (T9) | Adresse e-mail et contenu des messages écrits à l'éditeur | À vérifier | À vérifier | Conditions d'iCloud : à lire ; un service grand public n'offre pas toujours d'accord art. 28 (audit du 2026-11-23, E14) |
 | Stripe Payments Europe, Limited | Paiement par carte (Stripe Checkout) | T5 | Irlande (UE) ; Stripe, LLC aux États-Unis | Stripe, LLC certifiée (actif) | Contrat de services et accord de traitement des données Stripe, acceptés à l'ouverture du compte : à archiver |
 
 Non sous-traitants : GitHub (surveillance de `/api/sante`, aucune donnée personnelle des utilisateurs).
@@ -288,13 +295,16 @@ de Cloudflare ; limites de débit par adresse IP ; sauvegardes en 600 ; deux aud
 
 1. Passer l'API Gemini au niveau payant et mettre `GEMINI_NIVEAU_PAYANT=1` (bloquant, D83).
 2. Groq : archiver l'accord de traitement des données (clauses contractuelles types, § 8.2) et vérifier
-   « Zero Data Retention » dans la console (EDI-2).
+   « Zero Data Retention » dans la console (EDI-2) ; une fois la confirmation archivée, remplacer « demandée » par
+   « activée » dans la politique de confidentialité (nouvelle version).
 3. Archiver les accords de traitement des données de Hostinger, Cloudflare, Google, Groq et Resend.
 4. Vérifier la localisation du VPS Hostinger et la rotation des journaux nginx (14 jours).
 5. Appliquer la durée des échanges par e-mail (T9, 3 ans) dans la boîte `CONTACT_EMAIL`.
 6. Paiement : archiver le contrat Stripe ; confirmer 10 ans ou 6 ans (T5) ; mettre en place la purge des
    paiements au-delà de cette durée.
-7. Décisions de justice (T11) : écrire la procédure de retrait d'une décision sur demande d'occultation (liste
-   d'exclusion lue à l'indexation, ou retrait à la main puis reconstruction) avant la première demande ; faire
-   valider par le juriste la base légale et l'exception d'information de l'article 14.5.b.
+7. Décisions de justice (T11) : procédure écrite (`docs/procedure-occultation.md`, audit du 2026-11-23, E10) ;
+   reste l'outil, une liste d'exclusion lue à l'indexation (`ingest/`, session sources), avant la première
+   demande ; faire valider par le juriste la base légale et l'exception d'information de l'article 14.5.b.
+9. iCloud Mail (T9) : vérifier la localisation des données et l'existence d'un accord de traitement ; à défaut,
+   envisager une boîte professionnelle avec un accord art. 28.
 8. Résumés vocaux : faire valider par le juriste la mention des voix en ligne du navigateur (D-11).

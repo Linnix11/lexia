@@ -59,7 +59,7 @@ function Page({ titre, maj, children }: { titre: string; maj: string; children: 
 export function MentionsLegales() {
   const { l, contact } = useLegal()
   return (
-    <Page titre="Mentions légales" maj="12 novembre 2026">
+    <Page titre="Mentions légales" maj="23 novembre 2026">
       <section>
         <h2>Éditeur du site</h2>
         <p>
@@ -85,7 +85,13 @@ export function MentionsLegales() {
         <p>
           Les textes et décisions affichés proviennent des données ouvertes publiées par la Direction de l’information
           légale et administrative (DILA : bases LEGI, CONSTIT, CASS et JADE), réutilisées selon la Licence Ouverte /
-          Open Licence d’Etalab, et du site du Conseil constitutionnel pour la Constitution. Les traités de l’Union
+          Open Licence d’Etalab, et du site du Conseil constitutionnel pour la Constitution et pour les décisions
+          récentes du Conseil que les archives de la DILA ne contiennent pas encore (reproduites sans altération,
+          avec la mention de leur source, www.conseil-constitutionnel.fr). Les arrêts récents de la Cour de cassation
+          absents de ces archives pourront provenir de sa base de données ouverte (API Judilibre, Licence Ouverte
+          2.0 et conditions générales d’utilisation de l’open data de la Cour de cassation). Dans l’espace
+          étudiant, chaque matière indique la date de la décision la plus récente de chaque juridiction et la
+          source dont elle provient. Les traités de l’Union
           européenne et la Charte des droits fondamentaux proviennent d’EUR-Lex (© Union européenne,
           https://eur-lex.europa.eu), réutilisés selon la décision 2011/833/UE. Chaque source est accompagnée de sa
           date de mise à jour et d’un lien vers sa version officielle. Seule la publication sur Légifrance (et, pour
@@ -97,21 +103,25 @@ export function MentionsLegales() {
           sa date de mise à jour et un lien vers l’original. Elles ne sont pas rédigées par Lexia.
         </p>
         <p>
-          Les décisions de justice sont diffusées sous la forme pseudonymisée publiée par la DILA ; toute tentative de
-          réidentification des personnes est interdite.
+          Les décisions de justice sont diffusées telles que publiées par leur source (DILA, Conseil constitutionnel
+          ou Cour de cassation), après l’occultation faite par la juridiction ou l’administration qui les diffuse ;
+          toute tentative de réidentification des personnes est interdite.
         </p>
       </section>
       <section>
         <h2>Intelligence artificielle</h2>
         <p>
-          Les réponses, fiches et questionnaires de Lexia sont générés par une intelligence artificielle (modèles Gemini
+          Les réponses, fiches, questionnaires, résumés vocaux et cartes mentales de Lexia sont générés par une
+          intelligence artificielle (modèles Gemini
           de Google{l?.groq ? <>, ou en secours un modèle ouvert exécuté par Groq</> : null}), à partir des sources citées. Ils peuvent comporter des erreurs et ne constituent pas un avis
           juridique ni une consultation juridique.
         </p>
         <p>
           Les réponses, questionnaires et corrections envoyés par l’API de Lexia portent un marquage lisible par
           machine (en-tête HTTP « X-AI-Generated: true ») qui indique qu’ils sont générés par une intelligence
-          artificielle (article 50, paragraphe 2, du règlement (UE) 2024/1689).
+          artificielle (article 50, paragraphe 2, du règlement (UE) 2024/1689). Le résumé vocal et la carte mentale
+          affichent un avertissement « généré automatiquement » ; l’image d’une carte mentale et l’export des fiches
+          portent la mention « générée par une intelligence artificielle ».
         </p>
       </section>
     </Page>
@@ -406,7 +416,7 @@ export function Confidentialite() {
         <h2>Données collectées</h2>
         <ul>
           <li><strong>Compte</strong> : adresse e-mail, empreinte chiffrée du mot de passe (le mot de passe lui-même n’est jamais conservé), formule, date de création, date de la dernière visite (pour supprimer les comptes inutilisés).</li>
-          <li><strong>Prénom et nom</strong> : demandés à l’inscription. Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte (il pré-remplit par exemple la déclaration de rétractation). Ils ne sont jamais transmis à l’intelligence artificielle ni à l’administration du site, et ne figurent dans aucun e-mail. Vous pouvez les corriger à tout moment dans « Mon compte ».</li>
+          <li><strong>Prénom et nom</strong> : demandés à l’inscription. Le prénom sert à vous saluer dans votre espace ; le nom identifie le titulaire du compte (il pré-remplit par exemple la déclaration de rétractation). Ils ne sont jamais transmis à l’intelligence artificielle ni à l’administration du site, et ne figurent dans aucun e-mail, sauf l’accusé de réception d’une rétractation en ligne, qui reprend le nom et le prénom indiqués dans la déclaration. Vous pouvez les corriger à tout moment dans « Mon compte ».</li>
           <li><strong>Inscription</strong> : la case d’âge cochée, la version des conditions d’utilisation acceptée et la date de l’acceptation, pour garder la preuve de votre accord.</li>
           <li><strong>E-mails d’information</strong> (si vous les acceptez) : la date de votre accord. Case distincte, jamais cochée d’avance ; vous pouvez la décocher à tout moment dans « Mon compte ».</li>
           <li><strong>Comment vous avez connu Lexia</strong> (facultatif) : un choix parmi une courte liste (réseaux sociaux, association, ami, enseignant, recherche, autre).</li>
@@ -458,14 +468,17 @@ export function Confidentialite() {
           {l?.groq && (
             <>
               {' '}Lorsque Gemini est indisponible, la question et quelques extraits sont transmis à Groq (États-Unis), qui
-              exécute un modèle ouvert ; l’option de non-conservation des données (« Zero Data Retention ») est activée
-              dans notre compte Groq : la question n’est pas conservée après la réponse.
+              exécute un modèle ouvert. L’option de non-conservation des données (« Zero Data Retention ») a été
+              demandée pour notre compte Groq ; tant que sa confirmation n’est pas archivée, la durée de conservation
+              appliquée par Groq est celle de ses propres conditions.
             </>
           )}
           {l?.courriel ? <>{' '}Votre adresse e-mail et le texte des messages sont transmis à Resend (États-Unis) pour
-          l’envoi des e-mails : confirmation d’adresse, réinitialisation du mot de passe, avertissement avant la
-          suppression d’un compte inutilisé et, si vous payez une formule, confirmation du contrat et accusé de
-          réception d’une rétractation (qui contient le nom et le prénom indiqués dans la déclaration). Ni votre mot
+          l’envoi des e-mails : confirmation d’adresse, réinitialisation du mot de passe, alerte après un code de
+          double authentification incorrect saisi avec le bon mot de passe, avertissement avant la suppression d’un
+          compte inutilisé et, si vous payez une formule, confirmation du contrat, information qu’un paiement n’a
+          activé aucune formule et sera remboursé, et accusé de réception d’une rétractation (qui contient le nom et
+          le prénom indiqués dans la déclaration). Ni votre mot
           de passe ni vos questions ne lui sont communiqués.</> : null}{' '}
           Vos prénom et nom ne sont jamais transmis à l’intelligence artificielle.{' '}
           N’indiquez pas d’informations personnelles dans vos questions.
@@ -504,9 +517,10 @@ export function Confidentialite() {
         </p>
         <p>
           Si une décision vous concerne et laisse apparaître votre nom ou un élément qui vous identifie, écrivez à{' '}
-          <Contact adresse={contact} /> : l’éditeur transmet votre demande à la juridiction qui l’a publiée (pour la
-          Cour de cassation, à son service chargé des occultations) et retire la décision de Lexia en attendant sa
-          réponse.
+          <Contact adresse={contact} /> en indiquant la juridiction, la date et le numéro de la décision : l’éditeur
+          transmet votre demande à la juridiction qui l’a publiée (pour la Cour de cassation, à son service chargé
+          des occultations), retire la décision de Lexia en attendant sa réponse et vous répond dans un délai d’un
+          mois (article 12, paragraphe 3, du RGPD).
         </p>
       </section>
       <section>
@@ -568,7 +582,8 @@ export function Confidentialite() {
         <p>
           Lexia n’utilise qu’un cookie strictement nécessaire : le cookie de session qui vous garde connecté. Aucun
           cookie publicitaire ni de mesure d’audience. Le stockage local et le stockage de session du navigateur
-          décrits plus haut (fiches, semestre, dernière matière, conversation en cours) servent seulement au
+          décrits plus haut (fiches, cartes à réviser, semestre, dernière matière, conversation en cours) servent
+          seulement au
           fonctionnement que vous demandez : comme le cookie de session, ils ne demandent pas de consentement
           (article 82 de la loi du 6 janvier 1978).
         </p>
@@ -579,7 +594,8 @@ export function Confidentialite() {
           Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
           portabilité, ainsi que le droit de définir des directives sur le sort de vos données après votre décès
           (article 85 de la loi du 6 janvier 1978). Vous pouvez supprimer votre compte vous-même depuis « Mon
-          compte », et télécharger vos données (compte, compteurs, cours déposés, paiements) au format JSON depuis la même
+          compte », et télécharger vos données (compte, double authentification, sessions ouvertes, compteurs, cours déposés,
+          paiements) au format JSON depuis la même
           page. Vous pouvez aussi écrire à <Contact adresse={contact} /> ou saisir la CNIL (www.cnil.fr).
         </p>
       </section>

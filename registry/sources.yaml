@@ -11,7 +11,7 @@ sources:
   autorite: Conseil constitutionnel
   url: https://www.conseil-constitutionnel.fr/le-bloc-de-constitutionnalite/texte-integral-de-la-constitution-du-4-octobre-1958-en-vigueur
   acces: page_html
-  licence: a_verifier
+  licence: "Mentions legales du site du Conseil constitutionnel : reproduction libre, avec la mention de la source et sans alteration (relues a l'audit du 2026-11-23, E7 ; comme ingest/sources/constit_site.py, D113)"
   frequence_maj: a_chaque_revision_constitutionnelle
   matieres:
   - droit_constitutionnel

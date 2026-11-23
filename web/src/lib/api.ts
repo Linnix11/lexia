@@ -55,6 +55,8 @@ export interface FraicheurSource {
   nom: string
   date: string // AAAA-MM-JJ
   nature: 'textes' | 'jurisprudence'
+  /** D'ou vient la decision la plus recente (« site du Conseil constitutionnel, ... », D113) ; absent sinon. */
+  origine?: string
 }
 
 export interface Fraicheur {

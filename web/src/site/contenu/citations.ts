@@ -24,6 +24,16 @@ export function citation(cle: string): Citation {
   return c
 }
 
-/** Version courte : « en vigueur depuis le 1er octobre 2016 », sans la mention de l'archive DILA. */
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+const dateLisible = (iso: string) => {
+  const [a, m, j] = iso.split('-').map(Number)
+  return `${j === 1 ? '1er' : j} ${MOIS[m - 1]} ${a}`
+}
+
+/** Version courte : « version depuis le 1er octobre 2016, article en vigueur (DILA, mise à jour du 16 novembre
+ *  2026) ». La date de derniere mise a jour reste : la Licence Ouverte 2.0 la demande (audit du 2026-11-23, E8). */
 export const versionCourte = (c: Citation) =>
-  c.version.replace(/\s*\(archive DILA.*\)$/, '').replace(/^Version /, 'version ')
+  c.version
+    .replace(/\s*\(archive DILA [^,()]*, mise à jour du (\d{4}-\d{2}-\d{2})\)$/, (_, d: string) => ` (DILA, mise à jour du ${dateLisible(d)})`)
+    .replace(/\s*\(archive DILA[^()]*\)$/, ' (DILA)')
+    .replace(/^Version /, 'version ')

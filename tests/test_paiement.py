@@ -610,6 +610,26 @@ def test_jur11_export_des_donnees_du_compte(env):
     assert TestClient(client.app).get("/compte/export").status_code == 401   # sans session
 
 
+def test_e12_export_double_authentification_et_sessions(env):
+    """Audit du 2026-11-23, E12 : etat de la 2FA (sans secret) et sessions ouvertes dans l'export."""
+    from api import totp
+    client, comptes, _ = env
+    d = client.get("/compte/export").json()
+    assert d["double_authentification"] == {"active": False, "codes_de_secours_restants": 0}
+    assert len(d["sessions_ouvertes"]) == 1 and set(d["sessions_ouvertes"][0]) == {"expire_le"}
+    assert "questionnaire_en_cours" in d
+    uid = comptes.par_email("etu@exemple.fr").id
+    secret = comptes.preparer_2fa(uid)
+    codes = comptes.activer_2fa(uid, totp._code(secret, totp.etape_courante()))
+    comptes.ouvrir_session(uid)
+    from api.export import donnees_du_compte
+    d = donnees_du_compte(comptes, uid)   # activer_2fa a ferme la session du client de test
+    texte = json.dumps(d, ensure_ascii=False)
+    assert d["double_authentification"] == {"active": True, "codes_de_secours_restants": len(codes)}
+    assert len(d["sessions_ouvertes"]) == 1
+    assert secret not in texte and "totp" not in texte and "jeton" not in texte
+
+
 def test_export_des_compteurs_de_resumes_vocaux_et_de_cartes_mentales(env):
     """Compteurs du jour des resumes vocaux (D106) et des cartes mentales (D112) dans l'export, comme `usage`."""
     from api.resumes_vocaux import QuotaResumes

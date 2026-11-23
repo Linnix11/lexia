@@ -29,6 +29,9 @@ describe('fraicheur des sources', () => {
     expect(libelleFraicheur(FRAICHEUR.sources.code_civil)).toBe('version du 17 novembre 2026')
     expect(libelleFraicheur(FRAICHEUR.sources.judilibre)).toBe('décisions jusqu’au 17 septembre 2026')
     expect(plusRecente(FRAICHEUR, ['judilibre', 'cass_criminelle', 'inconnue'])).toBe('2026-09-17')
+    // Origine de la decision la plus recente citee avec sa date (audit du 2026-11-23, E7)
+    expect(libelleFraicheur({ nom: 'Conseil constitutionnel', date: '2026-11-20', nature: 'jurisprudence', origine: 'site du Conseil constitutionnel' }))
+      .toBe('décisions jusqu’au 20 novembre 2026 (source : site du Conseil constitutionnel)')
     expect(plusRecente(null, ['judilibre'])).toBeNull()
   })
 
