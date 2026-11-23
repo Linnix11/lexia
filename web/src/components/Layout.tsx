@@ -127,8 +127,10 @@ export function Topbar({ titre }: { titre?: string }) {
   return (
     // Mobile : le titre se tronque, les actions et le rond du compte gardent leur taille ; le rond est le seul
     // acces a « Mon compte » sur telephone (recette du 2026-11-20, D-2).
-    <header className="flex h-14 items-center justify-between gap-2 border-b border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
-      <div className="min-w-0 truncate text-[12px] text-muted" title={libelle}>
+    <header className="flex h-14 items-center justify-end gap-2 border-b tab:justify-between border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
+      {/* Sur telephone, la page porte son propre titre et la barre du bas marque la vue : le fil d'Ariane reste
+          lu par les lecteurs d'ecran, la place va au semestre et au compte. */}
+      <div className="sr-only min-w-0 truncate text-[12px] text-muted tab:not-sr-only" title={libelle}>
         <span className="hidden tab:inline">Espace étudiant <span aria-hidden> / </span> </span>
         <b className="font-semibold text-ink">{libelle}</b>
       </div>
@@ -138,7 +140,7 @@ export function Topbar({ titre }: { titre?: string }) {
           id="niveau"
           value={semestre}
           onChange={(e) => setSemestre(Number(e.target.value) as Semestre)}
-          className="max-w-[8.5rem] rounded-[7px] border border-line bg-surface px-2 py-[7px] text-[12px] text-[#505b54] tab:px-[11px] tab:py-2"
+          className="rounded-[7px] border border-line bg-surface px-2 py-[7px] text-[12px] text-[#505b54] tab:px-[11px] tab:py-2"
         >
           {ANNEES.map((annee) => (
             <optgroup key={annee} label={annee}>
@@ -159,7 +161,8 @@ export function Topbar({ titre }: { titre?: string }) {
           <Lien href="/compte" title="Mon compte" className="flex items-center gap-1 whitespace-nowrap rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage">
             {/* visible aussi sur mobile, sans le nom de la formule (audit du 2026-11-18, D7) */}
             <span className="font-semibold">{restant}</span>
-            <span><span className="hidden tab:inline">question{(restant ?? 0) > 1 ? 's' : ''} </span>restante{(restant ?? 0) > 1 ? 's' : ''}</span>
+            {/* sous 361 px, le nombre seul : le mot reste lu par les lecteurs d'ecran */}
+            <span className="max-[360px]:sr-only"><span className="hidden tab:inline">question{(restant ?? 0) > 1 ? 's' : ''} </span>restante{(restant ?? 0) > 1 ? 's' : ''}</span>
             <span className="hidden tab:inline">· {profil.formule.nom}</span>
           </Lien>
         )}
