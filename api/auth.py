@@ -10,7 +10,9 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import logging
+import re
 import secrets
+import sqlite3
 import threading
 import time
 from collections import defaultdict, deque
@@ -28,13 +30,21 @@ from api.paiement import VERSION_CGU
 from api.plans import FORMULES
 
 COOKIE = "lexia_session"
-RENVOIS_PAR_COMPTE_JOUR = 5   # renvois du lien de confirmation, ou liens « mot de passe oublie », par compte sur 24 h
+RENVOIS_PAR_COMPTE_JOUR = 5   # renvois du lien de confirmation par compte sur 24 h
 # Quota Resend : 100 e-mails par jour. Deux budgets separes sur 24 h (audit du 19/11, SEC-1) : un visiteur qui cree
 # des comptes a des adresses inventees n'epuise que celui des comptes non confirmes, et les etudiants confirmes
 # recoivent encore leur lien « mot de passe oublie ». Les 20 restants servent aux paiements, retractations et alertes.
 ENVOIS_NON_CONFIRMES_JOUR = 40   # lien d'inscription, renvoi du lien, mot de passe oublie d'un compte non confirme
 ENVOIS_CONFIRMES_JOUR = 40       # mot de passe oublie d'un compte confirme
-OUBLIS_PAR_IP_JOUR = 10          # liens « mot de passe oublie » envoyes vers une meme IP (ou un meme /64) sur 24 h
+# Plafonds par adresse (IPv4, ou reseau /48 en IPv6) et par compte : sans eux, un seul visiteur avec quelques
+# adresses videait les budgets en quelques minutes ; pendant 24 h, plus aucun lien d'inscription ni « mot de passe
+# oublie » ne partait (audit du 23/11, B1). Les budgets restent communs : un visiteur qui dispose de dizaines
+# d'adresses peut encore les vider ; une formule Resend payante a l'ouverture les rend trop grands pour etre une cible.
+LIENS_PAR_IP_JOUR = 3            # liens d'inscription vers une meme adresse ; autant de renvois du lien
+OUBLIS_PAR_COMPTE_JOUR = 2       # liens « mot de passe oublie » par compte
+OUBLIS_PAR_IP_JOUR = 3           # liens « mot de passe oublie » demandes depuis une meme adresse
+ALERTES_PAR_IP_JOUR = 3          # alertes « code incorrect » provoquees depuis une meme adresse
+ECHECS_2FA_JOUR = 20             # codes faux par compte sur 24 h, connexion, desactivation et suppression comprises
 log = logging.getLogger("lexia.auth")
 
 
@@ -130,17 +140,90 @@ class AttentesDeuxiemeFacteur:
             self._items.pop(hashlib.sha256(jeton.encode()).hexdigest(), None)
 
 
+class Compteurs:
+    """Evenements sur 24 h glissantes, par cle, gardes dans la base des comptes (table compteurs_jour).
+
+    En memoire, les budgets d'e-mails et le plafond des codes 2FA du jour repartaient de zero a chaque redemarrage
+    (bascule d'index de 4 h 30, publication) : 40 liens partis le soir, 40 de plus apres la bascule, dans la meme
+    journee Resend de 100 e-mails (audit du 23/11, B6 ; B2). Cles hachees : ni adresse IP ni identifiant en clair ;
+    lignes effacees apres 24 h. Horloge murale (time.time) : elle continue apres un redemarrage.
+    chemin None : base en memoire (tests, Freins seul)."""
+
+    FENETRE = 86400.0
+
+    def __init__(self, chemin=None, horloge=time.time):
+        self._horloge = horloge
+        self._con = sqlite3.connect(str(chemin) if chemin else ":memory:", check_same_thread=False)
+        with self._con:
+            self._con.execute("CREATE TABLE IF NOT EXISTS compteurs_jour (cle TEXT NOT NULL, le REAL NOT NULL)")
+            self._con.execute("CREATE INDEX IF NOT EXISTS compteurs_jour_cle ON compteurs_jour (cle, le)")
+        self._lock = threading.Lock()
+        self._purge = 0.0
+
+    @staticmethod
+    def _h(cle: str) -> str:
+        return hashlib.sha256(cle.encode()).hexdigest()[:32]
+
+    def _n(self, cle: str, maintenant: float) -> int:
+        return self._con.execute("SELECT COUNT(*) FROM compteurs_jour WHERE cle = ? AND le > ?",
+                                 (self._h(cle), maintenant - self.FENETRE)).fetchone()[0]
+
+    def _purger(self, maintenant: float) -> None:
+        if maintenant - self._purge > 600:
+            self._purge = maintenant
+            self._con.execute("DELETE FROM compteurs_jour WHERE le <= ?", (maintenant - self.FENETRE,))
+
+    def reserver(self, *plafonds: tuple[str, int]) -> float | None:
+        """Note un evenement dans chaque cle si aucune n'a atteint son plafond ; renvoie son instant, sinon None."""
+        maintenant = self._horloge()
+        with self._lock, self._con:
+            self._purger(maintenant)
+            if any(self._n(cle, maintenant) >= plafond for cle, plafond in plafonds):
+                return None
+            self._con.executemany("INSERT INTO compteurs_jour (cle, le) VALUES (?, ?)",
+                                  [(self._h(cle), maintenant) for cle, _ in plafonds])
+            return maintenant
+
+    def annuler(self, t: float, *plafonds: tuple[str, int]) -> None:
+        """Rend une reservation (e-mail qui n'est pas parti)."""
+        with self._lock, self._con:
+            for cle, _ in plafonds:
+                self._con.execute("DELETE FROM compteurs_jour WHERE rowid = (SELECT rowid FROM compteurs_jour "
+                                  "WHERE cle = ? AND le = ? LIMIT 1)", (self._h(cle), t))
+
+    def compter(self, cle: str) -> int:
+        with self._lock:
+            return self._n(cle, self._horloge())
+
+    def ajouter(self, cle: str) -> int:
+        """Note un evenement sans plafond ; renvoie le nombre de la fenetre."""
+        maintenant = self._horloge()
+        with self._lock, self._con:
+            self._purger(maintenant)
+            self._con.execute("INSERT INTO compteurs_jour (cle, le) VALUES (?, ?)", (self._h(cle), maintenant))
+            return self._n(cle, maintenant)
+
+
+_CODE_SECOURS = re.compile(r"^[a-z0-9]{4}-[a-z0-9]{4}$")
+
+
+def forme_code_secours(code: str) -> bool:
+    """Forme d'un code de secours (4f9k-2m7q, api/totp.py), pas un code de l'application."""
+    return bool(_CODE_SECOURS.match(code.strip().lower().replace(" ", "")))
+
+
 class Freins:
     """Limite les essais de connexion : par IP (par minute) et par e-mail (echecs sur 15 min),
     et les comptes crees par IP sur 24 h (sans plafond, le quota gratuit se contourne en creant des comptes)."""
 
     def __init__(self, par_ip_minute: int = 10, echecs_email: int = 5, inscriptions_ip_jour: int = 20,
-                 echecs_compte: int = 50, echecs_jour: int = 20):
+                 echecs_compte: int = 50, echecs_jour: int | None = None, compteurs: Compteurs | None = None):
         self.par_ip, self.max_echecs = par_ip_minute, echecs_email
         # Plafond sur 24 h, que la connexion reussie du titulaire ne remet pas a zero : avec 5 echecs par
         # 15 minutes seulement, un code a 6 chiffres se devinait en un an dans 40 % des cas (audit du 19/11, SEC-2).
-        self.max_echecs_jour = echecs_jour
-        self._echecs_jour: dict[str, deque] = defaultdict(deque)
+        self.max_echecs_jour = ECHECS_2FA_JOUR if echecs_jour is None else echecs_jour
+        # En base (B2, B6) : un redemarrage remettait ce plafond a zero.
+        self._jour = compteurs if compteurs is not None else Compteurs()
         self.max_inscriptions = inscriptions_ip_jour
         # Plafond par compte, toutes adresses IP confondues : la limite de 5 echecs vise l'adresse qui se
         # trompe (sinon 5 faux mots de passe bloquaient le titulaire), celle-ci arrete une attaque repartie.
@@ -162,8 +245,7 @@ class Freins:
         if now - self._derniere_purge < 60:
             return
         self._derniere_purge = now
-        for d, fenetre in ((self._ip, 60), (self._echecs, 900), (self._inscriptions, 86400),
-                           (self._echecs_jour, 86400)):
+        for d, fenetre in ((self._ip, 60), (self._echecs, 900), (self._inscriptions, 86400)):
             for k in [k for k, q in d.items() if not q or now - q[-1] > fenetre]:
                 del d[k]
 
@@ -195,20 +277,19 @@ class Freins:
             if len(q) >= self.max_inscriptions:
                 raise HTTPException(429, "Trop de comptes créés depuis cette connexion aujourd'hui : réessayez demain.")
 
-    def verifier_jour(self, cle: str) -> None:
-        with self._lock:
-            q = self._echecs_jour[cle]
-            self._purger(q, 86400, time.monotonic())
-            if len(q) >= self.max_echecs_jour:
-                raise HTTPException(429, "Trop de codes incorrects pour ce compte aujourd'hui : réessayez demain, "
-                                         "ou utilisez un code de secours.")
+    def verifier_jour(self, cle: str, code: str = "") -> None:
+        """Plafond des codes faux du jour. Atteint, il laisse encore passer un code de secours : sinon quelqu'un
+        qui connait le mot de passe bloquait le titulaire 24 h, code de secours en main (audit du 23/11, B2)."""
+        if self._jour.compter(cle) >= self.max_echecs_jour and not forme_code_secours(code):
+            raise HTTPException(429, "Trop de codes incorrects pour ce compte aujourd'hui : utilisez un code de "
+                                     "secours, ou réessayez demain.")
+
+    def plafond_jour_atteint(self, cle: str) -> bool:
+        return self._jour.compter(cle) >= self.max_echecs_jour
 
     def echec_jour(self, cle: str) -> int:
         """Note un echec sur 24 h ; renvoie le nombre d'echecs de la fenetre."""
-        with self._lock:
-            q = self._echecs_jour[cle]
-            q.append(time.monotonic())
-            return len(q)
+        return self._jour.ajouter(cle)
 
     def inscrit(self, ip: str) -> None:
         with self._lock:
@@ -237,6 +318,20 @@ def cle_ip(request: Request) -> str:
     if ":" in hote:
         try:
             return str(ipaddress.ip_network(f"{hote}/64", strict=False))
+        except ValueError:
+            return hote
+    return hote
+
+
+def cle_ip_envois(request: Request) -> str:
+    """Adresse pour les plafonds d'e-mails : IPv4 entiere, reseau /48 en IPv6.
+
+    Un abonnement IPv6 recoit souvent un /56 ou un /48 : par /64, un seul abonne disposait de 256 adresses ou
+    plus pour vider les budgets (audit du 23/11, B1)."""
+    hote = request.client.host if request.client else "inconnu"
+    if ":" in hote:
+        try:
+            return str(ipaddress.ip_network(f"{hote}/48", strict=False))
         except ValueError:
             return hote
     return hote
@@ -285,38 +380,16 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
                  url_publique: str = "") -> tuple[APIRouter, callable]:
     """Renvoie (routes /auth, dependance utilisateur_requis)."""
     router = APIRouter()
-    freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour)
+    # E-mails envoyes et codes 2FA faux sur 24 h glissantes, en base (B6) : cles « compte:<id> », « oubli:<id> »,
+    # « lien_ip:<ip> », « renvoi_ip:<ip> », « oubli_ip:<ip> », « alerte_ip:<ip> », « 2fa:<id> » et les deux budgets
+    # « non_confirmes » et « confirmes ». Sans plafond, un compte inscrit a l'adresse d'un tiers lui envoyait 720
+    # e-mails par jour (audit 2, point 4) ; avec un plafond commun, un seul visiteur privait tout le monde du lien
+    # « mot de passe oublie » pendant 24 h (audit du 19/11, SEC-1) ; sans plafond par adresse, il le pouvait encore
+    # avec quelques adresses (audit du 23/11, B1).
+    compteurs = Compteurs(comptes.chemin)
+    freins = Freins(inscriptions_ip_jour=inscriptions_ip_jour, compteurs=compteurs)
     attentes = AttentesDeuxiemeFacteur()
-    # E-mails envoyes sur 24 h glissantes, par cle : « compte:<id> », « oubli:<id> », « ip:<ip> », et les deux
-    # budgets « non_confirmes » et « confirmes ». Sans plafond, un compte inscrit a l'adresse d'un tiers lui
-    # envoyait 720 e-mails par jour (audit 2, point 4) ; avec un plafond commun, un seul visiteur privait tout le
-    # monde du lien « mot de passe oublie » pendant 24 h (audit du 19/11, SEC-1).
-    envois: dict[str, deque] = defaultdict(deque)
-    verrou_envois = threading.Lock()
-
-    def _reserver(*plafonds: tuple[str, int]) -> float | None:
-        """Reserve un envoi dans chaque file si aucune n'a atteint son plafond ; None sinon."""
-        maintenant = time.monotonic()
-        with verrou_envois:
-            if len(envois) > 10_000:
-                for k in [k for k, q in envois.items() if not q or maintenant - q[-1] > 86400]:
-                    del envois[k]
-            files = [(envois[cle], plafond) for cle, plafond in plafonds]
-            for q, _ in files:
-                while q and maintenant - q[0] > 86400:
-                    q.popleft()
-            if any(len(q) >= plafond for q, plafond in files):
-                return None
-            for q, _ in files:
-                q.append(maintenant)
-            return maintenant
-
-    def _annuler(t: float, *plafonds: tuple[str, int]) -> None:
-        """Rend la reservation d'un envoi qui n'est pas parti."""
-        with verrou_envois:
-            for cle, _ in plafonds:
-                if t in envois[cle]:
-                    envois[cle].remove(t)
+    _reserver, _annuler = compteurs.reserver, compteurs.annuler
 
     def utilisateur_requis(request: Request) -> Utilisateur:
         u = comptes.session(request.cookies.get(COOKIE))
@@ -365,14 +438,19 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             raise HTTPException(422, str(e)) from None
         freins.inscrit(_ip(request))
         # L'echec d'envoi n'empeche pas la creation du compte ; le lien compte dans le budget des non confirmes.
-        budget = ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR)
-        t = _reserver(budget)
+        # Plafond par adresse avant le budget commun (B1) : au-dela, le compte est cree et le site propose
+        # « Renvoyer le lien » (lien_envoye faux).
+        plafonds = ((f"lien_ip:{cle_ip_envois(request)}", LIENS_PAR_IP_JOUR),
+                    ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
+        envoye = False
+        t = _reserver(*plafonds) if courriel.configure() else None
         if t is None:
-            log.warning("plafond des e-mails aux comptes non confirmes atteint : lien d'inscription non envoye")
-        elif not _envoyer_verification(request, u):
-            _annuler(t, budget)
+            if courriel.configure():
+                log.warning("plafond atteint (adresse ou comptes non confirmes) : lien d'inscription non envoye")
+        elif not (envoye := _envoyer_verification(request, u)):
+            _annuler(t, *plafonds)
         _poser_cookie(request, response, comptes.ouvrir_session(u.id))
-        return profil(comptes, comptes.par_id(u.id))
+        return {**profil(comptes, comptes.par_id(u.id)), "lien_envoye": envoye}
 
     @router.post("/connexion", dependencies=[Depends(verifier_origine)])
     def connexion(req: Connexion, request: Request, response: Response):
@@ -397,23 +475,33 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if uid is None:
             raise HTTPException(401, "Délai dépassé ou trop d'essais : reconnectez-vous.")
         freins.verifier(_ip(request), f"2fa:{uid}")
-        freins.verifier_jour(f"2fa:{uid}")
-        if not comptes.verifier_2fa(uid, req.code):
+        if not _code_2fa_valable(uid, req.code, request):
             freins.echec(f"2fa:{uid}")
-            freins.echec_jour(f"2fa:{uid}")
-            _prevenir_code_faux(uid)
             raise HTTPException(401, "Code incorrect.")
         attentes.terminer(req.jeton)
         freins.succes(f"2fa:{uid}")
         _poser_cookie(request, response, comptes.ouvrir_session(uid))
         return profil(comptes, comptes.par_id(uid))
 
-    def _prevenir_code_faux(uid: int) -> None:
+    def _code_2fa_valable(uid: int, code: str, request: Request) -> bool:
+        """Code de l'application ou de secours, apres un bon mot de passe : connexion, desactivation de la 2FA,
+        suppression du compte. Plafond du jour commun aux trois (B7) ; atteint, seul un code de secours est
+        encore essaye (B2, 429 sinon). Un code faux compte dans ce plafond et previent le titulaire."""
+        cle = f"2fa:{uid}"
+        freins.verifier_jour(cle, code)
+        if comptes.verifier_2fa(uid, code, secours_seul=freins.plafond_jour_atteint(cle)):
+            return True
+        freins.echec_jour(cle)
+        _prevenir_code_faux(uid, request)
+        return False
+
+    def _prevenir_code_faux(uid: int, request: Request) -> None:
         """E-mail au titulaire au premier code faux apres un bon mot de passe, une fois par 24 h au plus."""
         u = comptes.par_id(uid)
         if u is None or not u.email_verifie or not courriel.configure():
             return
-        plafonds = ((f"alerte2fa:{uid}", 1), ("confirmes", ENVOIS_CONFIRMES_JOUR))
+        plafonds = ((f"alerte2fa:{uid}", 1), (f"alerte_ip:{cle_ip_envois(request)}", ALERTES_PAR_IP_JOUR),
+                    ("confirmes", ENVOIS_CONFIRMES_JOUR))
         if _reserver(*plafonds) is not None:
             envois_oubli.submit(_envoyer_alerte_code_faux, u.email)
 
@@ -453,7 +541,8 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def desactiver_2fa(req: MotDePasseEtCode2FA, request: Request, response: Response,
                        u: Utilisateur = Depends(utilisateur_requis)):
         freins.verifier(_ip(request), u.email)
-        if comptes.authentifier(u.email, req.mot_de_passe) is None or not comptes.verifier_2fa(u.id, req.code):
+        # Code dans le plafond du jour et titulaire prevenu, comme a la connexion (audit du 23/11, B7).
+        if comptes.authentifier(u.email, req.mot_de_passe) is None or not _code_2fa_valable(u.id, req.code, request):
             freins.echec(u.email)
             raise HTTPException(401, "Mot de passe ou code incorrect.")
         comptes.desactiver_2fa(u.id)  # ferme toutes les sessions ; celle-ci est rouverte ci-dessous
@@ -501,7 +590,9 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def renvoyer_verification(request: Request, u: Utilisateur = Depends(utilisateur_requis)):
         if u.email_verifie:
             raise HTTPException(422, "Votre adresse est déjà confirmée.")
-        plafonds = ((f"compte:{u.id}", RENVOIS_PAR_COMPTE_JOUR), ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
+        plafonds = ((f"compte:{u.id}", RENVOIS_PAR_COMPTE_JOUR),
+                    (f"renvoi_ip:{cle_ip_envois(request)}", LIENS_PAR_IP_JOUR),   # B1
+                    ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
         t = _reserver(*plafonds)
         if t is None:
             raise HTTPException(429, "Trop d'e-mails de confirmation envoyés aujourd'hui : réessayez demain, "
@@ -533,7 +624,8 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             return {"envoye": True}
         budget = (("confirmes", ENVOIS_CONFIRMES_JOUR) if u.email_verifie
                   else ("non_confirmes", ENVOIS_NON_CONFIRMES_JOUR))
-        plafonds = ((f"oubli:{u.id}", RENVOIS_PAR_COMPTE_JOUR), (f"ip:{_ip(request)}", OUBLIS_PAR_IP_JOUR), budget)
+        plafonds = ((f"oubli:{u.id}", OUBLIS_PAR_COMPTE_JOUR),
+                    (f"oubli_ip:{cle_ip_envois(request)}", OUBLIS_PAR_IP_JOUR), budget)
         t = _reserver(*plafonds)
         if t is None:
             log.warning("plafond atteint : lien « mot de passe oublie » non envoye (%s)", budget[0])
@@ -597,7 +689,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         if u.double_authentification:
             if not req.code.strip():
                 raise HTTPException(401, "Saisissez le code de votre application d'authentification.")
-            if not comptes.verifier_2fa(u.id, req.code):
+            if not _code_2fa_valable(u.id, req.code, request):   # plafond du jour et alerte (B7)
                 freins.echec(u.email)
                 raise HTTPException(401, "Code incorrect.")
         comptes.supprimer(u.id, garder_trace=True)  # pas de reinscription avant 24 h (quota remis a zero)

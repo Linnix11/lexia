@@ -37,6 +37,8 @@ def creer_serveur(dist: Path = DIST, api: FastAPI | None = None) -> FastAPI:
     # HEAD aussi : des robots et des verificateurs de liens testent une adresse par HEAD (405 avant D116).
     @racine.api_route("/{chemin:path}", methods=["GET", "HEAD"], include_in_schema=False)
     async def front(chemin: str):  # async : ne prend pas de thread, le site reste servi si Gemini est lent
+        if "\x00" in chemin:  # Path.resolve leve ValueError : 500 au lieu d'un refus (audit du 23/11, B10)
+            raise HTTPException(400, "Adresse invalide.")
         # fichiers publics (favicon, sitemap.xml, llms.txt...) ; dist/pages/ n'est servi que par son adresse publique
         fichier = (dist / chemin).resolve()
         if chemin and fichier.is_file() and dist.resolve() in fichier.parents and pages not in fichier.parents:

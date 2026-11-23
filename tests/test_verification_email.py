@@ -139,7 +139,9 @@ def test_sans_url_publique_aucun_lien_n_est_envoye(tmp_path, monkeypatch):
 
 def test_renvois_plafonnes_par_compte(env, monkeypatch):
     """Sans plafond, un compte inscrit a l'adresse d'un tiers lui envoyait 720 e-mails par jour (audit 2, point 4)."""
+    from api import auth
     client, comptes, envoyes = env
+    monkeypatch.setattr(auth, "LIENS_PAR_IP_JOUR", 10)   # plafond par adresse (B1) teste a part
     inscrire(client)
     monkeypatch.setattr(comptes, "jeton_verification", lambda uid, force=False: "jeton")  # sans les 2 minutes d'ecart
     codes = [client.post("/auth/email/renvoyer").status_code for _ in range(6)]
@@ -263,22 +265,23 @@ def _inscrit_confirme(app, envoyes, email, ip):
 
 def test_des_comptes_inventes_ne_privent_pas_les_etudiants_de_leur_lien(env, monkeypatch):
     """SEC-1 (TST-10) : 10 comptes non confirmes x 5 « mot de passe oublie » epuisaient le plafond commun de 50 ;
-    pendant 24 h, un etudiant confirme lisait « envoye » sans recevoir aucun e-mail."""
+    pendant 24 h, un etudiant confirme lisait « envoye » sans recevoir aucun e-mail. Depuis B1 (audit du 23/11),
+    2 liens par compte : il faut 20 adresses et autant de comptes pour vider le budget des non confirmes."""
     from api import auth
     client, _, envoyes = env
     liens = _liens_oubli(monkeypatch)
     _sans_delai_entre_liens(monkeypatch)
     _inscrit_confirme(client.app, envoyes, "etu@exemple.fr", "192.0.2.1")
-    pirates = [TestClient(client.app, client=(f"10.0.0.{k}", 50000)) for k in range(10)]   # une IP chacun
+    pirates = [TestClient(client.app, client=(f"10.0.0.{k}", 50000)) for k in range(20)]   # une IP chacun
     for k, pirate in enumerate(pirates):
         inscrire(pirate, email=f"invente{k}@exemple.fr")
     for k, pirate in enumerate(pirates):
         for _ in range(5):
             assert pirate.post("/auth/mot-de-passe/oubli", json={"email": f"invente{k}@exemple.fr"}).json() == {
                 "envoye": True}
-    attendus = auth.ENVOIS_NON_CONFIRMES_JOUR - len(envoyes)    # les liens d'inscription comptent aussi
+    attendus = auth.ENVOIS_NON_CONFIRMES_JOUR - len(envoyes)       # les liens d'inscription comptent aussi
     _attendre(liens, attendus)
-    assert len(liens) == attendus and len(envoyes) == 11
+    assert len(liens) == attendus and len(envoyes) == 21          # budget des non confirmes vide
     etudiant = TestClient(client.app, client=("192.0.2.1", 50000))
     assert etudiant.post("/auth/mot-de-passe/oubli", json={"email": "etu@exemple.fr"}).json() == {"envoye": True}
     _attendre(liens, attendus + 1)

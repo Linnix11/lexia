@@ -92,11 +92,25 @@ def lire_isole(nom: str, contenu: bytes, delai: float | None = None) -> Lecture:
     """lire dans un processus separe, tue avec tout son groupe (tesseract, pdftoppm) au-dela du delai."""
     if delai is None:
         delai = DELAI_LECTURE_OCR if Path(nom).suffix.lower() in FORMATS_OCR and ocr_disponible() else DELAI_LECTURE
+    # Dossier temporaire du lecteur (PDF et images de l'OCR, donc le cours) cree et supprime ici : tue au-dela du
+    # delai, le lecteur laissait son dossier dans le /tmp prive du service jusqu'au redemarrage (audit du 23/11, B8).
+    dossier = tempfile.mkdtemp(prefix="lexia-lecteur-")
+    try:
+        return _lire_dans(nom, contenu, delai, dossier)
+    finally:
+        shutil.rmtree(dossier, ignore_errors=True)
+
+
+def _commande_lecteur(nom: str) -> list[str]:
+    return [sys.executable, "-m", "api.extraction", nom]
+
+
+def _lire_dans(nom: str, contenu: bytes, delai: float, dossier: str) -> Lecture:
     # Groupe de processus a part : subprocess.run(timeout=...) ne tuait que le processus Python, un tesseract
     # lance par lui aurait continue a calculer.
-    p = subprocess.Popen([sys.executable, "-m", "api.extraction", nom], stdin=subprocess.PIPE,
+    p = subprocess.Popen(_commande_lecteur(nom), stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=RACINE, start_new_session=True,
-                         env=_env_lecteur())
+                         env={**_env_lecteur(), "TMPDIR": dossier})
     try:
         stdout, _ = p.communicate(contenu, timeout=delai)
     except subprocess.TimeoutExpired:

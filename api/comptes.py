@@ -42,6 +42,25 @@ MDP_COURANTS = frozenset({
     "droit12345", "etudiant12", "etudiant123", "bonjour123", "bonjour1234", "azertyuiop1", "abcdefghij",
     "abcdefgh12", "abc1234567", "1q2w3e4r5t", "a1b2c3d4e5", "123456789azerty",
 })
+# Mots parmi les plus choisis, refuses aussi entoures de chiffres ou de symboles (« soleil2026! », « 13marseille ») :
+# la liste exacte ci-dessus ne retenait que 40 formes (audit du 23/11, B10).
+MOTS_COURANTS = frozenset({
+    "azerty", "azertyuiop", "qwerty", "qwertyuiop", "qsdfghjklm", "wxcvbn", "motdepasse", "password", "passe",
+    "iloveyou", "jetaime", "soleil", "doudou", "loulou", "chouchou", "chocolat", "marseille", "paris", "lyon",
+    "lexia", "droit", "etudiant", "etudiante", "licence", "juriste", "avocat", "bonjour", "salut", "admin",
+    "abcdef", "abcdefgh", "abcdefghij", "football", "princesse", "dragon", "monkey", "superman", "batman",
+    "pokemon", "naruto", "welcome", "letmein", "sunshine", "master", "freedom", "starwars", "secret", "amour",
+    "bienvenue", "france", "nicolas", "thomas", "camille", "julien", "marie", "sophie", "lucas", "emma",
+})
+_AUTOUR = re.compile(r"^[\d\W_]+|[\d\W_]+$")
+
+
+def mot_de_passe_courant(mdp: str) -> bool:
+    m = mdp.lower()
+    return (m in MDP_COURANTS or len(set(m)) < 4 or m.isdigit()
+            or _AUTOUR.sub("", m) in MOTS_COURANTS)
+
+
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 # scrypt : N=2^14, r=8, p=5, une des combinaisons recommandees par l'OWASP (16 Mo de memoire, ~120 ms).
 # p=1 etait sous la recommandation (audit du 2026-11-16, point 10) ; p plutot que N pour garder 16 Mo par
@@ -316,7 +335,7 @@ class Comptes:
         if len(mdp) > 256:
             raise ErreurCompte("Mot de passe trop long.")
         # Mots de passe parmi les plus essayes, ou presque sans variete (audit du 19/11, SEC-10)
-        if mdp.lower() in MDP_COURANTS or len(set(mdp.lower())) < 4:
+        if mot_de_passe_courant(mdp):
             raise ErreurCompte("Ce mot de passe est trop courant : choisissez-en un autre.")
 
     def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None,
@@ -558,15 +577,16 @@ class Comptes:
                 "totp_secours = NULL WHERE id = ?", (uid,))
         self._q("DELETE FROM sessions WHERE utilisateur = ?", (uid,))  # les autres appareils se reconnectent
 
-    def verifier_2fa(self, uid: int, code: str) -> bool:
-        """Code de l'application (une seule fois) ou code de secours (consomme)."""
+    def verifier_2fa(self, uid: int, code: str, secours_seul: bool = False) -> bool:
+        """Code de l'application (une seule fois) ou code de secours (consomme).
+        secours_seul : plafond des codes faux du jour atteint, seul un code de secours est essaye (B2)."""
         with self._lock, self._con:
             row = self._con.execute("SELECT totp_secret, totp_etape, totp_secours FROM utilisateurs WHERE id = ?",
                                     (uid,)).fetchone()
             if not row or not row[0]:
                 return False
             secret, derniere, secours = coffre.dechiffrer(row[0]), row[1], coffre.dechiffrer(row[2])
-            etape = totp.verifier(secret, code, derniere)
+            etape = None if secours_seul else totp.verifier(secret, code, derniere)
             if etape is not None:
                 self._con.execute("UPDATE utilisateurs SET totp_etape = ? WHERE id = ?", (etape, uid))
                 return True

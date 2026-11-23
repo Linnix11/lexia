@@ -194,9 +194,14 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Finalité : protéger le service contre les abus et les attaques.
 - Données : journaux du serveur web nginx (adresse IP, date, page demandée, navigateur) ; adresses IP et réseaux
   IPv6 /64 gardés en mémoire par le limiteur de débit ; empreinte de l'adresse e-mail d'un compte supprimé
-  depuis le site (table `suppressions`), qui empêche de se réinscrire dans les 24 h pour remettre son quota à zéro.
+  depuis le site (table `suppressions`), qui empêche de se réinscrire dans les 24 h pour remettre son quota à zéro ;
+  compteurs des e-mails envoyés et des codes de double authentification incorrects (table `compteurs_jour`, D117) :
+  empreinte de la clé (numéro du compte, adresse IP ou réseau IPv6 /48, jamais en clair) et instant, pour les
+  plafonds sur 24 h qui survivent à un redémarrage.
 - Destinataires : éditeur, Hostinger, Cloudflare.
 - Durée : journaux nginx 14 jours (rotation à vérifier sur le serveur : `/etc/logrotate.d/nginx`) ; empreinte
+  compteurs de `compteurs_jour` : 24 h (lignes plus anciennes effacées au plus tard dix minutes après, à chaque
+  nouvel envoi ou code) ; empreinte
   après suppression : effacée par la tâche de nuit une fois les 24 h écoulées, donc 48 h au plus
   (`Comptes.purger_sessions`, test `tests/test_rgpd.py`). La CNIL recommande de conserver les journaux de
   sécurité entre six mois et un an (https://www.cnil.fr/fr/la-cnil-publie-une-recommandation-relative-aux-mesures-de-journalisation) :
