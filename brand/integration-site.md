@@ -14,7 +14,15 @@ tout ce qui est public et durable (icône d'application installée, image de par
 | `manifest.json` | reprendre `brand/icones/manifest-exemple.json` | Ajoute les icônes `maskable` ; garder le `name`, `start_url` et `theme_color` actuels si la recette les a changés. |
 | (nouveau) | `brand/icones/icone-maskable-192.png`, `brand/icones/icone-maskable-512.png` | Référencés par le manifeste. |
 | (nouveau) | `brand/icones/favicon.ico` (16, 32 et 48 px) | Pour les navigateurs et lecteurs de flux qui demandent `/favicon.ico` sans lire le HTML. |
-| (nouveau, session SEO) | `brand/open-graph/og-image-1200x630.png`, copié en `web/public/og-image.png` | Balises `og:image` (URL absolue), `og:image:width` 1200, `og:image:height` 630, `og:image:alt` « Lexia : le droit, sources à l'appui » et `twitter:card` `summary_large_image`. |
+| `og-lexia.png` (créé par la session SEO, D116, référencé par `IMAGE_PARTAGE` dans `web/src/site/seo.ts`, balises écrites par `web/src/site/publication.ts`) | `brand/open-graph/og-image-1200x630.png`, copié sous le nom `og-lexia.png` | Aucun changement de code : même nom, même taille 1200 x 630. Les balises `og:image:width` (1200), `og:image:height` (630) et `og:image:alt` restent justes. |
+
+## Autres fichiers à aligner hors du site
+
+- `docs/marketing/production/source/visuels.py` (production marketing du mois 1) dessine encore le signet avec
+  « L » et le mot en Gelasio dans ses fonctions `signet()` et `logotype()`. Les remplacer par les SVG de
+  `brand/logos/svg/` (le script le prévoit dans son en-tête), puis relancer la production des visuels.
+- `docs/business/` (pitch deck) : reprendre `brand/logos/svg/lexia-horizontal-couleur.svg` ou
+  `lexia-principal-inverse.svg` si le deck affiche un logo.
 
 ## Lignes à vérifier dans `web/index.html`
 
