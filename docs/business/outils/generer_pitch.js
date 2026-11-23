@@ -175,7 +175,7 @@ formules.forEach(([n, p, d], i) => {
   texte(s, p, { x: x + 0.25, y: 1.75, w: 2.4, h: 0.55, fontSize: 28, bold: true, color: C.text1, fontFace: THEME.headFontFace, objectName: `formule ${n} prix` });
   texte(s, d, { x: x + 0.25, y: 2.35, w: 2.4, h: 0.65, fontSize: 11, color: C.accent6, objectName: `formule ${n} quotas` });
 });
-chiffre(s, 0.5, 3.35, 2.9, "0,0028 €", "coût mesuré d'une question (essais, grille payante de Gemini)", "chiffre cout question", C.accent2);
+chiffre(s, 0.5, 3.35, 2.9, "0,0028 €", "coût estimé d'une question (jetons d'essai, grille de Gemini, hypothèses)", "chiffre cout question", C.accent2);
 chiffre(s, 3.55, 3.35, 2.9, "4,18 €", "marge brute mensuelle d'un abonné Étudiant (220 questions, hypothèse)", "chiffre marge etudiant", C.accent2);
 chiffre(s, 6.6, 3.35, 2.9, "33", "comptes gratuits actifs dont un abonné Étudiant couvre le coût du modèle", "chiffre gratuits couverts", C.accent2);
 texte(s, "Paiement unique de 1 à 12 mois par Stripe (1,5 % + 0,25 €), sans reconduction. Micro-entreprise en franchise de TVA.", { x: 0.5, y: 4.62, w: 9.0, h: 0.4, fontSize: 11, color: C.accent6, objectName: "note paiement" });
@@ -232,16 +232,17 @@ s = pres.addSlide({ masterName: "CONTENU", sectionTitle: "Chiffres" });
 s.addText("Projections sur 3 ans : trois scénarios", { placeholder: "title" });
 // Graphique ajouté par ajouter_graphiques.py (Keynote n'affiche pas les graphiques de pptxgenjs).
 const proj = [
-  ["Résultat cumulé sur 36 mois", "−15,9 k€", "−18,0 k€", "+31,1 k€"],
+  ["Résultat cumulé sur 36 mois", "−15,9 k€", "−18,4 k€", "+30,2 k€"],
+  ["Le même sans publicité", "−6,4 k€", "+1,1 k€", "+64,5 k€"],
   ["Abonnés en fin d'année 3", "24", "325", "2 781"],
-  ["Point mort", "non atteint", "juil. 2028", "avr. 2027"],
-  ["LTV / CAC, année 3", "négatif", "1,1", "4,5"],
+  ["Point mort", "non atteint", "juil. 2028", "juin 2027"],
+  ["LTV / CAC marginal, année 3", "négatif", "0,2", "1,0"],
 ];
 const tete10 = (t) => ({ text: t, options: { bold: true, color: HEX.lt1, fill: { color: HEX.dk2 }, fontSize: 10, valign: "middle" } });
 const tp = [[tete10(""), tete10("Prudent"), tete10("Central"), tete10("Ambitieux")]].concat(proj.map(r => [cel(r[0], { fontSize: 10 }), cel(r[1], { fontSize: 10 }), cel(r[2], { fontSize: 10, bold: true }), cel(r[3], { fontSize: 10 })]));
-s.addTable(tp, { x: 5.95, y: 1.2, w: 3.55, colW: [1.25, 0.75, 0.75, 0.8], rowH: 0.48, border: { type: "solid", pt: 0.5, color: "D5DAD6" }, fill: { color: HEX.lt1 }, fontFace: THEME.bodyFontFace, margin: 0.04, objectName: "tableau projections" });
-texte(s, "Avant rémunération de l'éditeur. Hypothèses d'acquisition, de conversion et de rachat non mesurées : projections.xlsx, feuille Hypothèses.", { x: 5.95, y: 3.75, w: 3.55, h: 1.0, fontSize: 10, color: C.accent6, objectName: "note projections" });
-s.addNotes("Conversion mensuelle des gratuits actifs : 0,6 %, 1,2 %, 2 %. Perte mensuelle des abonnés : 15 %, 10 %, 7 %, plus 15 à 25 points en été. Le scénario ambitieux perd la franchise de TVA en 2028 et dépasse le plafond micro en 2029. Le point mort central de juillet 2028 n'est pas durable.");
+s.addTable(tp, { x: 5.95, y: 1.2, w: 3.55, colW: [1.25, 0.75, 0.75, 0.8], rowH: 0.44, border: { type: "solid", pt: 0.5, color: "D5DAD6" }, fill: { color: HEX.lt1 }, fontFace: THEME.bodyFontFace, margin: 0.04, objectName: "tableau projections" });
+texte(s, "La publicité coûte plus qu'elle ne rapporte dans les trois scénarios. Avant rémunération de l'éditeur ; hypothèses non mesurées : projections.xlsx.", { x: 5.95, y: 4.0, w: 3.55, h: 0.85, fontSize: 10, color: C.accent6, objectName: "note projections" });
+s.addNotes("Conversion mensuelle des gratuits actifs : 0,6 %, 1,2 %, 2 %. Perte mensuelle des abonnés : 15 %, 10 %, 7 %, plus 15 à 25 points en été. Le scénario ambitieux perd la franchise de TVA en 2028 et dépasse le plafond micro en 2029. Le point mort central de juillet 2028 n'est pas durable. CAC marginal = publicité / abonnés en plus dus à la publicité : 185, 103 et 106 € (central), 68, 38 et 35 € (ambitieux), pour une LTV nette du coût des gratuits de 8 à 23 € et de 36 à 40 €. Le CAC moyen (organiques compris) donnait 4,4 dans l'ambitieux et laissait croire que la publicité s'y justifiait : le tableur dit l'inverse.");
 
 // 10. Feuille de route -----------------------------------------------------------------------
 pres.addSection({ title: "Plan" });
@@ -251,7 +252,7 @@ const route = [
   ["Déc. 2026", "Prérequis", "Gemini payant, âge 15 ou 18 ans, SIRET, médiateur, avis sur le nom"],
   ["Janv. 2027", "Ouverture de la vente", "Stripe en réel, avocat (CGU, D77), appel aux enseignants"],
   ["Févr.-mars", "Mesurer", "Conversion et rachat sur 8 semaines, dépôt de marque si avis favorable"],
-  ["Avr.-mai", "Tester", "Coût réel par question ; publicité 150 à 300 € si CAC < LTV / 2"],
+  ["Avr.-mai", "Tester", "Coût réel par question ; publicité 150 à 300 € si CAC marginal < LTV / 2"],
   ["Juin-août", "Préparer la rentrée", "App iOS, synchronisation, offre étudiante de Google à revérifier"],
   ["Sept.-nov.", "Rentrée 2027", "Palier publicitaire 2 si justifié, statut et prix revus"],
 ];
@@ -296,7 +297,7 @@ texte(s, "scénario central avec le plan publicitaire : la publicité y coûte p
 s.addShape(pres.ShapeType.roundRect, { x: 4.35, y: 1.2, w: 5.15, h: 3.75, rectRadius: 0.08, fill: { color: C.background1 }, line: { type: "none" }, objectName: "fond graphique sensibilite" });
 // Graphique ajouté par ajouter_graphiques.py.
 texte(s, "Pistes à étudier, sans recommandation : apport personnel, prêt d'honneur, aides à l'innovation (non vérifiées). Prochaine étape : lever les prérequis et mesurer la conversion.", { x: 0.5, y: 4.55, w: 3.6, h: 0.6, fontSize: 10, color: C.accent5, objectName: "pistes financement" });
-s.addNotes("Trésorerie la plus basse sur 36 mois, départ à 0 € : ambitieux 3,6 k€, central sans publicité 3,8 k€, prudent 15,9 k€, central avec publicité 18,0 k€. Variantes du graphique : perte mensuelle des abonnés de 7 % au lieu de 10 % ; gratuit limité à 25 questions par mois en moyenne au lieu de 45 ; conversion mensuelle de 2 % au lieu de 1,2 % ; sans publicité payante ; et les trois derniers leviers réunis. Aucune aide ni prêt n'a été vérifié dans ce document ; ce n'est pas un conseil financier.");
+s.addNotes("Trésorerie la plus basse sur 36 mois, départ à 0 € : ambitieux 3,7 k€, central sans publicité 3,8 k€, prudent 15,9 k€, central avec publicité 18,4 k€. Variantes du graphique : perte mensuelle des abonnés de 7 % au lieu de 10 % ; gratuit limité à 25 questions par mois en moyenne au lieu de 45 ; conversion mensuelle de 2 % au lieu de 1,2 % ; sans publicité payante ; et les trois derniers leviers réunis. Aucune aide ni prêt n'a été vérifié dans ce document ; ce n'est pas un conseil financier.");
 
 (async () => {
   await pres.writeFile({ fileName: SORTIE });

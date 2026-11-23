@@ -34,7 +34,7 @@ Flash n° 11 citée par le plan marketing renvoie une erreur 404 au 23 novembre 
 | Groq, niveau gratuit | Existe ; limites exactes non distinguées de celles du plan Developer | https://console.groq.com/docs/rate-limits | Oui, ambigu |
 | Hostinger VPS KVM 2 (2 processeurs, 8 Go) | 7,79 €/mois en promotion sur 24 mois (186,96 € payés d'avance), renouvellement 14,99 €/mois ; TTC ou HT non précisé | https://www.hostinger.com/fr/vps-hosting | Oui |
 | Domaine .cloud chez Hostinger | 1,99 € la première année, renouvellement 24,99 €/an | https://www.hostinger.com/fr/domaines | Oui |
-| Resend | Gratuit : 100 e-mails par jour, 3 000 par mois ; Pro : 20 $/mois pour 50 000 | https://resend.com/pricing | Oui |
+| Resend | Gratuit : 100 e-mails par jour, 3 000 par mois ; Pro : 20 $/mois pour 50 000, sans limite quotidienne (relu le 23/11/2026) | https://resend.com/pricing | Oui |
 | Stripe, cartes standard de l'EEE | 1,5 % + 0,25 € | https://stripe.com/fr/pricing | Oui |
 | Stripe, cartes premium de l'EEE | 2,8 % + 0,25 € | Même page | Oui |
 | Stripe, cartes hors EEE | 3,15 % + 0,25 € (+2 % en cas de conversion) | Même page | Oui |

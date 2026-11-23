@@ -27,14 +27,16 @@ Lu pour ce document : `README.md`, `docs/decisions.md` (D1 à D114), `docs/avant
   théorique d'environ 7,6 M€ par an au prix moyen de 5,99 € sur 9 mois ; marché accessible estimé à 1,9 M€
   (hypothèse : un quart des étudiants prêts à payer un outil spécialisé).
 - **Modèle.** Freemium : Gratuit (10 questions par jour), Étudiant 4,99 €/mois, Intensif 9,99 €/mois, paiement
-  unique de 1 à 12 mois sans reconduction. Coût mesuré d'une question : environ 0,0028 € (essais), soit environ
+  unique de 1 à 12 mois sans reconduction. Coût estimé d'une question : environ 0,0028 € (jetons mesurés sur des essais, grille de prix et trois hypothèses), soit environ
   0,13 € par mois pour un compte gratuit actif et 0,61 € pour un abonné Étudiant (hypothèses d'usage).
 - **Projections sur 3 ans** (2027 à 2029, micro-entreprise, avant rémunération de l'éditeur) : chiffre d'affaires de
   l'année 3 de 1,5 k€ (prudent), 19 k€ (central) et 133 k€ (ambitieux). Résultat cumulé sur 36 mois : −16 k€,
-  −18 k€ et +31 k€. Dans le scénario central, la publicité payante coûte plus qu'elle ne rapporte : **sans
-  publicité, le même scénario finit à +1,3 k€ avec un besoin de trésorerie de 3,8 k€**.
+  −18 k€ et +30 k€. La publicité payante coûte plus qu'elle ne rapporte dans les trois scénarios : **sans
+  publicité, le scénario central finit à +1,1 k€ avec un besoin de trésorerie de 3,8 k€, et l'ambitieux à
+  +64,5 k€ au lieu de +30,2 k€** (un abonné apporté par la publicité y coûte 35 à 68 €, pour une LTV de 36 à
+  40 €).
 - **Leviers décisifs** (analyse de sensibilité) : la conversion vers le payant, le coût des comptes gratuits
-  (quota de questions) et la discipline publicitaire (ne payer qu'une fois le CAC mesuré sous la LTV).
+  (quota de questions) et la discipline publicitaire (ne payer qu'une fois le CAC marginal mesuré sous la moitié de la LTV).
 - **Besoin de financement.** De 3 à 4 k€ (frais juridiques et de marque, déficit des premiers mois) si la
   publicité attend des mesures, jusqu'à 18 k€ si le plan publicitaire est suivi avec les hypothèses centrales.
 - **Risques majeurs** : conditions de l'API Gemini (âge minimum de 18 ans, niveau payant obligatoire pour
@@ -150,7 +152,8 @@ ne sont pas franchis.
 
 ### Économie unitaire (formules dans le classeur)
 
-Coût d'une question : 0,00306 $ soit **0,00279 €**, calculé à partir des jetons mesurés (2 036 en entrée et 538 en
+Coût estimé d'une question : 0,00306 $ soit **0,00279 €**. Seuls les jetons sont mesurés, sur 20 appels
+d'essai ; le reste vient de la grille de prix et d'hypothèses. Calcul à partir des jetons mesurés (2 036 en entrée et 538 en
 sortie par réponse, 136 et 60 par reformulation, 0,74 reformulation par question), de la grille du niveau payant
 de Gemini, de 5 % de questions sur Gemini 3.8 Flash et 5 % sur Groq payant (hypothèses) et de 25 % d'appels annexes
 (questionnaires, résumés vocaux, cartes mentales ; hypothèse).
@@ -161,7 +164,7 @@ de Gemini, de 5 % de questions sur Gemini 3.8 Flash et 5 % sur Groq payant (hypo
 | Prix encaissé | 0 € | 4,99 € | 9,99 € |
 | Coût du modèle | 0,13 € | 0,61 € | 1,67 € |
 | Frais Stripe (achat moyen de 2 mois, hypothèse) | 0 € | 0,20 € | 0,27 € |
-| Marge brute | −0,13 € | 4,18 € | 8,05 € |
+| Marge brute | −0,13 € | 4,18 € | 8,04 € |
 | Cotisations et formation professionnelle (25,8 % du CA) | 0 € | 1,29 € | 2,58 € |
 | Contribution nette | −0,13 € | 2,89 € | 5,47 € |
 
@@ -186,11 +189,18 @@ Reprise de `docs/marketing/plan.md`, avec les enseignements chiffrés du modèle
 2. **Phase payante (au plus tôt aux partiels de mai 2027)** : palier test de 150 à 300 € sur Instagram, puis 500 à
    1 000 € par mois à la rentrée 2027 si le coût par compte est acceptable ; ciblage 18 ans et plus, sans audience
    tirée de la liste des inscrits.
-3. **Garde-fou issu des projections** : dans le scénario central, le CAC moyen (15 à 22 € par abonné) dépasse ou
-   égale la LTV (9 à 23 €) ; la publicité y détruit de la valeur. **Règle proposée : ne passer au palier suivant
-   que si le CAC mesuré est inférieur à la moitié de la LTV mesurée**, la LTV étant calculée avec le vrai taux de
-   rachat. Dans le scénario ambitieux (coût d'inscription de 2,5 €, conversion de 2 %), le rapport LTV / CAC atteint
-   4 à 7 et la publicité se justifie.
+3. **Garde-fou issu des projections** : le bon indicateur est le **CAC marginal**, la publicité divisée par les
+   abonnés en plus qu'elle apporte (feuille Synthèse, lignes « apportés par la publicité »). Le CAC moyen divise
+   la publicité par tous les nouveaux abonnés, organiques compris : il sous-estime le coût d'un abonné acquis
+   de 4 à 14 fois selon l'année et le scénario. Dans le scénario central, le CAC marginal vaut 185, 103 et 106 € (années 1 à 3) pour une
+   LTV de 8 à 23 € ; dans l'ambitieux (coût d'inscription de 2,5 €, conversion de 2 %), 68, 38 et 35 € pour une
+   LTV de 36 à 40 €, soit un rapport LTV / CAC marginal d'environ 0,5 puis 1,0. **Même dans le scénario
+   ambitieux, la publicité rapporte moins qu'elle ne coûte** : sans elle, le résultat cumulé sur 36 mois passe de
+   −18,4 à +1,1 k€ (central) et de +30,2 à +64,5 k€ (ambitieux). **Règle proposée : ne passer au palier suivant
+   que si le CAC marginal mesuré (abonnés venus des campagnes, repérés par l'origine des inscriptions, D110) est
+   inférieur à la moitié de la LTV mesurée**, la LTV étant calculée avec le vrai taux de rachat. La LTV du
+   classeur est nette du coût des comptes gratuits (taux de marge de l'ensemble, 51 % l'année 3 du central) ; la
+   marge propre d'un abonné est de 80 à 84 % (partie 6).
 4. **Indicateurs** : inscriptions, fidélité à 7 et 30 jours (déjà dans l'administration, D111), origine des
    inscriptions (D110), questions par compte actif, conversion, rachat, coût par question (`eval/cout.py`).
 
@@ -215,11 +225,11 @@ CGI) ; déclaration au guichet unique de l'INPI en novembre 2026, SIRET en cours
 
 | Règle (2026) | Valeur | Effet pour Lexia |
 |---|---|---|
-| Cotisations sociales | 25,6 % du CA (BNC non réglementé) ou 21,2 % (BIC prestations de services) | Le classement d'un abonnement à un logiciel en ligne n'est tranché par aucune page lue : **à faire confirmer par l'Urssaf**. Le modèle retient 25,6 % par prudence |
-| Formation professionnelle | 0,2 % du CA (libéral) | Ajoutée par prudence |
+| Cotisations sociales | 25,6 % du CA (BNC non réglementé) ou 21,2 % (BIC prestations de services) | Le classement d'un abonnement à un logiciel en ligne n'est tranché par aucune page lue : **à faire confirmer par l'Urssaf** (EDI-13). Le modèle retient 25,6 % par prudence (`Hypothèses!C57`) ; avec 21,2 % et 0,1 % de formation professionnelle, le scénario ambitieux finit à +39,9 k€ au lieu de +30,2 k€ et le central à −16,9 k€ au lieu de −18,4 k€. Changer C57 (et la formation professionnelle) seulement après la réponse de l'Urssaf |
+| Formation professionnelle | 0,2 % du CA (activité libérale), 0,1 % (activité commerciale), page F23459 | Ajoutée par prudence (0,2 %) |
 | Versement libératoire (option) | 2,2 % (BNC) ou 1,7 % (BIC) | Option avant le 30 septembre de l'année précédente, sous condition de revenu fiscal |
 | Plafond du régime | 83 600 € HT de CA (services) | Dépassé l'année 3 du scénario ambitieux (132,8 k€) : sortie du régime après deux années consécutives |
-| Franchise de TVA | 37 500 € (année précédente) et 41 250 € (année en cours) | Perdue l'année 2 du scénario ambitieux : le prix affiché inclut alors 20 % de TVA (recette moyenne de 6,24 € à 5,20 €) |
+| Franchise de TVA | 37 500 € (année précédente) et 41 250 € (année en cours) | Perdue l'année 2 du scénario ambitieux, dès le mois du dépassement (mois 20, août 2028) : le prix affiché inclut alors 20 % de TVA (recette moyenne de 6,24 € à 5,20 €) |
 | Ventes à des particuliers d'autres pays de l'UE | Seuil de 10 000 € HT, guichet OSS au-delà | Marginal tant que la cible est française |
 
 ### Passage en société (SASU) : quand y penser
@@ -248,8 +258,12 @@ expert-comptable.
 
 Classeur : [projections.xlsx](projections.xlsx) (feuilles Lisez-moi, Synthèse, Graphiques, Hypothèses, Prudent,
 Central, Ambitieux). Année 1 = 2027. 36 mois calculés mois par mois ; aucune valeur saisie dans les sorties.
-Vérification : les 6 675 formules ont été recalculées hors Excel (bibliothèque `formulas`), sans erreur, et le coût
-par question et les premiers mois du scénario central ont été recalculés à la main.
+Vérification : les 6 130 formules ont été recalculées par Microsoft Excel le 23 novembre 2026, sans erreur, et le
+classeur est enregistré avec ses valeurs en cache (`outils/enregistrer_excel.sh`) : il s'affiche aussi dans
+l'aperçu du Mac, sur GitHub et dans une messagerie. Le coût par question et les premiers mois du scénario central
+ont été recalculés à la main. Corrections de l'audit du 23 novembre 2026 : CAC marginal (F1), LTV nommée nette du
+coût des gratuits (F3), TVA due dès le mois du dépassement du seuil (F9), Resend Pro dès que le jour le plus chargé
+dépasse 100 e-mails, avec une hypothèse non sourcée de 3 fois la moyenne quotidienne (F10).
 
 ### Hypothèses de scénario (toutes non sourcées, à remplacer par des mesures)
 
@@ -273,13 +287,15 @@ par question et les premiers mois du scénario central ont été recalculés à 
 |---|---|---|---|
 | Inscriptions, année 1 / 2 / 3 | 2 000 / 2 700 / 3 400 | 5 400 / 8 700 / 13 800 | 13 400 / 27 600 / 50 900 |
 | Abonnés payants en fin d'année 1 / 2 / 3 | 13 / 19 / 24 | 98 / 201 / 325 | 501 / 1 411 / 2 781 |
-| Chiffre d'affaires HT, année 1 / 2 / 3 | 0,3 / 1,1 / 1,5 k€ | 2,9 / 11,2 / 19,2 k€ | 15,4 / 68,3 / 132,8 k€ |
-| Taux de marge brute, année 1 / 2 / 3 | négatif | 19 % / 49 % / 52 % | 55 % / 66 % / 65 % |
-| Résultat net, année 1 / 2 / 3 | −5,4 / −4,2 / −6,3 k€ | −6,2 / −4,1 / −7,7 k€ | −2,6 / +12,1 / +21,6 k€ |
-| Trésorerie en fin d'année 3 (départ à 0 €) | −15,9 k€ | −18,0 k€ | +31,1 k€ |
-| Point mort (premier mois à résultat positif) | non atteint | juillet 2028 (mois 19), non durable | avril 2027 (mois 4) |
-| Besoin de financement (trésorerie la plus basse) | 15,9 k€ | 18,0 k€ | 3,6 k€ |
-| LTV / CAC, année 3 | négatif | 23 € / 22 € = 1,1 | 36 € / 8 € = 4,5 |
+| Chiffre d'affaires HT, année 1 / 2 / 3 | 0,3 / 1,1 / 1,5 k€ | 2,9 / 11,2 / 19,2 k€ | 15,4 / 67,3 / 132,8 k€ |
+| Taux de marge brute, année 1 / 2 / 3 | négatif | 18 % / 48 % / 51 % | 54 % / 66 % / 65 % |
+| Résultat net, année 1 / 2 / 3 | −5,4 / −4,2 / −6,3 k€ | −6,3 / −4,2 / −7,9 k€ | −2,7 / +11,3 / +21,6 k€ |
+| Trésorerie en fin d'année 3 (départ à 0 €) | −15,9 k€ | −18,4 k€ | +30,2 k€ |
+| Point mort (premier mois à résultat positif) | non atteint | juillet 2028 (mois 19), non durable | juin 2027 (mois 6) |
+| Besoin de financement (trésorerie la plus basse) | 15,9 k€ | 18,4 k€ | 3,7 k€ |
+| LTV nette / CAC moyen, année 3 (organiques compris) | négatif | 23 € / 22 € = 1,0 | 36 € / 8 € = 4,4 |
+| LTV nette / CAC marginal, année 3 (abonnés dus à la publicité) | négatif | 23 € / 106 € = 0,2 | 36 € / 35 € = 1,0 |
+| Résultat cumulé sur 36 mois sans publicité | −6,4 k€ | +1,1 k€ | +64,5 k€ |
 
 Charges de l'année 1 hors publicité : environ 3 060 € de frais ponctuels (conseil en propriété industrielle et
 avocat, hypothèses de 800 et 1 500 € HT ; médiateur ; dépôt de marque) et environ 50 € par mois de charges fixes
@@ -291,20 +307,23 @@ Calculée en modifiant une hypothèse à la fois dans une copie du classeur, pui
 
 | Variante | Abonnés fin année 3 | Résultat cumulé | Besoin de trésorerie |
 |---|---|---|---|
-| Central tel quel | 325 | −18,0 k€ | 18,0 k€ |
-| Conversion mensuelle de 2 % au lieu de 1,2 % | 529 | −5,9 k€ | 5,9 k€ |
-| Perte mensuelle des abonnés de 7 % au lieu de 10 % | 388 | −14,9 k€ | 14,9 k€ |
-| Aucune publicité payante | 258 | +1,3 k€ | 3,8 k€ |
-| Gratuit limité à 25 questions par mois en moyenne (au lieu de 45) | 325 | −12,9 k€ | 12,9 k€ |
-| Conversion de 2 % et gratuit à 25 questions | 529 | −0,9 k€ | 4,5 k€ |
-| Conversion de 2 %, gratuit à 25 questions, sans publicité | 419 | +15,6 k€ | 3,2 k€ |
+| Central tel quel | 325 | −18,4 k€ | 18,4 k€ |
+| Conversion mensuelle de 2 % au lieu de 1,2 % | 529 | −6,2 k€ | 6,2 k€ |
+| Perte mensuelle des abonnés de 7 % au lieu de 10 % | 388 | −15,2 k€ | 15,2 k€ |
+| Aucune publicité payante | 258 | +1,1 k€ | 3,8 k€ |
+| Gratuit limité à 25 questions par mois en moyenne (au lieu de 45) | 325 | −13,2 k€ | 13,2 k€ |
+| Conversion de 2 % et gratuit à 25 questions | 529 | −1,2 k€ | 4,6 k€ |
+| Conversion de 2 %, gratuit à 25 questions, sans publicité | 419 | +15,3 k€ | 3,2 k€ |
 
 Enseignements :
 
 1. **La conversion est le premier levier** ; elle est inconnue. La mesurer est la priorité du premier semestre
    2027.
-2. **La publicité ne se justifie qu'avec un coût d'inscription bas et une conversion élevée** : la règle du
-   CAC inférieur à la moitié de la LTV (partie 7) évite l'essentiel des pertes du scénario central.
+2. **Avec les hypothèses actuelles, la publicité ne se justifie dans aucun scénario** : même dans l'ambitieux,
+   un abonné apporté par la publicité coûte 35 à 68 € pour une LTV de 36 à 40 €, et le résultat cumulé passe de
+   +30,2 k€ à +64,5 k€ sans elle. Elle ne deviendrait rentable qu'avec un coût d'inscription nettement plus bas ou
+   une conversion plus élevée, mesurés ; la règle du CAC marginal inférieur à la moitié de la LTV (partie 7)
+   l'écarte tant que ce n'est pas le cas.
 3. **Le gratuit coûte** : à 45 questions par mois, un compte gratuit actif coûte 0,13 € ; le quota de
    10 questions par jour pourrait être revu si la conversion reste basse (décision produit, pas une
    recommandation ferme).
@@ -346,13 +365,13 @@ Calcul : trésorerie la plus basse sur 36 mois dans le classeur, avec un apport 
 
 | Cas | Besoin |
 |---|---|
-| Ambitieux | 3,6 k€ (au mois 5) |
+| Ambitieux | 3,7 k€ (au mois 10) |
 | Central sans publicité payante | 3,8 k€ |
-| Central avec le plan publicitaire | 18,0 k€ (toujours en baisse au mois 36) |
+| Central avec le plan publicitaire | 18,4 k€ (toujours en baisse au mois 36) |
 | Prudent | 15,9 k€ (toujours en baisse au mois 36) |
 
 Lecture : environ 3 à 4 k€ couvrent les frais juridiques et de marque de l'année 1 et le déficit des premiers mois,
-à condition de ne financer la publicité qu'une fois le CAC et la LTV mesurés. Au-delà, le besoin dépend surtout de
+à condition de ne financer la publicité qu'une fois le CAC marginal et la LTV mesurés. Au-delà, le besoin dépend surtout de
 la politique publicitaire. Pistes de financement à étudier, sans recommandation : apport personnel, prêts d'honneur
 de réseaux d'accompagnement à la création, aides publiques à l'innovation (aucune n'a été vérifiée dans ce
 document). Une levée de fonds au capital supposerait une société (partie 9).
@@ -360,7 +379,9 @@ document). Une levée de fonds au capital supposerait une société (partie 9).
 ## 14. Limites de ce document
 
 - Aucune donnée réelle de vente, de conversion ni de rachat : les scénarios sont des ordres de grandeur.
-- Coût par question tiré de 20 appels d'essai, pas de trafic réel.
+- Coût par question estimé : jetons tirés de 20 appels d'essai, pas de trafic réel ; prix de la grille et trois
+  hypothèses non sourcées (part des secours, appels annexes).
+- E-mails : le jour le plus chargé est supposé valoir 3 fois la moyenne quotidienne (non mesuré).
 - Chiffres de concurrence de Google repris du comparatif du 19 novembre 2026, non relus le 23.
 - Plusieurs pages officielles n'ont pas pu être lues directement (Urssaf, economie.gouv.fr) ; le classement BIC ou
   BNC de l'activité et le calendrier de l'ACRE restent à confirmer.

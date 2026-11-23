@@ -1,7 +1,8 @@
 """Genere docs/business/projections.xlsx (modele financier de Lexia sur 36 mois, trois scenarios).
 
 Toutes les sorties sont des formules ; les seules valeurs saisies sont dans la feuille Hypotheses
-(texte bleu). Lancer : python3 docs/business/outils/generer_projections.py
+(texte bleu). Lancer : python3 docs/business/outils/generer_projections.py, puis
+docs/business/outils/enregistrer_excel.sh pour ecrire les valeurs en cache (audit du 23/11/2026, F8).
 """
 
 from __future__ import annotations
@@ -81,7 +82,9 @@ GLOBALES = [
     ("domaine", "Nom de domaine .cloud chez Hostinger, renouvellement", "€ / an", 24.99, EUR2, "https://www.hostinger.com/fr/domaines, " + LU, True),
     ("cloudflare", "Cloudflare, plan Free", "€ / mois", 0, EUR2, "https://www.cloudflare.com/plans/network-cdn.md (Free : 0 $), " + LU, True),
     ("resend_seuil", "Resend gratuit : e-mails par mois", "e-mails", 3000, NB, "https://resend.com/pricing (100 par jour, 3 000 par mois), " + LU, True),
-    ("resend_pro", "Resend Pro (50 000 e-mails par mois)", "$ / mois", 20, USD, "https://resend.com/pricing, " + LU, True),
+    ("resend_jour", "Resend gratuit : e-mails par jour", "e-mails", 100, NB, "https://resend.com/pricing : « The Free plan is limited to 100 emails per day » ; Pro : pas de limite quotidienne, " + LU, True),
+    ("pic_jour", "Jour le plus charge du mois, en multiple de la moyenne quotidienne", "ratio", 3, "0.0", "Hypothese non sourcee : jour de rentree ou veille de partiels (audit du 23/11/2026, F10)", False),
+    ("resend_pro", "Resend Pro (50 000 e-mails par mois, sans limite quotidienne)", "$ / mois", 20, USD, "https://resend.com/pricing, " + LU, True),
     ("mails_insc", "E-mails envoyes par inscription", "e-mails", 1.5, "0.0", "Hypothese non sourcee : lien de verification (D69), renvois et mot de passe oublie", False),
     ("mails_paiement", "E-mails envoyes par paiement", "e-mails", 1, "0.0", "Confirmation du contrat (D91) ; les recus sont envoyes par Stripe", True),
     ("apple", "Apple Developer Program", "$ / an", 99, USD, "https://developer.apple.com/programs/, " + LU + " (montant en euros affiche seulement a l'inscription)", True),
@@ -342,6 +345,11 @@ def remplir_scenario(ws, col: str, ref: dict) -> dict:
         ("_", "Indicateurs", None, None, None),
         ("pm", "Mois a resultat net positif (999 = non)", "", None, "0"),
         ("arpu", "Recette moyenne par abonne payant, hors TVA", "€ / mois", None, EUR2),
+        ("mails_pic", "E-mails du jour le plus charge (estimation)", "e-mails", None, NB),
+        ("_", "Part apportee par la publicite (meme calcul, inscriptions publicitaires seules)", None, None, None),
+        ("grat_pub", "Comptes gratuits actifs venus de la publicite, fin de mois", "comptes", None, NB),
+        ("nv_pub", "Nouveaux abonnes payants venus de la publicite", "abonnes", None, NB1),
+        ("ab_pub", "Abonnes payants venus de la publicite, fin de mois", "abonnes", None, NB1),
     ]
     r = 3
     for cle, lib, unite, _, fmt in plan:
@@ -386,17 +394,18 @@ def remplir_scenario(ws, col: str, ref: dict) -> dict:
             "pertes": f"=({prev('ab_etud')}+{prev('ab_int')})*{x('taux_perte')}",
             "ca_ttc": f"={x('ab_etud')}*{G('prix_etudiant')}+{x('ab_int')}*{G('prix_intensif')}",
             # Franchise perdue : CA de l'annee precedente au-dessus du seuil de base, ou cumul de l'annee
-            # (mois precedents) au-dessus du seuil majore. Test sur les encaissements TTC pour eviter une
+            # (mois en cours compris : la TVA est due des le depassement, audit du 23/11/2026, F9) au-dessus
+            # du seuil majore ; tout le mois du depassement est soumis a la TVA (prudent). Test sur les encaissements TTC pour eviter une
             # reference circulaire (legerement prudent).
             "tva_due": (f"=IF(OR(SUMIFS({lr('ca_ttc')},{lr('annee')},{x('annee')}-1)>{G('seuil_base')},"
-                        f"SUMIFS({lr('ca_ttc')},{lr('annee')},{x('annee')},{lr('mois')},\"<\"&{x('mois')})>{G('seuil_majore')}),1,0)"),
+                        f"SUMIFS({lr('ca_ttc')},{lr('annee')},{x('annee')},{lr('mois')},\"<=\"&{x('mois')})>{G('seuil_majore')}),1,0)"),
             "ca": f"={x('ca_ttc')}/(1+{G('tva')}*{x('tva_due')})",
             "tva_col": f"={x('ca_ttc')}-{x('ca')}",
             "questions": f"={x('grat_fin')}*{H('q_gratuit')}+{x('ab_etud')}*{H('q_etudiant')}+{x('ab_int')}*{H('q_intensif')}",
             "cout_modele": f"={x('questions')}*{G('cout_q_eur')}",
             "stripe": f"={x('ca_ttc')}*{G('stripe_pct')}+{x('ab_total')}/{G('duree_achat')}*{G('stripe_fixe')}",
             "mails": f"={x('insc')}*{G('mails_insc')}+{x('ab_total')}/{G('duree_achat')}*{G('mails_paiement')}",
-            "resend": f"=IF({x('mails')}>{G('resend_seuil')},{G('resend_pro')}/{G('usd_par_eur')},0)",
+            "resend": f"=IF(OR({x('mails')}>{G('resend_seuil')},{x('mails_pic')}>{G('resend_jour')}),{G('resend_pro')}/{G('usd_par_eur')},0)",
             "cv": f"={x('cout_modele')}+{x('stripe')}+{x('resend')}",
             "marge": f"={x('ca')}-{x('cv')}",
             "marge_pct": f"=IF({x('ca')}>0,{x('marge')}/{x('ca')},0)",
@@ -418,6 +427,12 @@ def remplir_scenario(ws, col: str, ref: dict) -> dict:
             "treso": f"={prev('treso')}+{x('net')}+IF({x('mois')}=1,{G('tresorerie_depart')},0)",
             "pm": f"=IF(AND({x('actif')}=1,{x('net')}>=0),{x('mois')},999)",
             "arpu": f"=IF({x('ab_total')}>0,{x('ca')}/{x('ab_total')},0)",
+            "mails_pic": f"={x('mails')}/30.4*{G('pic_jour')}",
+            # Le calcul des comptes et des abonnes est lineaire en inscriptions : la meme chaine appliquee aux
+            # seules inscriptions publicitaires donne exactement les abonnes en plus dus a la publicite.
+            "nv_pub": f"={prev('grat_pub')}*{H('conversion')}*{x('actif')}",
+            "grat_pub": f"={prev('grat_pub')}*(1-{H('abandon_gratuit')})+{x('insc_pub')}-{x('nv_pub')}",
+            "ab_pub": f"={prev('ab_pub')}*(1-{x('taux_perte')})+{x('nv_pub')}",
         }[cle]
 
     for j in range(1, NB_MOIS + 1):
@@ -490,9 +505,12 @@ def synthese(wb, ref, L):
         ("Recette moyenne par abonne et par mois, hors TVA", None, EUR2),
         ("Perte mensuelle moyenne des payants (hypothese, ete compris)", None, PCT),
         ("Duree de vie moyenne d'un abonne (mois)", None, NB1),
-        ("LTV : marge brute sur la duree de vie d'un abonne", None, EUR2),
-        ("CAC : publicite / nouveaux abonnes payants", None, EUR2),
-        ("Rapport LTV / CAC", None, "0.0"),
+        ("LTV nette du cout des gratuits : marge brute sur la duree de vie d'un abonne", None, EUR2),
+        ("CAC moyen : publicite / tous les nouveaux abonnes (organiques compris)", None, EUR2),
+        ("Rapport LTV / CAC moyen", None, "0.0"),
+        ("Nouveaux abonnes payants apportes par la publicite", lambda n, h, a: somme(n, "nv_pub", a), NB1),
+        ("CAC marginal : publicite / abonnes apportes par la publicite", None, EUR2),
+        ("Rapport LTV / CAC marginal", None, "0.0"),
         ("Cout par question (€)", None, '0.00000" €"'),
         ("Franchise de TVA perdue dans l'annee (1 = oui)", None, "0"),
         ("Plafond du regime micro depasse (1 = oui)", None, "0"),
@@ -521,12 +539,15 @@ def synthese(wb, ref, L):
                 v = f"={HS('churn')}+2*{HS('churn_ete')}/12"
             elif lib.startswith("Duree de vie"):
                 v = f"=IF({c}{pos[lib] - 1}>0,1/{c}{pos[lib] - 1},0)"
-            elif lib.startswith("LTV"):
+            elif lib.startswith("LTV nette"):
                 v = f"={c}{pos['Recette moyenne par abonne et par mois, hors TVA']}*{c}{pos['Taux de marge brute']}*{c}{pos['Duree de vie moyenne d' + chr(39) + 'un abonne (mois)']}"
-            elif lib.startswith("CAC"):
+            elif lib.startswith("CAC moyen"):
                 v = f"=IF({c}{pos['Nouveaux abonnes payants']}>0,{c}{pos['Publicite']}/{c}{pos['Nouveaux abonnes payants']},0)"
+            elif lib.startswith("CAC marginal"):
+                v = f"=IF({c}{pos[lib] - 1}>0,{c}{pos['Publicite']}/{c}{pos[lib] - 1},0)"
             elif lib.startswith("Rapport"):
-                v = f"=IF({c}{pos['CAC : publicite / nouveaux abonnes payants']}>0,{c}{pos['LTV : marge brute sur la duree de vie d' + chr(39) + 'un abonne']}/{c}{pos['CAC : publicite / nouveaux abonnes payants']},0)"
+                ltv = f"{c}{pos['LTV nette du cout des gratuits : marge brute sur la duree de vie d' + chr(39) + 'un abonne']}"
+                v = f"=IF({c}{pos[lib] - 1}>0,{ltv}/{c}{pos[lib] - 1},0)"
             elif lib.startswith("Cout par question"):
                 v = f"=Hypotheses!$C${ref['cout_q_eur']}"
             elif lib.startswith("Franchise"):
@@ -569,7 +590,7 @@ def synthese(wb, ref, L):
         for k in range(5):
             ws[f"{c}{rr + k}"].font = F_LIEN
     ws.cell(rr + 6, 1, "Lecture : point mort = premier mois ou le resultat net est positif apres l'activation du paiement ; il peut redevenir negatif ensuite (ete, campagnes). Le besoin de financement est l'apport qu'il faudrait pour que la tresorerie ne soit jamais negative.").font = F_NOTE
-    ws.cell(rr + 7, 1, "LTV : recette moyenne x taux de marge brute / perte mensuelle moyenne. CAC : publicite de l'annee / nouveaux abonnes payants de l'annee (abonnes organiques compris, donc CAC moyen et non marginal).").font = F_NOTE
+    ws.cell(rr + 7, 1, "LTV : recette moyenne x taux de marge brute de l'annee / perte mensuelle moyenne ; le taux de marge comprend le cout des comptes gratuits (LTV nette du cout des gratuits). CAC moyen : publicite de l'annee / tous les nouveaux abonnes de l'annee, organiques compris. CAC marginal : publicite / abonnes en plus dus a la publicite (lignes « venus de la publicite » des feuilles de scenario) ; c'est lui qui dit si la publicite rapporte plus qu'elle ne coute.").font = F_NOTE
     ws.freeze_panes = "B6"
     return pm_ligne
 
@@ -649,7 +670,7 @@ def lisez_moi(ws, fiscal):
         ("3. Nouveaux payants = gratuits actifs en debut de mois x conversion mensuelle, a partir du mois d'activation du paiement ; repartis entre Etudiant et Intensif.", F_NORMAL),
         ("4. Abonnes : stock precedent x (1 - perte du mois) + nouveaux. Le paiement est unique pour 1 a 12 mois, sans reconduction (D86) : la perte represente le non-rachat.", F_NORMAL),
         ("5. Encaissements = abonnes x prix mensuel affiche (simplification : un achat de plusieurs mois est etale). Sous franchise de TVA, le prix affiche est le chiffre d'affaires ; si la franchise est perdue, la TVA est retiree du prix.", F_NORMAL),
-        ("6. Couts variables : questions x cout par question (jetons mesures x grille Gemini, part de secours, appels annexes), frais Stripe, Resend au-dela de l'offre gratuite.", F_NORMAL),
+        ("6. Couts variables : questions x cout par question (jetons mesures x grille Gemini, part de secours, appels annexes), frais Stripe, Resend Pro dès que le mois dépasse 3 000 e-mails ou que le jour le plus chargé dépasse 100 e-mails.", F_NORMAL),
         ("7. Micro-entreprise : cotisations et formation professionnelle en pourcentage du chiffre d'affaires, versement liberatoire en option. Pas d'impot sur les societes.", F_NORMAL),
         ("8. Tresorerie = apport de depart + resultats nets cumules (les cotisations sont supposees payees le mois meme).", F_NORMAL),
         ("", None),
@@ -658,7 +679,7 @@ def lisez_moi(ws, fiscal):
         ("Le cout par question vient de 20 appels d'essai (logs/modele.jsonl, 13 au 17 novembre 2026), pas de trafic reel ; a remesurer avec eval/cout.py apres le passage de Gemini au niveau payant.", F_NORMAL),
         ("Le seuil de TVA est teste sur les encaissements toutes taxes comprises (evite une reference circulaire, legerement prudent).", F_NORMAL),
         ("Le temps de l'editeur n'est pas valorise ; le resultat net est avant sa remuneration.", F_NORMAL),
-        ("Le fichier n'a pas de valeurs en cache : Excel, Numbers ou LibreOffice recalculent a l'ouverture.", F_NORMAL),
+        ("Les valeurs en cache sont ecrites par un enregistrement dans Excel apres la generation (outils/enregistrer_excel.sh) : l'apercu du Mac, GitHub ou une messagerie affichent donc les resultats ; Excel, Numbers ou LibreOffice recalculent a l'ouverture.", F_NORMAL),
         ("", None),
         ("Sources fiscales et sociales (lues le 23/11/2026)", F_GRAS),
     ] + [(s, F_NORMAL) for s in fiscal["SOURCES_LISTE"]]
@@ -709,7 +730,7 @@ MOTS = {
     "scenarios": "scénarios", "Scenario": "Scénario", "derriere": "derrière", "repartis": "répartis", "dela": "delà",
     "societes": "sociétés", "cumules": "cumulés", "memes": "mêmes", "prerequis": "prérequis", "resumes": "résumés",
     "Recette": "Recette", "frequence": "fréquence", "Duree": "Durée", "credit": "crédit", "Equivalent": "Équivalent",
-    "reglementee": "réglementée", "categories": "catégories", "electroniques": "électroniques", "visee": "visée", "Recapitulatif": "Récapitulatif", "selectionne": "sélectionné",
+    "reglementee": "réglementée", "apportes": "apportés", "apportee": "apportée", "charge": "chargé", "coute": "coûte", "ecrites": "écrites", "apercu": "aperçu", "generation": "génération", "lineaire": "linéaire", "categories": "catégories", "electroniques": "électroniques", "visee": "visée", "Recapitulatif": "Récapitulatif", "selectionne": "sélectionné",
 }
 PHRASES = [(" a partir", " à partir"), (" a saisir", " à saisir"), (" a confirmer", " à confirmer"),
            (" a remesurer", " à remesurer"), (" a ce jour", " à ce jour"), (" a l'ouverture", " à l'ouverture"),
@@ -719,7 +740,7 @@ PHRASES = [(" a partir", " à partir"), (" a saisir", " à saisir"), (" a confir
            ("de 1 a 12", "de 1 à 12"), (" a l'annee", " à l'année"), (" a chiffrer", " à chiffrer"),
            ("Choix de l'editeur", "Choix de l'éditeur"), (" a verifier", " à vérifier"), ("A verifier", "À vérifier"),
            (" a l'inscription", " à l'inscription"), ("1 a 12", "1 à 12"), (" a C", " à C"), ("C a N", "C à N"),
-           ("est a ", "est à "), (" a demander", " à demander"), (" a la ", " à la "), (" a 7 ", " à 7 ")]
+           ("est a ", "est à "), (" des que ", " dès que "), (" a demander", " à demander"), (" a la ", " à la "), (" a 7 ", " à 7 ")]
 
 
 def accentuer(t: str) -> str:

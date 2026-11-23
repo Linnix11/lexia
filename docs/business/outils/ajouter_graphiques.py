@@ -56,7 +56,7 @@ cd = CategoryChartData()
 cd.categories = ["2027", "2028", "2029"]
 cd.add_series("Prudent", (0.3, 1.1, 1.5))
 cd.add_series("Central", (2.9, 11.2, 19.2))
-cd.add_series("Ambitieux", (15.4, 68.3, 132.8))
+cd.add_series("Ambitieux", (15.4, 67.3, 132.8))
 gf = s9.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(0.5), Inches(1.15), Inches(5.25), Inches(3.65), cd)
 gf.name = "graphique chiffre affaires"
 ch = gf.chart
@@ -77,7 +77,7 @@ s12 = prs.slides[11]
 cd = CategoryChartData()
 cats = ["Central tel quel", "Perte abonnés 7 %/mois", "Gratuit 25 q/mois", "Conversion 2 %/mois", "Sans publicité",
         "Conv. 2 % + gratuit 25 q + sans pub"]
-vals = (-18.0, -14.9, -12.9, -5.9, 1.3, 15.6)
+vals = (-18.4, -15.2, -13.2, -6.2, 1.1, 15.3)
 cd.categories = cats
 cd.add_series("Résultat cumulé sur 36 mois (k€)", vals)
 gf = s12.shapes.add_chart(XL_CHART_TYPE.BAR_CLUSTERED, Inches(4.45), Inches(1.27), Inches(4.95), Inches(3.6), cd)
