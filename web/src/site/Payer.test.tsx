@@ -120,6 +120,11 @@ describe('Mon compte et paiement', () => {
     page('/compte')
     render(<Site />)
     fireEvent.click(await screen.findByRole('button', { name: 'Renoncer au contrat ici' }))
+    // Le bouton disparait : le focus va au premier champ, pas sur <body> (recette du 2026-11-20, D-4).
+    expect(screen.getByLabelText('Nom et prénom')).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(screen.getByRole('button', { name: 'Renoncer au contrat ici' })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Renoncer au contrat ici' }))
     expect(screen.getByLabelText(/Formule Étudiant, 1 mois, 4,99 €/)).toBeChecked()
     expect(screen.getByText(/etu@exemple\.fr/, { selector: 'p' })).toBeInTheDocument()
     const confirmer = screen.getByRole('button', { name: 'Confirmer la rétractation' })

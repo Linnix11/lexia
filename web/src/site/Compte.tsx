@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, type EtatPaiement } from '../lib/api'
 import { effacerCartes } from '../lib/cartes'
 import { effacerFavoris } from '../lib/favoris'
@@ -51,6 +51,16 @@ function Paiement() {
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const actif = Boolean(config?.paiement)
+  // Le bouton « Renoncer » disparait a l'ouverture : focus sur le premier champ, puis retour au bouton si l'on
+  // annule, jamais sur <body> (recette du 2026-11-20, D-4).
+  const champNom = useRef<HTMLInputElement>(null)
+  const boutonRenoncer = useRef<HTMLButtonElement>(null)
+  const dejaOuvert = useRef(false)
+  useEffect(() => {
+    if (declaration) champNom.current?.focus()
+    else if (dejaOuvert.current) boutonRenoncer.current?.focus()
+    dejaOuvert.current ||= declaration
+  }, [declaration])
 
   // Au retour de Stripe, le signal de paiement arrive en general en quelques secondes : on le guette 20 s.
   useEffect(() => {
@@ -134,13 +144,13 @@ function Paiement() {
                 puisque vous avez demandé l’accès immédiat ; aucun autre frais.
               </p>
               {!declaration ? (
-                <button type="button" onClick={ouvrir} className={`${boutonSecondaire} mt-3`}>Renoncer au contrat ici</button>
+                <button ref={boutonRenoncer} type="button" onClick={ouvrir} className={`${boutonSecondaire} mt-3`}>Renoncer au contrat ici</button>
               ) : (
                 // Declaration de retractation en ligne : nom et prenom, contrat vise, adresse de l'accuse (D. 221-5)
                 <form onSubmit={retracter} className="mt-3 grid gap-3 text-[13px]">
                   <label className="grid gap-1 text-[12px]">
                     Nom et prénom
-                    <input value={nom} onChange={(e) => setNom(e.target.value)} autoComplete="name" required
+                    <input ref={champNom} value={nom} onChange={(e) => setNom(e.target.value)} autoComplete="name" required
                       className="max-w-[360px] rounded-[8px] border border-line bg-white px-3 py-2 text-[14px]" />
                   </label>
                   <fieldset className="grid gap-1">
