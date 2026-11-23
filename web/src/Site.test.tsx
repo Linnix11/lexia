@@ -136,7 +136,8 @@ describe('Site', () => {
     render(<Site />)
     await screen.findByRole('heading', { name: 'Connexion' })
     expect(new URLSearchParams(window.location.search).get('suite')).toBe('/compte?paiement=ok')
-    expect(document.title).toBe('Connexion · Lexia')
+    // titre ecrit par un effet, apres l'affichage : attendu, pas lu tout de suite (echec quand la machine est chargee)
+    await waitFor(() => expect(document.title).toBe('Connexion · Lexia'))
   })
 
   it('affiche les trois formules et la demande par e-mail', async () => {
