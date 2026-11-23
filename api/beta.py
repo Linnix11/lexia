@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS avis_beta (
 # hors de portee avec 10 essais par minute et 20 inscriptions par jour et par adresse (api/auth.py, Freins).
 ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 LONGUEUR_CODE = 10
+# Code choisi par l'editeur (« ASSAS-L1-2026 ») : 8 lettres ou chiffres au moins, plus facile a deviner qu'un code
+# tire au hasard ; le plafond de places et les freins de l'inscription bornent le risque.
+LONGUEUR_PERSO_MIN = 8
+LONGUEUR_PERSO_MAX = 30
 PLAFOND_MAX = 500
 AVIS_CONSERVES = timedelta(days=365)
 AVIS_PAR_COMPTE_JOUR = 5
@@ -67,6 +71,10 @@ TEXTE_AVIS_MAX = 2000
 MESSAGE_CODE_ABSENT = "Lexia est en bêta fermée : saisissez le code d’accès que vous avez reçu."
 MESSAGE_CODE_INVALIDE = "Code d’accès invalide : vérifiez-le (lettres et chiffres, sans espace)."
 MESSAGE_CODE_EPUISE = "Ce code d’accès n’est plus valable : demandez-en un nouveau à l’équipe Lexia."
+
+
+class CodeIndisponible(ValueError):
+    """Code personnalise trop court, trop long ou deja pris : refuse a la creation (admin)."""
 
 
 class CodeRefuse(ErreurCompte):
@@ -118,11 +126,24 @@ def _maintenant() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def creer_code(comptes: Comptes, libelle: str, plafond: int) -> dict:
-    code = generer_code()
-    with comptes._lock, comptes._con:
-        cur = comptes._con.execute("INSERT INTO codes_beta (empreinte, libelle, plafond, cree_le) VALUES (?, ?, ?, ?)",
-                                   (empreinte_code(code), libelle, plafond, _maintenant()))
+def creer_code(comptes: Comptes, libelle: str, plafond: int, code: str | None = None) -> dict:
+    """Code tire au hasard, ou celui choisi par l'editeur (code), garde seulement par son empreinte."""
+    if code is None or not code.strip():
+        code = generer_code()
+    else:
+        code = re.sub(r"\s+", "", code).upper()
+        n = len(normaliser_code(code))
+        if re.search(r"[^A-Z0-9-]", code):  # un accent ou un signe serait retire a la saisie : code ambigu
+            raise CodeIndisponible("Code personnalisé : lettres sans accent, chiffres et tirets seulement.")
+        if n < LONGUEUR_PERSO_MIN or n > LONGUEUR_PERSO_MAX:
+            raise CodeIndisponible(f"Code personnalisé : {LONGUEUR_PERSO_MIN} à {LONGUEUR_PERSO_MAX} lettres ou chiffres "
+                                   "(les tirets et espaces ne comptent pas).")
+    try:
+        with comptes._lock, comptes._con:
+            cur = comptes._con.execute("INSERT INTO codes_beta (empreinte, libelle, plafond, cree_le) "
+                                       "VALUES (?, ?, ?, ?)", (empreinte_code(code), libelle, plafond, _maintenant()))
+    except sqlite3.IntegrityError:  # empreinte UNIQUE : meme code, meme apres un code desactive
+        raise CodeIndisponible("Ce code existe déjà : choisissez-en un autre.") from None
     return {**lire_code(comptes, cur.lastrowid), "code": code}
 
 
@@ -274,6 +295,7 @@ def resume_usage(journal: Journal, jours: int = 14) -> dict:
 class NouveauCode(BaseModel):
     libelle: str = Field(min_length=2, max_length=80)
     plafond: int = Field(ge=1, le=PLAFOND_MAX)
+    code: str | None = Field(default=None, max_length=60)  # vide : code tire au hasard
 
 
 def _texte(v: str) -> str:
@@ -318,7 +340,10 @@ def creer_routes_beta(comptes: Comptes, utilisateur_requis, admin_requis, journa
 
     @router.post("/admin/beta/codes", status_code=201, dependencies=[Depends(verifier_origine)])
     def nouveau_code(req: NouveauCode, moi: Utilisateur = Depends(admin_requis)):
-        res = creer_code(comptes, req.libelle.strip(), req.plafond)
+        try:
+            res = creer_code(comptes, req.libelle.strip(), req.plafond, req.code)
+        except CodeIndisponible as e:
+            raise HTTPException(409, str(e)) from None
         journal.ecrire("admin", action="code_beta", par=moi.id, cible=res["id"], plafond=req.plafond)
         return res
 

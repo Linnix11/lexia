@@ -244,3 +244,33 @@ def test_centiles():
     assert beta.centile([5], 0.9) == 5
     v = list(range(1, 11))
     assert beta.centile(v, 0.5) == 5 and beta.centile(v, 0.9) == 9
+
+
+def test_code_personnalise_accepte_une_fois_et_valable_a_l_inscription(env):
+    app, _ = env
+    chef = client_connecte(app, "chef@exemple.fr")
+    r = chef.post("/admin/beta/codes", json={"libelle": "Assas L1", "plafond": 3, "code": " assas-l1-2026 "})
+    assert r.status_code == 201 and r.json()["code"] == "ASSAS-L1-2026"
+    assert "code" not in chef.get("/admin/beta/codes").json()[0]
+    # Meme code, ecrit autrement : refuse (empreinte du code normalise)
+    r = chef.post("/admin/beta/codes", json={"libelle": "Doublon", "plafond": 3, "code": "ASSASL12026"})
+    assert r.status_code == 409 and "existe déjà" in r.json()["detail"]
+    _, r = inscrire(app, "lea@exemple.fr", code="Assas-L1-2026")
+    assert r.status_code in (200, 201)
+    assert chef.get("/admin/beta/codes").json()[0]["inscriptions"] == 1
+
+
+@pytest.mark.parametrize("code", ["COURT-1", "ÉTÉ-2026-LEXIA", "A" * 31, "assas_2026!"])
+def test_code_personnalise_trop_court_long_ou_ambigu_refuse(env, code):
+    app, comptes = env
+    chef = client_connecte(app, "chef@exemple.fr")
+    r = chef.post("/admin/beta/codes", json={"libelle": "Groupe", "plafond": 3, "code": code})
+    assert r.status_code == 409
+    assert comptes._q("SELECT COUNT(*) FROM codes_beta") == [(0,)]
+
+
+def test_code_vide_tire_au_hasard(env):
+    app, _ = env
+    chef = client_connecte(app, "chef@exemple.fr")
+    r = chef.post("/admin/beta/codes", json={"libelle": "Groupe", "plafond": 3, "code": "  "})
+    assert r.status_code == 201 and len(beta.normaliser_code(r.json()["code"])) == beta.LONGUEUR_CODE

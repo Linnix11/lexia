@@ -118,7 +118,9 @@ export function Connexion() {
 export function Inscription() {
   const { inscription, config } = useSession()
   // Beta fermee (D121) : code d'acces exige quand le serveur l'annonce
-  const beta = Boolean(config?.beta_fermee)
+  // ou quand le serveur a refuse l'inscription faute de code (configuration pas chargee : recette du 23/11)
+  const [codeExige, setCodeExige] = useState(false)
+  const beta = Boolean(config?.beta_fermee) || codeExige
   const [code, setCode] = useState('')
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
@@ -176,6 +178,7 @@ export function Inscription() {
       naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Inscription impossible pour le moment.')
+      if (err instanceof ApiError && err.status === 403 && /code d’accès/i.test(err.message)) setCodeExige(true)
     } finally {
       setEnvoi(false)
     }
@@ -189,7 +192,7 @@ export function Inscription() {
         {beta && (
           <label className="grid gap-1.5 text-[13px]">
             Code d’accès à la bêta
-            <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={quitter('code')} maxLength={40}
+            <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={quitter('code')} maxLength={60}
               autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="ABCDE-FGHJK"
               aria-invalid={!!montre('code')} aria-describedby="err-code" className={`${champ} tracking-[2px]`} />
             {aide('err-code', montre('code'))}

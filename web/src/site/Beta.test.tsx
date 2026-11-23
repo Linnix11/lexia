@@ -84,6 +84,28 @@ describe('Bêta fermée', () => {
     expect(corps('/beta/avis')).toEqual({ note: 4, aide: 'Les fiches', manque: '', erreur: '', lien: 'https://www.legifrance.gouv.fr/x' })
   })
 
+  it('le champ code apparaît quand le serveur l’exige, même si la configuration n’a pas pu se charger', async () => {
+    const normal = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/config')) return json({}, 503)
+      if (url.endsWith('/auth/inscription'))
+        return json({ detail: 'Lexia est en bêta fermée : saisissez le code d’accès que vous avez reçu.' }, 403)
+      return normal(url, init)
+    })
+    window.history.pushState({}, '', '/inscription')
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText(/^Prénom/), { target: { value: 'Léa' } })
+    fireEvent.change(screen.getByLabelText(/^Nom/), { target: { value: 'Martin' } })
+    fireEvent.change(screen.getByLabelText('Adresse e-mail'), { target: { value: 'etu@exemple.fr' } })
+    fireEvent.change(screen.getByLabelText(/^Mot de passe/), { target: { value: 'motdepasse-solide' } })
+    fireEvent.change(screen.getByLabelText('Confirmez le mot de passe'), { target: { value: 'motdepasse-solide' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'J’ai 15 ans ou plus.' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /J’accepte les conditions/ }))
+    expect(screen.queryByLabelText('Code d’accès à la bêta')).not.toBeInTheDocument()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' })) })
+    expect(await screen.findByLabelText(/^Code d’accès à la bêta/)).toBeInTheDocument()
+  })
+
   it('le bouton n’apparaît pas pour un compte hors bêta', async () => {
     profil = { ...PROFIL, beta: false }
     window.history.pushState({}, '', '/app')
@@ -109,6 +131,13 @@ describe('Bêta fermée', () => {
     expect(await screen.findByText('ABCDE-FGHJK')).toBeInTheDocument()
     const creation = fetchMock.mock.calls.find(([u, i]) => String(u).endsWith('/admin/beta/codes') && i?.method === 'POST')!
     expect(JSON.parse(String(creation[1].body))).toEqual({ libelle: 'L1 TD 3', plafond: 15 })
+    // Code personnalise : envoye tel que saisi, en majuscules
+    fireEvent.click(screen.getByRole('radio', { name: 'Personnalisé' }))
+    fireEvent.change(screen.getByLabelText('Nom du groupe'), { target: { value: 'Assas' } })
+    fireEvent.change(screen.getByLabelText(/Code choisi/), { target: { value: 'assas-l1-2026' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Créer un code' })) })
+    const perso = fetchMock.mock.calls.filter(([u, i]) => String(u).endsWith('/admin/beta/codes') && i?.method === 'POST').at(-1)!
+    expect(JSON.parse(String(perso[1].body))).toEqual({ libelle: 'Assas', plafond: 15, code: 'ASSAS-L1-2026' })
     expect(await screen.findByText('Carte mentale')).toBeInTheDocument()
     expect(screen.getByText('Rédaction par le modèle')).toBeInTheDocument()
     expect(screen.getByText('Les fiches')).toBeInTheDocument()

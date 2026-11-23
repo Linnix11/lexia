@@ -625,7 +625,8 @@ export const api = {
     supprimerAnnale: (id: number) => post<void>(`/admin/annales/${id}/supprimer`, {}),
     beta: {
       codes: () => requete<CodeBeta[]>('/admin/beta/codes'),
-      creerCode: (libelle: string, plafond: number) => post<CodeBeta>('/admin/beta/codes', { libelle, plafond }),
+      creerCode: (libelle: string, plafond: number, code?: string) =>
+        post<CodeBeta>('/admin/beta/codes', code ? { libelle, plafond, code } : { libelle, plafond }),
       desactiverCode: (id: number) => post<CodeBeta>(`/admin/beta/codes/${id}/desactiver`, {}),
       avis: () => requete<{ avis: AvisBetaLu[]; note_moyenne: number | null }>('/admin/beta/avis'),
       usage: (jours = 14) => requete<UsageBeta>(`/admin/beta/usage?jours=${jours}`),

@@ -33,6 +33,8 @@ function Codes() {
   const [codes, setCodes] = useState<CodeBeta[] | null>(null)
   const [libelle, setLibelle] = useState('')
   const [plafond, setPlafond] = useState(20)
+  const [perso, setPerso] = useState(false) // code choisi par l'editeur plutot que tire au hasard
+  const [choisi, setChoisi] = useState('')
   const [nouveau, setNouveau] = useState<CodeBeta | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const charger = useCallback(() => { api.admin.beta.codes().then(setCodes).catch(() => setCodes([])) }, [])
@@ -42,8 +44,9 @@ function Codes() {
     e.preventDefault()
     setErreur(null)
     try {
-      setNouveau(await api.admin.beta.creerCode(libelle.trim(), plafond))
+      setNouveau(await api.admin.beta.creerCode(libelle.trim(), plafond, perso ? choisi.trim() : undefined))
       setLibelle('')
+      setChoisi('')
       charger()
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Création impossible.')
@@ -71,6 +74,24 @@ function Codes() {
         <label className="grid w-[110px] gap-1 text-[12px] text-muted">Places
           <input required type="number" min={1} max={500} value={plafond} onChange={(e) => setPlafond(Number(e.target.value))} className={champ} />
         </label>
+        <fieldset className="grid w-full gap-1 text-[12px] text-muted">
+          <legend className="mb-1">Code</legend>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <label className="flex items-center gap-1.5 text-ink">
+              <input type="radio" name="type-code" checked={!perso} onChange={() => setPerso(false)} /> Aléatoire
+            </label>
+            <label className="flex items-center gap-1.5 text-ink">
+              <input type="radio" name="type-code" checked={perso} onChange={() => setPerso(true)} /> Personnalisé
+            </label>
+          </span>
+          {perso && (
+            <label className="mt-1 grid gap-1">Code choisi
+              <input required minLength={8} maxLength={60} value={choisi} onChange={(e) => setChoisi(e.target.value.toUpperCase())}
+                placeholder="ASSAS-L1-2026" autoComplete="off" spellCheck={false} className={`${champ} tracking-[2px]`} />
+              <span>8 à 30 lettres sans accent ou chiffres, tirets permis. Plus facile à deviner qu’un code aléatoire : gardez peu de places.</span>
+            </label>
+          )}
+        </fieldset>
         <button type="submit" className="rounded-lg bg-forest px-3 py-2 text-[13px] text-white hover:bg-forest-dark">Créer un code</button>
       </form>
       {nouveau?.code && (
