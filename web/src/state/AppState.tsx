@@ -329,7 +329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, cartes, ajouterCartes, noterCarte, retirerCarte, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
+    [vue, setVue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, cartes, ajouterCartes, noterCarte, retirerCarte, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

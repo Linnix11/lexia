@@ -255,7 +255,7 @@ describe('Site', () => {
   it('tableau de bord admin : indicateurs et clients', async () => {
     connecte = true
     admin = true
-    const parDefaut = fetchMock.getMockImplementation()!
+    const parDefaut = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/paiement/a-traiter')) return json(A_TRAITER)
       if (url.endsWith('/config')) return json({ comptes: true, paiement: true, contact_email: 'contact@exemple.fr' })
@@ -317,7 +317,7 @@ describe('Site', () => {
     // est remontee. Le jeton ne sert qu'une fois cote API, un second appel renverrait 422.
     connecte = true
     let appels = 0
-    const parDefaut = fetchMock.getMockImplementation()!
+    const parDefaut = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/auth/email/verifier')) {
         appels += 1
