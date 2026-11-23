@@ -613,6 +613,15 @@ def test_documentation_api_masquee_par_defaut(env, index_dir, tmp_path):
     assert TestClient(create_app(settings, retriever=LocalRetriever(index_dir), llm=FakeLLM())).get("/openapi.json").status_code == 200
 
 
+def test_cas_pratique_envisage_chaque_responsable():
+    """Un mineur qui casse une vitre : la reponse ne traitait que les parents (art. 1242 al. 4) et oubliait le mineur
+    lui-meme (art. 1240) et le gardien de la chose (art. 1242 al. 1) ; recette du 2026-11-20, section 8."""
+    from api import prompts
+    consigne = prompts.prompt_chat("q", "cas_pratique", [])
+    assert "chaque fondement" in consigne and "chaque personne" in consigne and "gardien" in consigne
+    assert "chaque fondement" not in prompts.prompt_chat("q", "expliquer", [])
+
+
 def test_rubriques_propres_a_chaque_mode():
     from api import prompts
     from api.citations import valider_reponse

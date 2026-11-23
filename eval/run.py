@@ -28,7 +28,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from api.config import get_settings  # noqa: E402
 from api.main import create_app  # noqa: E402
-from eval.cas import ROOT, charger, correspond  # noqa: E402
+from eval.cas import FICHIER, ROOT, charger  # noqa: E402
 
 RESULTATS = ROOT / "eval" / "resultats"
 
@@ -59,21 +59,23 @@ def evaluer(cas, data: dict, journal: dict, retriever) -> dict:
         "tentative_invention": bool(data["controle"]["elements_retires"] or data["controle"]["citations_retirees"]),
     }
     if cas.sources:
-        res["source_fournie"] = any(correspond(ref, p) for ref in cas.sources for p in p_fournis)
-        res["source_citee"] = statut == "reponse" and any(correspond(ref, p) for ref in cas.sources for p in p_cites)
+        # toutes les sources si le cas l'exige (plusieurs fondements), sinon une seule
+        res["source_fournie"] = cas.trouve(p_fournis)
+        res["source_citee"] = statut == "reponse" and cas.trouve(p_cites)
     return res
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--ids", help="Liste d'identifiants separes par des virgules")
+    parser.add_argument("--fichier", type=Path, default=FICHIER, help="Jeu de cas (eval/cas.yaml par defaut)")
     parser.add_argument("--reprendre", type=Path, help="Fichier de resultats a completer")
     parser.add_argument("--refaire", help="Avec --reprendre : identifiants a rejouer (separes par des virgules)")
     parser.add_argument("--pause", type=float, default=4.0, help="Secondes entre deux cas (quota)")
     parser.add_argument("--essais", type=int, default=3, help="Essais par cas en cas d'erreur du modele")
     args = parser.parse_args(argv)
 
-    cas = charger()
+    cas = charger(args.fichier)
     if args.ids:
         voulus = set(args.ids.split(","))
         cas = [c for c in cas if c.id in voulus]

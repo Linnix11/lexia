@@ -57,7 +57,13 @@ MODES = {
         "Mode : méthode du cas pratique. Dans 'explication', suis les étapes : qualification juridique des faits, "
         "problème de droit, majeure (règles applicables, sourcées), mineure (application aux faits), conclusion. "
         "Si aucun fait n'est donné, explique la démarche. Des faits racontés se traitent toujours, même à la première "
-        "personne (voir la règle 8) : seules les quatre demandes de conseil personnel de la règle 8 sont hors champ."
+        "personne (voir la règle 8) : seules les quatre demandes de conseil personnel de la règle 8 sont hors champ. "
+        # Recette du 2026-11-20 (section 8) : un mineur casse une vitre, seule la responsabilite des parents etait
+        # traitee, ni celle du mineur lui-meme ni celle du gardien de la chose.
+        "Examine chaque fondement que les faits permettent et chaque personne qui peut en répondre (l'auteur "
+        "lui-même, celui qui répond de lui, le gardien de la chose en cause...), même si la question n'en vise "
+        "qu'une : pour chacun, la règle sourcée dans la majeure et son application dans la mineure ; la conclusion "
+        "dit contre qui la victime peut agir."
     ),
     "commentaire": (
         "Mode : méthode du commentaire d'arrêt. Si un arrêt figure dans les extraits, fais la fiche d'arrêt "

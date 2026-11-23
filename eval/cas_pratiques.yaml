@@ -33,6 +33,14 @@ cas:
   - {id: cp-32, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1242, code_civil:1240],
      question: "Des adolescents ont fait des graffitis sur la façade de mon magasin. Leurs parents doivent-ils payer le nettoyage ?"}
 
+  # Plusieurs responsables possibles (recette du 2026-11-20, section 8) : la reponse ne citait que les parents
+  # (art. 1242 al. 4) et oubliait le mineur lui-meme (art. 1240) et le gardien de la chose (art. 1242 al. 1).
+  # « toutes » : les deux articles doivent etre fournis, et cites dans la reponse.
+  - {id: cp-33, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1242], toutes: true,
+     question: "Paul, 17 ans, joue au ballon dans la rue et casse la vitre du voisin. Le voisin peut-il obtenir réparation, et auprès de qui ?"}
+  - {id: cp-34, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1240, code_civil:1242], toutes: true,
+     question: "En faisant du skate sur le parking, une collégienne de 14 ans heurte une voiture et raye la carrosserie. Le propriétaire de la voiture veut être indemnisé : contre qui peut-il agir ?"}
+
   # ===================================================================== CONTRATS
   - {id: cp-08, matiere: droit_des_contrats, mode: cas_pratique, attendu: [reponse], sources: [code_civil:1137],
      question: "Paul a vendu sa voiture à Marie en lui cachant qu’elle avait été gravement accidentée. Marie peut-elle faire annuler la vente ?"}

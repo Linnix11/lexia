@@ -25,6 +25,14 @@ class Cas:
     mode: str = "expliquer"
     sources: list[str] = field(default_factory=list)
     piege: str | None = None
+    # True : toutes les sources attendues doivent etre fournies (cas a plusieurs fondements, recette du
+    # 2026-11-20) ; par defaut, une seule suffit.
+    toutes: bool = False
+
+    def trouve(self, passages: list[dict]) -> bool:
+        """Sources attendues parmi les passages : toutes si `toutes`, sinon au moins une."""
+        presente = [any(correspond(ref, p) for p in passages) for ref in self.sources]
+        return all(presente) if self.toutes else any(presente)
 
 
 def charger(fichier: Path = FICHIER) -> list[Cas]:

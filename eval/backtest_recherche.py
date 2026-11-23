@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api.config import get_settings  # noqa: E402
 from api.main import _construire_embedder, _construire_reclasseur, _construire_retriever  # noqa: E402
 from api.rag import K_CHAT, Lexia, pour_secours  # noqa: E402
-from eval.cas import FICHIER, ROOT, charger, correspond  # noqa: E402
+from eval.cas import FICHIER, ROOT, charger  # noqa: E402
 
 
 def main() -> int:
@@ -37,8 +37,7 @@ def main() -> int:
         t = time.monotonic()
         passages, _ = lexia.rechercher(c.question, c.matiere, K_CHAT)
         durees.append(time.monotonic() - t)
-        dans = lambda ps: any(correspond(ref, p) for ref in c.sources for p in ps)  # noqa: E731
-        ok8, ok4 = dans(passages), dans(pour_secours(passages))
+        ok8, ok4 = c.trouve(passages), c.trouve(pour_secours(passages))
         groupe = c.piege and f"piège : {c.piege}" or (c.matiere or "toutes matières")
         groupes[groupe].append((ok8, ok4))
         if not ok8 or not ok4:
