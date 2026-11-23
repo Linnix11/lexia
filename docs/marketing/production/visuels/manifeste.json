@@ -1,0 +1,568 @@
+[
+ {
+  "id": "P1",
+  "date": "2026-11-30",
+  "reseaux": "Instagram + LinkedIn (document PDF)",
+  "type": "Carrousel",
+  "titre": "Présentation de Lexia",
+  "fichiers": [
+   {
+    "png": "visuels/P1/P1-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P1/P1-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P1/P1-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P1/P1-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P1/P1-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P1/P1-06-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": "visuels/P1/P1-linkedin-document.pdf"
+ },
+ {
+  "id": "P2",
+  "date": "2026-11-30",
+  "reseaux": "LinkedIn (profil de l’éditeur)",
+  "type": "Image",
+  "titre": "Lancement (post du fondateur)",
+  "fichiers": [
+   {
+    "png": "visuels/P2/P2-01-1200x627.png",
+    "format": "1200x627"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P3",
+  "date": "2026-12-01",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte (V1)",
+  "titre": "Cas pratique en 30 s : la piscine",
+  "fichiers": [
+   {
+    "png": "visuels/P3/P3-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P4",
+  "date": "2026-12-02",
+  "reseaux": "Instagram",
+  "type": "Carrousel",
+  "titre": "Les anciens numéros du Code civil",
+  "fichiers": [
+   {
+    "png": "visuels/P4/P4-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-06-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P4/P4-07-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P5",
+  "date": "2026-12-03",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte (V3)",
+  "titre": "Le piège du 1382",
+  "fichiers": [
+   {
+    "png": "visuels/P5/P5-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P6",
+  "date": "2026-12-04",
+  "reseaux": "Instagram",
+  "type": "3 stories",
+  "titre": "Sondage, quiz, réponse",
+  "fichiers": [
+   {
+    "png": "visuels/P6/P6-01-1080x1920.png",
+    "format": "1080x1920"
+   },
+   {
+    "png": "visuels/P6/P6-02-1080x1920.png",
+    "format": "1080x1920"
+   },
+   {
+    "png": "visuels/P6/P6-03-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P7",
+  "date": "2026-12-05",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte (V4)",
+  "titre": "Fiche d’arrêt Blanco en 45 s",
+  "fichiers": [
+   {
+    "png": "visuels/P7/P7-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P8",
+  "date": "2026-12-07",
+  "reseaux": "Instagram + LinkedIn (document PDF)",
+  "type": "Carrousel",
+  "titre": "Le cas pratique en 5 rubriques",
+  "fichiers": [
+   {
+    "png": "visuels/P8/P8-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-06-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P8/P8-07-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": "visuels/P8/P8-linkedin-document.pdf"
+ },
+ {
+  "id": "P9",
+  "date": "2026-12-08",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte (V2)",
+  "titre": "3 erreurs en L1",
+  "fichiers": [
+   {
+    "png": "visuels/P9/P9-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P10",
+  "date": "2026-12-09",
+  "reseaux": "LinkedIn",
+  "type": "Image",
+  "titre": "Le contrôle des citations",
+  "fichiers": [
+   {
+    "png": "visuels/P10/P10-01-1200x627.png",
+    "format": "1200x627"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P11",
+  "date": "2026-12-10",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte",
+  "titre": "Cas pratique n° 2 : le dol",
+  "fichiers": [
+   {
+    "png": "visuels/P11/P11-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P12",
+  "date": "2026-12-11",
+  "reseaux": "Instagram",
+  "type": "Carrousel",
+  "titre": "La fiche d’arrêt en 5 cases",
+  "fichiers": [
+   {
+    "png": "visuels/P12/P12-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-06-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P12/P12-07-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P13",
+  "date": "2026-12-12",
+  "reseaux": "Instagram",
+  "type": "Stories questions",
+  "titre": "Boîte à questions et réponses",
+  "fichiers": [
+   {
+    "png": "visuels/P13/P13-01-1080x1920.png",
+    "format": "1080x1920"
+   },
+   {
+    "png": "visuels/P13/P13-02-1080x1920.png",
+    "format": "1080x1920"
+   },
+   {
+    "png": "visuels/P13/P13-03-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P14",
+  "date": "2026-12-13",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte",
+  "titre": "Démonstration : dépose ton cours",
+  "fichiers": [
+   {
+    "png": "visuels/P14/P14-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P15",
+  "date": "2026-12-14",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte (V5)",
+  "titre": "Un quiz en 2 minutes",
+  "fichiers": [
+   {
+    "png": "visuels/P15/P15-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P16",
+  "date": "2026-12-15",
+  "reseaux": "Instagram + LinkedIn (document PDF)",
+  "type": "Carrousel",
+  "titre": "Dissertation : le plan en deux parties",
+  "fichiers": [
+   {
+    "png": "visuels/P16/P16-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P16/P16-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P16/P16-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P16/P16-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P16/P16-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P16/P16-06-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": "visuels/P16/P16-linkedin-document.pdf"
+ },
+ {
+  "id": "P17",
+  "date": "2026-12-16",
+  "reseaux": "Instagram",
+  "type": "Carrousel",
+  "titre": "Vrai ou faux : droit des contrats",
+  "fichiers": [
+   {
+    "png": "visuels/P17/P17-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-06-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P17/P17-07-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P18",
+  "date": "2026-12-17",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte",
+  "titre": "Vrai ou faux en 20 secondes",
+  "fichiers": [
+   {
+    "png": "visuels/P18/P18-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P19",
+  "date": "2026-12-18",
+  "reseaux": "LinkedIn",
+  "type": "Image",
+  "titre": "Appel aux relecteurs",
+  "fichiers": [
+   {
+    "png": "visuels/P19/P19-01-1200x627.png",
+    "format": "1200x627"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P20",
+  "date": "2026-12-19",
+  "reseaux": "Instagram",
+  "type": "Story",
+  "titre": "Dernière ligne droite",
+  "fichiers": [
+   {
+    "png": "visuels/P20/P20-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P21",
+  "date": "2026-12-21",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte",
+  "titre": "Vérifier qu’un article est en vigueur",
+  "fichiers": [
+   {
+    "png": "visuels/P21/P21-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P22",
+  "date": "2026-12-22",
+  "reseaux": "Instagram",
+  "type": "Carrousel",
+  "titre": "Les 20 matières",
+  "fichiers": [
+   {
+    "png": "visuels/P22/P22-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P22/P22-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P22/P22-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P22/P22-04-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P23",
+  "date": "2026-12-23",
+  "reseaux": "TikTok, Reels, Shorts",
+  "type": "Vidéo courte",
+  "titre": "Fiche d’arrêt : Nicolo en 45 s",
+  "fichiers": [
+   {
+    "png": "visuels/P23/P23-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P24",
+  "date": "2026-12-24",
+  "reseaux": "Instagram",
+  "type": "Story",
+  "titre": "Bonnes fêtes",
+  "fichiers": [
+   {
+    "png": "visuels/P24/P24-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "P25",
+  "date": "2026-12-26",
+  "reseaux": "Instagram + LinkedIn (document PDF)",
+  "type": "Carrousel",
+  "titre": "Ce que Lexia ne fait pas (encore)",
+  "fichiers": [
+   {
+    "png": "visuels/P25/P25-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P25/P25-02-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P25/P25-03-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P25/P25-04-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P25/P25-05-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P25/P25-06-1080x1350.png",
+    "format": "1080x1350"
+   }
+  ],
+  "pdf": "visuels/P25/P25-linkedin-document.pdf"
+ },
+ {
+  "id": "P26",
+  "date": "2026-12-27",
+  "reseaux": "Instagram + LinkedIn",
+  "type": "Image",
+  "titre": "Bilan du mois",
+  "fichiers": [
+   {
+    "png": "visuels/P26/P26-01-1080x1350.png",
+    "format": "1080x1350"
+   },
+   {
+    "png": "visuels/P26/P26-02-1200x627.png",
+    "format": "1200x627"
+   }
+  ],
+  "pdf": null
+ },
+ {
+  "id": "AMB",
+  "date": "",
+  "reseaux": "Comptes des ambassadeurs",
+  "type": "Modèle à superposer",
+  "titre": "Bandeau « Publicité » des ambassadeurs (fond transparent)",
+  "fichiers": [
+   {
+    "png": "visuels/AMB/AMB-01-1080x1920.png",
+    "format": "1080x1920"
+   }
+  ],
+  "pdf": null
+ }
+]

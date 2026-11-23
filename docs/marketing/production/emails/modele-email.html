@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{objet}</title>
+<!-- Gabarit des e-mails d'information de Lexia (sequence-inscrits.md). Tableaux et styles en ligne : seule mise
+     en page fiable dans les messageries. Polices systeme (aucune police chargee). A envoyer seulement aux comptes
+     qui ont consenti (D110). Remplacer les variables entre accolades. -->
+</head>
+<body style="margin:0;padding:0;background:#f5f4ef;">
+<div style="display:none;max-height:0;overflow:hidden;">{pre_en_tete}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f4ef;">
+<tr><td align="center" style="padding:24px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+    <tr><td style="padding:0 4px 16px;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#202724;">
+      <span style="display:inline-block;width:14px;height:22px;background:#315e4b;border-top:3px solid #bd8951;vertical-align:-3px;margin-right:8px;"></span>lexia
+    </td></tr>
+    <tr><td style="background:#fffefa;border:1px solid #e4e4dc;border-radius:12px;padding:28px 28px 24px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#202724;">
+      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;line-height:1.25;color:#202724;">{titre}</h1>
+      {corps_html}
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr>
+        <td style="background:#315e4b;border-radius:8px;">
+          <a href="{lien_bouton}" style="display:inline-block;padding:12px 22px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">{texte_bouton}</a>
+        </td></tr></table>
+      <p style="margin:16px 0 0;font-size:13px;color:#707873;">Lexia est un outil d'étude : vérifiez toujours les sources citées.</p>
+    </td></tr>
+    <tr><td style="padding:18px 8px 0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.55;color:#5f6762;">
+      Vous recevez cet e-mail parce que vous avez accepté les e-mails d'information de Lexia le {date_consentement}.
+      <a href="{lien_desinscription}" style="color:#315e4b;">Se désinscrire en un clic</a> (ou dans <a href="{lien_compte}" style="color:#315e4b;">Mon compte</a>).<br>
+      Lexia, outil d'étude du droit français, pas un avis juridique. Éditeur : Arthur Champagne-Forterre, entrepreneur individuel, nom commercial Axion Studio, 5 allée des Pommiers, 95680 Montlignon.
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>
