@@ -1,0 +1,18 @@
+# Lecteur des fichiers deposes, isole du service principal (audit du 2026-11-23, B3 ; D120).
+# Installe par deploy/publier.sh dans /etc/systemd/system/. Le service lexia s'y connecte par la variable
+# LEXIA_LECTEUR_SOCKET du .env ; chaque connexion lance un lexia-lecteur@.service (un fichier).
+[Unit]
+Description=Lexia - lecteur isole des fichiers deposes (socket)
+
+[Socket]
+ListenStream=/run/lexia-lecteur.sock
+Accept=yes
+# Seul l'utilisateur du service principal peut s'y connecter
+SocketUser=lexia
+SocketGroup=lexia
+SocketMode=0600
+# Deux depots lus a la fois par l'API (DEPOTS_SIMULTANES) ; marge pour un lecteur pas encore arrete
+MaxConnections=4
+
+[Install]
+WantedBy=sockets.target

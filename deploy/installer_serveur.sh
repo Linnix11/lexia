@@ -32,7 +32,11 @@ fi
 echo "== Service systemd et nginx (les fichiers arrivent avec publier.sh ; on les installe s'ils sont deja la)"
 if [[ -f "$APP/deploy/lexia.service" ]]; then
   cp "$APP/deploy/lexia.service" /etc/systemd/system/lexia.service
+  # Lecteur de fichiers isole (B3, D120)
+  install -m 644 "$APP/deploy/lexia-lecteur.socket" /etc/systemd/system/lexia-lecteur.socket
+  install -m 644 "$APP/deploy/lexia-lecteur@.service" /etc/systemd/system/lexia-lecteur@.service
   systemctl daemon-reload
+  systemctl enable --now lexia-lecteur.socket
   systemctl enable lexia
 fi
 if [[ -f "$APP/deploy/nginx-lexia.conf" ]]; then

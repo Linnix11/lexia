@@ -1,0 +1,48 @@
+# Lecture d'un fichier depose (PDF, Word, photo...) par pypdf, zipfile, expat, pdftoppm ou tesseract, hors du
+# service principal (audit du 2026-11-23, B3 ; D120). Avant, le lecteur tournait sous l'utilisateur lexia : une
+# faille de lecture lui donnait /opt/lexia/.env, l'environnement du service dans /proc et la base des comptes.
+# Ici : utilisateur cree pour la duree de la lecture, sans reseau, sans acces aux secrets, a la base, aux
+# journaux ni a l'index ; tue avec tous ses processus au-dela de RuntimeMaxSec. Lance par lexia-lecteur.socket.
+[Unit]
+Description=Lexia - lecture isolee d'un fichier depose
+CollectMode=inactive-or-failed
+
+[Service]
+ExecStart=/opt/lexia/.venv/bin/python -m api.extraction --socket
+WorkingDirectory=/opt/lexia
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+DynamicUser=yes
+Environment=PATH=/usr/bin:/bin LANG=C.UTF-8 OMP_THREAD_LIMIT=1 PYTHONDONTWRITEBYTECODE=1
+# Delai de l'OCR (DELAI_LECTURE_OCR = 90 s) et une marge ; le client abandonne de son cote au meme delai
+RuntimeMaxSec=100
+MemoryMax=1G
+TasksMax=16
+# Ni reseau ni secrets : rien a lire, rien a envoyer
+PrivateNetwork=true
+RestrictAddressFamilies=AF_UNIX
+InaccessiblePaths=-/opt/lexia/.env -/opt/lexia/donnees -/opt/lexia/sauvegardes -/opt/lexia/logs -/opt/lexia/data -/opt/lexia/.cache
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+PrivateUsers=true
+UMask=0077
+NoNewPrivileges=true
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RemoveIPC=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native

@@ -111,6 +111,12 @@ runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --require-hashes --n
 # Paquet ancien reste dans le .venv (plus dans la liste) : avertissement, sans arreter la publication en route.
 runuser -u lexia -- .venv/bin/pip check || echo "  ATTENTION : pip check signale des dependances incoherentes (ci-dessus)"
 cp deploy/lexia.service /etc/systemd/system/lexia.service
+# Lecteur de fichiers isole (B3, D120) : code et .venv lisibles par son utilisateur dynamique (le code est public),
+# .env, donnees, logs et sauvegardes restent en 600 et 700 et lui sont en plus masques par l'unite.
+install -m 644 deploy/lexia-lecteur.socket /etc/systemd/system/lexia-lecteur.socket
+install -m 644 deploy/lexia-lecteur@.service /etc/systemd/system/lexia-lecteur@.service
+chmod 755 $APP && chmod -R go+rX $APP/api $APP/.venv
+grep -q '^LEXIA_LECTEUR_SOCKET=' .env || printf 'LEXIA_LECTEUR_SOCKET=/run/lexia-lecteur.sock\n' >> .env
 chmod 755 deploy/sauvegarder_comptes.sh
 # Mise a jour nocturne du corpus (D78) : lancee par root, donc copie appartenant a root, hors de /opt/lexia.
 install -m 755 -o root -g root deploy/mettre_a_jour_corpus.sh /usr/local/sbin/lexia-mise-a-jour
@@ -124,6 +130,7 @@ if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then
   nginx -t && systemctl reload nginx
 fi
 systemctl daemon-reload
+systemctl enable --now lexia-lecteur.socket >/dev/null
 systemctl enable lexia >/dev/null
 systemctl restart lexia
 EOF

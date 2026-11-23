@@ -92,6 +92,12 @@ def lire_isole(nom: str, contenu: bytes, delai: float | None = None) -> Lecture:
     """lire dans un processus separe, tue avec tout son groupe (tesseract, pdftoppm) au-dela du delai."""
     if delai is None:
         delai = DELAI_LECTURE_OCR if Path(nom).suffix.lower() in FORMATS_OCR and ocr_disponible() else DELAI_LECTURE
+    # Serveur : lecteur dans un service systemd a part (deploy/lexia-lecteur.socket), sous un autre utilisateur,
+    # sans reseau ni acces au .env, a la base ou aux journaux (audit du 23/11, B3). Sans socket configuree
+    # (developpement, tests) : processus fils du service, comme avant.
+    socket_lecteur = os.environ.get("LEXIA_LECTEUR_SOCKET", "")
+    if socket_lecteur:
+        return _lire_par_socket(socket_lecteur, nom, contenu, delai)
     # Dossier temporaire du lecteur (PDF et images de l'OCR, donc le cours) cree et supprime ici : tue au-dela du
     # delai, le lecteur laissait son dossier dans le /tmp prive du service jusqu'au redemarrage (audit du 23/11, B8).
     dossier = tempfile.mkdtemp(prefix="lexia-lecteur-")
@@ -124,9 +130,60 @@ def _lire_dans(nom: str, contenu: bytes, delai: float, dossier: str) -> Lecture:
         if p.poll() is None:
             p.kill()
         p.communicate()
+    return _interpreter(stdout if p.returncode == 0 else b"")
+
+
+TROP_LONG_LECTURE = ("La lecture de ce fichier prend trop de temps : il est refusé. "
+                     "Déposez une version plus simple (texte exporté en PDF ou Word).")
+SORTIE_MAX = 16 * 1024 * 1024   # reponse du lecteur : texte (1 million de caracteres au plus) en JSON
+
+
+def _lire_par_socket(chemin: str, nom: str, contenu: bytes, delai: float) -> Lecture:
+    """Envoie au service lecteur une ligne d'en-tete JSON (nom, reglage de l'OCR) puis le fichier, ferme
+    l'envoi et lit la reponse JSON jusqu'a la fermeture. Le service est tue par systemd au-dela de
+    RuntimeMaxSec, avec ses tesseract et pdftoppm (deploy/lexia-lecteur@.service)."""
+    import socket
+
+    entete = json.dumps({"nom": nom, "ocr": os.environ.get("LEXIA_OCR", "1")}).encode() + b"\n"
+    fin = time.monotonic() + delai
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
-        sortie = json.loads(stdout) if p.returncode == 0 else {}
+        s.settimeout(min(delai, 5.0))
+        try:
+            s.connect(chemin)
+        except OSError:
+            raise ErreurCours("La lecture des fichiers est momentanément indisponible : réessayez dans quelques "
+                              "minutes.") from None
+        recu = bytearray()
+        try:
+            s.settimeout(max(0.1, fin - time.monotonic()))
+            s.sendall(entete + contenu)
+            s.shutdown(socket.SHUT_WR)
+            while True:
+                s.settimeout(max(0.01, fin - time.monotonic()))
+                if time.monotonic() >= fin:
+                    raise TimeoutError
+                bloc = s.recv(65536)
+                if not bloc:
+                    break
+                recu += bloc
+                if len(recu) > SORTIE_MAX:
+                    return _interpreter(b"")
+        except (TimeoutError, socket.timeout):
+            raise ErreurCours(TROP_LONG_LECTURE) from None
+        except OSError:
+            return _interpreter(b"")
+    finally:
+        s.close()
+    return _interpreter(bytes(recu))
+
+
+def _interpreter(stdout: bytes) -> Lecture:
+    try:
+        sortie = json.loads(stdout) if stdout else {}
     except ValueError:
+        sortie = {}
+    if not isinstance(sortie, dict):
         sortie = {}
     if "erreur" in sortie:
         raise ErreurCours(sortie["erreur"])
@@ -743,7 +800,15 @@ if __name__ == "__main__":
         except (ValueError, OSError):
             pass  # macOS ne prend pas en charge RLIMIT_AS : le delai suffit en developpement
     try:
-        lecture = lire(sys.argv[1], sys.stdin.buffer.read())
+        if sys.argv[1] == "--socket":
+            # Service lexia-lecteur (B3) : stdin et stdout sont la connexion ; en-tete JSON sur la premiere ligne.
+            entree = sys.stdin.buffer
+            entete = json.loads(entree.readline(4096) or b"{}")
+            os.environ["LEXIA_OCR"] = "0" if str(entete.get("ocr", "1")) == "0" else "1"
+            nom = str(entete.get("nom") or "")
+        else:
+            entree, nom = sys.stdin.buffer, sys.argv[1]
+        lecture = lire(nom, entree.read())
         resultat = {"pages": lecture.pages, "ocr": lecture.ocr}
     except ErreurCours as e:
         resultat = {"erreur": str(e)}
