@@ -79,6 +79,13 @@ export function VerifierEmail() {
   )
 }
 
+/** Suite du bandeau : a l'inscription, le lien peut ne pas etre parti (plafond d'envois du jour, D119). */
+export function texteLien(profil: { email: string; lien_envoye?: boolean }): string {
+  return profil.lien_envoye === false
+    ? 'le lien n’a pas pu être envoyé pour le moment. Utilisez « Renvoyer l’e-mail », ou réessayez plus tard.'
+    : `le lien a été envoyé à ${profil.email}.`
+}
+
 /** Bandeau affiche tant que l'adresse n'est pas confirmee : sans elle, aucune question n'est possible. */
 export function BandeauEmail() {
   const { profil, rafraichir } = useSession()
@@ -105,7 +112,7 @@ export function BandeauEmail() {
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-3 gap-y-1.5">
         <span>
           <strong className="font-semibold">Confirmez votre adresse e-mail</strong> pour poser vos questions :
-          le lien a été envoyé à {profil.email}.
+          {' '}{texteLien(profil)}
         </span>
         <button type="button" onClick={renvoyer} disabled={envoi}
           className="rounded-[7px] border border-[#d8c3a4] px-2.5 py-1 text-[12px] text-[#5f4f37] hover:bg-[#f6ece0] disabled:opacity-60">

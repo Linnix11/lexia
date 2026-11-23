@@ -152,6 +152,8 @@ export interface Profil {
   double_authentification?: boolean
   codes_secours_restants?: number
   email_verifie?: boolean
+  // Reponse de l'inscription seulement : faux quand le lien n'est pas parti (plafond d'envois, D119)
+  lien_envoye?: boolean
   /** Consentement aux e-mails d'information (case distincte a l'inscription, retirable dans Mon compte) */
   infos_email?: boolean
 }
@@ -575,7 +577,8 @@ export const api = {
   coursRecuperes: {
     lister: () => requete<{ avertissement: string; cours: CoursRecupere[] }>('/cours-recuperes'),
     lire: (id: string) => requete<CoursRecupereComplet>(`/cours-recuperes/${encodeURIComponent(id)}`),
-    rechercher: (q: string) => requete<{ cours: string[] }>(`/cours-recuperes/recherche?q=${encodeURIComponent(q)}`),
+    // Mots dans le corps, jamais dans l'adresse (journaux du serveur ; D111, D120)
+    rechercher: (q: string) => post<{ cours: string[] }>('/cours-recuperes/recherche', { q }),
   },
   chat: (question: string, mode: Mode, matiere: string | null, niveau: Niveau, semestre: number, cours?: OptionsCours) =>
     post<ReponseChat>('/chat', { question, mode, matiere, niveau, semestre, ...optionsCours(cours) }),

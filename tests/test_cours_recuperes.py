@@ -214,13 +214,15 @@ def test_route_de_recherche_dans_le_texte(tmp_path):
     client = TestClient(app)
     inscrire(client)
     # Le retriever de test n'a pas de recherche a part : liste vide, sans erreur.
-    assert client.get("/cours-recuperes/recherche", params={"q": "divorce"}).json() == {"cours": []}
-    assert client.get("/cours-recuperes/recherche", params={"q": "di"}).status_code == 422
+    assert client.post("/cours-recuperes/recherche", json={"q": "divorce"}).json() == {"cours": []}
+    assert client.post("/cours-recuperes/recherche", json={"q": "di"}).status_code == 422
+    # Mots de recherche jamais dans l'adresse (journaux) : plus de GET ?q= (audit du 23/11, B10 ; D120)
+    assert client.get("/cours-recuperes/recherche", params={"q": "divorce"}).status_code in (404, 405)
     from api.cours_recuperes import creer_routes_cours_recuperes
     from fastapi import FastAPI
     seule = FastAPI()
     seule.include_router(creer_routes_cours_recuperes(Catalogue(catalogue), lambda: None, Index()))
-    assert TestClient(seule).get("/cours-recuperes/recherche", params={"q": "divorce"}).json() == {"cours": ["cours-factice"]}
+    assert TestClient(seule).post("/cours-recuperes/recherche", json={"q": "divorce"}).json() == {"cours": ["cours-factice"]}
 
 
 def test_embeddings_sautent_les_fiches(tmp_path, monkeypatch):

@@ -546,7 +546,8 @@ describe('Audit du 16 novembre 2026', () => {
     const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/cours-recuperes')) return repondre({ avertissement: 'a', cours: [cours, dansLeTexte] })
-      if (url.includes('/cours-recuperes/recherche?q=divorce')) return repondre({ cours: ['sp-f1', 'sp-f2'] })
+      if (url.endsWith('/cours-recuperes/recherche') && init?.method === 'POST'
+          && JSON.parse(String(init.body)).q === 'divorce') return repondre({ cours: ['sp-f1', 'sp-f2'] })
       if (url.endsWith('/annales')) return repondre({ niveaux: ['L1'], annales: [annale] })
       return base(url, init)
     })

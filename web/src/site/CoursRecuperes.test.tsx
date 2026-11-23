@@ -24,10 +24,12 @@ let cours: unknown[] = []
 beforeEach(() => {
   cours = []
   oublierCatalogue()
-  vi.stubGlobal('fetch', vi.fn((url: string) => {
+  vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => {
     if (url.endsWith('/auth/session')) return json(PROFIL)
     if (url.endsWith('/cours-recuperes')) return json({ avertissement: AVERTISSEMENT, cours })
-    if (url.includes('/cours-recuperes/recherche?q=')) return json({ cours: ['cours-factice'] })
+    // POST, mots dans le corps et jamais dans l'adresse (D120)
+    if (url.endsWith('/cours-recuperes/recherche') && init?.method === 'POST' && JSON.parse(String(init.body)).q)
+      return json({ cours: ['cours-factice'] })
     if (url.endsWith('/cours-recuperes/cours-factice'))
       return json({ ...FACTICE, avertissement: AVERTISSEMENT, sections: [{ titre: 'I. Première partie', texte: 'Texte factice.' }] })
     return json({}, 404)

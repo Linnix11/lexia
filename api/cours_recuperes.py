@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+from api.auth import verifier_origine
 from api.matieres import LIBELLES
 
 log = logging.getLogger(__name__)
@@ -134,6 +135,10 @@ class Catalogue:
         return {**_fiche(c), "sections": [s.model_dump() for s in c.sections]}
 
 
+class RechercheCours(BaseModel):
+    q: str = Field(min_length=3, max_length=200)
+
+
 def creer_routes_cours_recuperes(catalogue: Catalogue, utilisateur_requis, retriever=None) -> APIRouter:
     """retriever : index de recherche ; seule sa recherche a part (`rechercher_a_part`) est utilisee ici."""
     routes = APIRouter()
@@ -142,9 +147,12 @@ def creer_routes_cours_recuperes(catalogue: Catalogue, utilisateur_requis, retri
     def lister(_=Depends(utilisateur_requis)):
         return {"avertissement": AVERTISSEMENT, "cours": catalogue.lister()}
 
-    @routes.get("/cours-recuperes/recherche")
-    def rechercher(q: str = Query(min_length=3, max_length=200), _=Depends(utilisateur_requis)):
+    # POST, mots dans le corps : en GET ?q=, ils restaient dans les journaux de nginx et d'uvicorn, contrairement
+    # a la regle de D111 (audit du 23/11, B10 ; D120).
+    @routes.post("/cours-recuperes/recherche", dependencies=[Depends(verifier_origine)])
+    def rechercher(req: RechercheCours, _=Depends(utilisateur_requis)):
         """Cours dont le texte repond a la recherche (index plein texte, sources a part), du plus pertinent au moins."""
+        q = req.q
         chercher = getattr(retriever, "rechercher_a_part", None)
         ids: list[str] = []
         for p in chercher(q) if chercher else []:
