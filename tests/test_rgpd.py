@@ -184,3 +184,35 @@ def test_jur12_questionnaires_effaces_avec_le_compte_et_purges_chaque_jour(tmp_p
     assert comptes.purger_questionnaires() == 1 and restants() == ["q0", "q1"]
     comptes.supprimer(a.id)
     assert restants() == ["q1"]
+
+
+# --- Registre des traitements : chaque table de la base des comptes y est decrite (D115) -------------------------
+
+# Tables sans donnee personnelle : annales (sujets publics), compteurs techniques, index plein texte des cours
+# (copie de cours_passages, decrite avec elle), numerotation de SQLite.
+SANS_DONNEE_PERSONNELLE = {"annales", "compteurs", "sqlite_sequence"}
+
+
+def test_chaque_table_de_la_base_des_comptes_est_au_registre(tmp_path):
+    """Les cartes mentales (D112) avaient ajoute une table sans l'inscrire au registre : ce test le signale."""
+    import re
+    from pathlib import Path
+
+    from api.comptes import Comptes
+    from api.config import Settings
+    from api.main import create_app
+    from tests.test_comptes import LLM, Retriever
+
+    racine = Path(__file__).resolve().parents[1]
+    comptes = Comptes(tmp_path / "c.db")
+    create_app(Settings(gemini_models=("fake",), logs_dir=tmp_path / "logs", rate_limit_per_minute=0,
+                        url_publique="https://lexia.test"), retriever=Retriever(), llm=LLM(), comptes=comptes)
+    tables = {r[0] for r in comptes._con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    # Tables creees seulement quand le service est configure (paiement) : lues dans le code.
+    for f in (racine / "api").glob("*.py"):
+        tables |= set(re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", f.read_text(encoding="utf-8")))
+    tables = {t for t in tables if not t.startswith("cours_fts")} - SANS_DONNEE_PERSONNELLE
+    assert {"utilisateurs", "paiements", "resumes_vocaux", "cartes_mentales"} <= tables
+    registre = (racine / "docs" / "registre-traitements.md").read_text(encoding="utf-8")
+    absentes = sorted(t for t in tables if f"`{t}`" not in registre)
+    assert not absentes, f"Tables a decrire dans docs/registre-traitements.md : {absentes}"

@@ -1,7 +1,13 @@
 # Registre des activités de traitement de Lexia
 
-Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 18 novembre 2026 (durées de
-conservation, audit du 18 novembre 2026, point E5 ; prénom, D100 ; nom, D102).
+Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 23 novembre 2026 (résumés
+vocaux, D106 ; cartes mentales, D112 ; décisions de justice, D113 ; D115). Versions précédentes : 18 novembre 2026
+(durées de conservation, audit du 18 novembre 2026, point E5 ; prénom, D100 ; nom, D102).
+
+Texte publié de la politique de confidentialité : une seule source, la page Confidentialité de
+`web/src/site/Legal.tsx`. Sa copie texte, version par version, est `docs/confidentialite/<version>.json`
+(`npm run confidentialite` dans `web/`) ; un test échoue si la page change sans que la copie soit refaite, et un
+autre si une table de la base des comptes n'est pas citée ici (`tests/test_rgpd.py`).
 
 L'entreprise compte moins de 250 salariés, mais la dérogation de l'article 30.5 ne couvre pas les traitements
 non occasionnels : la gestion des comptes, des formules et des journaux de Lexia l'est. La CNIL recommande
@@ -24,15 +30,16 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 | N° | Traitement | Base légale | Durée de conservation |
 |---|---|---|---|
 | T1 | Comptes utilisateurs | Exécution du contrat (CGU) | Jusqu'à la suppression du compte, ou deux ans sans visite (avertissement un mois avant) |
-| T2 | Rédaction des réponses par un modèle de langage | Exécution du contrat | Réponses : mémoire vive 24 h au plus ; questionnaires en cours : base des comptes, 3 h |
+| T2 | Rédaction des réponses, résumés vocaux et cartes mentales par un modèle de langage | Exécution du contrat | Réponses : mémoire vive 24 h au plus ; questionnaires en cours : base des comptes, 3 h ; résumés et cartes : non conservés |
 | T3 | Cours déposés | Exécution du contrat | Jusqu'au retrait du cours ou à la suppression du compte |
-| T4 | Limites d'usage et formules | Exécution du contrat | Compteurs : 90 jours ; formule : comme le compte |
+| T4 | Limites d'usage et formules | Exécution du contrat | Compteurs de questions et questionnaires : 90 jours ; de résumés vocaux et de cartes mentales : un mois ; formule : comme le compte |
 | T5 | Facturation des formules payantes | Obligation légale (comptabilité) | 10 ans (6 ans si activité libérale, à confirmer) |
 | T6 | Journaux techniques et avis | Intérêt légitime | 12 mois |
 | T7 | Sécurité du service | Intérêt légitime | 14 jours (serveur web), 48 h (empreinte après suppression) |
 | T8 | Sauvegardes | Intérêt légitime (continuité du service) | 14 jours sur le serveur, 60 jours hors serveur |
 | T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | 3 ans après le dernier échange (à appliquer par l'éditeur dans sa boîte) |
 | T10 | E-mails d'information et origine des inscriptions | Consentement (e-mails) ; intérêt légitime (origine, réponse facultative) | Comme le compte ; consentement effacé dès son retrait |
+| T11 | Réutilisation de décisions de justice publiées | Intérêt légitime | Tant que la source publie la décision ; retrait à la mise à jour suivante |
 
 ## Fiches
 
@@ -45,8 +52,8 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   et date de fin ; dates de création, d'acceptation des CGU et de confirmation de l'adresse ; indicateur
   administrateur ; secret de double authentification chiffré (`CLE_SECRETS`) et empreintes des codes de secours ;
   empreintes des jetons de confirmation et de réinitialisation ; date de la dernière visite (`actif_le`, une
-  écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions : empreinte du
-  jeton et date d'expiration.
+  écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions (table
+  `sessions`) : empreinte du jeton et date d'expiration.
 - Preuve de l'acceptation à l'inscription (D110, note de l'éditeur du 2026-11-20, point 1) : texte de la case d'âge
   cochée (`age_atteste`, « 15 ans ou plus »), version des CGU acceptée (`cgu_version`, même valeur que
   `VERSION_CGU`), date de l'acceptation (`cgu_le`). Vides pour les comptes créés avant D110 et pour un client qui
@@ -99,6 +106,19 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   avec le compte (`Comptes.purger_questionnaires`, `Comptes.supprimer`) ; une sauvegarde de nuit peut en contenir
   jusqu'à son effacement (audit du 2026-11-19, JUR-12).
   Le journal des jetons (`logs/modele.jsonl`) ne contient aucun texte.
+- Résumés vocaux (D106, `api/resumes_vocaux.py`) et cartes mentales (D112, `api/cartes_mentales.py`) : le
+  document choisi (texte d'une réponse ou d'une fiche envoyé par le navigateur, avec ses extraits relus par le
+  serveur ; cours déposé, 24 000 premiers caractères, pour son seul propriétaire ; cours récupéré ; pour la carte
+  d'une matière, la notion saisie) est transmis au modèle comme une question, mêmes destinataires. Le texte du
+  résumé et la carte sont renvoyés au navigateur sans être écrits sur le serveur ; le journal des questions ne
+  garde que le type de document, le modèle, des nombres (mots, branches, liens) et le contrôle, jamais le texte.
+  Compteurs du jour : T4.
+- Lecture à voix haute du résumé : synthèse vocale du navigateur (Web Speech API), aucun son produit ni reçu par
+  le serveur. Seules les voix installées sur l'appareil sont proposées quand il y en a (`web/src/lib/voix.ts`,
+  recette du 2026-11-20, D-11) ; sans voix française locale, une voix en ligne du navigateur (voix Google de
+  Chrome, par exemple) peut lire le texte : il part alors chez l'éditeur du navigateur, qui n'est pas un
+  sous-traitant de Lexia (choix et conditions du navigateur de l'utilisateur), et le site le signale sous le
+  résumé. Décrit dans la politique de confidentialité (« Lecture à voix haute des résumés »).
 - Point bloquant avant l'ouverture : les conditions de l'API Gemini n'autorisent que les services payants pour
   une application proposée à des utilisateurs de l'Espace économique européen. Passage au niveau payant :
   `GEMINI_NIVEAU_PAYANT=1` après activation de la facturation (décision D83).
@@ -106,8 +126,9 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 ### T3. Cours déposés
 
 - Finalité : permettre à l'utilisateur de réviser avec ses propres cours.
-- Données (`api/cours.py`) : texte extrait découpé en passages, numéro de page, vecteurs de recherche, titre,
-  matière, nom du fichier, date d'ajout. Le fichier d'origine n'est pas conservé. Scans et photos : lus sur le
+- Données (`api/cours.py`, tables `cours` et `cours_passages`, index plein texte `cours_fts` qui en est la
+  copie) : texte extrait découpé en passages, numéro de page, vecteurs de recherche, titre, matière, nom du
+  fichier, date d'ajout. Le fichier d'origine n'est pas conservé. Scans et photos : lus sur le
   serveur par Tesseract (logiciel libre, aucun service extérieur), image écrite le temps de la lecture dans un
   dossier temporaire effacé aussitôt (D107).
 - Destinataires : éditeur, Hostinger ; Google ou Groq pour les seuls passages retenus pour une réponse (T2).
@@ -119,8 +140,15 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Finalité : appliquer les quotas de la formule (questions, questionnaires, cours) et gérer la formule payante.
 - Données : compteurs du jour par compte (table `usage`), formule et date de fin, journal des actions des
   administrateurs (`logs/admin.jsonl` : numéro de l'administrateur, numéro du compte, formule, durée).
-- Durée : compteurs 90 jours (`USAGE_CONSERVE`, `Comptes.purger_usage`) : ils ne servent qu'au quota du jour et
-  aux statistiques des 30 derniers jours ; journal administrateur 12 mois (T6).
+- Compteurs des résumés vocaux (table `resumes_vocaux`, D106) et des cartes mentales (table `cartes_mentales`,
+  D112) : numéro du compte, jour, nombre ; 5 par jour par défaut (`RESUMES_VOCAUX_PAR_JOUR`,
+  `CARTES_MENTALES_PAR_JOUR`), un remboursé si le modèle n'a pas répondu. Aucun texte.
+- Durée : compteurs de questions et questionnaires 90 jours (`USAGE_CONSERVE`, `Comptes.purger_usage`) : ils ne
+  servent qu'au quota du jour et aux statistiques des 30 derniers jours ; compteurs de résumés vocaux et de
+  cartes mentales un mois (`CONSERVATION_JOURS = 31` de `api/resumes_vocaux.py`, lignes plus anciennes effacées à
+  chaque nouvelle demande, effacées avec le compte par la clé étrangère) ; tous inclus dans l'export des données
+  (`api/export.py`) ; journal administrateur 12 mois (T6). Les statistiques de l'administration excluent les
+  comptes des administrateurs (recette du 2026-11-20, D-7).
 
 ### T5. Facturation des formules payantes
 
@@ -193,6 +221,33 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   e-mail devra porter un lien de désinscription et ne partir qu'aux comptes dont `infos_email_le` est renseigné).
 - Durée : comme le compte (effacées avec lui) ; incluses dans l'export des données (`api/export.py`).
 
+### T11. Réutilisation de décisions de justice publiées
+
+- Finalité : répondre aux questions des étudiants à partir de la jurisprudence publiée (index de recherche, extraits
+  cités dans les réponses, liens vers la source).
+- Personnes concernées : parties, témoins et autres personnes mentionnées dans les décisions ; membres des
+  juridictions.
+- Sources (`ingest/sources/`) : archives de la DILA (Cour de cassation `cass.py`, Conseil d'État `jade.py`,
+  Conseil constitutionnel) ; depuis D113, API Judilibre de la Cour de cassation (`judilibre_api.py`, inactive tant
+  que `JUDILIBRE_KEY_ID` manque) et site du Conseil constitutionnel (`constit_site.py`, actif). Décisions reprises
+  telles que publiées, après l'occultation faite par la juridiction ou la DILA ; Lexia n'ajoute ni ne recoupe
+  aucune donnée sur les personnes.
+- Données : texte des décisions, avec les noms et éléments que la source n'a pas occultés ; métadonnées
+  (juridiction, formation, date, numéro, ECLI).
+- Base légale : intérêt légitime (mise à disposition de la jurisprudence publiée, réutilisation d'informations
+  publiques sous Licence Ouverte 2.0 et CGU open data de la Cour de cassation ; mentions légales du Conseil
+  constitutionnel). Information des personnes : section « Décisions de justice reproduites » de la politique de
+  confidentialité (une information individuelle exigerait un effort disproportionné, RGPD art. 14.5.b).
+- Garanties : jamais d'évaluation, de comparaison ni de prédiction des pratiques des magistrats et greffiers
+  (C. org. jud., art. L. 111-13 ; aucune fonction ne classe ou ne regroupe les décisions par magistrat) ; arrêts
+  supprimés par Judilibre retirés à la synchronisation suivante ; défauts d'occultation signalés à la Cour
+  (`anonymisation.sder.courdecassation@justice.fr`) et demandes d'occultation renvoyées vers
+  `occultations.courdecassation@justice.fr` (`docs/jurisprudence-recente.md`).
+- Destinataires : utilisateurs de Lexia ; Google ou Groq pour les extraits retenus pour une réponse (T2).
+- Durée : tant que la source publie la décision.
+- À faire : aucun outil ne retire ou n'occulte une décision précise de l'index ; à la première demande, l'éditeur
+  la retire à la main (procédure à écrire, voir « Actions restantes »).
+
 ### T9. Échanges par e-mail
 
 - Finalité : répondre aux demandes de formule payante, aux réclamations et aux demandes d'exercice des droits.
@@ -239,3 +294,7 @@ de Cloudflare ; limites de débit par adresse IP ; sauvegardes en 600 ; deux aud
 5. Appliquer la durée des échanges par e-mail (T9, 3 ans) dans la boîte `CONTACT_EMAIL`.
 6. Paiement : archiver le contrat Stripe ; confirmer 10 ans ou 6 ans (T5) ; mettre en place la purge des
    paiements au-delà de cette durée.
+7. Décisions de justice (T11) : écrire la procédure de retrait d'une décision sur demande d'occultation (liste
+   d'exclusion lue à l'indexation, ou retrait à la main puis reconstruction) avant la première demande ; faire
+   valider par le juriste la base légale et l'exception d'information de l'article 14.5.b.
+8. Résumés vocaux : faire valider par le juriste la mention des voix en ligne du navigateur (D-11).

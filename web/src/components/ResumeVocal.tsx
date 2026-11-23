@@ -151,6 +151,12 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
           ) : (
             <p className="mt-2 text-[11px] text-muted">La lecture à voix haute n’est pas disponible dans ce navigateur : voici le résumé à lire.</p>
           )}
+          {s && voixChoisie && !voixChoisie.localService && (
+            <p className="mt-1 text-[10px] text-muted">
+              Lecture par une voix en ligne de votre navigateur : le texte du résumé est envoyé à son éditeur (par
+              exemple Google pour Chrome) : aucune voix française n’est installée sur cet appareil.
+            </p>
+          )}
           {s && voix.length === 0 && (
             <p className="mt-1 text-[10px] text-muted">Aucune voix française sur cet appareil : la voix par défaut lit le texte.</p>
           )}

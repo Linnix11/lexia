@@ -58,4 +58,21 @@ describe('Politique de confidentialité', () => {
     expect(screen.getByText(/Ils ne sont jamais transmis à l’intelligence artificielle/)).toBeInTheDocument()
     expect(screen.getByText(/Prénom et nom : comme le compte, effacés avec lui/)).toBeInTheDocument()
   })
+
+  it('décrit les résumés vocaux, la lecture par le navigateur et les cartes mentales (recette du 2026-11-20, D-11 ; D106, D112)', async () => {
+    window.history.pushState({}, '', '/confidentialite')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Lecture à voix haute des résumés' })).toBeInTheDocument()
+    expect(screen.getByText(/le texte du résumé est alors envoyé à l’éditeur du navigateur/)).toBeInTheDocument()
+    expect(screen.getByText(/nombre de résumés et de cartes demandés chaque jour/)).toBeInTheDocument()
+    expect(screen.getByText(/Compteurs de résumés vocaux et de cartes mentales : un mois/)).toBeInTheDocument()
+  })
+
+  it('décrit la réutilisation des décisions de justice et la demande d’occultation (D113)', async () => {
+    window.history.pushState({}, '', '/confidentialite')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Décisions de justice reproduites' })).toBeInTheDocument()
+    expect(screen.getByText(/article L\. 111-13 du code de l’organisation judiciaire/)).toBeInTheDocument()
+    expect(screen.getByText(/service chargé des occultations/)).toBeInTheDocument()
+  })
 })

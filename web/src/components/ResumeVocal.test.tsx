@@ -21,7 +21,7 @@ class Enonce {
   constructor(texte: string) { this.text = texte }
 }
 
-const voix = (name: string, lang: string) => ({ name, lang, localService: true, default: false, voiceURI: name }) as SpeechSynthesisVoice
+const voix = (name: string, lang: string, localService = true) => ({ name, lang, localService, default: false, voiceURI: name }) as SpeechSynthesisVoice
 let dits: Enonce[]
 let synth: { speak: ReturnType<typeof vi.fn>; cancel: ReturnType<typeof vi.fn>; getVoices: () => SpeechSynthesisVoice[];
   addEventListener: () => void; removeEventListener: () => void }
@@ -114,6 +114,20 @@ describe('lib/voix', () => {
   it('garde les voix françaises, fr-FR d’abord', () => {
     const v = voixFrancaises([voix('A', 'fr-CA'), voix('B', 'en-GB'), voix('C', 'fr-FR'), voix('D', 'fr_FR')])
     expect(v.map((x) => x.name)).toEqual(['C', 'D', 'A'])
+  })
+
+  it('voix de l’appareil seulement quand il y en a : une voix en ligne envoie le texte à l’éditeur du navigateur (recette du 2026-11-20, D-11)', () => {
+    const v = voixFrancaises([voix('Google français', 'fr-FR', false), voix('Thomas', 'fr-FR'), voix('Amélie', 'fr-CA')])
+    expect(v.map((x) => x.name)).toEqual(['Thomas', 'Amélie'])
+    // Sans voix locale, les voix en ligne restent proposees (sinon aucune lecture possible).
+    expect(voixFrancaises([voix('Google français', 'fr-FR', false)]).map((x) => x.name)).toEqual(['Google français'])
+  })
+
+  it('prévient quand la voix choisie est une voix en ligne', async () => {
+    synth.getVoices = () => [voix('Google français', 'fr-FR', false)]
+    render(<ResumeVocal demande={demande} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Écouter un résumé' }))
+    expect(await screen.findByText(/voix en ligne de votre navigateur : le texte du résumé est envoyé à son éditeur/)).toBeInTheDocument()
   })
 
   it('écrit une durée lisible', () => {

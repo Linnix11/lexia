@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "cgu": "ECRIRE_CGU=1 vitest run src/site/cguTexte.test.tsx"
+    "cgu": "ECRIRE_CGU=1 vitest run src/site/cguTexte.test.tsx",
+    "confidentialite": "ECRIRE_CONFIDENTIALITE=1 vitest run src/site/confidentialiteTexte.test.tsx"
   },
   "dependencies": {
     "qrcode": "1.5.4",

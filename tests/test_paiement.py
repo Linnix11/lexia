@@ -610,6 +610,20 @@ def test_jur11_export_des_donnees_du_compte(env):
     assert TestClient(client.app).get("/compte/export").status_code == 401   # sans session
 
 
+def test_export_des_compteurs_de_resumes_vocaux_et_de_cartes_mentales(env):
+    """Compteurs du jour des resumes vocaux (D106) et des cartes mentales (D112) dans l'export, comme `usage`."""
+    from api.resumes_vocaux import QuotaResumes
+    client, comptes, _ = env
+    uid = comptes.par_email("etu@exemple.fr").id
+    assert QuotaResumes(comptes.chemin, 5).reserver(uid)
+    cartes = QuotaResumes(comptes.chemin, 5, table="cartes_mentales")
+    assert cartes.reserver(uid) and cartes.reserver(uid)
+    d = client.get("/compte/export").json()
+    assert [r["nombre"] for r in d["resumes_vocaux_par_jour"]] == [1]
+    assert [r["nombre"] for r in d["cartes_mentales_par_jour"]] == [2]
+    assert set(d["cartes_mentales_par_jour"][0]) == {"jour", "nombre"}
+
+
 # --- D111 : texte des CGU joint a la confirmation du contrat ------------------------------------------------
 
 def test_d111_fichier_des_cgu_de_la_version_en_vigueur():

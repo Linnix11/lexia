@@ -1,7 +1,7 @@
 // Pages legales. Les informations sur l'editeur viennent du .env du serveur (LEGAL_*, CONTACT_EMAIL) :
 // tant qu'une valeur manque, un encart « a completer » s'affiche. A faire relire par un juriste.
 import type { ReactNode } from 'react'
-import { VERSION_CGU } from '../lib/cgu'
+import { VERSION_CGU, VERSION_CONFIDENTIALITE } from '../lib/cgu'
 import { useSession } from '../state/session'
 import { PublicLayout, Section, Surtitre } from './Public'
 
@@ -395,7 +395,7 @@ export function Cgu() {
 export function Confidentialite() {
   const { l, contact, paiement } = useLegal()
   return (
-    <Page titre="Politique de confidentialité" maj="20 novembre 2026">
+    <Page titre="Politique de confidentialité" maj={VERSION_CONFIDENTIALITE}>
       <section>
         <h2>Responsable du traitement</h2>
         <p>
@@ -414,6 +414,7 @@ export function Confidentialite() {
           <li><strong>Questionnaires</strong> : thème, questions, extraits et correction d’un questionnaire en cours, gardés 3 heures au plus pour pouvoir le corriger, y compris après un redémarrage du serveur, puis effacés (et avec le compte).</li>
           <li><strong>Double authentification</strong> (si vous l’activez) : clé secrète partagée avec votre application d’authentification et empreintes des codes de secours, supprimées à la désactivation ou avec le compte.</li>
           <li><strong>Utilisation</strong> : nombre de questions et de questionnaires du jour, pour appliquer les limites de votre formule.</li>
+          <li><strong>Résumés vocaux et cartes mentales</strong> : nombre de résumés et de cartes demandés chaque jour, pour appliquer la limite quotidienne, gardé un mois. Le texte du résumé et la carte vous sont envoyés et ne sont pas conservés sur le serveur.</li>
           <li><strong>Formule payante</strong> (si vous en souscrivez une) : formule choisie, date de fin, et éléments de facturation (adresse e-mail, montant, date et moyen de paiement).</li>
           <li><strong>Cours déposés</strong> : le texte extrait de vos cours (découpé en passages, avec le numéro de page), leur titre, leur matière et le nom du fichier. Le fichier d’origine n’est pas conservé. Vos cours ne sont visibles que par vous.</li>
           <li><strong>Journaux techniques</strong> : identifiants des sources utilisées, durée de traitement, statut des réponses. Le texte de vos questions n’y est pas enregistré.</li>
@@ -439,7 +440,9 @@ export function Confidentialite() {
         <p>
           Pour produire une réponse, le texte de votre question et les extraits retrouvés (textes officiels et, si vous
           le choisissez, passages de votre cours) sont transmis à
-          l’API Gemini de Google, qui peut les traiter hors de l’Union européenne.{' '}
+          l’API Gemini de Google, qui peut les traiter hors de l’Union européenne. Il en va de même pour un résumé
+          vocal ou une carte mentale : le document choisi (réponse, fiche, cours déposé ou cours récupéré, ou la
+          notion saisie pour une matière) et ses extraits sont transmis de la même façon.{' '}
           {l?.gemini_payant ? (
             <>Lexia utilise le niveau payant : selon les conditions de ce niveau, Google n’utilise ni les questions ni
             les réponses pour améliorer ses produits ; il les conserve pendant une durée limitée, uniquement pour
@@ -478,6 +481,35 @@ export function Confidentialite() {
         </p>
       </section>
       <section>
+        <h2>Lecture à voix haute des résumés</h2>
+        <p>
+          Le résumé vocal est lu par la synthèse vocale de votre navigateur : le serveur de Lexia ne produit ni ne
+          reçoit aucun son. Lexia propose seulement les voix installées sur votre appareil, qui lisent le texte sur
+          place. S’il n’y en a aucune en français, une voix en ligne de votre navigateur peut le lire (par exemple
+          une voix Google dans Chrome) : le texte du résumé est alors envoyé à l’éditeur du navigateur, selon ses
+          propres conditions, et le site vous le signale sous le résumé.
+        </p>
+      </section>
+      <section>
+        <h2>Décisions de justice reproduites</h2>
+        <p>
+          Pour répondre, Lexia s’appuie sur des décisions de justice publiées en données ouvertes : archives de la
+          DILA (Cour de cassation, Conseil d’État, Conseil constitutionnel), base open data de la Cour de cassation
+          (API Judilibre) et site du Conseil constitutionnel. Elles peuvent mentionner des personnes. Lexia les
+          reprend telles que publiées, après l’occultation faite par la juridiction ou l’administration qui les
+          diffuse, ne les modifie pas et ne s’en sert jamais pour évaluer, comparer ou prédire les pratiques des
+          magistrats (article L. 111-13 du code de l’organisation judiciaire). Une décision retirée par sa source
+          est retirée de Lexia à la mise à jour suivante. Base légale : intérêt légitime (mettre à la disposition des
+          étudiants la jurisprudence publiée).
+        </p>
+        <p>
+          Si une décision vous concerne et laisse apparaître votre nom ou un élément qui vous identifie, écrivez à{' '}
+          <Contact adresse={contact} /> : l’éditeur transmet votre demande à la juridiction qui l’a publiée (pour la
+          Cour de cassation, à son service chargé des occultations) et retire la décision de Lexia en attendant sa
+          réponse.
+        </p>
+      </section>
+      <section>
         <h2>Destinataires</h2>
         <p>
           Les données ne sont ni vendues ni cédées. Elles sont traitées par l’éditeur et par ses sous-traitants :
@@ -502,7 +534,7 @@ export function Confidentialite() {
       <section>
         <h2>Finalités et base légale</h2>
         <ul>
-          <li>Fournir le service : compte, réponses, cours déposés, questionnaires, e-mails de confirmation et de réinitialisation (exécution du contrat).</li>
+          <li>Fournir le service : compte, réponses, cours déposés, questionnaires, résumés vocaux, cartes mentales, e-mails de confirmation et de réinitialisation (exécution du contrat).</li>
           <li>Appliquer les limites des formules et gérer les formules payantes (exécution du contrat).</li>
           <li>Identifier le titulaire du compte par ses prénom et nom, et le saluer par son prénom dans son espace (exécution du contrat).</li>
           <li>Garder la preuve de votre acceptation des conditions et de l’âge déclaré (exécution du contrat).</li>
@@ -519,7 +551,7 @@ export function Confidentialite() {
           <li>Compte : jusqu’à sa suppression par vous, ou après deux ans sans aucune visite ; un e-mail vous prévient un mois avant et une simple connexion garde le compte. Un compte avec une formule payante en cours n’est jamais supprimé pour ce motif.</li>
           <li>Prénom et nom : comme le compte, effacés avec lui.</li>
           <li>Preuve de l’acceptation des conditions, réponse sur la façon dont vous avez connu Lexia : comme le compte. Accord pour les e-mails d’information : jusqu’à son retrait ou la suppression du compte.</li>
-          <li>Compteurs de questions et de questionnaires : 90 jours.</li>
+          <li>Compteurs de questions et de questionnaires : 90 jours. Compteurs de résumés vocaux et de cartes mentales : un mois.</li>
           <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>
           <li>Journaux techniques : 12 mois, puis suppression automatique.</li>
@@ -547,7 +579,7 @@ export function Confidentialite() {
           Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
           portabilité, ainsi que le droit de définir des directives sur le sort de vos données après votre décès
           (article 85 de la loi du 6 janvier 1978). Vous pouvez supprimer votre compte vous-même depuis « Mon
-          compte », et télécharger vos données (compte, cours déposés, paiements) au format JSON depuis la même
+          compte », et télécharger vos données (compte, compteurs, cours déposés, paiements) au format JSON depuis la même
           page. Vous pouvez aussi écrire à <Contact adresse={contact} /> ou saisir la CNIL (www.cnil.fr).
         </p>
       </section>

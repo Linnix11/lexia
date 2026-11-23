@@ -1,6 +1,7 @@
 """Export des donnees du compte (RGPD art. 15 et 20 ; audit du 2026-11-19, JUR-11).
 
-GET /compte/export : un fichier JSON avec le compte (sans mot de passe ni secret), les compteurs d'usage, les cours
+GET /compte/export : un fichier JSON avec le compte (sans mot de passe ni secret), les compteurs d'usage (questions,
+questionnaires, resumes vocaux, cartes mentales), les cours
 deposes avec leur texte et les paiements. Les fiches, le semestre et la conversation restent dans le navigateur :
 ils n'ont jamais ete envoyes au serveur, le fichier le rappelle.
 """
@@ -49,6 +50,11 @@ def donnees_du_compte(comptes: Comptes, uid: int) -> dict:
         "compte": compte[0] if compte else None,
         "usage_par_jour": _lignes(comptes, "usage", ("jour", "questions", "quiz"), "utilisateur = ? ORDER BY jour",
                                   (uid,)),
+        # Compteurs du jour des resumes vocaux (D106) et des cartes mentales (D112), gardes un mois
+        "resumes_vocaux_par_jour": _lignes(comptes, "resumes_vocaux", ("jour", "nombre"),
+                                           "utilisateur = ? ORDER BY jour", (uid,)),
+        "cartes_mentales_par_jour": _lignes(comptes, "cartes_mentales", ("jour", "nombre"),
+                                            "utilisateur = ? ORDER BY jour", (uid,)),
         "cours_deposes": cours,
         "paiements": _lignes(comptes, "paiements", COLONNES_PAIEMENT, "utilisateur = ? ORDER BY id", (uid,)),
         "dans_votre_navigateur": "Vos fiches, le semestre, la derniere matiere et la conversation en cours sont "

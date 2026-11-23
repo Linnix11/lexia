@@ -9,10 +9,13 @@ export function decouperPhrases(paragraphes: string[]): string[][] {
       .filter(Boolean))
 }
 
-/** Voix francaises de l'appareil, fr-FR d'abord, puis les voix locales avant les voix en ligne. */
+/** Voix francaises, fr-FR d'abord. Une voix en ligne (voix Google de Chrome...) envoie le texte lu a l'editeur du
+ * navigateur : seules les voix de l'appareil sont proposees quand il y en a (recette du 2026-11-20, D-11). */
 export function voixFrancaises(voix: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
-  const rang = (v: SpeechSynthesisVoice) => (v.lang.replace('_', '-').toLowerCase() === 'fr-fr' ? 0 : 1) + (v.localService ? 0 : 0.5)
-  return voix.filter((v) => v.lang.toLowerCase().startsWith('fr')).sort((a, b) => rang(a) - rang(b))
+  const francaises = voix.filter((v) => v.lang.toLowerCase().startsWith('fr'))
+  const locales = francaises.filter((v) => v.localService)
+  const rang = (v: SpeechSynthesisVoice) => (v.lang.replace('_', '-').toLowerCase() === 'fr-fr' ? 0 : 1)
+  return (locales.length ? locales : francaises).sort((a, b) => rang(a) - rang(b))
 }
 
 export const synthese = (): SpeechSynthesis | null =>
