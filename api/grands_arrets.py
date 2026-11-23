@@ -13,13 +13,38 @@ Juridiction administrative (audit du 2026-11-18, B5) : le nom est traduit en ide
 l'archive JADE (CETATEXT...), chacun verifie le 2026-11-18 dans l'index (juridiction, formation, date, numero et
 objet du sommaire). Le nom d'un grand arret present dans un extrait (cours depose, decision) couvre aussi sa
 citation dans la reponse (B6).
+
+Grands arrets par notion (D124) : `registry/grands_arrets.yaml` liste 122 grands arrets des matieres de licence,
+relies a des notions (fait des choses, exces de pouvoir, primaute du droit de l'Union...). Une question qui porte sur
+une notion, ou qui nomme l'arret, recoit ses grands arrets parmi les extraits, apres ceux de la recherche : la
+decision de l'index quand elle y est (sommaire officiel, considerant de principe), sinon une fiche redigee par
+Lexia (source `fiches_grands_arrets`, jamais presentee comme une decision officielle). Le modele recoit une note
+qui demande de les citer avec leur date et de ne jamais presenter un arret abandonne comme le droit positif.
 """
 
 from __future__ import annotations
 
+import copy
 import re
+from dataclasses import dataclass
+from functools import lru_cache
 
+import yaml
+
+from api.config import ROOT
 from api.textes import sans_accents
+
+FICHIER = ROOT / "registry" / "grands_arrets.yaml"
+SOURCE_FICHES = "fiches_grands_arrets"   # registry/sources.yaml, statut fiche_lexia
+MAX_PAR_QUESTION = 3                     # grands arrets ajoutes aux extraits d'une question
+STATUTS = {
+    "actuel": "toujours appliqué",
+    "consacre": "solution reprise par un texte",
+    "nuance": "solution corrigée ou limitée depuis",
+    "abandonne": "ABANDONNÉ : n'est plus le droit positif",
+}
+AVERTISSEMENT_FICHE = ("Fiche rédigée par Lexia : résumé pédagogique non officiel d'un grand arrêt absent du corpus, "
+                       "à relire par un enseignant. Ce n'est pas le texte de la décision.")
 
 # (motif sans accents, minuscules ; pourvois ; nom seul suffisant)
 GRANDS_ARRETS: tuple[tuple[str, tuple[str, ...], bool], ...] = (
@@ -102,6 +127,8 @@ GRANDS_ARRETS_ADMINISTRATIFS: tuple[tuple[str, str, bool, str], ...] = (
 )
 NOMS_ADMINISTRATIFS: dict[str, str] = {d: nom for _, d, _, nom in GRANDS_ARRETS_ADMINISTRATIFS}
 
+# « 2031-9999 QPC », « 71-44 DC », « 89-15.231 » : la question vise une decision precise
+_NUMERO_DECISION = re.compile(r"\b\d{2,4}-\d{1,4}(?:/\d{1,4})?\s*(?:qpc|dc)\b|\b\d{2}-\d{2}\.\d{3}\b")
 _CONTEXTE = re.compile(r"\barrets?\b|\bjurisprudence\b|\bcassation\b|\bjuge\b|\bdecide\b"
                        r"|\bconseil d'etat\b|\btribunal des conflits\b")
 _MOTIFS = tuple((re.compile(m), pv, seul) for m, pv, seul in GRANDS_ARRETS)
@@ -133,3 +160,242 @@ def nom_dans(ref: str, texte: str) -> bool:
     t = sans_accents(texte).lower()
     return any(motif.search(t) for motif, refs, _ in (*_MOTIFS, *_MOTIFS_ADMIN)
                if ref == refs or (not isinstance(refs, str) and ref in refs))
+
+
+# --- Grands arrets par notion (D124) ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Arret:
+    id: str
+    citation: str
+    date: str
+    statut: str
+    portee: str
+    matieres: tuple[str, ...]
+    reference: str | None = None
+    index: str | None = None        # passage de l'index qui porte la decision
+    fiche: dict | None = None       # faits, question, solution, apport, portee (arret absent de l'index)
+    motif: re.Pattern | None = None
+    seul: bool = True
+
+
+@dataclass(frozen=True)
+class Notion:
+    id: str
+    libelle: str
+    motifs: tuple[re.Pattern, ...]
+    avec: re.Pattern | None
+    sauf: re.Pattern | None
+    arrets: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Registre:
+    version: str
+    arrets: dict[str, Arret]
+    notions: dict[str, Notion]
+
+
+@lru_cache(maxsize=1)
+def registre() -> Registre:
+    brut = yaml.safe_load(FICHIER.read_text(encoding="utf-8"))
+    arrets: dict[str, Arret] = {}
+    for a in brut["arrets"]:
+        nom = a.get("nom") or {}
+        arrets[a["id"]] = Arret(
+            id=a["id"], citation=a["citation"], date=str(a["date"]), statut=a["statut"], portee=a["portee"],
+            matieres=tuple(a.get("matieres") or ()), reference=a.get("reference"), index=a.get("index"),
+            fiche=a.get("fiche"), motif=re.compile(nom["motif"]) if nom.get("motif") else None,
+            seul=bool(nom.get("seul", True)))
+    notions = {n: Notion(n, v["libelle"], tuple(re.compile(m) for m in v["motifs"]),
+                         re.compile(v["avec"]) if v.get("avec") else None,
+                         re.compile(v["sauf"]) if v.get("sauf") else None, tuple(v["arrets"]))
+               for n, v in brut["notions"].items()}
+    return Registre(str(brut["version"]), arrets, notions)
+
+
+def notions_de(texte: str) -> list[str]:
+    """Notions dont parle la question, dans l'ordre du registre. Aucune quand la question cite un numero de
+    decision ou de pourvoi : elle porte sur cette decision (une decision inventee doit mener a l'abstention, et
+    non a des grands arrets voisins : piege-11)."""
+    t = sans_accents(texte).lower()
+    if _NUMERO_DECISION.search(t):
+        return []
+    return [n.id for n in registre().notions.values()
+            if any(m.search(t) for m in n.motifs) and (n.avec is None or n.avec.search(t))
+            and (n.sauf is None or not n.sauf.search(t))]
+
+
+def arrets_pour(texte: str) -> list[Arret]:
+    """Grands arrets a joindre aux extraits : ceux que la question nomme, puis ceux de ses notions, pris a tour de
+    role (le premier de chaque notion, puis le deuxieme...) : une notion large (contrat administratif) ne prend pas
+    toutes les places d'une notion precise (recours des tiers contre le contrat)."""
+    reg = registre()
+    t = sans_accents(texte).lower()
+    contexte = bool(_CONTEXTE.search(t))
+    ids = [a.id for a in reg.arrets.values() if a.motif is not None and (a.seul or contexte) and a.motif.search(t)]
+    listes = [reg.notions[n].arrets for n in notions_de(texte)]
+    for rang in range(max(map(len, listes), default=0)):
+        ids += [liste[rang] for liste in listes if rang < len(liste)]
+    return [reg.arrets[i] for i in dict.fromkeys(ids)]
+
+
+def passage_fiche(a: Arret) -> dict:
+    """Fiche redigee par Lexia, sous la forme d'un passage (source a part, type « fiche »)."""
+    f = a.fiche or {}
+    texte = "\n".join([
+        AVERTISSEMENT_FICHE,
+        f"Faits : {f.get('faits', '')}",
+        f"Question de droit : {f.get('question', '')}",
+        f"Solution : {f.get('solution', '')}",
+        f"Apport : {f.get('apport', '')}",
+        f"Portée actuelle : {f.get('portee', '')}",
+        f"Statut : {STATUTS[a.statut]}.",
+    ])
+    return {
+        "id": f"{SOURCE_FICHES}:{a.id}",
+        "source_id": SOURCE_FICHES,
+        "type": "fiche",
+        "numero": None,
+        "titre": a.citation,
+        "entete": f"Fiche Lexia (non officielle) : {a.citation}",
+        "url": "",
+        "version": f"Fiche rédigée par Lexia le {_date_fr(registre().version)}, à relire par un enseignant",
+        "meta": {"date": a.date, "grand_arret": a.id, "reference": a.reference, "statut": a.statut},
+        "texte": texte,
+    }
+
+
+def fiche(passage_id: str) -> dict | None:
+    """Passage d'une fiche Lexia par son identifiant (« fiches_grands_arrets:jand-heur »), None sinon."""
+    source, _, ident = passage_id.partition(":")
+    a = registre().arrets.get(ident) if source == SOURCE_FICHES else None
+    return passage_fiche(a) if a is not None and a.fiche else None
+
+
+def marquer(p: dict, a: Arret, ajoute: bool) -> dict:
+    """Copie du passage avec son grand arret (nom d'usage dans l'en-tete, statut pour la note au modele)."""
+    p = copy.deepcopy(p)
+    p["grand_arret"] = {"id": a.id, "citation": a.citation, "statut": a.statut, "portee": a.portee,
+                        "ajoute": ajoute}
+    if p["source_id"] != SOURCE_FICHES:
+        p["entete"] = f"{p.get('entete') or p.get('titre') or p['id']} (grand arrêt : {a.citation})"
+    return p
+
+
+def ecarter_abandonnes(reponse: dict, passages: list[dict]) -> int:
+    """Un element de droit positif (ou de la reponse directe) qui ne s'appuie que sur des grands arrets abandonnes
+    n'est pas du droit positif : il passe dans l'explication (la reponse directe le perd). passages : extraits
+    envoyes au modele. Renvoie le nombre d'elements deplaces ou retires."""
+    abandonnes = {p["id"] for p in passages if (p.get("grand_arret") or {}).get("statut") == "abandonne"}
+    if not abandonnes or reponse.get("statut") != "reponse":
+        return 0
+    seul = [e for e in reponse.get("droit_positif", []) if e["sources"] and set(e["sources"]) <= abandonnes]
+    directe = [e for e in reponse.get("reponse_directe", []) if e["sources"] and set(e["sources"]) <= abandonnes]
+    if seul:
+        reponse["droit_positif"] = [e for e in reponse["droit_positif"] if e not in seul]
+        reponse["explication"] = list(reponse.get("explication", [])) + seul
+    if directe:
+        reponse["reponse_directe"] = [e for e in reponse["reponse_directe"] if e not in directe]
+    return len(seul) + len(directe)
+
+
+def note(passages: list[dict]) -> str:
+    """Note au modele quand des grands arrets figurent parmi les extraits (S1, S2... dans l'ordre des passages)."""
+    lignes = [f"- [S{i}] {p['grand_arret']['citation']} : {STATUTS[p['grand_arret']['statut']]}. "
+              f"{p['grand_arret']['portee']}"
+              for i, p in enumerate(passages, start=1) if p.get("grand_arret")]
+    if not lignes:
+        return ""
+    return ("Note : les extraits contiennent des grands arrêts que l'étudiant doit connaître sur cette question :\n"
+            + "\n".join(lignes) + "\n"
+            "Quand ils éclairent la réponse, cite-les par leur juridiction, leur date et leur nom d'usage (par exemple "
+            "« Cass., ch. réunies, 13 février 1930, Jand'heur »), avec l'extrait correspondant dans « sources ». Un "
+            "arrêt ABANDONNÉ n'est jamais présenté comme le droit positif : dis qu'il a été abandonné et par quoi, "
+            "dans l'explication. Une « Fiche Lexia » est un résumé non officiel : la règle actuelle s'énonce d'abord "
+            "avec le texte (article, loi) ou la décision officielle fournis, la fiche sert à présenter l'arrêt.")
+
+
+_MOIS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre",
+         "novembre", "décembre")
+
+
+def _date_fr(iso: str) -> str:
+    a, m, j = iso.split("-")
+    return f"{int(j)}{'er' if j == '01' else ''} {_MOIS[int(m) - 1]} {a}"
+
+
+# --- Document de relecture (docs/relecture-enseignant/grands-arrets.md) ---------------------------------------
+
+DOCUMENT = ROOT / "docs" / "relecture-enseignant" / "grands-arrets.md"
+_STATUT_COURT = {"actuel": "actuel", "consacre": "consacré", "nuance": "nuancé", "abandonne": "abandonné"}
+_MATIERES_ORDRE = ("droit_civil", "droit_des_contrats", "droit_des_biens", "droit_de_la_famille", "introduction_au_droit",
+                   "droit_penal", "procedure_civile", "procedure_penale", "droit_administratif",
+                   "contentieux_administratif", "droit_administratif_des_biens", "droit_constitutionnel",
+                   "libertes_fondamentales", "droit_europeen")
+
+
+def document() -> str:
+    """Liste des grands arrets et fiches Lexia, pour la relecture par un enseignant (regeneree par
+    `python -m api.grands_arrets` ; tests/test_grands_arrets_notions.py echoue si elle n'est plus a jour)."""
+    from api.matieres import LIBELLES
+    reg = registre()
+    notions: dict[str, list[str]] = {}
+    for n in reg.notions.values():
+        for i in n.arrets:
+            notions.setdefault(i, []).append(n.libelle)
+    arrets = list(reg.arrets.values())
+    fiches = [a for a in arrets if a.fiche]
+    lignes = [
+        "# Grands arrêts : liste et fiches Lexia (à relire par un enseignant)", "",
+        f"Version du {_date_fr(reg.version)}, tirée de `registry/grands_arrets.yaml` (D124). {len(arrets)} arrêts, "
+        f"dont {len(arrets) - len(fiches)} dont la décision est dans l'index de Lexia (sommaire officiel ou considérant "
+        f"de principe) et {len(fiches)} absents de l'index, pour lesquels Lexia a rédigé une fiche.", "",
+        "**À relire par un enseignant.** Les fiches sont écrites par Lexia, sans reprise d'un recueil de grands arrêts, "
+        "d'une note d'arrêt ou d'un manuel. Elles sont montrées à l'étudiant comme « Fiche Lexia (non officielle) », "
+        "jamais comme une décision. Pour chaque arrêt, merci de vérifier la date, la solution, le statut (toujours "
+        "appliqué, consacré par un texte, nuancé, abandonné) et la portée actuelle.", "",
+        "Statuts : actuel = toujours appliqué ; consacré = solution reprise par un texte ; nuancé = corrigée ou limitée "
+        "depuis ; abandonné = n'est plus le droit positif (Lexia ne doit jamais le présenter comme tel).", "",
+        "## 1. Liste des arrêts", "",
+    ]
+    for m in _MATIERES_ORDRE:
+        du = [a for a in arrets if a.matieres and a.matieres[0] == m]
+        if not du:
+            continue
+        lignes += [f"### {LIBELLES.get(m, m)}", "",
+                   "| Arrêt | Juridiction et formation | Date | Numéro | Notions | Dans l'index | Statut |",
+                   "|---|---|---|---|---|---|---|"]
+        for a in du:
+            brut = _brut(a.id)
+            juridiction = brut["juridiction"] + (f", {brut['formation']}" if brut.get("formation") else "")
+            index = "non : fiche Lexia" if a.fiche else f"oui (`{a.index}`)"
+            lignes.append(f"| {a.citation} | {juridiction} | {a.date} | {a.reference or 'sans numéro'} | "
+                          f"{', '.join(notions.get(a.id, []))} | {index} | {_STATUT_COURT[a.statut]} |")
+        lignes.append("")
+    lignes += ["## 2. Fiches Lexia (arrêts absents de l'index)", ""]
+    for a in fiches:
+        f = a.fiche
+        lignes += [f"### {a.citation}", "", "*À relire par un enseignant.*", "",
+                   f"- **Faits.** {f['faits']}", f"- **Question de droit.** {f['question']}",
+                   f"- **Solution.** {f['solution']}", f"- **Apport.** {f['apport']}",
+                   f"- **Portée actuelle.** {f['portee']}", f"- **Statut.** {_STATUT_COURT[a.statut]}", ""]
+    lignes += ["## 3. Portée des arrêts présents dans l'index", "",
+               "Phrase transmise au modèle avec la décision officielle.", ""]
+    lignes += [f"- **{a.citation}** ({_STATUT_COURT[a.statut]}) : {a.portee}" for a in arrets if not a.fiche]
+    return "\n".join(lignes) + "\n"
+
+
+@lru_cache(maxsize=1)
+def _bruts() -> dict[str, dict]:
+    return {a["id"]: a for a in yaml.safe_load(FICHIER.read_text(encoding="utf-8"))["arrets"]}
+
+
+def _brut(ident: str) -> dict:
+    return _bruts()[ident]
+
+
+if __name__ == "__main__":
+    DOCUMENT.write_text(document(), encoding="utf-8")
+    print(f"{DOCUMENT.relative_to(ROOT)} : {len(registre().arrets)} arrêts")

@@ -1,0 +1,1892 @@
+# Grands arrets des matieres de licence (D124).
+#
+# Liste redigee par Lexia le 2026-11-23. STATUT : A RELIRE PAR UN ENSEIGNANT (docs/relecture-enseignant/).
+#
+# Pour chaque arret :
+#   citation : forme courte citee a l'etudiant (juridiction, formation, date, nom d'usage) ;
+#   reference : numero de pourvoi, de requete ou de decision quand il existe ;
+#   statut : actuel (toujours applique) | consacre (repris par un texte) | nuance (solution corrigee ou limitee
+#            depuis) | abandonne (n'est plus le droit positif : ne jamais le presenter comme tel) ;
+#   portee : ce qu'il en reste aujourd'hui, en une ou deux phrases ;
+#   index : identifiant du passage de l'index qui porte la decision (sommaire officiel, ou considerant de
+#           principe pour le Conseil constitutionnel). Verifie dans l'index du 17 novembre 2026
+#           (tests/test_grands_arrets_notions.py le controle sur l'index reel) ;
+#   fiche : seulement pour un arret absent de l'index (Cour de cassation avant 1960, Cour de justice de l'Union).
+#           Fiche redigee par Lexia, sans reprise d'un recueil (GAJC, GAJA...), d'une note d'arret ou d'un
+#           manuel : faits, question de droit, solution, apport, portee. Source officielle citee seulement
+#           quand elle existe ;
+#   nom : motif (texte sans accents, minuscules) qui reconnait l'arret nomme dans une question ; seul: false
+#         exige que la question parle d'un arret ou de jurisprudence (nom courant : Franck, Mercier...).
+#
+# Les notions (fin du fichier) relient une question a ses grands arrets : leurs motifs sont lus sur la question
+# sans accents ni majuscules ; avec : second motif exige en plus ; sauf : motif qui ecarte la notion. L'ordre des arrets d'une notion est l'ordre
+# d'ajout aux extraits (3 au plus par question, api/grands_arrets.py).
+
+version: "2026-11-23"
+
+arrets:
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit civil : responsabilite extracontractuelle
+# ---------------------------------------------------------------------------------------------------------------
+- id: teffaine
+  nom: {motif: '\bteffaine\b', seul: true}
+  citation: "Cass. civ., 16 juin 1896, Teffaine"
+  juridiction: Cour de cassation
+  formation: chambre civile
+  date: 1896-06-16
+  reference: null
+  matieres: [droit_civil]
+  statut: consacre
+  portee: "Principe général de responsabilité du fait des choses tiré de l'ancien article 1384, alinéa 1er ; repris par l'arrêt Jand'heur (1930) puis par l'article 1242, alinéa 1er, du Code civil."
+  fiche:
+    faits: "La chaudière d'un remorqueur à vapeur explose et tue un ouvrier mécanicien qui travaillait à bord. Sa veuve demande réparation au propriétaire du remorqueur. L'explosion est due à un défaut de construction de la chaudière ; aucune faute du propriétaire n'est établie."
+    question: "Le propriétaire d'une chose qui a causé un dommage en répond-il sans que la victime ait à prouver sa faute ?"
+    solution: "Oui. La Cour de cassation retient la responsabilité du propriétaire sur le fondement de l'article 1384, alinéa 1er, du Code civil (aujourd'hui article 1242, alinéa 1er) : l'accident étant dû à un vice de construction, il ne peut s'exonérer en prouvant la faute du constructeur ou le caractère caché du vice."
+    apport: "Premier arrêt à voir dans l'alinéa 1er de l'article 1384, jusque-là lu comme une simple annonce des cas qui suivent, une responsabilité du fait des choses indépendante de toute faute du responsable. L'arrêt répond à la multiplication des accidents causés par les machines."
+    portee: "Pour les accidents du travail, la loi du 9 avril 1898 a peu après organisé un régime spécial d'indemnisation. Le principe général a été confirmé par l'arrêt Jand'heur (1930) et figure aujourd'hui à l'article 1242, alinéa 1er, du Code civil."
+
+- id: jand-heur
+  nom: {motif: "\\bjand'?heur\\b", seul: true}
+  citation: "Cass., ch. réunies, 13 février 1930, Jand'heur"
+  juridiction: Cour de cassation
+  formation: chambres réunies
+  date: 1930-02-13
+  reference: null
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Toujours appliqué : responsabilité de plein droit du gardien (article 1242, alinéa 1er, du Code civil), écartée seulement par une cause étrangère. Les accidents de la circulation relèvent depuis 1985 de la loi du 5 juillet 1985."
+  fiche:
+    faits: "Une enfant est renversée et blessée par un camion de livraison. Ses représentants agissent contre la société propriétaire du camion. La cour de renvoi refuse d'appliquer l'article 1384, alinéa 1er, du Code civil, au motif que le camion était conduit par un homme au moment de l'accident : il faudrait alors prouver une faute du conducteur (article 1382 ancien)."
+    question: "La présomption de l'article 1384, alinéa 1er, s'applique-t-elle à une chose actionnée par la main de l'homme, et comment le gardien peut-il s'en libérer ?"
+    solution: "Les chambres réunies cassent. La présomption pèse sur celui qui a sous sa garde la chose inanimée qui a causé le dommage ; elle ne cède que devant la preuve d'un cas fortuit ou de force majeure ou d'une cause étrangère qui ne lui est pas imputable. Il ne suffit pas au gardien de prouver qu'il n'a commis aucune faute ou que la cause du dommage est restée inconnue. La loi ne distingue pas selon que la chose était ou non actionnée par la main de l'homme ; il n'est pas nécessaire qu'elle ait un vice : la responsabilité s'attache à la garde de la chose, non à la chose elle-même."
+    apport: "Fondation de la responsabilité du fait des choses : une responsabilité qui ne repose pas sur la faute, pour toute chose, dangereuse ou non, en mouvement ou non, et dont le gardien ne s'exonère que par une cause étrangère."
+    portee: "Toujours le droit positif : l'article 1242, alinéa 1er, du Code civil (ancien article 1384) est appliqué dans ces termes, la jurisprudence parlant aujourd'hui de responsabilité de plein droit. Pour un accident de la circulation impliquant un véhicule terrestre à moteur, la loi n° 85-677 du 5 juillet 1985 s'applique seule depuis 1986."
+
+- id: franck
+  nom: {motif: '\bfranck\b', seul: false}
+  citation: "Cass., ch. réunies, 2 décembre 1941, Franck"
+  juridiction: Cour de cassation
+  formation: chambres réunies
+  date: 1941-12-02
+  reference: null
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Définition toujours retenue de la garde : usage, direction et contrôle de la chose ; le propriétaire dépossédé par un vol perd la garde."
+  fiche:
+    faits: "Un médecin prête sa voiture à son fils mineur. La voiture est volée pendant la nuit ; le voleur, en la conduisant, renverse et tue un passant. La famille de la victime agit contre le propriétaire de la voiture sur le fondement de l'article 1384, alinéa 1er, du Code civil."
+    question: "Le propriétaire d'une chose qui lui a été volée en reste-t-il le gardien, responsable des dommages qu'elle cause entre les mains du voleur ?"
+    solution: "Non. Privé de l'usage, de la direction et du contrôle de sa voiture par l'effet du vol, le propriétaire n'en a plus la garde et n'est plus soumis à la présomption de l'article 1384, alinéa 1er."
+    apport: "La garde est une garde matérielle, de fait, et non juridique : elle appartient à celui qui exerce sur la chose les pouvoirs d'usage, de direction et de contrôle, même sans droit (le voleur)."
+    portee: "Définition toujours utilisée pour l'article 1242, alinéa 1er, du Code civil. Le propriétaire est présumé gardien, mais il peut prouver qu'il avait transféré la garde. Pour les accidents de la circulation, la loi du 5 juillet 1985 s'applique."
+
+- id: oxygene-liquide
+  nom: {motif: "\\boxygene liquide\\b", seul: true}
+  citation: "Cass. civ. 2e, 5 janvier 1956, Oxygène liquide"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1956-01-05
+  reference: null
+  matieres: [droit_civil]
+  statut: nuance
+  portee: "Distinction de la garde de la structure et de la garde du comportement, encore citée mais appliquée de façon limitée aux choses dotées d'un dynamisme propre et dangereux."
+  fiche:
+    faits: "Des bouteilles d'oxygène comprimé, remises par la société qui les remplit à un transporteur, explosent et blessent des personnes. Les juges du fond mettent hors de cause la société propriétaire des bouteilles, au motif que leur garde avait été transférée au transporteur."
+    question: "Celui qui détient matériellement une chose au moment du dommage en est-il toujours le gardien, même quand le dommage vient de la structure interne de la chose, qu'il ne peut ni connaître ni maîtriser ?"
+    solution: "La Cour de cassation casse : le propriétaire ne cesse d'être gardien que si celui à qui il a confié la chose a reçu, avec son usage, le pouvoir d'en surveiller et d'en contrôler tous les éléments, et donc la possibilité de prévenir lui-même le dommage. Les juges devaient le rechercher."
+    apport: "Naissance de la distinction entre la garde de la structure, qui peut rester au propriétaire ou au fabricant, et la garde du comportement, qui passe au détenteur."
+    portee: "Distinction toujours mentionnée, mais appliquée avec prudence et surtout à des choses dangereuses dotées d'un dynamisme propre. Depuis 1998, la responsabilité du fait des produits défectueux (articles 1245 et suivants du Code civil) couvre une grande partie de ces situations."
+
+- id: trichard
+  nom: {motif: '\btrichard\b', seul: true}
+  citation: "Cass. civ. 2e, 18 décembre 1964, Trichard"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1964-12-18
+  reference: null
+  matieres: [droit_civil]
+  statut: consacre
+  portee: "Le trouble mental du gardien n'est pas une cause étrangère ; la loi du 3 janvier 1968 a ensuite posé que celui qui cause un dommage sous l'empire d'un trouble mental est obligé à réparation (article 414-3 du Code civil)."
+  index: "judilibre:JURITEXT000006967475:sommaire"
+
+- id: dangereux
+  nom: {motif: '\bdangereux\b', seul: false}
+  citation: "Cass. ch. mixte, 27 février 1970, Dangereux"
+  juridiction: Cour de cassation
+  formation: chambre mixte
+  date: 1970-02-27
+  reference: "68-10.276"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "La victime par ricochet (ici une concubine) n'a pas à justifier d'un lien de droit avec la victime directe ; solution toujours appliquée."
+  index: "judilibre:JURITEXT000006982751:sommaire"
+
+- id: desmares
+  nom: {motif: '\bdesmares\b', seul: true}
+  citation: "Cass. civ. 2e, 21 juillet 1982, Desmares"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1982-07-21
+  reference: "81-12.850"
+  matieres: [droit_civil]
+  statut: abandonne
+  portee: "Abandonné par la deuxième chambre civile le 6 avril 1987, qui admet de nouveau l'exonération partielle du gardien par la faute de la victime ; pour les accidents de la circulation, la loi du 5 juillet 1985 a remplacé cette jurisprudence."
+  index: "judilibre:JURITEXT000007010831:sommaire"
+
+- id: faute-victime-1987
+  nom: null
+  citation: "Cass. civ. 2e, 6 avril 1987"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1987-04-06
+  reference: "85-12.833"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Revirement après l'arrêt Desmares : le gardien est partiellement exonéré quand il prouve que la faute de la victime a contribué au dommage."
+  index: "judilibre:JURITEXT000007018470:sommaire"
+
+- id: fullenwarth
+  nom: {motif: '\bfullenwarth\b', seul: true}
+  citation: "Cass. ass. plén., 9 mai 1984, Fullenwarth"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1984-05-09
+  reference: "79-16.612"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Il suffit d'un acte du mineur, cause directe du dommage, pour engager la responsabilité de ses parents ; confirmé en 2002 (simple fait causal, sans faute de l'enfant)."
+  index: "judilibre:JURITEXT000007013643:sommaire"
+
+- id: gabillet
+  nom: {motif: '\bgabillet\b', seul: true}
+  citation: "Cass. ass. plén., 9 mai 1984, Gabillet"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1984-05-09
+  reference: "80-14.994"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Un jeune enfant peut être gardien d'une chose : la garde ne suppose pas le discernement. Toujours appliqué."
+  index: "judilibre:JURITEXT000007013792:sommaire"
+
+- id: derguini
+  nom: {motif: '\bderguini\b', seul: true}
+  citation: "Cass. ass. plén., 9 mai 1984, Derguini"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1984-05-09
+  reference: "80-93.481"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "La faute d'un enfant peut être retenue sans vérifier qu'il était capable de discerner les conséquences de son acte (faute objective) ; toujours appliqué."
+  index: "judilibre:JURITEXT000007013642:sommaire"
+
+- id: lemaire
+  nom: {motif: '\blemaire\b', seul: false}
+  citation: "Cass. ass. plén., 9 mai 1984, Lemaire"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1984-05-09
+  reference: "80-93.031"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Même solution que Derguini : la faute de la victime mineure peut lui être opposée sans recherche de son discernement."
+  index: "judilibre:JURITEXT000007013641:sommaire"
+
+- id: blieck
+  nom: {motif: '\bblieck\b', seul: true}
+  citation: "Cass. ass. plén., 29 mars 1991, Blieck"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1991-03-29
+  reference: "89-15.231"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Responsabilité du fait d'autrui fondée sur l'article 1242, alinéa 1er, pour qui accepte d'organiser et de contrôler à titre permanent le mode de vie d'autrui ; étendue depuis (associations sportives, mineurs placés)."
+  index: "judilibre:JURITEXT000007026394:sommaire"
+
+- id: bertrand
+  nom: {motif: '\bbertrand\b', seul: false}
+  citation: "Cass. civ. 2e, 19 février 1997, Bertrand"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1997-02-19
+  reference: "94-21.111"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Les parents ne s'exonèrent de leur responsabilité de plein droit que par la force majeure ou la faute de la victime, non en prouvant qu'ils n'ont commis aucune faute de surveillance ou d'éducation."
+  index: "judilibre:JURITEXT000007038104:sommaire"
+
+- id: parents-2002
+  nom: null
+  citation: "Cass. ass. plén., 13 décembre 2002"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2002-12-13
+  reference: "00-13.787"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "La responsabilité des parents suppose seulement que le dommage ait été directement causé par le fait, même non fautif, du mineur."
+  index: "judilibre:JURITEXT000007045176:sommaire"
+
+- id: levert
+  nom: {motif: '\blevert\b', seul: false}
+  citation: "Cass. civ. 2e, 10 mai 2001, Levert"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 2001-05-10
+  reference: "99-11.287"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "La responsabilité des parents n'est pas subordonnée à l'existence d'une faute de l'enfant ; solution confirmée par l'Assemblée plénière en 2002."
+  index: "judilibre:JURITEXT000007045606:sommaire"
+
+- id: costedoat
+  nom: {motif: '\bcostedoat\b', seul: true}
+  citation: "Cass. ass. plén., 25 février 2000, Costedoat"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2000-02-25
+  reference: "97-17.378"
+  matieres: [droit_civil]
+  statut: actuel
+  portee: "Le préposé qui agit sans excéder les limites de la mission que lui a impartie son commettant n'engage pas sa responsabilité à l'égard des tiers ; toujours appliqué, avec les limites posées par l'arrêt Cousin."
+  index: "judilibre:JURITEXT000007043704:sommaire"
+
+- id: cousin
+  nom: {motif: '\bcousin\b', seul: false}
+  citation: "Cass. ass. plén., 14 décembre 2001, Cousin"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2001-12-14
+  reference: "00-82.066"
+  matieres: [droit_civil, droit_penal]
+  statut: actuel
+  portee: "Le préposé condamné pénalement pour une infraction intentionnelle, même commise sur l'ordre du commettant, engage sa responsabilité civile envers la victime."
+  index: "judilibre:JURITEXT000007045753:sommaire"
+
+- id: perruche
+  nom: {motif: '\bperruche\b', seul: false}
+  citation: "Cass. ass. plén., 17 novembre 2000, Perruche"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2000-11-17
+  reference: "99-13.701"
+  matieres: [droit_civil]
+  statut: abandonne
+  portee: "Abandonné par la loi du 4 mars 2002 : nul ne peut se prévaloir d'un préjudice du seul fait de sa naissance (article L. 114-5 du Code de l'action sociale et des familles)."
+  index: "judilibre:JURITEXT000007041543:sommaire"
+
+- id: boot-shop
+  nom: {motif: "\\bboot shop\\b|\\bmyr'?ho\\b", seul: true}
+  citation: "Cass. ass. plén., 6 octobre 2006, Boot Shop (Myr'Ho)"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2006-10-06
+  reference: "05-13.255"
+  matieres: [droit_civil, droit_des_contrats]
+  statut: nuance
+  portee: "Le tiers au contrat peut invoquer un manquement contractuel dès lors qu'il lui a causé un dommage ; confirmé en 2020 (arrêt Sucrerie de Bois Rouge), la réforme de la responsabilité civile en projet n'étant pas adoptée."
+  index: "judilibre:JURITEXT000007052928:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit des contrats et responsabilite contractuelle
+# ---------------------------------------------------------------------------------------------------------------
+- id: cie-generale-transatlantique
+  nom: {motif: "\\bcompagnie generale transatlantique\\b", seul: true}
+  citation: "Cass. civ., 21 novembre 1911, Compagnie générale transatlantique"
+  juridiction: Cour de cassation
+  formation: chambre civile
+  date: 1911-11-21
+  reference: null
+  matieres: [droit_des_contrats, droit_civil]
+  statut: actuel
+  portee: "Le transporteur de personnes est tenu d'une obligation de sécurité : conduire le voyageur sain et sauf à destination ; obligation étendue depuis à d'autres contrats."
+  fiche:
+    faits: "Un passager voyage sur un navire d'une compagnie maritime. Pendant la traversée, il est blessé par un tonneau mal arrimé qui tombe sur lui. Il demande réparation à la compagnie."
+    question: "Le transporteur répond-il de la sécurité du passager en vertu du contrat de transport lui-même, sans que la victime ait à prouver une faute ?"
+    solution: "Oui. L'exécution du contrat de transport comporte pour le transporteur l'obligation de conduire le voyageur sain et sauf à destination. Cette obligation naît du contrat ; le transporteur est responsable s'il ne l'exécute pas, sauf cause étrangère."
+    apport: "Découverte, dans le contrat, d'une obligation de sécurité que les parties n'avaient pas écrite : le juge ajoute au contrat les suites que l'équité, l'usage ou la loi donnent à l'obligation (ancien article 1135, aujourd'hui article 1194 du Code civil)."
+    portee: "Toujours appliqué au transport de personnes, l'obligation de sécurité de résultat couvrant le temps du transport. Elle a été étendue à d'autres contrats, souvent comme une obligation de moyens. Le transport ferroviaire relève aussi de règles de l'Union européenne."
+
+- id: mercier
+  nom: {motif: '\bmercier\b', seul: false}
+  citation: "Cass. civ., 20 mai 1936, Mercier"
+  juridiction: Cour de cassation
+  formation: chambre civile
+  date: 1936-05-20
+  reference: null
+  matieres: [droit_des_contrats, droit_civil]
+  statut: nuance
+  portee: "Le médecin doit des soins consciencieux, attentifs et conformes aux données acquises de la science (obligation de moyens) ; la responsabilité médicale repose aujourd'hui sur la loi (article L. 1142-1 du Code de la santé publique) plutôt que sur le contrat."
+  fiche:
+    faits: "Une patiente traitée par rayons X pour une affection du nez développe une lésion de la peau (radiodermite). Elle agit contre son médecin plusieurs années après le traitement. Le délai pour agir dépendait de la nature, contractuelle ou délictuelle, de la responsabilité invoquée."
+    question: "Quelle est la nature de la responsabilité du médecin envers son patient, et à quoi s'engage-t-il ?"
+    solution: "Il se forme entre le médecin et son patient un véritable contrat. Le médecin s'engage, non pas à guérir, mais à donner des soins consciencieux, attentifs et, sauf circonstances exceptionnelles, conformes aux données acquises de la science. La violation de cet engagement engage sa responsabilité contractuelle."
+    apport: "Le contrat médical : la responsabilité du médecin devient contractuelle. L'engagement de donner des soins conformes aux données acquises de la science illustre l'obligation de moyens, opposée à l'obligation de résultat."
+    portee: "Depuis la loi du 4 mars 2002, la responsabilité des professionnels de santé pour faute est fixée par l'article L. 1142-1 du Code de la santé publique, et la Cour de cassation ne la fonde plus sur le contrat. L'exigence de soins conformes aux données acquises de la science demeure ; la distinction des obligations de moyens et de résultat reste enseignée."
+
+- id: canal-de-craponne
+  nom: {motif: '\bcanal de craponne\b|\bcraponne\b', seul: true}
+  citation: "Cass. civ., 6 mars 1876, Canal de Craponne"
+  juridiction: Cour de cassation
+  formation: chambre civile
+  date: 1876-03-06
+  reference: null
+  matieres: [droit_des_contrats]
+  statut: abandonne
+  portee: "Abandonné par l'ordonnance du 10 février 2016 : l'article 1195 du Code civil permet la révision pour imprévision des contrats conclus depuis le 1er octobre 2016. Le refus reste la règle pour les contrats antérieurs."
+  fiche:
+    faits: "Des conventions du XVIe siècle avaient fixé la redevance due par les propriétaires de terres arrosées par le canal de Craponne, en Provence. Trois siècles plus tard, la redevance ne couvre plus les frais d'entretien du canal. La cour d'appel l'augmente, au nom de l'équité."
+    question: "Le juge peut-il modifier un contrat devenu déséquilibré par un changement de circonstances que les parties n'avaient pas prévu (imprévision) ?"
+    solution: "Non. La Cour de cassation casse : la règle de l'article 1134 du Code civil (force obligatoire du contrat) est générale et absolue ; en aucun cas il n'appartient aux tribunaux, si équitable que puisse leur paraître leur décision, de prendre en considération le temps et les circonstances pour modifier les conventions des parties et substituer des clauses nouvelles à celles qu'elles ont librement acceptées."
+    apport: "Refus de la révision pour imprévision par le juge judiciaire, au nom de la force obligatoire du contrat. Le Conseil d'État a au contraire admis l'imprévision pour les contrats administratifs (arrêt Gaz de Bordeaux, 1916)."
+    portee: "N'est plus le droit positif pour les contrats conclus depuis le 1er octobre 2016 : l'article 1195 du Code civil, issu de l'ordonnance du 10 février 2016, permet à une partie de demander une renégociation en cas de changement de circonstances imprévisible rendant l'exécution excessivement onéreuse, puis, à défaut d'accord, au juge de réviser ou de mettre fin au contrat. Les parties peuvent écarter ce texte."
+
+- id: poussin
+  nom: {motif: '\bpoussin\b', seul: false}
+  citation: "Cass. civ. 1re, 22 février 1978, Poussin"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 1978-02-22
+  reference: "76-11.551"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "Le vendeur peut invoquer son erreur sur la substance de sa propre prestation (tableau vendu comme n'étant pas de Poussin) ; solution reprise par l'article 1133 du Code civil."
+  index: "judilibre:JURITEXT000007000241:sommaire"
+
+- id: huard
+  nom: {motif: '\bhuard\b', seul: false}
+  citation: "Cass. com., 3 novembre 1992, Huard"
+  juridiction: Cour de cassation
+  formation: chambre commerciale
+  date: 1992-11-03
+  reference: "90-18.547"
+  matieres: [droit_des_contrats]
+  statut: actuel
+  portee: "La bonne foi peut obliger un contractant à permettre à l'autre de rester compétitif (devoir de loyauté) ; à rapprocher de l'article 1104 du Code civil."
+  index: "cass_commerciale:JURITEXT000007029915:sommaire"
+
+- id: consorts-cruz
+  nom: {motif: '\bconsorts cruz\b', seul: true}
+  citation: "Cass. civ. 3e, 15 décembre 1993, Consorts Cruz"
+  juridiction: Cour de cassation
+  formation: troisième chambre civile
+  date: 1993-12-15
+  reference: "91-10.199"
+  matieres: [droit_des_contrats]
+  statut: abandonne
+  portee: "Abandonné par l'ordonnance du 10 février 2016 : la révocation de la promesse unilatérale pendant le délai d'option n'empêche pas la formation du contrat promis (article 1124, alinéa 2, du Code civil)."
+  index: "judilibre:JURITEXT000007031319:sommaire"
+
+- id: point-club-video
+  nom: {motif: '\bpoint club video\b', seul: true}
+  citation: "Cass. civ. 1re, 3 juillet 1996, Point Club Vidéo"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 1996-07-03
+  reference: "94-14.800"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "Nullité pour absence de cause (contrepartie réelle) appréciée au regard de l'économie voulue par les parties ; la cause a disparu en 2016, l'article 1169 du Code civil sanctionnant la contrepartie illusoire ou dérisoire."
+  index: "judilibre:JURITEXT000007036953:sommaire"
+
+- id: chronopost
+  nom: {motif: '\bchronopost\b', seul: true}
+  citation: "Cass. com., 22 octobre 1996, Chronopost"
+  juridiction: Cour de cassation
+  formation: chambre commerciale
+  date: 1996-10-22
+  reference: "93-18.632"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "La clause limitative qui contredit la portée de l'obligation essentielle est réputée non écrite ; règle reprise par l'article 1170 du Code civil."
+  index: "cass_commerciale:JURITEXT000007035966:sommaire"
+
+- id: prix-1995
+  nom: {motif: '\b1er decembre 1995\b', seul: false}
+  citation: "Cass. ass. plén., 1er décembre 1995"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1995-12-01
+  reference: "91-15.578"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "L'indétermination du prix dans un contrat-cadre n'affecte pas sa validité ; l'abus dans la fixation du prix donne lieu à résiliation ou indemnisation. Repris par l'article 1164 du Code civil."
+  index: "judilibre:JURITEXT000007035358:sommaire"
+
+- id: baldus
+  nom: {motif: '\bbaldus\b', seul: true}
+  citation: "Cass. civ. 1re, 3 mai 2000, Baldus"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 2000-05-03
+  reference: "98-11.381"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "L'acheteur n'est tenu d'aucune obligation d'information sur la valeur du bien ; l'article 1112-1, alinéa 2, du Code civil exclut l'estimation de la valeur de la prestation du devoir d'information."
+  index: "judilibre:JURITEXT000007043587:sommaire"
+
+- id: manoukian
+  nom: {motif: '\bmanoukian\b', seul: true}
+  citation: "Cass. com., 26 novembre 2003, Manoukian"
+  juridiction: Cour de cassation
+  formation: chambre commerciale
+  date: 2003-11-26
+  reference: "00-10.243"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "La faute commise dans la rupture des pourparlers ne permet pas de réparer la perte des gains attendus du contrat non conclu ; règle reprise par l'article 1112, alinéa 2, du Code civil."
+  index: "cass_commerciale:JURITEXT000007049778:sommaire"
+
+- id: pacte-preference-2006
+  nom: null
+  citation: "Cass. ch. mixte, 26 mai 2006"
+  juridiction: Cour de cassation
+  formation: chambre mixte
+  date: 2006-05-26
+  reference: "03-19.376"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "Le bénéficiaire d'un pacte de préférence peut obtenir sa substitution à l'acquéreur si celui-ci connaissait le pacte et l'intention du bénéficiaire de s'en prévaloir ; repris par l'article 1123 du Code civil."
+  index: "judilibre:JURITEXT000007055468:sommaire"
+
+- id: les-marechaux
+  nom: {motif: '\bles marechaux\b', seul: true}
+  citation: "Cass. com., 10 juillet 2007, Les Maréchaux"
+  juridiction: Cour de cassation
+  formation: chambre commerciale
+  date: 2007-07-10
+  reference: "06-14.768"
+  matieres: [droit_des_contrats]
+  statut: actuel
+  portee: "La règle de bonne foi permet au juge de sanctionner l'usage déloyal d'une prérogative contractuelle, mais non de porter atteinte à la substance même des droits et obligations convenus."
+  index: "cass_commerciale:JURITEXT000017908759:sommaire"
+
+- id: faurecia
+  nom: {motif: '\bfaurecia\b', seul: true}
+  citation: "Cass. com., 29 juin 2010, Faurecia"
+  juridiction: Cour de cassation
+  formation: chambre commerciale
+  date: 2010-06-29
+  reference: "09-11.841"
+  matieres: [droit_des_contrats]
+  statut: consacre
+  portee: "Seule est réputée non écrite la clause limitative qui contredit la portée de l'obligation essentielle ; repris par l'article 1170 du Code civil."
+  index: "cass_commerciale:JURITEXT000022427254:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit des biens
+# ---------------------------------------------------------------------------------------------------------------
+- id: clement-bayard
+  nom: {motif: '\bclement[- ]bayard\b|\bcoquerel\b', seul: true}
+  citation: "Cass. req., 3 août 1915, Clément-Bayard"
+  juridiction: Cour de cassation
+  formation: chambre des requêtes
+  date: 1915-08-03
+  reference: null
+  matieres: [droit_des_biens]
+  statut: actuel
+  portee: "L'abus du droit de propriété (acte sans utilité pour le propriétaire, accompli pour nuire à autrui) engage la responsabilité de son auteur ; toujours invoqué."
+  fiche:
+    faits: "Un propriétaire installe sur son terrain, en bordure de celui de son voisin, constructeur de dirigeables, de hautes charpentes de bois surmontées de tiges de fer pointues. Ces installations ne lui servent à rien ; un dirigeable du voisin, en manœuvrant, s'y déchire."
+    question: "Un propriétaire peut-il être condamné pour l'usage qu'il fait de son propre terrain, alors que l'article 544 du Code civil lui donne le droit d'en disposer de la manière la plus absolue ?"
+    solution: "Oui. La chambre des requêtes approuve les juges du fond d'avoir retenu un abus du droit de propriété : le dispositif ne présentait pour le propriétaire aucune utilité et n'avait été installé que pour nuire au voisin. Il est condamné à réparer le dommage et à enlever les tiges."
+    apport: "Le droit de propriété, si absolu soit-il, ne peut être exercé dans le seul but de nuire : l'abus de droit suppose l'intention de nuire et l'absence d'intérêt légitime pour le propriétaire."
+    portee: "Toujours invoqué. À distinguer des troubles anormaux de voisinage, qui engagent la responsabilité sans faute ni intention de nuire (jurisprudence consacrée par l'article 1253 du Code civil, issu de la loi du 15 avril 2024)."
+
+- id: troubles-voisinage-1986
+  nom: null
+  citation: "Cass. civ. 2e, 19 novembre 1986"
+  juridiction: Cour de cassation
+  formation: deuxième chambre civile
+  date: 1986-11-19
+  reference: "84-16.379"
+  matieres: [droit_des_biens]
+  statut: consacre
+  portee: "Nul ne doit causer à autrui un trouble anormal de voisinage : principe autonome, sans faute ; consacré par l'article 1253 du Code civil (loi du 15 avril 2024)."
+  index: "judilibre:JURITEXT000007017687:sommaire"
+
+- id: maison-de-poesie
+  nom: {motif: '\bmaison de poesie\b', seul: true}
+  citation: "Cass. civ. 3e, 31 octobre 2012, Maison de Poésie"
+  juridiction: Cour de cassation
+  formation: troisième chambre civile
+  date: 2012-10-31
+  reference: "11-16.304"
+  matieres: [droit_des_biens]
+  statut: actuel
+  portee: "Le propriétaire peut consentir un droit réel de jouissance spéciale de son bien, distinct de l'usufruit et du droit d'usage et d'habitation : la liste des droits réels n'est pas fermée."
+  index: "judilibre:JURITEXT000026573047:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Personnes et famille
+# ---------------------------------------------------------------------------------------------------------------
+- id: gpa-1991
+  nom: null
+  citation: "Cass. ass. plén., 31 mai 1991"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1991-05-31
+  reference: "90-20.105"
+  matieres: [droit_de_la_famille, droit_civil]
+  statut: consacre
+  portee: "La convention de gestation pour autrui est nulle (indisponibilité du corps humain et de l'état des personnes) ; règle reprise par l'article 16-7 du Code civil (loi du 29 juillet 1994)."
+  index: "judilibre:JURITEXT000007026778:sommaire"
+
+- id: mennesson-2019
+  nom: {motif: '\bmennesson\b', seul: true}
+  citation: "Cass. ass. plén., 4 octobre 2019, Mennesson"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2019-10-04
+  reference: "10-19.053"
+  matieres: [droit_de_la_famille]
+  statut: nuance
+  portee: "Transcription de l'acte de naissance étranger d'enfants nés d'une gestation pour autrui, mère d'intention comprise, dans cette affaire ; depuis la loi du 2 août 2021, l'article 47 du Code civil fait apprécier la réalité des faits au regard de la loi française."
+  index: "judilibre:JURITEXT000039213459:sommaire"
+
+- id: transsexualisme-1992
+  nom: null
+  citation: "Cass. ass. plén., 11 décembre 1992"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 1992-12-11
+  reference: "91-11.900"
+  matieres: [droit_civil, droit_de_la_famille]
+  statut: nuance
+  portee: "Admission du changement de la mention du sexe à l'état civil, sous des conditions médicales ; la loi du 18 novembre 2016 a remplacé ces conditions (articles 61-5 à 61-8 du Code civil, sans exigence de traitement médical)."
+  index: "judilibre:JURITEXT000007030251:sommaire"
+
+- id: mariage-2007
+  nom: null
+  citation: "Cass. civ. 1re, 13 mars 2007"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 2007-03-13
+  reference: "05-16.627"
+  matieres: [droit_de_la_famille]
+  statut: abandonne
+  portee: "N'est plus le droit positif : la loi du 17 mai 2013 a ouvert le mariage aux personnes de même sexe (article 143 du Code civil)."
+  index: "judilibre:JURITEXT000017826334:sommaire"
+
+- id: mariage-2013
+  nom: null
+  citation: "Cass. civ. 1re, 4 décembre 2013"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 2013-12-04
+  reference: "12-26.066"
+  matieres: [droit_de_la_famille, introduction_au_droit]
+  statut: actuel
+  portee: "Le juge écarte, au cas par cas, la nullité d'un mariage prévue par la loi (beau-père et belle-fille) quand elle porte une atteinte disproportionnée au droit au respect de la vie privée et familiale : contrôle de proportionnalité."
+  index: "judilibre:JURITEXT000028290997:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Introduction au droit : sources, hierarchie des normes, jurisprudence
+# ---------------------------------------------------------------------------------------------------------------
+- id: jacques-vabre
+  nom: {motif: '\bjacques vabre\b|\bcafes jacques vabre\b', seul: true}
+  citation: "Cass. ch. mixte, 24 mai 1975, Société des cafés Jacques Vabre"
+  juridiction: Cour de cassation
+  formation: chambre mixte
+  date: 1975-05-24
+  reference: "73-13.556"
+  matieres: [introduction_au_droit, droit_europeen]
+  statut: actuel
+  portee: "Le juge judiciaire écarte une loi, même postérieure, contraire au traité (article 55 de la Constitution) ; toujours appliqué."
+  index: "judilibre:JURITEXT000006994625:sommaire"
+
+- id: fraisse
+  nom: {motif: '\bfraisse\b', seul: false}
+  citation: "Cass. ass. plén., 2 juin 2000, Fraisse"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2000-06-02
+  reference: "99-60.274"
+  matieres: [introduction_au_droit, droit_constitutionnel]
+  statut: actuel
+  portee: "La suprématie conférée aux engagements internationaux ne s'applique pas, dans l'ordre interne, aux dispositions de valeur constitutionnelle ; solution alignée sur l'arrêt Sarran."
+  index: "judilibre:JURITEXT000007040420:sommaire"
+
+- id: revirement-2001
+  nom: null
+  citation: "Cass. civ. 1re, 9 octobre 2001"
+  juridiction: Cour de cassation
+  formation: première chambre civile
+  date: 2001-10-09
+  reference: "00-14.564"
+  matieres: [introduction_au_droit]
+  statut: nuance
+  portee: "Un revirement s'applique aux faits antérieurs : nul n'a de droit acquis à une jurisprudence figée. Tempéré depuis 2004 et 2006 par la modulation dans le temps de certains revirements."
+  index: "judilibre:JURITEXT000007045569:sommaire"
+
+- id: revirement-2006
+  nom: null
+  citation: "Cass. ass. plén., 21 décembre 2006"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2006-12-21
+  reference: "00-20.493"
+  matieres: [introduction_au_droit]
+  statut: actuel
+  portee: "Un revirement n'est pas appliqué à l'instance en cours lorsqu'il priverait une partie d'un procès équitable (article 6 de la Convention européenne des droits de l'homme) : modulation dans le temps de la jurisprudence."
+  index: "judilibre:JURITEXT000007055080:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit penal general
+# ---------------------------------------------------------------------------------------------------------------
+- id: menard
+  nom: {motif: '\bmenard\b|\bbon juge magnaud\b|\bmagnaud\b', seul: false}
+  citation: "Trib. corr. Château-Thierry, 4 mars 1898, Ménard"
+  juridiction: Tribunal correctionnel de Château-Thierry
+  formation: null
+  date: 1898-03-04
+  reference: null
+  matieres: [droit_penal]
+  statut: consacre
+  portee: "Premier jugement célèbre à relaxer l'auteur d'un vol commis pour échapper à un péril (la faim) ; l'état de nécessité, admis ensuite par la jurisprudence, figure à l'article 122-7 du Code pénal depuis 1994."
+  fiche:
+    faits: "Une jeune mère sans ressources, qui n'a pas mangé depuis plusieurs jours et doit nourrir son enfant, vole un pain chez un boulanger. Elle est poursuivie pour vol devant le tribunal correctionnel de Château-Thierry, présidé par le juge Magnaud."
+    question: "La personne qui commet une infraction pour échapper à un danger grave et actuel, ici la faim, peut-elle être déclarée pénalement responsable ?"
+    solution: "Le tribunal la relaxe, en relevant que la faim peut enlever à l'être humain une partie de son libre arbitre et que l'auteur a agi sous l'empire d'une nécessité. La relaxe a été confirmée en appel, sur un autre motif."
+    apport: "Jugement symbolique, souvent cité comme l'origine de la reconnaissance de l'état de nécessité comme cause d'irresponsabilité pénale, que le Code pénal de 1810 ne prévoyait pas."
+    portee: "L'état de nécessité est aujourd'hui prévu par l'article 122-7 du Code pénal : n'est pas pénalement responsable la personne qui, face à un danger actuel ou imminent qui menace elle-même, autrui ou un bien, accomplit un acte nécessaire à la sauvegarde de la personne ou du bien, sauf disproportion entre les moyens employés et la gravité de la menace. Jugement de première instance : sa motivation n'a pas valeur de principe."
+
+- id: laboube
+  nom: {motif: '\blaboube\b', seul: true}
+  citation: "Cass. crim., 13 décembre 1956, Laboube"
+  juridiction: Cour de cassation
+  formation: chambre criminelle
+  date: 1956-12-13
+  reference: null
+  matieres: [droit_penal, procedure_penale]
+  statut: consacre
+  portee: "Toute infraction suppose que son auteur ait agi avec intelligence et volonté ; le discernement du mineur, exigé par cet arrêt, est aujourd'hui prévu par l'article 122-8 du Code pénal et l'article L. 11-1 du Code de la justice pénale des mineurs."
+  fiche:
+    faits: "Un enfant de dix ans blesse involontairement un camarade en jouant. Il est poursuivi pour blessures involontaires devant le tribunal pour enfants, qui prononce contre lui une mesure éducative."
+    question: "Un mineur peut-il être déclaré coupable d'une infraction, même non intentionnelle, sans qu'on recherche s'il a compris et voulu son acte ?"
+    solution: "Non. La chambre criminelle casse : toute infraction, même non intentionnelle, suppose que son auteur ait agi avec intelligence et volonté. Les juges devaient rechercher si l'enfant avait compris et voulu l'acte qui lui était reproché."
+    apport: "Le discernement, c'est-à-dire l'aptitude à comprendre et à vouloir, est une condition de la responsabilité pénale de tout auteur d'infraction, y compris d'une infraction d'imprudence : un très jeune enfant ne peut être pénalement responsable."
+    portee: "Consacré par la loi du 9 septembre 2002 (article 122-8 du Code pénal : les mineurs capables de discernement sont pénalement responsables), puis par le Code de la justice pénale des mineurs, en vigueur depuis le 30 septembre 2021, dont l'article L. 11-1 présume non capables de discernement les mineurs de moins de treize ans."
+
+- id: lacour
+  nom: {motif: '\blacour\b', seul: false}
+  citation: "Cass. crim., 25 octobre 1962, Lacour"
+  juridiction: Cour de cassation
+  formation: chambre criminelle
+  date: 1962-10-25
+  reference: null
+  matieres: [droit_penal]
+  statut: nuance
+  portee: "La complicité suppose un fait principal punissable (criminalité d'emprunt) : l'instigateur d'un crime jamais tenté n'est pas complice ; le législateur a depuis créé le délit autonome de mandat criminel (article 221-5-1 du Code pénal, loi du 9 mars 2004)."
+  fiche:
+    faits: "Un homme remet de l'argent à un tiers pour qu'il tue une personne. Le tiers accepte l'argent mais ne passe jamais à l'acte et ne commence aucune exécution du meurtre. L'instigateur est poursuivi comme complice de tentative d'assassinat."
+    question: "Celui qui provoque à commettre un crime peut-il être puni comme complice quand l'auteur sollicité n'a même pas tenté de le commettre ?"
+    solution: "Non. La complicité n'est punissable que s'il existe un fait principal punissable. Faute de tentative, c'est-à-dire de commencement d'exécution par l'auteur, l'instigateur ne peut être poursuivi comme complice."
+    apport: "Illustration de la criminalité d'emprunt : le complice emprunte la criminalité de l'auteur principal (aujourd'hui article 121-7 du Code pénal). Sans infraction principale, consommée ou tentée, il n'y a pas de complicité."
+    portee: "Le principe demeure. Pour combler la lacune révélée par l'arrêt, la loi du 9 mars 2004 a créé le délit de mandat criminel (article 221-5-1 du Code pénal), qui punit le fait de faire à une personne des offres ou promesses pour qu'elle commette un assassinat ou un empoisonnement, lorsque ce crime n'a été ni commis ni tenté."
+
+- id: perdereau
+  nom: {motif: '\bperdereau\b', seul: true}
+  citation: "Cass. crim., 16 janvier 1986, Perdereau"
+  juridiction: Cour de cassation
+  formation: chambre criminelle
+  date: 1986-01-16
+  reference: "85-95.461"
+  matieres: [droit_penal]
+  statut: actuel
+  portee: "Infraction impossible : les violences portées avec l'intention de tuer une personne déjà morte constituent une tentative d'homicide volontaire punissable ; toujours cité."
+  index: "cass_criminelle:JURITEXT000007053746:sommaire"
+
+- id: enfant-a-naitre-2001
+  nom: null
+  citation: "Cass. ass. plén., 29 juin 2001"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2001-06-29
+  reference: "99-85.973"
+  matieres: [droit_penal]
+  statut: actuel
+  portee: "L'interprétation stricte de la loi pénale s'oppose à ce que l'homicide involontaire soit étendu à l'enfant à naître ; toujours appliqué."
+  index: "judilibre:JURITEXT000007046781:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Procedure civile et penale
+# ---------------------------------------------------------------------------------------------------------------
+- id: cesareo
+  nom: {motif: '\bcesareo\b', seul: true}
+  citation: "Cass. ass. plén., 7 juillet 2006, Cesareo"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2006-07-07
+  reference: "04-10.672"
+  matieres: [procedure_civile]
+  statut: actuel
+  portee: "Concentration des moyens : le demandeur doit présenter dès la première instance tous les moyens propres à fonder sa demande ; une nouvelle demande sur un autre fondement se heurte à l'autorité de la chose jugée."
+  index: "judilibre:JURITEXT000007054984:sommaire"
+
+- id: dauvin
+  nom: {motif: '\bdauvin\b', seul: true}
+  citation: "Cass. ass. plén., 21 décembre 2007, Dauvin"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2007-12-21
+  reference: "06-11.343"
+  matieres: [procedure_civile]
+  statut: actuel
+  portee: "L'article 12 du Code de procédure civile n'oblige pas le juge, sauf règles particulières, à changer la dénomination ou le fondement juridique des demandes."
+  index: "judilibre:JURITEXT000017739989:sommaire"
+
+- id: garde-a-vue-2011
+  nom: null
+  citation: "Cass. ass. plén., 15 avril 2011"
+  juridiction: Cour de cassation
+  formation: Assemblée plénière
+  date: 2011-04-15
+  reference: "10-17.049"
+  matieres: [procedure_penale]
+  statut: consacre
+  portee: "Les États sont tenus de respecter les décisions de la Cour européenne des droits de l'homme : droit à l'assistance effective d'un avocat en garde à vue, appliqué immédiatement ; régime revu par la loi du 14 avril 2011."
+  index: "judilibre:JURITEXT000023908698:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit administratif (Conseil d'Etat, Tribunal des conflits)
+# ---------------------------------------------------------------------------------------------------------------
+- id: blanco
+  nom: {motif: '\bblanco\b', seul: false}
+  citation: "TC, 8 février 1873, Blanco"
+  juridiction: Tribunal des conflits
+  formation: null
+  date: 1873-02-08
+  reference: "00012"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: actuel
+  portee: "La responsabilité de l'État pour les dommages causés par ses services publics n'est pas régie par le Code civil ; elle a ses règles propres et relève du juge administratif. Toujours le fondement de l'autonomie du droit administratif."
+  index: "conseil_etat:CETATEXT000007605886:sommaire"
+
+- id: pelletier
+  nom: {motif: '\bpelletier\b', seul: false}
+  citation: "TC, 30 juillet 1873, Pelletier"
+  juridiction: Tribunal des conflits
+  formation: null
+  date: 1873-07-30
+  reference: "00035"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Distinction de la faute personnelle de l'agent, qui relève du juge judiciaire, et de la faute de service ; toujours appliquée."
+  index: "conseil_etat:CETATEXT000007607581:sommaire"
+
+- id: prince-napoleon
+  nom: {motif: '\bprince napoleon\b', seul: true}
+  citation: "CE, 19 février 1875, Prince Napoléon"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1875-02-19
+  reference: "46707"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: actuel
+  portee: "Abandon du critère du mobile politique pour définir l'acte de gouvernement ; la catégorie des actes de gouvernement, insusceptibles de recours, subsiste (rapports avec le Parlement, relations internationales)."
+  index: "conseil_etat:CETATEXT000007633029:sommaire"
+
+- id: cadot
+  nom: {motif: '\bcadot\b', seul: true}
+  citation: "CE, 13 décembre 1889, Cadot"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1889-12-13
+  reference: "66145"
+  matieres: [contentieux_administratif, droit_administratif]
+  statut: actuel
+  portee: "Fin de la théorie du ministre-juge : le Conseil d'État devient juge de droit commun du contentieux administratif."
+  index: "conseil_etat:CETATEXT000007632875:sommaire"
+
+- id: cames
+  nom: {motif: '\bcames\b', seul: true}
+  citation: "CE, 21 juin 1895, Cames"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1895-06-21
+  reference: "82490"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Responsabilité sans faute de l'administration envers ses agents pour risque professionnel ; premier cas de responsabilité pour risque."
+  index: "conseil_etat:CETATEXT000007633281:sommaire"
+
+- id: casanova
+  nom: {motif: '\bcasanova\b', seul: false}
+  citation: "CE, 29 mars 1901, Casanova"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1901-03-29
+  reference: "94580"
+  matieres: [contentieux_administratif]
+  statut: actuel
+  portee: "Le contribuable communal a intérêt à agir contre une délibération qui engage les finances de la commune : définition large de l'intérêt à agir en excès de pouvoir."
+  index: "conseil_etat:CETATEXT000007635142:sommaire"
+
+- id: terrier
+  nom: {motif: '\bterrier\b', seul: false}
+  citation: "CE, 6 février 1903, Terrier"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1903-02-06
+  reference: "07496"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Le service public, critère de la compétence administrative, s'étend aux services publics locaux ; nuancé ensuite par la gestion privée (Granits porphyroïdes, 1912)."
+  index: "conseil_etat:CETATEXT000007634922:sommaire"
+
+- id: tramways
+  nom: {motif: '\b(?:compagnie generale (?:francaise )?des )?tramways\b', seul: false}
+  citation: "CE, 11 mars 1910, Compagnie générale française des tramways"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1910-03-11
+  reference: "16178"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Pouvoir de modification unilatérale du contrat administratif par l'administration, avec droit du cocontractant à l'équilibre financier ; repris par le Code de la commande publique (article L. 6)."
+  index: "conseil_etat:CETATEXT000007635472:sommaire"
+
+- id: anguet
+  nom: {motif: '\banguet\b', seul: true}
+  citation: "CE, 3 février 1911, Anguet"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1911-02-03
+  reference: "34922"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Cumul de fautes : la victime peut agir contre l'administration lorsque la faute de service a concouru avec la faute personnelle de l'agent."
+  index: "conseil_etat:CETATEXT000007633783:sommaire"
+
+- id: granits-porphyroides
+  nom: {motif: '\bgranits porphyroides\b', seul: true}
+  citation: "CE, 31 juillet 1912, Société des granits porphyroïdes des Vosges"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1912-07-31
+  reference: "30701"
+  matieres: [droit_administratif]
+  statut: nuance
+  portee: "Le contrat passé selon les règles du droit privé relève du juge judiciaire : origine du critère de la clause exorbitante, redéfini par le Tribunal des conflits en 2014."
+  index: "conseil_etat:CETATEXT000007634187:sommaire"
+
+- id: gomel
+  nom: {motif: '\bgomel\b', seul: true}
+  citation: "CE, 4 avril 1914, Gomel"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1914-04-04
+  reference: "55125"
+  matieres: [contentieux_administratif, droit_administratif]
+  statut: actuel
+  portee: "Le juge de l'excès de pouvoir contrôle la qualification juridique des faits ; toujours appliqué."
+  index: "conseil_etat:CETATEXT000007634222:sommaire"
+
+- id: camino
+  nom: {motif: '\bcamino\b', seul: true}
+  citation: "CE, 14 janvier 1916, Camino"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1916-01-14
+  reference: "59619"
+  matieres: [contentieux_administratif, droit_administratif]
+  statut: actuel
+  portee: "Le juge de l'excès de pouvoir contrôle l'exactitude matérielle des faits qui fondent la décision ; toujours appliqué."
+  index: "conseil_etat:CETATEXT000007634736:sommaire"
+
+- id: gaz-de-bordeaux
+  nom: {motif: '\bgaz de bordeaux\b', seul: true}
+  citation: "CE, 30 mars 1916, Compagnie générale d'éclairage de Bordeaux (Gaz de Bordeaux)"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1916-03-30
+  reference: "59928"
+  matieres: [droit_administratif]
+  statut: consacre
+  portee: "Théorie de l'imprévision dans les contrats administratifs : indemnité due au cocontractant qui doit poursuivre l'exécution malgré un bouleversement imprévisible ; reprise par l'article L. 6 du Code de la commande publique."
+  index: "conseil_etat:CETATEXT000007629465:sommaire"
+
+- id: heyries
+  nom: {motif: '\bheyries\b', seul: true}
+  citation: "CE, 28 juin 1918, Heyriès"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1918-06-28
+  reference: "63412"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Théorie des circonstances exceptionnelles : en période de guerre, l'administration peut prendre des mesures habituellement illégales pour assurer la continuité des services publics."
+  index: "conseil_etat:CETATEXT000007637204:sommaire"
+
+- id: regnault-desroziers
+  nom: {motif: '\bregnault[- ]desroziers\b', seul: true}
+  citation: "CE, 28 mars 1919, Regnault-Desroziers"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1919-03-28
+  reference: "62273"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Responsabilité sans faute de l'État pour les risques exceptionnels de voisinage créés par une activité dangereuse (explosion d'un dépôt de munitions)."
+  index: "conseil_etat:CETATEXT000007637235:sommaire"
+
+- id: labonne
+  nom: {motif: '\blabonne\b', seul: false}
+  citation: "CE, 8 août 1919, Labonne"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1919-08-08
+  reference: "56377"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Le chef de l'État (aujourd'hui le Premier ministre) détient un pouvoir de police générale sur l'ensemble du territoire, même sans texte."
+  index: "conseil_etat:CETATEXT000007635800:sommaire"
+
+- id: bac-d-eloka
+  nom: {motif: "\\bbac d'eloka\\b|\\bsociete commerciale de l'ouest africain\\b", seul: true}
+  citation: "TC, 22 janvier 1921, Société commerciale de l'Ouest africain (Bac d'Eloka)"
+  juridiction: Tribunal des conflits
+  formation: null
+  date: 1921-01-22
+  reference: "00706"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Reconnaissance du service public industriel et commercial, géré comme une entreprise privée et relevant en principe du juge judiciaire."
+  index: "conseil_etat:CETATEXT000007607592:sommaire"
+
+- id: septfonds
+  nom: {motif: '\bseptfonds\b', seul: true}
+  citation: "TC, 16 juin 1923, Septfonds"
+  juridiction: Tribunal des conflits
+  formation: null
+  date: 1923-06-16
+  reference: "00732"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: nuance
+  portee: "Le juge judiciaire peut interpréter un acte réglementaire mais non en apprécier la légalité, sauf exceptions ; nuancé par le Tribunal des conflits en 2011 (SCEA du Chéneau) et en matière pénale par l'article 111-5 du Code pénal."
+  index: "conseil_etat:CETATEXT000007604199:sommaire"
+
+- id: couiteas
+  nom: {motif: '\bcouiteas\b', seul: true}
+  citation: "CE, 30 novembre 1923, Couitéas"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1923-11-30
+  reference: "38284"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Responsabilité sans faute pour rupture de l'égalité devant les charges publiques, quand l'administration refuse légalement de prêter le concours de la force publique à l'exécution d'un jugement."
+  index: "conseil_etat:CETATEXT000007637236:sommaire"
+
+- id: benjamin
+  nom: {motif: '\bbenjamin\b', seul: false}
+  citation: "CE, 19 mai 1933, Benjamin"
+  juridiction: Conseil d'État
+  formation: null
+  date: 1933-05-19
+  reference: "17413"
+  matieres: [droit_administratif, libertes_fondamentales]
+  statut: actuel
+  portee: "Contrôle de la nécessité et de la proportionnalité des mesures de police qui restreignent une liberté ; toujours le fondement du contrôle de proportionnalité des mesures de police."
+  index: "conseil_etat:CETATEXT000007636694:sommaire"
+
+- id: jamart
+  nom: {motif: '\bjamart\b', seul: true}
+  citation: "CE, sect., 7 février 1936, Jamart"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1936-02-07
+  reference: "43321"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Le chef de service, même sans texte, peut prendre les mesures nécessaires au bon fonctionnement de l'administration placée sous son autorité."
+  index: "conseil_etat:CETATEXT000007637062:sommaire"
+
+- id: la-fleurette
+  nom: {motif: '\bla fleurette\b', seul: true}
+  citation: "CE, ass., 14 janvier 1938, Société des produits laitiers La Fleurette"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1938-01-14
+  reference: "51704"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Responsabilité sans faute de l'État du fait des lois, quand une loi impose à une personne une charge spéciale et anormale que le législateur n'a pas entendu exclure."
+  index: "conseil_etat:CETATEXT000007637158:sommaire"
+
+- id: lecomte
+  nom: {motif: '\blecomte\b', seul: false}
+  citation: "CE, ass., 24 juin 1949, Consorts Lecomte"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1949-06-24
+  reference: "87335"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Responsabilité sans faute de l'administration envers les tiers victimes de l'usage d'armes dangereuses par la police."
+  index: "conseil_etat:CETATEXT000007636475:sommaire"
+
+- id: dame-lamotte
+  nom: {motif: '\blamotte\b', seul: false}
+  citation: "CE, ass., 17 février 1950, Ministre de l'agriculture c/ Dame Lamotte"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1950-02-17
+  reference: "86949"
+  matieres: [contentieux_administratif, droit_administratif]
+  statut: actuel
+  portee: "Le recours pour excès de pouvoir est ouvert, même sans texte, contre tout acte administratif : principe général du droit, qu'une loi ne peut écarter que par une disposition expresse."
+  index: "conseil_etat:CETATEXT000007636577:sommaire"
+
+- id: dehaene
+  nom: {motif: '\bdehaene\b', seul: true}
+  citation: "CE, ass., 7 juillet 1950, Dehaene"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1950-07-07
+  reference: "01645"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Le droit de grève des agents publics peut être limité par l'administration, en l'absence de loi, pour éviter un usage abusif ou contraire à l'ordre public."
+  index: "conseil_etat:CETATEXT000007636579:sommaire"
+
+- id: barel
+  nom: {motif: '\bbarel\b', seul: true}
+  citation: "CE, ass., 28 mai 1954, Barel"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1954-05-28
+  reference: "28238"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "L'égal accès aux emplois publics interdit d'écarter un candidat en raison de ses opinions politiques ; le juge peut exiger de l'administration les motifs de sa décision."
+  index: "conseil_etat:CETATEXT000007637425:sommaire"
+
+- id: epoux-bertin
+  nom: {motif: '\bbertin\b', seul: false}
+  citation: "CE, sect., 20 avril 1956, Époux Bertin"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1956-04-20
+  reference: "98637"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Est administratif le contrat qui confie au cocontractant l'exécution même du service public."
+  index: "conseil_etat:CETATEXT000007636583:sommaire"
+
+- id: le-beton
+  nom: {motif: '\bsociete le beton\b', seul: true}
+  citation: "CE, sect., 19 octobre 1956, Société Le Béton"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1956-10-19
+  reference: "20180"
+  matieres: [droit_administratif, droit_administratif_des_biens]
+  statut: consacre
+  portee: "Critères du domaine public (affectation au public ou à un service public, aménagement spécial) ; le Code général de la propriété des personnes publiques (2006) retient désormais un aménagement indispensable."
+  index: "conseil_etat:CETATEXT000007636499:sommaire"
+
+- id: ingenieurs-conseils
+  nom: {motif: '\bsyndicat general des ingenieurs[- ]conseils\b', seul: true}
+  citation: "CE, sect., 26 juin 1959, Syndicat général des ingénieurs-conseils"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1959-06-26
+  reference: "92099"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Les principes généraux du droit s'imposent à toute autorité réglementaire, même en l'absence de loi : valeur supra-décrétale et infra-législative."
+  index: "conseil_etat:CETATEXT000007636877:sommaire"
+
+- id: lutetia
+  nom: {motif: '\blutetia\b', seul: true}
+  citation: "CE, sect., 18 décembre 1959, Société Les films Lutétia"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1959-12-18
+  reference: "36385"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Le maire peut interdire la projection d'un film en raison de circonstances locales particulières : la moralité publique peut justifier une mesure de police."
+  index: "conseil_etat:CETATEXT000007637342:sommaire"
+
+- id: canal
+  nom: {motif: '\barret canal\b|\bcanal,? robin\b', seul: true}
+  citation: "CE, ass., 19 octobre 1962, Canal, Robin et Godot"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1962-10-19
+  reference: "58502"
+  matieres: [droit_administratif, droit_constitutionnel]
+  statut: actuel
+  portee: "Une ordonnance prise sur habilitation référendaire reste un acte administratif soumis au juge ; annulation d'une juridiction d'exception méconnaissant des principes généraux du droit pénal."
+  index: "conseil_etat:CETATEXT000007636272:sommaire"
+
+- id: semoules
+  nom: {motif: '\bfabricants de semoules\b|\bsemoules\b', seul: true}
+  citation: "CE, sect., 1er mars 1968, Syndicat général des fabricants de semoules de France"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 1968-03-01
+  reference: "62814"
+  matieres: [droit_administratif, droit_europeen, introduction_au_droit]
+  statut: abandonne
+  portee: "Abandonné par l'arrêt Nicolo (1989) : le juge administratif refusait d'écarter une loi postérieure contraire à un traité ; il le fait désormais."
+  index: "conseil_etat:CETATEXT000007633957:sommaire"
+
+- id: ville-nouvelle-est
+  nom: {motif: '\bville nouvelle[- ]est\b', seul: true}
+  citation: "CE, ass., 28 mai 1971, Ville Nouvelle Est"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1971-05-28
+  reference: "78825"
+  matieres: [droit_administratif, contentieux_administratif, droit_administratif_des_biens]
+  statut: actuel
+  portee: "Théorie du bilan : une opération n'est d'utilité publique que si ses atteintes (propriété, coût, inconvénients) ne sont pas excessives au regard de son intérêt."
+  index: "conseil_etat:CETATEXT000007643558:sommaire"
+
+- id: gisti
+  nom: {motif: '\bgisti\b', seul: false}
+  citation: "CE, ass., 8 décembre 1978, GISTI"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1978-12-08
+  reference: "10097"
+  matieres: [droit_administratif, libertes_fondamentales]
+  statut: actuel
+  portee: "Le droit de mener une vie familiale normale, tiré du Préambule de 1946, est un principe général du droit qui s'impose au pouvoir réglementaire."
+  index: "conseil_etat:CETATEXT000007666513:sommaire"
+
+- id: cohn-bendit
+  nom: {motif: '\bcohn[- ]bendit\b', seul: true}
+  citation: "CE, ass., 22 décembre 1978, Ministre de l'intérieur c/ Cohn-Bendit"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1978-12-22
+  reference: "11604"
+  matieres: [droit_administratif, droit_europeen]
+  statut: abandonne
+  portee: "Abandonné par l'arrêt Dame Perreux (2009) : le Conseil d'État refusait à un particulier d'invoquer une directive non transposée contre un acte administratif individuel ; c'est désormais possible pour une disposition précise et inconditionnelle, une fois le délai de transposition expiré."
+  index: "conseil_etat:CETATEXT000007666522:sommaire"
+
+- id: alitalia
+  nom: {motif: '\balitalia\b', seul: true}
+  citation: "CE, ass., 3 février 1989, Compagnie Alitalia"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1989-02-03
+  reference: "74052"
+  matieres: [droit_administratif, droit_europeen]
+  statut: consacre
+  portee: "L'administration doit abroger un règlement illégal, notamment contraire aux objectifs d'une directive ; obligation reprise par l'article L. 243-2 du Code des relations entre le public et l'administration."
+  index: "conseil_etat:CETATEXT000007754163:sommaire"
+
+- id: nicolo
+  nom: {motif: '\bnicolo\b', seul: true}
+  citation: "CE, ass., 20 octobre 1989, Nicolo"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1989-10-20
+  reference: "108243"
+  matieres: [droit_administratif, droit_europeen, introduction_au_droit, droit_constitutionnel]
+  statut: actuel
+  portee: "Le juge administratif contrôle la compatibilité d'une loi, même postérieure, avec un traité (article 55 de la Constitution) et l'écarte si elle lui est contraire ; toujours appliqué."
+  index: "conseil_etat:CETATEXT000007742504:sommaire"
+
+- id: epoux-v
+  nom: {motif: '\bepoux v\b', seul: false}
+  citation: "CE, ass., 10 avril 1992, Époux V."
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1992-04-10
+  reference: "79027"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Abandon de l'exigence d'une faute lourde : une faute médicale simple engage la responsabilité du service public hospitalier ; la loi du 4 mars 2002 fonde aujourd'hui cette responsabilité sur la faute (article L. 1142-1 du Code de la santé publique)."
+  index: "conseil_etat:CETATEXT000007813790:sommaire"
+
+- id: bianchi
+  nom: {motif: '\bbianchi\b', seul: false}
+  citation: "CE, ass., 9 avril 1993, Bianchi"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1993-04-09
+  reference: "69336"
+  matieres: [droit_administratif]
+  statut: nuance
+  portee: "Responsabilité sans faute de l'hôpital pour un risque thérapeutique exceptionnel aux conséquences d'une extrême gravité ; depuis la loi du 4 mars 2002, l'aléa thérapeutique est indemnisé au titre de la solidarité nationale (article L. 1142-1, II, du Code de la santé publique)."
+  index: "conseil_etat:CETATEXT000007834775:sommaire"
+
+- id: hardouin
+  nom: {motif: '\bhardouin\b', seul: false}
+  citation: "CE, ass., 17 février 1995, Hardouin"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1995-02-17
+  reference: "107766"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: nuance
+  portee: "Une punition infligée à un militaire n'est plus une mesure d'ordre intérieur insusceptible de recours, compte tenu de ses effets ; critères précisés en 2007 (arrêts Boussouar, Planchenault, Payet)."
+  index: "conseil_etat:CETATEXT000007869052:sommaire"
+
+- id: marie
+  nom: {motif: '\bhardouin et marie\b|\barret marie\b', seul: false}
+  citation: "CE, ass., 17 février 1995, Marie"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1995-02-17
+  reference: "97754"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: nuance
+  portee: "Une sanction de cellule de punition infligée à un détenu peut être contestée par la voie de l'excès de pouvoir : recul des mesures d'ordre intérieur, précisé en 2007."
+  index: "conseil_etat:CETATEXT000007840249:sommaire"
+
+- id: morsang
+  nom: {motif: '\bmorsang\b', seul: true}
+  citation: "CE, ass., 27 octobre 1995, Commune de Morsang-sur-Orge"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1995-10-27
+  reference: "136727"
+  matieres: [droit_administratif, libertes_fondamentales]
+  statut: actuel
+  portee: "Le respect de la dignité de la personne humaine est une composante de l'ordre public ; le maire peut interdire une attraction qui y porte atteinte (lancer de nains), même sans circonstances locales."
+  index: "conseil_etat:CETATEXT000007877723:sommaire"
+
+- id: kone
+  nom: {motif: '\bkone\b', seul: false}
+  citation: "CE, ass., 3 juillet 1996, Koné"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1996-07-03
+  reference: "169219"
+  matieres: [droit_administratif, droit_constitutionnel]
+  statut: actuel
+  portee: "Le Conseil d'État dégage lui-même un principe fondamental reconnu par les lois de la République : l'État doit refuser l'extradition demandée dans un but politique."
+  index: "conseil_etat:CETATEXT000007939580:sommaire"
+
+- id: sarran
+  nom: {motif: '\bsarran\b', seul: true}
+  citation: "CE, ass., 30 octobre 1998, Sarran, Levacher et autres"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 1998-10-30
+  reference: "200286"
+  matieres: [droit_administratif, droit_constitutionnel, introduction_au_droit]
+  statut: actuel
+  portee: "Dans l'ordre interne, la Constitution prime les engagements internationaux : la suprématie de l'article 55 ne s'applique pas aux dispositions de valeur constitutionnelle."
+  index: "conseil_etat:CETATEXT000008008495:sommaire"
+
+- id: ternon
+  nom: {motif: '\bternon\b', seul: true}
+  citation: "CE, ass., 26 octobre 2001, Ternon"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2001-10-26
+  reference: "197018"
+  matieres: [droit_administratif]
+  statut: consacre
+  portee: "Une décision individuelle explicite créatrice de droits ne peut être retirée, si elle est illégale, que dans les quatre mois de son édiction ; règle reprise par l'article L. 242-1 du Code des relations entre le public et l'administration."
+  index: "conseil_etat:CETATEXT000008072768:sommaire"
+
+- id: kpmg
+  nom: {motif: '\bkpmg\b', seul: true}
+  citation: "CE, ass., 24 mars 2006, Société KPMG"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2006-03-24
+  reference: "288460"
+  matieres: [droit_administratif]
+  statut: consacre
+  portee: "Le principe de sécurité juridique impose à l'autorité réglementaire d'édicter des mesures transitoires quand une règle nouvelle porte une atteinte excessive aux situations en cours ; repris par l'article L. 221-5 du Code des relations entre le public et l'administration."
+  index: "conseil_etat:CETATEXT000008241143:sommaire"
+
+- id: aprei
+  nom: {motif: '\baprei\b', seul: true}
+  citation: "CE, sect., 22 février 2007, APREI"
+  juridiction: Conseil d'État
+  formation: Section
+  date: 2007-02-22
+  reference: "264541"
+  matieres: [droit_administratif]
+  statut: actuel
+  portee: "Critères de la personne privée chargée d'une mission de service public (intérêt général, contrôle de l'administration, prérogatives de puissance publique ou, à défaut, indice d'une volonté de l'administration)."
+  index: "conseil_etat:CETATEXT000018259406:sommaire"
+
+- id: arcelor
+  nom: {motif: '\barcelor\b', seul: true}
+  citation: "CE, ass., 8 février 2007, Société Arcelor Atlantique et Lorraine"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2007-02-08
+  reference: "287110"
+  matieres: [droit_administratif, droit_europeen, droit_constitutionnel]
+  statut: actuel
+  portee: "Contrôle de constitutionnalité d'un décret transposant une directive : le juge recherche si le principe constitutionnel invoqué est protégé de façon équivalente par le droit de l'Union, et saisit au besoin la Cour de justice."
+  index: "conseil_etat:CETATEXT000018259414:sommaire"
+
+- id: tropic-travaux
+  nom: {motif: '\btropic\b', seul: true}
+  citation: "CE, ass., 16 juillet 2007, Société Tropic Travaux Signalisation"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2007-07-16
+  reference: "291545"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: abandonne
+  portee: "Recours de plein contentieux des concurrents évincés contre le contrat : remplacé par l'arrêt Département de Tarn-et-Garonne (2014), qui ouvre ce recours à tout tiers lésé."
+  index: "conseil_etat:CETATEXT000018744539:sommaire"
+
+- id: perreux
+  nom: {motif: '\bperreux\b', seul: false}
+  citation: "CE, ass., 30 octobre 2009, Dame Perreux"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2009-10-30
+  reference: "298348"
+  matieres: [droit_administratif, droit_europeen]
+  statut: actuel
+  portee: "Tout justiciable peut se prévaloir, contre un acte administratif même individuel, d'une directive non transposée dans les délais lorsque ses dispositions sont précises et inconditionnelles ; abandon de la jurisprudence Cohn-Bendit."
+  index: "conseil_etat:CETATEXT000021219388:sommaire"
+
+- id: danthony
+  nom: {motif: '\bdanthony\b', seul: true}
+  citation: "CE, ass., 23 décembre 2011, Danthony"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2011-12-23
+  reference: "335033"
+  matieres: [contentieux_administratif, droit_administratif]
+  statut: actuel
+  portee: "Un vice de procédure n'entraîne l'annulation que s'il a pu exercer une influence sur le sens de la décision ou a privé les intéressés d'une garantie."
+  index: "conseil_etat:CETATEXT000025041089:sommaire"
+
+- id: bergoend
+  nom: {motif: '\bbergoend\b', seul: true}
+  citation: "TC, 17 juin 2013, Bergoend c/ Société ERDF Annecy Léman"
+  juridiction: Tribunal des conflits
+  formation: null
+  date: 2013-06-17
+  reference: "C3911"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: actuel
+  portee: "Définition restreinte de la voie de fait : exécution forcée irrégulière ou décision manifestement insusceptible de se rattacher à un pouvoir de l'administration, portant atteinte à la liberté individuelle ou aboutissant à l'extinction d'un droit de propriété."
+  index: "conseil_etat:CETATEXT000027610460:sommaire"
+
+- id: tarn-et-garonne
+  nom: {motif: '\btarn[- ]et[- ]garonne\b', seul: false}
+  citation: "CE, ass., 4 avril 2014, Département de Tarn-et-Garonne"
+  juridiction: Conseil d'État
+  formation: Assemblée
+  date: 2014-04-04
+  reference: "358994"
+  matieres: [droit_administratif, contentieux_administratif]
+  statut: actuel
+  portee: "Tout tiers susceptible d'être lésé de façon suffisamment directe et certaine peut contester la validité d'un contrat administratif devant le juge du contrat ; remplace la jurisprudence Tropic Travaux."
+  index: "conseil_etat:CETATEXT000028823786:sommaire"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit constitutionnel (Conseil constitutionnel)
+# ---------------------------------------------------------------------------------------------------------------
+- id: cc-62-20-dc
+  nom: null
+  citation: "CC, décision n° 62-20 DC du 6 novembre 1962"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1962-11-06
+  reference: "62-20 DC"
+  matieres: [droit_constitutionnel]
+  statut: actuel
+  portee: "Le Conseil constitutionnel ne contrôle pas les lois adoptées par référendum, expression directe de la souveraineté nationale ; confirmé en 1992 pour la loi référendaire autorisant la ratification du traité de Maastricht."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017665198:1"
+
+- id: cc-71-44-dc
+  nom: {motif: '\b16 juillet 1971\b|\bliberte d.association\b.{0,40}\b1971\b', seul: true}
+  citation: "CC, décision n° 71-44 DC du 16 juillet 1971, Liberté d'association"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1971-07-16
+  reference: "71-44 DC"
+  matieres: [droit_constitutionnel, libertes_fondamentales, introduction_au_droit]
+  statut: actuel
+  portee: "Le Conseil contrôle la loi au regard du Préambule de la Constitution et des principes fondamentaux reconnus par les lois de la République (liberté d'association) : naissance du bloc de constitutionnalité."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017665605:1"
+
+- id: cc-74-54-dc
+  nom: {motif: '\bivg\b.{0,40}\b1975\b|\b15 janvier 1975\b', seul: true}
+  citation: "CC, décision n° 74-54 DC du 15 janvier 1975, IVG"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1975-01-15
+  reference: "74-54 DC"
+  matieres: [droit_constitutionnel, introduction_au_droit, droit_europeen]
+  statut: actuel
+  portee: "Le Conseil constitutionnel ne contrôle pas la conformité des lois aux traités (contrôle de conventionnalité) : il revient aux juges ordinaires de le faire (Jacques Vabre, Nicolo)."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017665674:2"
+
+- id: cc-81-132-dc
+  nom: {motif: '\bnationalisations?\b.{0,40}\b1982\b', seul: true}
+  citation: "CC, décision n° 81-132 DC du 16 janvier 1982, Nationalisations"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1982-01-16
+  reference: "81-132 DC"
+  matieres: [droit_constitutionnel, libertes_fondamentales]
+  statut: actuel
+  portee: "Pleine valeur constitutionnelle des principes de la Déclaration de 1789, dont le droit de propriété."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017667343:5"
+
+- id: cc-85-197-dc
+  nom: null
+  citation: "CC, décision n° 85-197 DC du 23 août 1985, Nouvelle-Calédonie"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1985-08-23
+  reference: "85-197 DC"
+  matieres: [droit_constitutionnel]
+  statut: actuel
+  portee: "La loi votée n'exprime la volonté générale que dans le respect de la Constitution."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017667855:10"
+
+- id: cc-86-224-dc
+  nom: {motif: '\bconseil de la concurrence\b.{0,40}\b1987\b', seul: true}
+  citation: "CC, décision n° 86-224 DC du 23 janvier 1987, Conseil de la concurrence"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1987-01-23
+  reference: "86-224 DC"
+  matieres: [droit_constitutionnel, droit_administratif, contentieux_administratif]
+  statut: actuel
+  portee: "Principe fondamental reconnu par les lois de la République : relève en dernier ressort du juge administratif l'annulation ou la réformation des décisions prises par l'administration dans l'exercice de prérogatives de puissance publique."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017667494:5"
+
+- id: cc-92-308-dc
+  nom: {motif: '\bmaastricht\b', seul: true}
+  citation: "CC, décision n° 92-308 DC du 9 avril 1992, Traité sur l'Union européenne (Maastricht I)"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 1992-04-09
+  reference: "92-308 DC"
+  matieres: [droit_constitutionnel, droit_europeen]
+  statut: actuel
+  portee: "Un engagement international qui porte atteinte aux conditions essentielles d'exercice de la souveraineté nationale ne peut être ratifié qu'après révision de la Constitution (article 54)."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017667384:4"
+
+- id: cc-2004-496-dc
+  nom: null
+  citation: "CC, décision n° 2004-496 DC du 10 juin 2004, Loi pour la confiance dans l'économie numérique"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 2004-06-10
+  reference: "2004-496 DC"
+  matieres: [droit_constitutionnel, droit_europeen]
+  statut: nuance
+  portee: "La transposition d'une directive est une exigence constitutionnelle (article 88-1) ; la réserve d'une disposition expresse contraire de la Constitution est devenue, en 2006, celle de l'identité constitutionnelle de la France."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000017664799:3"
+
+- id: cc-2009-595-dc
+  nom: null
+  citation: "CC, décision n° 2009-595 DC du 3 décembre 2009, Loi organique relative à l'application de l'article 61-1"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 2009-12-03
+  reference: "2009-595 DC"
+  matieres: [droit_constitutionnel]
+  statut: actuel
+  portee: "Validation de la loi organique sur la question prioritaire de constitutionnalité : filtrage par le Conseil d'État et la Cour de cassation, conditions de transmission."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000021485099:2"
+
+- id: cc-2010-605-dc
+  nom: null
+  citation: "CC, décision n° 2010-605 DC du 12 mai 2010, Jeux en ligne"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 2010-05-12
+  reference: "2010-605 DC"
+  matieres: [droit_constitutionnel, droit_europeen]
+  statut: actuel
+  portee: "Le caractère prioritaire de la QPC n'empêche pas le juge ordinaire d'écarter une loi contraire au droit de l'Union ni de saisir la Cour de justice : articulation des contrôles de constitutionnalité et de conventionnalité."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000022393072:5"
+
+- id: cc-2010-14-qpc
+  nom: null
+  citation: "CC, décision n° 2010-14/22 QPC du 30 juillet 2010, Garde à vue"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 2010-07-30
+  reference: "2010-14/22 QPC"
+  matieres: [droit_constitutionnel, procedure_penale, libertes_fondamentales]
+  statut: consacre
+  portee: "Le régime de droit commun de la garde à vue, sans assistance effective d'un avocat, est contraire à la Constitution ; effets reportés au 1er juillet 2011 et régime refait par la loi du 14 avril 2011."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000022762681:16"
+
+- id: cc-2018-717-qpc
+  nom: {motif: '\bherrou\b', seul: true}
+  citation: "CC, décision n° 2018-717/718 QPC du 6 juillet 2018, Principe de fraternité"
+  juridiction: Conseil constitutionnel
+  formation: null
+  date: 2018-07-06
+  reference: "2018-717/718 QPC"
+  matieres: [droit_constitutionnel, libertes_fondamentales]
+  statut: actuel
+  portee: "La fraternité est un principe à valeur constitutionnelle, d'où découle la liberté d'aider autrui dans un but humanitaire, sans considération de la régularité de son séjour."
+  index: "decisions_conseil_constitutionnel:CONSTEXT000037434560:4"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Droit de l'Union europeenne (Cour de justice : absente de l'index)
+# ---------------------------------------------------------------------------------------------------------------
+- id: van-gend-en-loos
+  nom: {motif: '\bvan gend\b', seul: true}
+  citation: "CJCE, 5 février 1963, Van Gend en Loos, aff. 26/62"
+  juridiction: Cour de justice des Communautés européennes
+  formation: null
+  date: 1963-02-05
+  reference: "aff. 26/62 (CELEX 61962CJ0026)"
+  matieres: [droit_europeen, introduction_au_droit]
+  statut: actuel
+  portee: "Effet direct du droit de l'Union : les particuliers peuvent invoquer devant le juge national les dispositions claires, précises et inconditionnelles des traités ; toujours appliqué."
+  fiche:
+    faits: "Une entreprise néerlandaise importe un produit chimique d'Allemagne. Après un reclassement douanier, les Pays-Bas lui appliquent un droit de douane plus élevé. Elle soutient que cette hausse viole l'article 12 du traité CEE, qui interdisait aux États membres d'augmenter les droits de douane entre eux. La juridiction néerlandaise saisie interroge la Cour de justice par la voie du renvoi préjudiciel."
+    question: "Un particulier peut-il se prévaloir directement, devant son juge national, d'une disposition du traité qui s'adresse aux États membres ?"
+    solution: "Oui. La Communauté constitue un nouvel ordre juridique de droit international, dont les sujets sont non seulement les États membres mais aussi leurs ressortissants. L'article 12, qui énonce une interdiction claire et inconditionnelle, produit des effets immédiats et engendre des droits individuels que les juridictions internes doivent sauvegarder."
+    apport: "Principe de l'effet direct : le droit communautaire crée des droits au profit des particuliers, invocables devant les juges nationaux, dès lors que la disposition est claire, précise et inconditionnelle."
+    portee: "Toujours le droit positif de l'Union : l'effet direct s'étend aux règlements et, sous conditions, aux directives non transposées dans les délais (en France, CE, ass., 30 octobre 2009, Dame Perreux). Arrêt publié au Recueil de la Cour, consultable sur EUR-Lex (CELEX 61962CJ0026)."
+
+- id: costa
+  nom: {motif: '\bcosta\b', seul: false}
+  citation: "CJCE, 15 juillet 1964, Costa c/ ENEL, aff. 6/64"
+  juridiction: Cour de justice des Communautés européennes
+  formation: null
+  date: 1964-07-15
+  reference: "aff. 6/64 (CELEX 61964CJ0006)"
+  matieres: [droit_europeen, introduction_au_droit]
+  statut: actuel
+  portee: "Primauté du droit de l'Union sur le droit national, même postérieur ; toujours appliquée (déclaration n° 17 annexée au traité de Lisbonne)."
+  fiche:
+    faits: "En 1962, l'Italie nationalise la production et la distribution d'électricité, confiées à un établissement public, l'ENEL. Un usager, actionnaire d'une société nationalisée, refuse de payer sa facture d'électricité en soutenant que la loi de nationalisation viole le traité CEE. Le juge italien saisi interroge la Cour de justice ; l'État italien soutient que la loi nationale, postérieure au traité, doit s'appliquer."
+    question: "Une loi nationale postérieure au traité peut-elle faire obstacle à l'application du droit communautaire ?"
+    solution: "Non. À la différence des traités internationaux ordinaires, le traité CEE a institué un ordre juridique propre, intégré au système juridique des États membres, qui s'impose à leurs juridictions. Les États ayant limité leurs droits souverains, le droit né du traité ne peut se voir opposer judiciairement un texte interne quel qu'il soit, sans perdre son caractère communautaire."
+    apport: "Principe de primauté du droit communautaire sur le droit national, y compris postérieur, fondé sur la nature propre de l'ordre juridique communautaire et non sur la Constitution de chaque État."
+    portee: "Toujours le droit positif de l'Union. En France, la primauté sur la loi est admise par la Cour de cassation (Jacques Vabre, 1975) et le Conseil d'État (Nicolo, 1989) sur le fondement de l'article 55 de la Constitution ; la Constitution reste au sommet de l'ordre interne (Sarran, 1998 ; Fraisse, 2000). Arrêt consultable sur EUR-Lex (CELEX 61964CJ0006)."
+
+- id: simmenthal
+  nom: {motif: '\bsimmenthal\b', seul: true}
+  citation: "CJCE, 9 mars 1978, Simmenthal, aff. 106/77"
+  juridiction: Cour de justice des Communautés européennes
+  formation: null
+  date: 1978-03-09
+  reference: "aff. 106/77 (CELEX 61977CJ0106)"
+  matieres: [droit_europeen, introduction_au_droit]
+  statut: actuel
+  portee: "Le juge national doit laisser inappliquée, de sa propre autorité, toute loi nationale contraire au droit de l'Union, sans attendre son abrogation ; toujours appliqué."
+  fiche:
+    faits: "Une entreprise importe en Italie de la viande bovine venant de France. Elle doit payer des droits pour des contrôles sanitaires à la frontière, contraires au droit communautaire. En droit italien, seule la Cour constitutionnelle pouvait écarter une loi ; le juge saisi interroge la Cour de justice."
+    question: "Le juge national peut-il écarter lui-même une loi nationale contraire au droit communautaire, ou doit-il attendre qu'elle soit abrogée par le législateur ou censurée par la juridiction constitutionnelle ?"
+    solution: "Le juge national chargé d'appliquer le droit communautaire doit en assurer le plein effet en laissant au besoin inappliquée, de sa propre autorité, toute disposition contraire de la législation nationale, même postérieure, sans avoir à demander ou à attendre son élimination préalable par la voie législative ou par tout autre procédé constitutionnel."
+    apport: "Conséquence de la primauté (Costa c/ ENEL) pour le juge : tout juge national est juge de droit commun du droit communautaire et doit écarter la loi contraire."
+    portee: "Toujours le droit positif de l'Union. En France, le juge judiciaire (Jacques Vabre, 1975) puis le juge administratif (Nicolo, 1989) écartent la loi contraire ; la question prioritaire de constitutionnalité ne fait pas obstacle à ce contrôle (Conseil constitutionnel, décision n° 2010-605 DC). Arrêt consultable sur EUR-Lex (CELEX 61977CJ0106)."
+
+# ---------------------------------------------------------------------------------------------------------------
+# Notions : une question qui porte sur l'une d'elles recoit ses grands arrets parmi les extraits
+# ---------------------------------------------------------------------------------------------------------------
+notions:
+  fait_des_choses:
+    libelle: Responsabilité du fait des choses
+    motifs: ['fait des choses', "garde (?:de la|d'une|des) chose", 'gardien (?:de la|d.une|des) chose', 'chose inanimee', '\b1242,? (?:alinea|al\.?) ?(?:1|1er|premier)\b', '\b1384,? (?:alinea|al\.?) ?(?:1|1er|premier)\b']
+    arrets: [jand-heur, franck, teffaine, gabillet, oxygene-liquide, trichard, faute-victime-1987, desmares]
+  fait_d_autrui:
+    libelle: Responsabilité du fait d'autrui
+    motifs: ["fait d'autrui", 'organiser et (?:de )?controler le mode de vie']
+    arrets: [blieck, bertrand, costedoat]
+  parents:
+    libelle: Responsabilité des parents
+    motifs: ['responsabilite (?:civile )?des (?:pere et mere|parents)', 'parents? .{0,30}responsables? .{0,30}(?:enfant|mineur|fils|fille)', '\b1242,? (?:alinea|al\.?) ?4\b', '\b1384,? (?:alinea|al\.?) ?4\b']
+    arrets: [bertrand, fullenwarth, levert, parents-2002]
+  commettants:
+    libelle: Responsabilité des commettants du fait de leurs préposés
+    motifs: ['\bcommettants?\b', '\bpreposes?\b']
+    arrets: [costedoat, cousin]
+  faute_enfant:
+    libelle: Faute de l'enfant et discernement en droit civil
+    motifs: ['\binfans\b', "faute (?:d'un|de l'|du) (?:jeune )?(?:enfant|mineur)", 'discernement .{0,40}(?:faute|responsabilite civile)', 'trouble mental']
+    arrets: [derguini, lemaire, gabillet, trichard]
+  faute_victime:
+    libelle: Faute de la victime et exonération
+    motifs: ['faute de la victime', 'exoneration (?:partielle |totale )?du gardien']
+    arrets: [faute-victime-1987, desmares]
+  prejudice_ricochet:
+    libelle: Préjudice par ricochet
+    motifs: ['par ricochet', 'victimes? indirectes?']
+    arrets: [dangereux]
+  prejudice_naissance:
+    libelle: Préjudice d'être né handicapé
+    motifs: ['ne handicape', 'prejudice .{0,20}naissance', 'naissance .{0,40}handicap']
+    arrets: [perruche]
+  tiers_au_contrat:
+    libelle: Tiers victime d'un manquement contractuel
+    motifs: ['tiers .{0,40}(?:manquement|inexecution) contractuel', 'effet relatif', 'relativite des conventions']
+    arrets: [boot-shop]
+  obligation_securite:
+    libelle: Obligation de sécurité et contrat de transport
+    motifs: ['obligation de securite', 'contrat de transport', 'sain et sauf']
+    arrets: [cie-generale-transatlantique]
+  obligations_moyens_resultat:
+    libelle: Obligations de moyens et de résultat, responsabilité médicale
+    motifs: ['obligations? de moyens', 'obligations? de resultat', 'contrat medical', 'responsabilite (?:du |des )?medec']
+    arrets: [mercier, cie-generale-transatlantique, epoux-v]
+  imprevision:
+    libelle: Imprévision
+    motifs: ['imprevision', 'changement (?:imprevisible )?de(?:s)? circonstances', 'revision (?:judiciaire )?du contrat', '\b1195\b']
+    arrets: [canal-de-craponne, gaz-de-bordeaux]
+  erreur_reticence:
+    libelle: Erreur et réticence dolosive
+    motifs: ['erreur sur (?:la substance|les qualites)', 'qualites essentielles', 'reticence dolosive', "obligation (?:precontractuelle )?d'information", 'devoir (?:precontractuel )?d.information']
+    arrets: [poussin, baldus]
+  clause_limitative:
+    libelle: Clauses limitatives de responsabilité et obligation essentielle
+    motifs: ['clauses? limitatives?', 'obligation essentielle', 'clauses? (?:limitative|exoneratoire)s? de responsabilite', '\b1170\b']
+    arrets: [chronopost, faurecia]
+  prix:
+    libelle: Détermination du prix
+    motifs: ['determination du prix', 'contrats?[- ]cadres?', 'prix (?:indetermine|abusif|unilateral)', '\b1164\b']
+    arrets: [prix-1995]
+  pourparlers:
+    libelle: Rupture des pourparlers
+    motifs: ['pourparlers', 'negociations? precontractuelles?', 'rupture (?:abusive |brutale |fautive )?des negociations']
+    arrets: [manoukian]
+  promesse_unilaterale:
+    libelle: Promesse unilatérale de contrat
+    motifs: ['promesses? unilaterales?', '\b1124\b']
+    arrets: [consorts-cruz]
+  pacte_preference:
+    libelle: Pacte de préférence
+    motifs: ['pactes? de preference', '\b1123\b']
+    arrets: [pacte-preference-2006]
+  cause_contrepartie:
+    libelle: Cause et contrepartie
+    motifs: ['absence de cause', 'contrepartie (?:illusoire|derisoire|reelle)', 'la cause (?:du contrat|de l.obligation)', '\b1169\b']
+    arrets: [point-club-video]
+  bonne_foi_contrat:
+    libelle: Bonne foi dans l'exécution du contrat
+    motifs: ['bonne foi', 'loyaute contractuelle', '\b1104\b']
+    avec: 'contrat|contractu|convention|1104'
+    arrets: [les-marechaux, huard]
+  abus_de_droit:
+    libelle: Abus du droit de propriété
+    motifs: ['abus (?:du )?(?:de )?droit', 'intention de nuire']
+    avec: 'propriet|voisin|terrain|construction'
+    arrets: [clement-bayard]
+  troubles_voisinage:
+    libelle: Troubles anormaux de voisinage
+    motifs: ['troubles? (?:anormaux? )?(?:du|de) voisinage', '\b1253\b']
+    arrets: [troubles-voisinage-1986, clement-bayard]
+  droits_reels:
+    libelle: Création de droits réels
+    motifs: ['droits? reels? (?:de jouissance|sui generis|nouveaux?|innomes?)', 'numerus clausus', 'jouissance speciale', 'liste des droits reels']
+    arrets: [maison-de-poesie]
+  gestation_pour_autrui:
+    libelle: Gestation pour autrui
+    motifs: ['gestation pour (?:le compte d.)?autrui', '\bgpa\b', 'meres? porteuses?', 'maternite pour autrui', '\b16-7\b']
+    arrets: [gpa-1991, mennesson-2019]
+  changement_sexe:
+    libelle: Changement de la mention du sexe
+    motifs: ['changement (?:de (?:la )?mention )?(?:du |de )sexe', 'transsexu', 'transidentit', 'modification de la mention du sexe']
+    arrets: [transsexualisme-1992]
+  mariage_conditions:
+    libelle: Conditions du mariage
+    motifs: ['conditions? (?:de fond )?(?:du|de) mariage', 'mariage (?:entre|de) (?:deux )?personnes de meme sexe', 'mariage pour tous', 'empechements? (?:a|au) mariage', 'nullite (?:du|d.un) mariage']
+    sauf: 'nationalit|etranger|international|loi applicable'   # conflit de lois (ti-06), comme le lexique (D122)
+    arrets: [mariage-2013, mariage-2007]
+  controle_proportionnalite:
+    libelle: Contrôle de proportionnalité par le juge judiciaire
+    motifs: ['controle de proportionnalite', 'atteinte disproportionnee']
+    arrets: [mariage-2013, benjamin]
+  jurisprudence_source:
+    libelle: Jurisprudence, source du droit et revirements
+    motifs: ['revirements? de jurisprudence', 'jurisprudence (?:est[- ]elle |comme |, )?(?:une )?source', 'retroactivite (?:de la|des) jurisprudence', 'modulation (?:dans le temps )?(?:des|d.un) revirements?']
+    arrets: [revirement-2001, revirement-2006]
+  traite_et_loi:
+    libelle: Traités et lois, contrôle de conventionnalité
+    motifs: ['controle de conventionnalite', 'traites? .{0,40}lois? (?:posterieures?|internes?|nationales?)', 'lois? (?:posterieures?|internes?|nationales?) .{0,40}(?:contraires? )?(?:a un|au|aux) traites?', 'article 55 de la constitution', 'superiorite des (?:traites|engagements internationaux)', 'hierarchie des normes']
+    arrets: [jacques-vabre, nicolo, cc-74-54-dc, semoules, sarran]
+  primaute_droit_union:
+    libelle: Primauté du droit de l'Union européenne
+    motifs: ["primaute du droit (?:de l'union|communautaire|europeen)", '\bprimaute\b', "droit (?:de l'union|communautaire) .{0,60}(?:loi|droit) (?:nationale?|interne|francaise?)", 'effet direct', 'ordre juridique (?:communautaire|de l.union)']
+    arrets: [costa, simmenthal, jacques-vabre, nicolo, van-gend-en-loos, cc-2010-605-dc]
+  directives:
+    libelle: Invocabilité des directives
+    motifs: ['directives?']
+    avec: 'invoqu|effet|transpos|particulier|justiciable|acte administratif'
+    arrets: [perreux, cohn-bendit, alitalia, cc-2004-496-dc]
+  constitution_et_traites:
+    libelle: Constitution et engagements internationaux
+    motifs: ['suprematie de la constitution', 'constitution .{0,40}(?:traites?|engagements? internationaux|droit international|droit de l.union)', '(?:traites?|droit de l.union) .{0,40}constitution', 'identite constitutionnelle', '\b(?:article )?54 de la constitution', '\b88-1\b']
+    avec: 'constitution'
+    arrets: [sarran, fraisse, cc-92-308-dc, cc-2004-496-dc, arcelor]
+  bloc_constitutionnalite:
+    libelle: Bloc de constitutionnalité
+    motifs: ['bloc de constitutionnalite', 'valeur constitutionnelle', 'principes? fondamentaux? reconnus? par les lois de la republique', '\bpfrlr\b', 'preambule (?:de la constitution|de 1946|de 1958)', 'normes? de reference du controle de constitutionnalite']
+    arrets: [cc-71-44-dc, cc-81-132-dc, kone, cc-86-224-dc, cc-2018-717-qpc]
+  controle_constitutionnalite:
+    libelle: Contrôle de constitutionnalité des lois
+    motifs: ['controle de (?:la )?constitutionnalite', 'constitutionnalite des lois', 'lois? referendaires?']
+    arrets: [cc-71-44-dc, cc-62-20-dc, cc-85-197-dc, cc-74-54-dc]
+  qpc:
+    libelle: Question prioritaire de constitutionnalité
+    motifs: ['\bqpc\b', 'question prioritaire de constitutionnalite', '\b61-1\b']
+    arrets: [cc-2009-595-dc, cc-2010-605-dc, cc-2010-14-qpc]
+  garde_a_vue:
+    libelle: Garde à vue
+    motifs: ['garde a vue']
+    arrets: [cc-2010-14-qpc, garde-a-vue-2011]
+  responsabilite_administrative:
+    libelle: Responsabilité administrative
+    motifs: ["responsabilite (?:de l'etat|de la puissance publique|des personnes publiques|administrative|de l'administration|des collectivites publiques|du service public)", 'responsabilite (?:pour|sans) faute (?:de l.|des? )?(?:etat|administration|personnes? publiques?|commune|hopital)']
+    arrets: [blanco, pelletier, couiteas, la-fleurette, epoux-v, cames, regnault-desroziers, lecomte, bianchi, anguet]
+  responsabilite_sans_faute_administrative:
+    libelle: Responsabilité sans faute de l'administration
+    motifs: ['sans faute', 'rupture de l.egalite devant les charges publiques', 'risque special', 'risque exceptionnel', 'responsabilite du fait des lois']
+    avec: "administration|administratif|administrative|l'etat|puissance publique|personnes? publiques?|commune|hopital|du fait des lois|charges publiques"
+    arrets: [couiteas, la-fleurette, cames, regnault-desroziers, lecomte, bianchi]
+  faute_personnelle_service:
+    libelle: Faute personnelle et faute de service
+    motifs: ['faute personnelle', 'faute de service', 'cumul (?:de fautes|des responsabilites)', 'action recursoire']
+    arrets: [pelletier, anguet]
+  recours_exces_pouvoir:
+    libelle: Recours pour excès de pouvoir
+    motifs: ['exces de pouvoir', '\brep\b', "recours en annulation (?:d'un|contre un) acte administratif"]
+    arrets: [dame-lamotte, casanova, danthony, gomel, camino]
+  interet_a_agir_administratif:
+    libelle: Intérêt à agir devant le juge administratif
+    motifs: ["interet (?:a|pour) agir"]
+    avec: 'administrati|exces de pouvoir|deliberation|commune|arrete|decret'
+    arrets: [casanova]
+  controle_juge_administratif:
+    libelle: Intensité du contrôle du juge administratif
+    motifs: ['controle (?:normal|restreint|maximum|entier|minimum)', 'erreur manifeste', 'theorie du bilan', 'qualification juridique des faits', 'exactitude materielle des faits', 'utilite publique']
+    arrets: [gomel, camino, ville-nouvelle-est]
+  police_administrative:
+    libelle: Police administrative
+    motifs: ['police administrative', 'pouvoirs? de police', 'police municipale', 'police generale', 'mesures? de police', 'ordre public']
+    avec: 'police|maire|prefet|administrati'
+    arrets: [benjamin, morsang, labonne, lutetia]
+  dignite:
+    libelle: Dignité de la personne humaine
+    motifs: ['dignite de la personne humaine', 'lancer de nains']
+    arrets: [morsang]
+  service_public:
+    libelle: Service public
+    motifs: ['service public', 'services publics', '\bspic\b', '\bspa\b']
+    arrets: [terrier, bac-d-eloka, aprei]
+  contrat_administratif:
+    libelle: Contrat administratif
+    motifs: ['contrats? administratifs?', 'clauses? exorbitantes?', 'marches? publics?', 'concessions? de service public', 'delegations? de service public']
+    arrets: [granits-porphyroides, epoux-bertin, tramways, tarn-et-garonne]
+  recours_contre_contrat:
+    libelle: Contestation de la validité du contrat administratif
+    motifs: ['validite (?:du|d.un) contrat administratif', 'recours (?:des tiers )?contre (?:le|un) contrat', 'tiers .{0,40}contrat administratif', 'juge du contrat']
+    arrets: [tarn-et-garonne, tropic-travaux]
+  dualite_juridictions:
+    libelle: Dualité de juridictions et répartition des compétences
+    motifs: ['dualite (?:de|des) (?:ordres de )?juridictions?', 'dualisme juridictionnel', 'repartition des competences entre (?:les )?(?:deux )?ordres', 'separation des autorites administratives et judiciaires', 'tribunal des conflits', 'competence (?:du juge administratif|de la juridiction administrative|administrative)', 'ordre (?:administratif|judiciaire)']
+    arrets: [blanco, cc-86-224-dc, septfonds, bac-d-eloka]
+  juge_administratif:
+    libelle: Juridiction administrative
+    motifs: ['ministre[- ]juge', 'justice retenue', 'justice deleguee', 'juge administratif de droit commun']
+    arrets: [cadot]
+  voie_de_fait:
+    libelle: Voie de fait
+    motifs: ['voie de fait', "\\bemprise\\b"]
+    arrets: [bergoend]
+  actes_de_gouvernement:
+    libelle: Actes de gouvernement
+    motifs: ['actes? de gouvernement']
+    arrets: [prince-napoleon]
+  circonstances_exceptionnelles:
+    libelle: Circonstances exceptionnelles
+    motifs: ['circonstances exceptionnelles', 'pouvoirs de guerre']
+    arrets: [heyries]
+  principes_generaux_du_droit:
+    libelle: Principes généraux du droit
+    motifs: ['principes? generaux? du droit', '\bpgd\b']
+    arrets: [dame-lamotte, ingenieurs-conseils, gisti, dehaene]
+  pouvoir_reglementaire:
+    libelle: Pouvoir réglementaire autonome des autorités administratives
+    motifs: ['chef de service', 'pouvoir reglementaire (?:du|des) (?:ministres?|chefs? de service)']
+    arrets: [jamart, labonne]
+  greve:
+    libelle: Droit de grève des agents publics
+    motifs: ['droit de greve']
+    avec: 'public|fonctionnaire|agent|administration|service'
+    arrets: [dehaene]
+  egal_acces:
+    libelle: Égal accès aux emplois publics
+    motifs: ['egal acces aux emplois publics', 'opinions politiques .{0,40}(?:fonction publique|concours)']
+    arrets: [barel]
+  domaine_public:
+    libelle: Domaine public
+    motifs: ['domaine public', 'domanialite publique']
+    arrets: [le-beton]
+  retrait_abrogation:
+    libelle: Retrait et abrogation des actes administratifs
+    motifs: ['retrait (?:d.un|des|de l.) actes?', 'abrogation (?:d.un|des) (?:actes?|reglements?)', 'actes? createurs? de droits', 'decisions? creatrices? de droits']
+    arrets: [ternon, alitalia]
+  securite_juridique:
+    libelle: Sécurité juridique
+    motifs: ['securite juridique', 'mesures? transitoires?']
+    arrets: [kpmg, revirement-2006]
+  mesures_ordre_interieur:
+    libelle: Mesures d'ordre intérieur
+    motifs: ["mesures? d'ordre interieur"]
+    arrets: [hardouin, marie]
+  vices_de_procedure:
+    libelle: Vices de procédure
+    motifs: ['vices? de (?:procedure|forme)']
+    arrets: [danthony]
+  ordonnances:
+    libelle: Valeur des ordonnances non ratifiées
+    motifs: ['habilitation referendaire', 'ordonnances? referendaires?']
+    arrets: [canal]
+  extradition:
+    libelle: Extradition
+    motifs: ['extradition']
+    arrets: [kone]
+  personne_privee_service_public:
+    libelle: Personne privée chargée d'un service public
+    motifs: ['personnes? privees? .{0,40}service public', 'organismes? prives? .{0,40}service public']
+    arrets: [aprei]
+  etat_de_necessite:
+    libelle: État de nécessité
+    motifs: ['etat de necessite', '\b122-7\b']
+    arrets: [menard]
+  discernement_penal:
+    libelle: Discernement et responsabilité pénale du mineur
+    motifs: ['discernement', 'responsabilite penale (?:du|des|d.un) mineurs?', '\b122-8\b', 'mineurs? .{0,40}penalement']
+    avec: 'penal|infraction|poursuivi|delit|crime|122-8'
+    arrets: [laboube]
+  complicite:
+    libelle: Complicité
+    motifs: ['complicite', '\bcomplices?\b', 'criminalite d.emprunt', 'mandat criminel', '\b121-7\b']
+    arrets: [lacour]
+  tentative:
+    libelle: Tentative et infraction impossible
+    motifs: ['infraction impossible', 'tentatives?', 'commencement d.execution']
+    avec: 'infraction|penal|crime|delit|homicide|meurtre|tue|tuer'
+    arrets: [perdereau, lacour]
+  enfant_a_naitre:
+    libelle: Enfant à naître et homicide
+    motifs: ['enfant a naitre', 'foetus', 'interpretation stricte (?:de la loi penale)?']
+    arrets: [enfant-a-naitre-2001]
+  autorite_chose_jugee:
+    libelle: Autorité de la chose jugée et concentration des moyens
+    motifs: ['autorite de (?:la )?chose jugee', 'concentration des moyens', '\b1355\b']
+    arrets: [cesareo]
+  office_du_juge:
+    libelle: Office du juge civil
+    motifs: ['office du juge', 'fondement juridique (?:des|de la) demandes?', 'requalifi']
+    avec: 'juge|proces|demande|procedure'
+    arrets: [dauvin]

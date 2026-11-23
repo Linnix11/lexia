@@ -15,6 +15,8 @@
 | `essai_api.py` | Quelques questions contre une API lancée, pour un contrôle visuel |
 | `responsables.py` | Cas pratiques de responsabilité : auteur, parents et gardien de la chose examinés, loi du 5 juillet 1985 pour les accidents de la circulation (D115, D119, D122) |
 | `reclassement.py` | Réglages du reclassement (candidats, jetons, int8) : durée et qualité de la recherche (D122) |
+| `cas_grands_arrets_notions.yaml` | 20 questions de cours sur une notion (fait des choses, excès de pouvoir, primauté du droit de l'Union, bloc de constitutionnalité, responsabilité administrative...) : ses grands arrêts doivent arriver parmi les extraits (source attendue `ga:<id>`, D124) |
+| `grands_arrets_regression.py` | Non-régression des grands arrêts par notion : recherche de production avant et après sur tous les jeux, extraits d'avant inchangés (D124) |
 | `comparatif_notebooklm.py` | Comparatif à l'aveugle Lexia / NotebookLM sur 30 cas (protocole : `COMPARATIF_NOTEBOOKLM.md`) |
 
 ## Lancer

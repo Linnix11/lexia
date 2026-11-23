@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from api import lexique
+from api import grands_arrets, lexique
 from api.concordance import note as note_concordance
 from api.textes import en_vigueur_aujourdhui
 
@@ -177,7 +177,8 @@ def format_extraits(passages: list[dict]) -> str:
         if len(texte) > MAX_CHARS_EXTRAIT:
             texte = texte[:MAX_CHARS_EXTRAIT] + " [...]"
         nature = {"sommaire": "Sommaire officiel", "dispositif": "Dispositif", "motifs": "Motifs",
-                  "cours": "cours de l'étudiant, source non officielle"}.get(p["type"], "")
+                  "cours": "cours de l'étudiant, source non officielle",
+                  "fiche": "fiche Lexia, résumé non officiel d'un grand arrêt, pas le texte de la décision"}.get(p["type"], "")
         entete = (p.get("entete") or p.get("titre") or p["id"]) + _etat_du_jour(p)
         blocs.append(f"[S{i}] {entete}" + (f" ({nature})" if nature else "") + f"\n{texte}")
     return "\n\n".join(blocs)
@@ -284,6 +285,8 @@ def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | No
         consigne += "\n" + mariage
     if mode == "cas_pratique" and (garde := note_garde(question, passages)):
         consigne += "\n" + garde
+    if grands := grands_arrets.note(passages):
+        consigne += "\n" + grands
     return (
         f"{consigne}\n\n<extraits>\n{format_extraits(passages)}\n</extraits>\n\n"
         f"<question>\n{question}\n</question>"

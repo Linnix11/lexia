@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from api import lexique
+from api import grands_arrets, lexique
 from api.references import extraire, variantes
 from api.textes import SOURCES_A_PART, SOURCES_CASSATION, cibles_article, en_vigueur_aujourdhui, meme_loi
 from api.retrieval.base import (N_PRINCIPES, SEUIL_COUVERTURE, Complement, Hit, Reclasseur,
@@ -409,7 +409,10 @@ class LocalRetriever:
 
     def get(self, passage_id: str) -> dict | None:
         rows = self._q("SELECT data FROM passages WHERE id = ?", (passage_id,))
-        return json.loads(rows[0][0]) if rows else None
+        if rows:
+            return json.loads(rows[0][0])
+        # Fiches redigees par Lexia (D124) : tenues dans registry/grands_arrets.yaml, hors de l'index
+        return grands_arrets.fiche(passage_id)
 
     def versions(self, source_id: str, numero: str) -> list[dict]:
         rows = self._q("SELECT data FROM passages WHERE source_id = ? AND numero = ? ORDER BY rowid", (source_id, numero))

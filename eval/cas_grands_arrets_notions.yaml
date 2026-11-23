@@ -1,0 +1,30 @@
+# Grands arrets par notion (D124) - version 1 (2026-11-23)
+#
+# Questions de cours qui portent sur une notion sans nommer l'arret : ses grands arrets doivent arriver parmi les
+# extraits (decision de l'index ou fiche redigee par Lexia, registry/grands_arrets.yaml). Source attendue
+# « ga:<id> » (eval/cas.py) ; une seule suffit sauf « toutes ». Le dossier enseignant (23/11) ne trouvait aucun
+# grand arret dans 30 reponses. STATUT : BROUILLON, A RELIRE PAR UN ENSEIGNANT.
+#
+#   python -m eval.backtest_recherche eval/cas_grands_arrets_notions.yaml
+
+cas:
+  - {id: gan-01, matiere: droit_civil, attendu: [reponse], toutes: true, sources: ["ga:jand-heur", "ga:franck"], question: "Quelles sont les conditions de la responsabilité du fait des choses ?"}
+  - {id: gan-02, matiere: droit_civil, attendu: [reponse], sources: ["ga:franck"], question: "Comment définir la garde de la chose en matière de responsabilité civile ?"}
+  - {id: gan-03, matiere: droit_civil, attendu: [reponse], mode: fiche, sources: ["ga:jand-heur"], question: "Fiche sur la responsabilité du fait des choses (article 1242 alinéa 1er)"}
+  - {id: gan-04, matiere: contentieux_administratif, attendu: [reponse], sources: ["ga:dame-lamotte"], question: "Qu'est-ce que le recours pour excès de pouvoir et contre quels actes est-il ouvert ?"}
+  - {id: gan-05, matiere: droit_administratif, attendu: [reponse], toutes: true, sources: ["ga:dame-lamotte", "ga:casanova"], question: "Fiche sur le recours pour excès de pouvoir : conditions de recevabilité"}
+  - {id: gan-06, matiere: droit_europeen, attendu: [reponse], toutes: true, sources: ["ga:costa", "ga:simmenthal"], question: "Expliquez le principe de primauté du droit de l'Union européenne."}
+  - {id: gan-07, matiere: introduction_au_droit, attendu: [reponse], sources: ["ga:jacques-vabre", "ga:nicolo"], question: "Le juge français peut-il écarter une loi postérieure contraire à un traité ?"}
+  - {id: gan-08, matiere: droit_constitutionnel, attendu: [reponse], sources: ["ga:cc-71-44-dc"], question: "Qu'est-ce que le bloc de constitutionnalité ?"}
+  - {id: gan-09, matiere: droit_constitutionnel, attendu: [reponse], sources: ["ga:cc-71-44-dc"], question: "Quelle est la valeur juridique du préambule de la Constitution de 1958 ?"}
+  - {id: gan-10, matiere: droit_administratif, attendu: [reponse], toutes: true, sources: ["ga:blanco", "ga:pelletier"], question: "Expliquez les fondements de la responsabilité administrative."}
+  - {id: gan-11, matiere: droit_administratif, attendu: [reponse], sources: ["ga:couiteas", "ga:la-fleurette"], question: "Dans quels cas l'administration peut-elle être responsable sans faute ?"}
+  - {id: gan-12, matiere: droit_administratif, attendu: [reponse], sources: ["ga:benjamin"], question: "Quelles sont les limites du pouvoir de police administrative du maire ?"}
+  - {id: gan-13, matiere: droit_des_contrats, attendu: [reponse], sources: ["ga:canal-de-craponne"], question: "Le juge peut-il réviser un contrat pour imprévision ?"}
+  - {id: gan-14, matiere: droit_penal, attendu: [reponse], sources: ["ga:laboube"], question: "Un enfant peut-il être pénalement responsable ? Quel rôle joue le discernement ?"}
+  - {id: gan-15, matiere: droit_penal, attendu: [reponse], sources: ["ga:lacour"], question: "La complicité suppose-t-elle une infraction principale punissable ?"}
+  - {id: gan-16, matiere: droit_des_biens, attendu: [reponse], sources: ["ga:clement-bayard"], question: "Qu'est-ce que l'abus du droit de propriété ?"}
+  - {id: gan-17, matiere: droit_civil, attendu: [reponse], sources: ["ga:blieck"], question: "Existe-t-il un principe général de responsabilité du fait d'autrui ?"}
+  - {id: gan-18, matiere: droit_constitutionnel, attendu: [reponse], sources: ["ga:cc-2009-595-dc", "ga:cc-2010-605-dc"], question: "Comment fonctionne la question prioritaire de constitutionnalité ?"}
+  - {id: gan-19, matiere: droit_administratif, attendu: [reponse], sources: ["ga:tarn-et-garonne"], question: "Un tiers peut-il contester la validité d'un contrat administratif ?"}
+  - {id: gan-20, matiere: droit_des_contrats, attendu: [reponse], sources: ["ga:mercier"], question: "Quelle différence entre obligation de moyens et obligation de résultat ?"}

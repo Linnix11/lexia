@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError, type SourceComplete, type Vigueur } from '../lib/api'
+import { estFicheLexia } from '../lib/modes'
 import { titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
@@ -10,6 +11,7 @@ const NATURE: Record<string, string> = {
   motifs: 'Motifs',
   dispositif: 'Dispositif',
   sommaire: 'Sommaire officiel',
+  fiche: 'Fiche Lexia, non officielle',
 }
 
 /** Panneau lateral : texte integral d'une source citee + verification de la version en vigueur. */
@@ -88,6 +90,12 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
           )}
           {source && (
             <>
+              {estFicheLexia(source) && (
+                <p role="note" className="mb-3 rounded-lg border-l-2 border-[#c8a16d] bg-cream px-3 py-2 text-[12px] leading-[1.5] text-[#746347]">
+                  Résumé rédigé par Lexia, pas une décision officielle : cet arrêt n’est pas dans le corpus de
+                  Lexia. La fiche est à relire par un enseignant ; vérifiez-la dans votre cours.
+                </p>
+              )}
               <div className="text-[13px] leading-[1.7] whitespace-pre-line">{source.texte}</div>
               {(titreCourt(source.entete) !== source.entete || (source.titre && source.titre !== source.entete)) && (
                 <details className="mt-5 text-[11px] leading-[1.45] text-muted">

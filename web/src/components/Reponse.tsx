@@ -1,7 +1,7 @@
 import { memo, useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
 import { libelleFraicheur, sourcesAnciennes, useFraicheur } from '../lib/fraicheur'
-import { infosMode, symbole } from '../lib/modes'
+import { estFicheLexia, infosMode, symbole } from '../lib/modes'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useApp, type Message } from '../state/contexte'
 import { CarteMentale } from './CarteMentale'
@@ -98,6 +98,9 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
                 </span>
                 <span className="mt-0.5 block text-[11px] break-words text-muted">{s.version}</span>
               </span>
+              {estFicheLexia(s) && (
+                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[11px] text-[#8a6537]">fiche Lexia, non officielle</span>
+              )}
               {s.en_vigueur === false && (
                 <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[11px] text-[#8a6537]">ancienne version</span>
               )}

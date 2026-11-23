@@ -408,6 +408,26 @@ describe('Audit du 16 novembre 2026', () => {
     expect(within(panneau).getByText('Classement complet').closest('details')).not.toHaveAttribute('open')
   })
 
+  it('une fiche Lexia sur un grand arret est signalee comme non officielle, sans lien officiel (D124)', async () => {
+    const fiche = {
+      ...REPONSE.sources[0], id: 'fiches_grands_arrets:jand-heur', label: 'S9', source_id: 'fiches_grands_arrets',
+      type: 'fiche', numero: null, entete: "Fiche Lexia (non officielle) : Cass., ch. réunies, 13 février 1930, Jand'heur",
+      url: '', version: 'Fiche rédigée par Lexia le 23 novembre 2026, à relire par un enseignant', en_vigueur: null,
+    }
+    reponseChat = { ...REPONSE, sources: [REPONSE.sources[0], fiche],
+      explication: [{ texte: "L'arrêt Jand'heur fonde la responsabilité du fait des choses.", sources: [fiche.id], rubrique: 'Conditions' }] }
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/sources/') ? repondre({ ...fiche, texte: 'Fiche rédigée par Lexia…', titre: null, meta: {} }) : base(url, init))
+    await poser('responsabilité du fait des choses')
+    expect(screen.getByText('fiche Lexia, non officielle')).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /\[2\] Fiche Lexia \(non officielle\)/ })[0])
+    const panneau = await screen.findByRole('dialog')
+    expect(await within(panneau).findByText('Fiche Lexia, non officielle')).toBeInTheDocument()
+    expect(within(panneau).getByRole('note')).toHaveTextContent('pas une décision officielle')
+    expect(within(panneau).queryByText(/Ouvrir la source officielle/)).not.toBeInTheDocument()
+  })
+
   it('une fiche ouverte n affiche son titre qu une fois (point 6)', async () => {
     await poser('article 1240')
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer en fiche/ }))

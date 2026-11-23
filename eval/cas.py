@@ -63,6 +63,12 @@ def resoudre(ref: str, con: sqlite3.Connection) -> list[dict]:
                        (num, nature))
     elif genre == "lois":  # loi non codifiee, par identifiant (« lois:LEGIARTI000006839396 », R-1)
         sql, params = ("SELECT data FROM passages WHERE id = ?", (ref,))
+    elif genre == "ga":   # grand arret du registre (« ga:jand-heur », D124) : sa decision de l'index ou sa fiche
+        from api import grands_arrets
+        arret = grands_arrets.registre().arrets[valeur]
+        if arret.fiche:
+            return [grands_arrets.passage_fiche(arret)]
+        sql, params = ("SELECT data FROM passages WHERE id = ?", (arret.index,))
     elif genre.startswith("code_") or genre in AUTRES_TEXTES:  # code_penal:122-5, ddhc_1789:11...
         sql, params = ("SELECT data FROM passages WHERE source_id = ? AND numero = ? AND en_vigueur = 1", (genre, valeur))
     else:
@@ -75,6 +81,11 @@ def correspond(ref: str, passage: dict) -> bool:
     genre, _, valeur = ref.partition(":")
     if genre == "lois":
         return passage["id"] == ref
+    if genre == "ga":   # grand arret (D124) : passage signale comme tel, ou sa decision de l'index, ou sa fiche
+        from api import grands_arrets
+        arret = grands_arrets.registre().arrets[valeur]
+        return (passage.get("grand_arret") or {}).get("id") == valeur or passage["id"] in (
+            arret.index, f"{grands_arrets.SOURCE_FICHES}:{valeur}")
     if genre.startswith("code_") or genre in AUTRES_TEXTES:
         return passage["source_id"] == genre and passage.get("numero") == valeur
     if genre == "constitution":

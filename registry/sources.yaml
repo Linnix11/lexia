@@ -3,6 +3,7 @@
 # (conditions d'utilisation, mode d'acces) avant toute ingestion.
 #
 # statut : actif | a_verifier | en_attente_acces | exclu | a_part (fiches recuperees, hors des reponses, D103)
+#          | fiche_lexia (fiches redigees par Lexia, jointes aux extraits par notion, D124)
 
 sources:
 - id: constitution_1958
@@ -1145,4 +1146,24 @@ sources:
   frequence_maj: null
   ingestion: null
   statut: a_verifier   # validee par l'editeur (phase 1), recuperation impossible sans export de la DILA
+  derniere_synchro: null
+- id: fiches_grands_arrets
+  nom: Fiches Lexia des grands arrets absents du corpus (resumes non officiels)
+  type: fiche_lexia
+  autorite: Lexia (Axion Studio), a relire par un enseignant
+  url: null
+  fichier: registry/grands_arrets.yaml
+  acces: fichier_versionne
+  licence: "Redigees par Lexia ; aucune reprise d'un recueil (GAJC, GAJA), d'une note d'arret ou d'un manuel"
+  frequence_maj: a chaque publication
+  perimetre: "14 grands arrets absents de l'index (Cour de cassation avant 1960, Tribunal correctionnel de Chateau-Thierry, Cour de justice) ; les 108 autres arrets de la liste sont servis par leur decision officielle de l'index"
+  matieres:
+  - droit_civil
+  - droit_des_contrats
+  - droit_des_biens
+  - droit_penal
+  - droit_europeen
+  - introduction_au_droit
+  ingestion: null   # passages construits au chargement (api/grands_arrets.py), hors de l'index SQLite
+  statut: fiche_lexia   # jamais dans les matieres ni la recherche ; jointe aux extraits par notion (D124)
   derniere_synchro: null

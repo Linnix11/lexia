@@ -34,7 +34,11 @@ const SYMBOLES: Record<string, string> = {
   cass_sociale: '⚖',
   cass_commerciale: '⚖',
   conseil_etat: '⚖',
+  fiches_grands_arrets: '◇',
 }
+
+/** Fiche redigee par Lexia sur un grand arret absent du corpus (D124) : jamais presentee comme une decision. */
+export const estFicheLexia = (s: { source_id: string }) => s.source_id === 'fiches_grands_arrets'
 
 export function symbole(s: FicheSource) {
   return SYMBOLES[s.source_id] ?? '§'

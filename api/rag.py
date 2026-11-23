@@ -12,14 +12,14 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as DelaiDepasse
 
-from api import conseil, concordance, lexique, prompts
+from api import conseil, concordance, grands_arrets, lexique, prompts
 from api.citations import valider_reponse
 from api.cours import avertir_anciens_numeros
 from api.journal import Journal
 from api.llm.base import LLM, ContenuRefuse, LLMError
 from api.matieres import sources_par_matiere, sources_pour
 from api.references import extraire
-from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, ajouter_duree, groupes
+from api.retrieval.base import SEUIL_COUVERTURE, Complement, Retriever, ajouter_duree, doc_de, groupes
 from api.textes import SOURCES_A_PART, SOURCES_TEXTES, en_vigueur_aujourdhui
 
 AVERTISSEMENT = (
@@ -121,6 +121,10 @@ def pour_secours(passages: list[dict], k: int = K_SECOURS) -> list[dict]:
     Les extraits arrivent textes d'abord : en prendre les k premiers privait le secours de toute decision
     (les questions sur une decision du Conseil constitutionnel echouaient toutes, backtest du 2026-11-12).
     """
+    # Grands arrets ajoutes apres la recherche (D124) : hors du choix des k extraits, le premier est joint en plus
+    # (le secours garde ainsi les memes k extraits qu'avant D124).
+    ajouts = [i for i, p in enumerate(passages) if (p.get("grand_arret") or {}).get("ajoute")]
+    passages, ajoutes = [p for i, p in enumerate(passages) if i not in ajouts], [passages[i] for i in ajouts]
     juris = [i for i, p in enumerate(passages) if p["source_id"] not in SOURCES_TEXTES and p.get("type") != "cours"]
     autres = [i for i in range(len(passages)) if i not in set(juris)]
     garde = autres[:k - 1] + juris[:1]
@@ -134,7 +138,7 @@ def pour_secours(passages: list[dict], k: int = K_SECOURS) -> list[dict]:
     if any(_civil_en_vigueur(passages[i]) and passages[i].get("numero") in VICES_DU_CONSENTEMENT for i in garde):
         garde += [i for i, p in enumerate(passages)
                   if i not in garde and _civil_en_vigueur(p) and p.get("numero") in REGLES_COMMUNES_VICES]
-    return [passages[i] for i in sorted(garde)]
+    return [passages[i] for i in sorted(garde)] + ajoutes[:1]
 
 
 def _civil_en_vigueur(p: dict) -> bool:
@@ -207,8 +211,11 @@ class Disjoncteur:
 class Lexia:
     def __init__(self, retriever: Retriever, llm: LLM, journal: Journal | None = None, embedder=None,
                  expanseur=None, reclasseur=None, delai_reformulation: float = 8.0, cache: CacheReponses | None = None,
-                 secours: LLM | None = None, disjoncteur: Disjoncteur | None = None, compter_echecs: bool = True):
+                 secours: LLM | None = None, disjoncteur: Disjoncteur | None = None, compter_echecs: bool = True,
+                 avec_grands_arrets: bool = True):
         self.secours = secours        # None : pas de modele de secours (Groq)
+        # Grands arrets de la notion joints aux extraits (D124) ; False : recherche d'avant D124 (comparaison).
+        self.avec_grands_arrets = avec_grands_arrets
         # False : appels a budget reduit (cartes mentales en 25 s, resumes vocaux plafonnes en jetons). Leurs
         # echecs n'ouvrent pas le disjoncteur des questions : une reponse Gemini lente mais reussie pour une
         # question depasse le budget d'une carte (audit du 23/11, A2). Leurs succes le referment.
@@ -325,12 +332,18 @@ class Lexia:
                     rang += 1
         if sources is None or "code_civil" in sources:
             passages = self._regles_communes_vices(passages, ignorer=frozenset(anciens))
+        grands = 0
+        if self.avec_grands_arrets:
+            t = time.perf_counter()
+            passages, grands = self._grands_arrets(texte, passages)
+            ajouter_duree(etapes, "grands_arrets", t)
         infos = {
             "recherche": "hybride" if any("vecteur" in h.via for h in hits) else "lexicale",
             "reformulation": reformule,
             "reclassement": self.reclasseur is not None,
             "suggestions_retenues": sum(1 for h in hits if "suggestion" in h.via),
             "lexique": len(locales),
+            "grands_arrets": grands,
             # Durees dans le journal (recherche_detail) : la recherche se mesure sur le serveur sans aucune
             # requete de plus (audit du 19/11, SRV-7). duree_ms : recherche entiere, reformulation comprise ;
             # calcul_ms : parcours de l'index et reclassement.
@@ -343,6 +356,35 @@ class Lexia:
         if anciens:
             infos["concordance"] = {a: list(ns) for a, ns in anciens.items()}
         return passages, infos
+
+    def _grands_arrets(self, texte: str, passages: list[dict]) -> tuple[list[dict], int]:
+        """Grands arrets que la question nomme ou dont elle traite la notion (D124), apres les extraits de la
+        recherche : la decision de l'index quand elle y est, sinon la fiche redigee par Lexia. Une decision deja
+        parmi les extraits n'est pas repetee, elle est seulement signalee comme grand arret. Au plus
+        grands_arrets.MAX_PAR_QUESTION ajouts ; renvoie (passages, nombre d'ajouts)."""
+        passages = list(passages)
+        docs = {doc_de(p): i for i, p in enumerate(passages)}
+        ajouts: list[dict] = []
+        for a in grands_arrets.arrets_pour(texte):
+            if len(ajouts) >= grands_arrets.MAX_PAR_QUESTION:
+                break
+            if a.index:
+                p = self.retriever.get(a.index)
+                if p is None:   # index sans cette decision : rien plutot qu'une fiche non relue
+                    continue
+                if (doc := doc_de(p)) in docs:
+                    i = docs[doc]
+                    if not passages[i].get("grand_arret"):
+                        passages[i] = grands_arrets.marquer(passages[i], a, ajoute=False)
+                    continue
+                docs[doc] = len(passages) + len(ajouts)
+            else:
+                p = grands_arrets.passage_fiche(a)
+                if p["id"] in docs:
+                    continue
+                docs[p["id"]] = len(passages) + len(ajouts)
+            ajouts.append(grands_arrets.marquer(p, a, ajoute=True))
+        return passages + ajouts, len(ajouts)
 
     def _regles_communes_vices(self, passages: list[dict], ignorer: frozenset[str] = frozenset()) -> list[dict]:
         """Articles 1130 et 1131 places juste apres le premier vice du consentement en vigueur trouve.
@@ -479,6 +521,8 @@ class Lexia:
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode, cours_seul=option_cours == "seul")
+            # Arret abandonne seul a l'appui d'une regle : ce n'est pas du droit positif (D124)
+            grands_arrets.ecarter_abandonnes(reponse, passages)
         sources = sources_citees(reponse, table)
         if avec_cours and reponse["statut"] == "reponse":  # ancien numero du Code civil dans le cours (audit C6)
             avertir_anciens_numeros(reponse, sources, passages)
@@ -545,6 +589,12 @@ class Lexia:
         if p["source_id"] == "constitution_1958":
             return {**base, "applicable": True, "en_vigueur": True, "version_en_vigueur": None,
                     "message": "Texte en vigueur selon la dernière synchronisation. Confirmez sur le site du Conseil constitutionnel."}
+        if p["source_id"] == grands_arrets.SOURCE_FICHES:
+            # Fiche redigee par Lexia sur un grand arret absent du corpus (D124) : ni un texte, ni une decision.
+            return {**base, "applicable": False, "en_vigueur": None, "version_en_vigueur": None,
+                    "message": ("Fiche rédigée par Lexia, non officielle et à relire par un enseignant : ce n'est pas "
+                                "le texte de la décision. Sa portée actuelle est indiquée à la fin de la fiche ; "
+                                "vérifiez-la dans votre cours.")}
         if p["source_id"] in SOURCES_A_PART:
             # Fiche explicative (service-public.gouv.fr) : elle n'est ni un texte ni une decision (SRC-9).
             return {**base, "applicable": False, "en_vigueur": None, "version_en_vigueur": None,
