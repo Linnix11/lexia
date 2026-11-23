@@ -7,7 +7,7 @@ modification, suivre la méthode 1 ci-dessous.
 | Fichier | Durée | Contenu | Couverture et MP4 |
 |---|---|---|---|
 | `01-intro-logo.html` | 6 s | Le signet se déroule, « lexia » apparaît lettre par lettre, puis la signature « Le droit, sources à l'appui. » | `couvertures/01-intro-logo.png`, `mp4/01-intro-logo.mp4` |
-| `02-demo-question-reponse.html` | 14 s | « Une question, une réponse sourcée » : la question sur le dol est tapée, la réponse arrive avec ses renvois [S1] et [S2], la source (Code civil, article 1137) s'ouvre. | `couvertures/02-demo-question-reponse.png`, `mp4/02-demo-question-reponse.mp4` |
+| `02-demo-question-reponse.html` | 14 s | « Une question, une réponse sourcée » : la question sur le dol est tapée, la réponse arrive avec ses renvois [1] et [2], la source (Code civil, article 1137) s'ouvre. | `couvertures/02-demo-question-reponse.png`, `mp4/02-demo-question-reponse.mp4` |
 | `03-carte-de-fin.html` | 7 s | Logo sur fond forêt, signature, adresse `lexia-axionstudio.cloud`, offre gratuite. | `couvertures/03-carte-de-fin.png`, `mp4/03-carte-de-fin.mp4` |
 
 Textes : uniquement des phrases autorisées par `docs/marketing/contenus-mois-1.md`. Articles cités relus pour le
