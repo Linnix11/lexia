@@ -116,7 +116,10 @@ export function Connexion() {
 }
 
 export function Inscription() {
-  const { inscription } = useSession()
+  const { inscription, config } = useSession()
+  // Beta fermee (D121) : code d'acces exige quand le serveur l'annonce
+  const beta = Boolean(config?.beta_fermee)
+  const [code, setCode] = useState('')
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
   const [prenom, setPrenom] = useState('') // prenom et nom demandes a l'inscription (D102)
@@ -149,14 +152,15 @@ export function Inscription() {
     mdp: mdp.length >= MDP_MIN ? null : `Au moins ${MDP_MIN} caractères.`,
     confirmation: confirmation === mdp ? null : 'Les deux mots de passe ne correspondent pas.',
     cases: age && cgu ? null : 'Cochez les deux cases ci-dessus pour créer votre compte.',
+    code: !beta || code.trim() ? null : 'Saisissez le code d’accès reçu pour la bêta.',
   }
-  const valide = !erreurs.prenom && !erreurs.nom && !erreurs.email && !erreurs.mdp && !erreurs.confirmation && cgu && age
+  const valide = !erreurs.prenom && !erreurs.nom && !erreurs.email && !erreurs.mdp && !erreurs.confirmation && !erreurs.code && cgu && age
   const montre = (k: keyof typeof erreurs) => (touche[k] ? erreurs[k] : null)
   const quitter = (k: string) => () => setTouche((t) => ({ ...t, [k]: true }))
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault()
-    setTouche({ prenom: true, nom: true, email: true, mdp: true, confirmation: true, cases: true })
+    setTouche({ prenom: true, nom: true, email: true, mdp: true, confirmation: true, cases: true, code: true })
     if (!valide) {
       // focus sur le premier champ en erreur, une fois les messages affiches
       setTimeout(() => document.querySelector<HTMLElement>('form [aria-invalid="true"]')?.focus(), 0)
@@ -167,7 +171,8 @@ export function Inscription() {
     try {
       // Case d'age et version des CGU enregistrees avec le compte (note de l'editeur du 2026-11-20, point 1)
       await inscription(email, mdp, cgu, prenom, nom,
-        { age_atteste: age, cgu_version: VERSION_CGU, infos_email: infos, origine: origine || null })
+        { age_atteste: age, cgu_version: VERSION_CGU, infos_email: infos, origine: origine || null,
+          ...(beta ? { code_beta: code.trim() } : {}) })
       naviguer('/app', { remplacer: true })
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : 'Inscription impossible pour le moment.')
@@ -179,8 +184,17 @@ export function Inscription() {
   const aide = (id: string, msg: string | null) => msg && <span id={id} className="text-[12px] text-[#8c4a36]">{msg}</span>
 
   return (
-    <Carte titre="Créer un compte" sousTitre={gratuit}>
+    <Carte titre="Créer un compte" sousTitre={beta ? 'Lexia est en bêta fermée : l’inscription demande un code d’accès.' : gratuit}>
       <form onSubmit={soumettre} className="grid gap-4" noValidate>
+        {beta && (
+          <label className="grid gap-1.5 text-[13px]">
+            Code d’accès à la bêta
+            <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={quitter('code')} maxLength={40}
+              autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="ABCDE-FGHJK"
+              aria-invalid={!!montre('code')} aria-describedby="err-code" className={`${champ} tracking-[2px]`} />
+            {aide('err-code', montre('code'))}
+          </label>
+        )}
         <div className="grid gap-4 min-[420px]:grid-cols-2">
           <label className="grid content-start gap-1.5 text-[13px]">
             Prénom

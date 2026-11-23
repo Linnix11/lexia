@@ -61,6 +61,8 @@ class Inscription(BaseModel):
     cgu_version: str | None = Field(default=None, max_length=40)
     infos_email: bool = False
     origine: Literal["reseaux_sociaux", "association", "ami", "enseignant", "recherche", "autre"] | None = None
+    # Beta fermee (BETA_FERMEE=1, D121) : code d'acces exige ; ignore sinon
+    code_beta: str | None = Field(default=None, max_length=40)
 
 
 class InfosEmail(BaseModel):
@@ -359,6 +361,7 @@ def profil(comptes: Comptes, u: Utilisateur) -> dict:
         "email_verifie": u.email_verifie,
         "codes_secours_restants": comptes.codes_secours_restants(u.id) if u.double_authentification else 0,
         "infos_email": comptes.infos_email(u.id),
+        "beta": comptes.compte_beta(u.id),   # questionnaire de retour propose (D121)
     }
 
 
@@ -377,8 +380,10 @@ def exiger_admin(u: Utilisateur) -> Utilisateur:
 
 
 def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
-                 url_publique: str = "") -> tuple[APIRouter, callable]:
-    """Renvoie (routes /auth, dependance utilisateur_requis)."""
+                 url_publique: str = "", beta_fermee: bool = False) -> tuple[APIRouter, callable]:
+    """Renvoie (routes /auth, dependance utilisateur_requis). beta_fermee : inscription avec un code d'acces
+    seulement (api/beta.py, D121)."""
+    from api.beta import CodeRefuse
     router = APIRouter()
     # E-mails envoyes et codes 2FA faux sur 24 h glissantes, en base (B6) : cles « compte:<id> », « oubli:<id> »,
     # « lien_ip:<ip> », « renvoi_ip:<ip> », « oubli_ip:<ip> », « alerte_ip:<ip> », « 2fa:<id> » et les deux budgets
@@ -430,12 +435,14 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         try:
             u = comptes.creer(req.email, req.mot_de_passe, prenom=req.prenom, nom=req.nom,
                               age_atteste=f"{AGE_MINIMUM} ans ou plus" if req.age_atteste else None,
-                              cgu_version=req.cgu_version, infos_email=req.infos_email, origine=req.origine)
+                              cgu_version=req.cgu_version, infos_email=req.infos_email, origine=req.origine,
+                              exiger_code=beta_fermee, code_beta=req.code_beta)
         except ErreurCompte as e:
             # Un refus compte dans la limite du jour : « Un compte existe deja » permettait de tester des
             # adresses sans limite (audit du 2026-11-16, point 8 ; reste possible 20 fois par jour et par IP).
+            # Un code d'acces faux aussi : 20 essais par jour et par adresse, 10 par minute (D121).
             freins.inscrit(_ip(request))
-            raise HTTPException(422, str(e)) from None
+            raise HTTPException(403 if isinstance(e, CodeRefuse) else 422, str(e)) from None
         freins.inscrit(_ip(request))
         # L'echec d'envoi n'empeche pas la creation du compte ; le lien compte dans le budget des non confirmes.
         # Plafond par adresse avant le budget commun (B1) : au-dela, le compte est cree et le site propose

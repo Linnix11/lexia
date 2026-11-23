@@ -302,6 +302,11 @@ class Comptes:
                 if nom == "actif_le":  # comptes anterieurs : dernier jour avec un compteur, sinon la creation
                     self._con.execute("UPDATE utilisateurs SET actif_le = COALESCE((SELECT max(jour) FROM usage "
                                       "WHERE utilisateur = utilisateurs.id), substr(cree_le, 1, 10))")
+        # Beta fermee (api/beta.py, D121) : codes d'acces, avis ; numero du code utilise a l'inscription
+        from api import beta
+        beta.creer_tables(self._con)
+        if "code_beta" not in colonnes:
+            self._con.execute("ALTER TABLE utilisateurs ADD COLUMN code_beta INTEGER")
         self._con.commit()
         self._chiffrer_secrets_en_clair()
         self._lock = threading.Lock()
@@ -340,10 +345,13 @@ class Comptes:
 
     def creer(self, email: str, mdp: str, depuis_le_site: bool = True, prenom: str | None = None,
               nom: str | None = None, age_atteste: str | None = None, cgu_version: str | None = None,
-              infos_email: bool = False, origine: str | None = None) -> Utilisateur:
+              infos_email: bool = False, origine: str | None = None, exiger_code: bool = False,
+              code_beta: str | None = None) -> Utilisateur:
         """depuis_le_site=False : creation par la commande d'administration (adresses d'administration).
         Prenom et nom : exiges par la route d'inscription (api/auth.py), facultatifs ici. Cases et origine :
-        voir COLONNES_INSCRIPTION."""
+        voir COLONNES_INSCRIPTION. exiger_code (beta fermee, D121) : une place du code est prise dans la meme
+        transaction que l'INSERT du compte (api/beta.py, prendre_place) ; refus : beta.CodeRefuse."""
+        from api import beta
         if origine is not None and origine not in ORIGINES:
             origine = None
         email = normaliser_email(email)
@@ -380,16 +388,19 @@ class Comptes:
                         self._con.execute("DELETE FROM utilisateurs WHERE id = ?", (uid_autre,))
                     else:
                         raise ErreurCompte("Un compte existe déjà avec cette adresse e-mail.")
+                # Place du code prise apres les refus ci-dessus (un compte refuse ne la consomme pas), dans la
+                # meme transaction que l'INSERT : annulee avec lui si l'INSERT echoue.
+                code = beta.prendre_place(self._con, code_beta) if exiger_code and depuis_le_site else None
                 # Numero suivant le plus grand jamais attribue (compteur) ou existant (comptes anterieurs).
                 # Calcule dans l'INSERT lui-meme : atomique meme si la commande d'administration ecrit en
                 # parallele dans la base.
                 cur = self._con.execute(
                     "INSERT INTO utilisateurs (id, email, mdp, formule, cree_le, cgu_le, prenom, nom, age_atteste, "
-                    "cgu_version, infos_email_le, origine) VALUES ("
+                    "cgu_version, infos_email_le, origine, code_beta) VALUES ("
                     "MAX(COALESCE((SELECT valeur FROM compteurs WHERE nom = 'utilisateurs'), 0),"
-                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?,?,?,?,?,?)",
+                    "    COALESCE((SELECT MAX(id) FROM utilisateurs), 0)) + 1, ?,?,?,?,?,?,?,?,?,?,?,?)",
                     (email, empreinte, FORMULE_PAR_DEFAUT, maintenant, maintenant, prenom, nom, age_atteste,
-                     cgu_version, maintenant if infos_email else None, origine))
+                     cgu_version, maintenant if infos_email else None, origine, code))
                 self._con.execute("INSERT INTO compteurs (nom, valeur) VALUES ('utilisateurs', ?) "
                                   "ON CONFLICT(nom) DO UPDATE SET valeur = excluded.valeur", (cur.lastrowid,))
         except sqlite3.IntegrityError:
@@ -415,6 +426,11 @@ class Comptes:
             raise ErreurCompte(MESSAGE_IDENTITE)
         self._q("UPDATE utilisateurs SET prenom = ?, nom = ? WHERE id = ?", (prenom, nom, uid))
         return prenom, nom
+
+    def compte_beta(self, uid: int) -> bool:
+        """Compte cree avec un code d'acces de la beta fermee (D121) : questionnaire de retour propose."""
+        rows = self._q("SELECT code_beta FROM utilisateurs WHERE id = ?", (uid,))
+        return bool(rows and rows[0][0] is not None)
 
     def infos_email(self, uid: int) -> bool:
         rows = self._q("SELECT infos_email_le FROM utilisateurs WHERE id = ?", (uid,))

@@ -4,6 +4,7 @@ import { BandeauEmail } from '../site/VerifierEmail'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
 import { useApp, type Vue } from '../state/contexte'
 import { useSession } from '../state/session'
+import { BoutonAvis } from './AvisBeta'
 import { LogoHorizontal, Signet } from './Logo'
 
 // court : libelle visible sous l'icone dans la barre du bas du mobile (audit du 2026-11-18, D7), contenu
@@ -157,6 +158,7 @@ export function Topbar({ titre }: { titre?: string }) {
             {profil.double_authentification ? 'Admin' : 'Admin · activer la 2FA'}
           </Lien>
         )}
+        <BoutonAvis />
         {profil && (
           <Lien href="/compte" title="Mon compte" className="flex items-center gap-1 whitespace-nowrap rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage">
             {/* visible aussi sur mobile, sans le nom de la formule (audit du 2026-11-18, D7) */}

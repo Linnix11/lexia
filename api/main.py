@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from api.admin_routes import creer_routes_admin
 from api.annales import Annales, creer_routes_annales
 from api.auth import COOKIE, cle_ip, creer_routes, exiger_admin, routes_formules, verifier_origine
-from api import coffre
+from api import beta, coffre
 from api.comptes import Comptes, Utilisateur
 from api.cours import Cours, creer_routes_cours
 from api.cours_recuperes import Catalogue, creer_routes_cours_recuperes
@@ -226,7 +226,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     cours = None
     if comptes is not None:
         routes_auth, utilisateur_requis = creer_routes(comptes, settings.inscriptions_par_ip_jour,
-                                                       settings.url_publique)
+                                                       settings.url_publique, settings.beta_fermee)
         app.include_router(routes_auth, prefix="/auth")
         extras = {"embeddings": getattr(embedder, "model", None), "reclassement": getattr(reclasseur, "model", None)}
         app.include_router(creer_routes_admin(comptes, utilisateur_requis, journal, settings, retriever, extras),
@@ -278,6 +278,9 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             QuotaResumes(comptes.chemin, settings.cartes_mentales_par_jour, table="cartes_mentales"),
             utilisateur_requis, limite, lambda action: _place_libre(action)))
 
+        # Beta fermee (D121) : avis des comptes beta, codes d'acces et suivi d'usage dans l'administration
+        app.include_router(beta.creer_routes_beta(comptes, utilisateur_requis, admin_requis, journal))
+
         annales = Annales(comptes.chemin)
         routes_annales, admin_annales = creer_routes_annales(annales, admin_requis, journal)
         app.include_router(routes_annales)
@@ -299,6 +302,8 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
             texte_cgu=lambda version: texte_cgu(version, settings.legal, settings.contact_email,
                                                 settings.url_publique)), prefix="/paiement")
     app.include_router(routes_formules())
+    # Suivi d'usage anonyme (D121) : fonction, code HTTP et duree des appels, dans logs/usage.jsonl
+    app.middleware("http")(beta.suivre(journal, comptes, COOKIE))
 
     def _utilisateur(request: Request) -> Utilisateur | None:
         return utilisateur_requis(request) if utilisateur_requis else None
@@ -411,7 +416,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
     def config_publique():
         legal = {k: (v or None) if isinstance(v, str) else v for k, v in settings.legal.items()}
         return {"comptes": comptes is not None, "contact_email": settings.contact_email or None, "legal": legal,
-                "paiement": paiement_actif}
+                "paiement": paiement_actif, "beta_fermee": comptes is not None and settings.beta_fermee}
 
     @app.get("/matieres")
     def matieres():
@@ -422,6 +427,7 @@ def create_app(settings: Settings | None = None, *, retriever: Retriever | None 
 
     @app.post("/chat", dependencies=[Depends(verifier_origine), Depends(limite)])
     def chat(req: ChatRequest, request: Request):
+        request.scope["lexia_fonction"] = beta.fonction_du_mode(req.mode)   # suivi d'usage (D121)
         u = _utilisateur(request)
         _taille(req.question)
         _matiere(req.matiere)

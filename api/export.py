@@ -18,7 +18,7 @@ from api.comptes import Comptes, Utilisateur
 # Colonnes du compte exportees : jamais l'empreinte du mot de passe, les jetons ni les secrets de double
 # authentification.
 COLONNES_COMPTE = ("email", "prenom", "nom", "formule", "formule_fin", "cree_le", "cgu_le", "cgu_version",
-                   "age_atteste", "infos_email_le", "origine", "email_verifie_le", "actif_le", "inactif_avis_le")
+                   "age_atteste", "infos_email_le", "origine", "email_verifie_le", "actif_le", "inactif_avis_le", "code_beta")
 COLONNES_PAIEMENT = ("formule", "mois", "montant_centimes", "devise", "statut", "cree_le", "paye_le",
                      "execution_immediate_le", "cgu_version", "retractation_le", "retractation_nom",
                      "accuse_envoye_le", "confirmation_envoyee_le")

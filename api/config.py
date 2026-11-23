@@ -63,6 +63,8 @@ class Settings:
     # Paiement en ligne par Stripe Checkout (D86) : actif seulement avec les deux cles et URL_PUBLIQUE
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    # Beta fermee (D121, api/beta.py) : inscription avec un code d'acces seulement (BETA_FERMEE=1)
+    beta_fermee: bool = False
     # Pages legales (mentions, CGU, confidentialite) : vide = affiche « a completer »
     legal: dict = field(default_factory=dict)
 
@@ -105,6 +107,7 @@ def get_settings() -> Settings:
         url_publique=os.environ.get("URL_PUBLIQUE", "").strip().rstrip("/"),
         stripe_secret_key=os.environ.get("STRIPE_SECRET_KEY", "").strip(),
         stripe_webhook_secret=os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip(),
+        beta_fermee=os.environ.get("BETA_FERMEE", "0").strip().lower() in ("1", "true", "oui"),
         legal={
             "editeur": os.environ.get("LEGAL_EDITEUR", ""),
             "statut": os.environ.get("LEGAL_STATUT", ""),

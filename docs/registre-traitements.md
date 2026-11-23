@@ -1,7 +1,7 @@
 # Registre des activités de traitement de Lexia
 
 Registre tenu par le responsable du traitement (article 30.1 du RGPD). Mis à jour le 23 novembre 2026 (résumés
-vocaux, D106 ; cartes mentales, D112 ; décisions de justice, D113 ; D115). Versions précédentes : 18 novembre 2026
+vocaux, D106 ; cartes mentales, D112 ; décisions de justice, D113 ; D115 ; bêta fermée, D121, fiche T12). Versions précédentes : 18 novembre 2026
 (durées de conservation, audit du 18 novembre 2026, point E5 ; prénom, D100 ; nom, D102).
 
 Texte publié de la politique de confidentialité : une seule source, la page Confidentialité de
@@ -40,6 +40,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 | T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | 3 ans après le dernier échange (à appliquer par l'éditeur dans sa boîte) |
 | T10 | E-mails d'information et origine des inscriptions | Consentement (e-mails) ; intérêt légitime (origine, réponse facultative) | Comme le compte ; consentement effacé dès son retrait |
 | T11 | Réutilisation de décisions de justice publiées | Intérêt légitime | Tant que la source publie la décision ; retrait à la mise à jour suivante |
+| T12 | Bêta fermée : code d'accès, questionnaire de retour, mesure d'utilisation | Exécution du contrat (code) ; intérêt légitime (avis facultatif, mesure sans identifiant) | Code : comme le compte ; avis : 12 mois ; mesure : 12 mois |
 
 ## Fiches
 
@@ -52,8 +53,9 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   et date de fin ; dates de création, d'acceptation des CGU et de confirmation de l'adresse ; indicateur
   administrateur ; secret de double authentification chiffré (`CLE_SECRETS`) et empreintes des codes de secours ;
   empreintes des jetons de confirmation et de réinitialisation ; date de la dernière visite (`actif_le`, une
-  écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`). Sessions (table
-  `sessions`) : empreinte du jeton et date d'expiration.
+  écriture par jour au plus) et date de l'avertissement d'inactivité (`inactif_avis_le`) ; numéro du code d'accès
+  de la bêta utilisé à l'inscription (`code_beta`, T12). Sessions (table `sessions`) : empreinte du jeton et date
+  d'expiration.
 - Preuve de l'acceptation à l'inscription (D110, note de l'éditeur du 2026-11-20, point 1) : texte de la case d'âge
   cochée (`age_atteste`, « 15 ans ou plus »), version des CGU acceptée (`cgu_version`, même valeur que
   `VERSION_CGU`), date de l'acceptation (`cgu_le`). Vides pour les comptes créés avant D110 et pour un client qui
@@ -186,8 +188,39 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 - Données (`api/journal.py`, dossier `logs/`) : `requetes.jsonl` (identifiant de réponse, mode, matière, statut,
   modèle, identifiants des passages fournis et cités, dont `cours:<n°>` pour un cours déposé), `modele.jsonl`
   (modèle, rôle, nombre de jetons), `erreurs.jsonl`, `feedback.jsonl` (avis utile ou non, motif dans une liste),
-  `admin.jsonl` (T4). Le texte des questions n'y figure pas.
+  `admin.jsonl` (T4), `usage.jsonl` (mesure d'utilisation de la bêta, T12). Le texte des questions n'y figure pas.
 - Durée : 12 mois, purge automatique par l'API (`RETENTION_JOURS = 365`).
+
+### T12. Bêta fermée : code d'accès, questionnaire de retour, mesure d'utilisation (D121)
+
+- Finalités : réserver l'inscription aux 10 à 20 étudiants invités avant les partiels de décembre 2026 ; recueillir
+  leur avis pour corriger Lexia avant l'ouverture ; mesurer l'usage réel (fonctions utilisées, durées, erreurs).
+- Personnes concernées : étudiants invités à la bêta (comptes créés avec un code), et pour la mesure, tout
+  utilisateur du service (sans identifiant).
+- Code d'accès (`api/beta.py`, table `codes_beta`) : empreinte sha256 du code (le code n'est affiché qu'une fois, à
+  sa création dans l'administration), nom du groupe choisi par l'éditeur, nombre de places et d'inscriptions,
+  état, date de création. Le compte garde le numéro du code (`utilisateurs.code_beta`, T1). Exigé seulement avec
+  `BETA_FERMEE=1` dans le `.env`. Base légale : exécution du contrat (conditions d'accès au service pendant la
+  bêta). Durée : comme le compte ; le code lui-même jusqu'à sa désactivation, sans donnée personnelle.
+- Questionnaire « Donner mon avis » (`api/beta.py`, table `avis_beta`, route `POST /beta/avis`) : note d'utilité de
+  1 à 5, ce qui a aidé, ce qui manque, une réponse fausse repérée et son lien (2 000 caractères au plus par champ,
+  lien en `http(s)://`), date du jour. Ni adresse, ni numéro de compte, ni heure : l'avis n'est pas rattaché au
+  compte (le formulaire demande de n'y écrire aucune information personnelle). Facultatif ; réservé aux comptes de
+  la bêta et aux administrateurs ; 5 avis par compte et par jour (compteur haché de `compteurs_jour`, T7). Lu et
+  exporté en CSV par l'administration (cellules commençant par `=`, `+`, `-`, `@` neutralisées). Pas de service
+  tiers. Base légale : intérêt légitime (améliorer le service), réponse libre. Durée : 12 mois, purge à chaque
+  lecture ou écriture (`AVIS_CONSERVES`). Non rattaché au compte : ni effacé avec lui, ni dans l'export ; une
+  demande d'effacement d'un avis précis se traite à la main sur sa date et son texte.
+- Mesure d'utilisation (`api/beta.py`, `suivre`, journal `logs/usage.jsonl`) : pour chaque appel de `/chat`
+  (question, cas pratique, fiche), `/quiz`, `/resume-vocal`, `/carte-mentale` et du dépôt de cours, la fonction, le
+  code HTTP de la réponse et la durée, avec la date et l'heure de la ligne (`ts`, commune aux journaux). Ni texte,
+  ni compte, ni adresse IP ; appels des administrateurs non comptés. L'administration n'en lit que des agrégats
+  (`GET /admin/beta/usage` : questions par jour, répartition par fonction, médiane et 90e centile des durées par
+  étape lues dans `recherche_detail.etapes_ms` de `requetes.jsonl`, D114, taux d'erreur). Sans cookie ni traceur :
+  pas de consentement (article 82 de la loi du 6 janvier 1978 non concerné). Base légale : intérêt légitime.
+  Durée : 12 mois, comme les journaux techniques (T6).
+- Destinataires : éditeur ; Hostinger (hébergement).
+- Transferts hors UE : seulement l'acheminement par Cloudflare (États-Unis), comme tout le trafic du site (T7).
 
 ### T7. Sécurité du service
 

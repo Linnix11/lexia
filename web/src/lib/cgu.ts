@@ -5,4 +5,4 @@ export const VERSION_CGU = '20 novembre 2026'
 
 /** Date de la derniere modification de la politique de confidentialite : affichee en tete de la page et nom du
  *  fichier de son texte (docs/confidentialite/, `npm run confidentialite` dans web/). */
-export const VERSION_CONFIDENTIALITE = '23 novembre 2026, 2e version'
+export const VERSION_CONFIDENTIALITE = '23 novembre 2026, 3e version'

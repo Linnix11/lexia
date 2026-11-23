@@ -2,15 +2,17 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent, ty
 import { api, ApiError, type ActiviteAdmin, type Annale, type ClientAdmin, type NouvelleAnnale, type PaiementATraiter, type ServeurAdmin, type StatsAdmin } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
+import { AdminBeta } from './AdminBeta'
 import { Histogramme } from './Graphique'
 import { bouton, boutonSecondaire } from './Public'
 import { Signet } from '../components/Logo'
 
-type Onglet = 'apercu' | 'clients' | 'annales' | 'activite' | 'serveur'
+type Onglet = 'apercu' | 'clients' | 'annales' | 'beta' | 'activite' | 'serveur'
 const ONGLETS: { id: Onglet; label: string }[] = [
   { id: 'apercu', label: 'Vue d’ensemble' },
   { id: 'clients', label: 'Clients' },
   { id: 'annales', label: 'Annales' },
+  { id: 'beta', label: 'Bêta' },
   { id: 'activite', label: 'Activité' },
   { id: 'serveur', label: 'Serveur' },
 ]
@@ -622,6 +624,7 @@ export function Admin() {
         {erreur && <p role="alert" className="mb-4 rounded-lg bg-[#f6e9e4] px-3 py-2 text-[13px] text-[#8c4a36]">{erreur}</p>}
         {onglet === 'clients' ? <Clients moi={profil.email} />
           : onglet === 'annales' ? <Annales />
+          : onglet === 'beta' ? <AdminBeta />
           : !stats || !activite || !serveur ? (
             <div className="grid animate-pulse gap-3 desk:grid-cols-3" aria-label="Chargement">{[0, 1, 2].map((i) => <div key={i} className="h-28 rounded-xl bg-[#ece9e0]" />)}</div>
           ) : onglet === 'apercu' ? <>{config?.paiement && <PaiementsATraiter />}<Apercu s={stats} /></>

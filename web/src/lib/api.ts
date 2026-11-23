@@ -156,6 +156,8 @@ export interface Profil {
   lien_envoye?: boolean
   /** Consentement aux e-mails d'information (case distincte a l'inscription, retirable dans Mon compte) */
   infos_email?: boolean
+  /** Compte cree avec un code d'acces de la beta fermee : questionnaire « Donner mon avis » (D121) */
+  beta?: boolean
 }
 
 /** Reponse facultative a « Comment avez-vous connu Lexia ? » (api/comptes.py, ORIGINES) */
@@ -175,6 +177,8 @@ export interface ChoixInscription {
   cgu_version: string
   infos_email: boolean
   origine: Origine | null
+  /** Beta fermee (D121) : code d'acces recu par e-mail, exige quand le serveur l'annonce (config.beta_fermee) */
+  code_beta?: string | null
 }
 
 /** Reponse de /auth/connexion quand le compte a la double authentification : le code reste a saisir. */
@@ -324,8 +328,57 @@ export interface ConfigPublique {
   contact_email: string | null
   /** Paiement en ligne par Stripe Checkout actif (cles configurees sur le serveur). */
   paiement?: boolean
+  /** Beta fermee : inscription avec un code d'acces seulement (BETA_FERMEE=1, D121) */
+  beta_fermee?: boolean
   legal?: InfosLegales
 }
+
+/** Beta fermee (D121) : code d'acces, sans le code lui-meme (affiche une seule fois, a sa creation). */
+export interface CodeBeta {
+  id: number
+  libelle: string
+  plafond: number
+  /** Inscriptions faites avec le code (jamais rendues, meme si le compte est supprime) */
+  inscriptions: number
+  /** Comptes encore existants crees avec le code */
+  comptes: number
+  actif: boolean
+  cree_le: string
+  /** Reponse de la creation seulement */
+  code?: string
+}
+
+export interface AvisBeta {
+  note: number
+  aide: string
+  manque: string
+  erreur: string
+  lien: string
+}
+
+export interface AvisBetaLu extends AvisBeta {
+  id: number
+  jour: string
+}
+
+export interface DureesBeta {
+  mesures: number
+  mediane_ms: number | null
+  p90_ms: number | null
+}
+
+/** Suivi d'usage anonyme : agregats seulement, ni texte des questions ni compte (D121) */
+export interface UsageBeta {
+  jours: number
+  par_jour: { jour: string; questions: number; total: number }[]
+  fonctions: ({ fonction: string; libelle: string; appels: number; erreurs: number; refus: number; taux_erreur: number | null } & DureesBeta)[]
+  etapes: ({ etape: string } & DureesBeta)[]
+  appels: number
+  taux_erreur: number | null
+}
+
+/** Export CSV des avis : simple lien (GET, cookie de session), le navigateur enregistre le fichier. */
+export const LIEN_AVIS_CSV = `${BASE}/admin/beta/avis.csv`
 
 export class ApiError extends Error {
   status: number
@@ -570,7 +623,15 @@ export const api = {
     serveur: () => requete<ServeurAdmin>('/admin/serveur'),
     ajouterAnnale: (a: NouvelleAnnale) => post<Annale>('/admin/annales', a),
     supprimerAnnale: (id: number) => post<void>(`/admin/annales/${id}/supprimer`, {}),
+    beta: {
+      codes: () => requete<CodeBeta[]>('/admin/beta/codes'),
+      creerCode: (libelle: string, plafond: number) => post<CodeBeta>('/admin/beta/codes', { libelle, plafond }),
+      desactiverCode: (id: number) => post<CodeBeta>(`/admin/beta/codes/${id}/desactiver`, {}),
+      avis: () => requete<{ avis: AvisBetaLu[]; note_moyenne: number | null }>('/admin/beta/avis'),
+      usage: (jours = 14) => requete<UsageBeta>(`/admin/beta/usage?jours=${jours}`),
+    },
   },
+  donnerAvis: (avis: AvisBeta) => post<{ enregistre: boolean }>('/beta/avis', avis),
   matieres: () => requete<Matiere[]>('/matieres'),
   fraicheur: () => requete<Fraicheur>('/fraicheur'),
   annales: () => requete<{ niveaux: string[]; annales: Annale[] }>('/annales'),
