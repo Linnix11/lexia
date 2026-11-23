@@ -144,7 +144,7 @@ français « », apostrophe typographique ’, « 1<sup>er</sup> » en exposant.
   puis les lettres une à une. Courbe d'accélération `cubic-bezier(.2, .8, .2, 1)`, sans rebond.
 - Fichiers : `animation/logo-anime.svg` (SVG et CSS, autonome), `animation/logo-anime.lottie.json` (Lottie, lu
   par lottie-web, licence MIT), page de démonstration `animation/logo-anime.html`.
-- Vidéos verticales : `videos/` (procédure d'export dans `videos/enregistrer.md`).
+- Vidéos verticales : `videos/` (MP4 dans `videos/mp4/`, procédure d'export dans `videos/enregistrer.md`).
 - Moins de mouvement : si le système le demande (`prefers-reduced-motion: reduce`), le SVG, la page Lottie et les
   vidéos HTML affichent directement l'état final. Pas de clignotement, pas plus de trois changements par seconde.
 

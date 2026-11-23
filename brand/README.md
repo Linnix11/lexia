@@ -22,7 +22,7 @@ Lexia », https://claude.ai/artifact/FY4UyEAcFJEDTGTGzkGX4y (à partager depuis 
 | `couleurs/` | `palette.css`, `palette.json`, `contrastes.md` (WCAG 2.2 AA). |
 | `typographies/` | Source Serif 4 et Inter (OFL 1.1) avec leurs licences ; `LICENCES.md`. |
 | `animation/` | `logo-anime.svg` (SVG et CSS), `logo-anime.lottie.json` (Lottie), `logo-anime.html` (démonstration). |
-| `videos/` | Trois vidéos verticales 9:16 en HTML animé (6, 14 et 7 s), leurs couvertures, `enregistrer.md` (export MP4). |
+| `videos/` | Trois vidéos verticales 9:16 (6, 14 et 7 s) : pages HTML animées, MP4 dans `videos/mp4/`, couvertures, `enregistrer.md`. |
 | `outils/` | Scripts qui produisent tout le kit à partir d'une seule géométrie (`marque.py`). |
 | `charte.md` | Charte : logo, zone de protection, interdits, couleurs, typographie, mouvement, ton. |
 | `integration-site.md` | Fichiers à remplacer dans `web/public/` et `web/src/components/Logo.tsx`, pour une session ultérieure. |
@@ -41,7 +41,7 @@ python3 -I brand/outils/videos.py
 python3 -I brand/outils/contrastes.py
 ```
 
-Export MP4 des vidéos (nécessite ffmpeg, absent de ce Mac au 23 novembre 2026) :
+Export MP4 des vidéos (nécessite ffmpeg, installé par `brew install ffmpeg`) :
 
 ```bash
 python3 -I brand/outils/videos_mp4.py

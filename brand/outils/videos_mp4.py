@@ -3,12 +3,12 @@
 Chaque image est capturee par Chrome sans interface a l'instant exact (parametre ?capture&t=), puis ffmpeg
 assemble la suite d'images. Le resultat ne depend ni de la vitesse de la machine ni d'un enregistrement d'ecran.
 
-Necessite ffmpeg (logiciel libre, LGPL/GPL), absent de ce Mac au 23 novembre 2026. Installation :
+Necessite ffmpeg (logiciel libre, LGPL/GPL), installe sur ce Mac le 23 novembre 2026 (version 9.0.2). Installation :
     brew install ffmpeg
 Usage, depuis la racine du depot :
     python3 -I brand/outils/videos_mp4.py              # les trois videos
     python3 -I brand/outils/videos_mp4.py 01-intro-logo
-Duree : environ 2 a 4 minutes par video (une capture Chrome par image, 4 en parallele).
+Duree : environ 10 minutes pour les trois videos (une capture Chrome par image, 4 en parallele).
 """
 import shutil
 import subprocess

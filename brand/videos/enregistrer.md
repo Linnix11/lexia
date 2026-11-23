@@ -1,13 +1,14 @@
 # Vidéos verticales : lecture et enregistrement en MP4
 
-Trois vidéos au format 9:16 (1080 x 1920 px), écrites en HTML et CSS. `ffmpeg` n'était pas installé sur le Mac le
-23 novembre 2026 : les MP4 ne sont donc pas fournis, mais deux procédures permettent de les produire.
+Trois vidéos au format 9:16 (1080 x 1920 px), écrites en HTML et CSS. Les MP4 sont fournis dans `mp4/` (H.264,
+30 images par seconde, exportés image par image le 23 novembre 2026 avec ffmpeg 9.0.2). Pour les refaire après une
+modification, suivre la méthode 1 ci-dessous.
 
-| Fichier | Durée | Contenu | Couverture |
+| Fichier | Durée | Contenu | Couverture et MP4 |
 |---|---|---|---|
-| `01-intro-logo.html` | 6 s | Le signet se déroule, « lexia » apparaît lettre par lettre, puis la signature « Le droit, sources à l'appui. » | `couvertures/01-intro-logo.png` |
-| `02-demo-question-reponse.html` | 14 s | « Une question, une réponse sourcée » : la question sur le dol est tapée, la réponse arrive avec ses renvois [S1] et [S2], la source (Code civil, article 1137) s'ouvre. | `couvertures/02-demo-question-reponse.png` |
-| `03-carte-de-fin.html` | 7 s | Logo sur fond forêt, signature, adresse `lexia-axionstudio.cloud`, offre gratuite. | `couvertures/03-carte-de-fin.png` |
+| `01-intro-logo.html` | 6 s | Le signet se déroule, « lexia » apparaît lettre par lettre, puis la signature « Le droit, sources à l'appui. » | `couvertures/01-intro-logo.png`, `mp4/01-intro-logo.mp4` |
+| `02-demo-question-reponse.html` | 14 s | « Une question, une réponse sourcée » : la question sur le dol est tapée, la réponse arrive avec ses renvois [S1] et [S2], la source (Code civil, article 1137) s'ouvre. | `couvertures/02-demo-question-reponse.png`, `mp4/02-demo-question-reponse.mp4` |
+| `03-carte-de-fin.html` | 7 s | Logo sur fond forêt, signature, adresse `lexia-axionstudio.cloud`, offre gratuite. | `couvertures/03-carte-de-fin.png`, `mp4/03-carte-de-fin.mp4` |
 
 Textes : uniquement des phrases autorisées par `docs/marketing/contenus-mois-1.md`. Articles cités relus pour le
 plan marketing : article 1137 (https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000036829827) et
@@ -28,7 +29,7 @@ Paramètres d'adresse : `?t=4.5` fige la scène à 4,5 s ; `?capture` affiche la
 
 Image par image, donc sans saccade ni dépendance à la vitesse de la machine.
 
-1. Installer ffmpeg (logiciel libre, gratuit) :
+1. Installer ffmpeg (logiciel libre, gratuit ; déjà installé sur ce Mac depuis le 23 novembre 2026) :
 
    ```bash
    brew install ffmpeg
@@ -41,7 +42,7 @@ Image par image, donc sans saccade ni dépendance à la vitesse de la machine.
    ```
 
 3. Les fichiers arrivent dans `brand/videos/mp4/` (H.264, 30 images par seconde, compatibles TikTok, Instagram
-   Reels et YouTube Shorts). Compter 2 à 4 minutes par vidéo.
+   Reels et YouTube Shorts). Compter environ 10 minutes pour les trois vidéos.
 
 ## Méthode 2 : sans ffmpeg, enregistrement d'écran sur Mac
 
