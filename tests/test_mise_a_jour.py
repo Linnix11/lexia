@@ -175,3 +175,50 @@ def test_constitution_relue_chaque_mois_sans_bloquer(tmp_path):
     assert mise_a_jour.rafraichir(tmp_path, aujourdhui=date(2026, 12, 20), importer=en_panne) == (
         [], ["constitution_1958"])
     assert "2026-11-11" in f.read_text()          # fichier precedent garde
+
+
+def _nuit_simulee(tmp_path, monkeypatch):
+    """Mise a jour nocturne avec une archive nouvelle, sans import ni embeddings reels ; index accepte."""
+    monkeypatch.setattr(mise_a_jour, "INDEX", tmp_path / "index")
+    monkeypatch.setattr(mise_a_jour, "NOUVEAU", tmp_path / "nouveau")
+    monkeypatch.setattr(mise_a_jour, "RAW_DIR", tmp_path / "raw")
+    monkeypatch.setattr(mise_a_jour, "archives_lues", lambda _: ["LEGI_2.tar.gz"])
+    for nom, valeur in (("sources_dila", lambda: []), ("reconstituer", lambda *a: []),
+                        ("ajouter_nouvelles", lambda *a: ([], [])), ("amorcer_cache", lambda *a: 0),
+                        ("verifier", lambda *a: []), ("compter", lambda _: (10, 10, set())),
+                        ("citations_publiques", lambda _i: [])):
+        monkeypatch.setattr(mise_a_jour, nom, valeur)
+    monkeypatch.setattr(mise_a_jour.dila, "date_corpus", lambda *a: "2026-11-23")
+    monkeypatch.setattr(mise_a_jour.embed, "main", lambda *a: 0)
+
+
+def test_fiches_recuperees_en_echec_alerte_et_index_construit_quand_meme(tmp_path, monkeypatch):
+    """T7 (reste de TST-3, audit du 2026-11-23) : cours_recuperes.main leve ; l'administrateur est prevenu, et le
+    nouvel index est tout de meme construit et accepte."""
+    from ingest import cours_recuperes
+    _nuit_simulee(tmp_path, monkeypatch)
+
+    def fiches(_argv):
+        raise cours_recuperes.CatalogueReduit("40 cours valides contre 90 le 2026-11-01")
+    monkeypatch.setattr(mise_a_jour.cours_recuperes, "main", fiches)
+    alertes, construits = [], []
+    monkeypatch.setattr(mise_a_jour.fraicheur, "alerter", alertes.append)
+    monkeypatch.setattr(mise_a_jour.build_index, "build", lambda index_dir: (index_dir.mkdir(parents=True),
+                                                                             construits.append(index_dir)))
+    assert mise_a_jour.main(["--sans-telechargement"]) == 0
+    assert len(alertes) == 1 and "fiches recuperees" in alertes[0] and "40 cours valides" in alertes[0]
+    assert construits == [tmp_path / "nouveau"]
+    assert (tmp_path / "nouveau" / mise_a_jour.ARCHIVES).read_text() == "LEGI_2.tar.gz\n"
+
+
+def test_alerte_des_fiches_qui_echoue_n_arrete_pas_l_index(tmp_path, monkeypatch):
+    """T7 : l'envoi de l'alerte echoue aussi (Resend indisponible) : l'index est construit quand meme."""
+    _nuit_simulee(tmp_path, monkeypatch)
+    monkeypatch.setattr(mise_a_jour.cours_recuperes, "main", lambda _a: 1 / 0)
+
+    def alerter(_m):
+        raise RuntimeError("Resend indisponible")
+    monkeypatch.setattr(mise_a_jour.fraicheur, "alerter", alerter)
+    monkeypatch.setattr(mise_a_jour.build_index, "build", lambda index_dir: index_dir.mkdir(parents=True))
+    assert mise_a_jour.main(["--sans-telechargement"]) == 0
+    assert (tmp_path / "nouveau" / mise_a_jour.ARCHIVES).exists()

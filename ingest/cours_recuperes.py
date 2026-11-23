@@ -27,6 +27,7 @@ import sys
 import time
 import zipfile
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -36,6 +37,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from api.config import ROOT
 from api.cours_recuperes import CoursRecupere
 from api.textes import SOURCES_A_PART
+from ingest.env import aujourdhui_paris
 from ingest.models import Passage
 
 RAW = ROOT / "data" / "raw" / "cours_recuperes"
@@ -518,13 +520,34 @@ class CatalogueReduit(RuntimeError):
 # Une archive vide ou un format change par service-public.gouv.fr ne reconnaissait plus aucune fiche, et le
 # catalogue vide remplacait le bon, relu aussitot par le service : page vide, sans alerte (audit du 19/11, SRV-2).
 PART_MINIMALE = 0.9
+# Comparer a la seule veille laissait passer une perte de 9 % chaque nuit, cumulee sans alerte (audit du
+# 2026-11-23, C3) : la reference est le plus grand catalogue ecrit sur JOURS_REFERENCE jours.
+JOURS_REFERENCE = 30
 
 
-def ecrire(cours: list[dict], cible: Path = CATALOGUE, forcer: bool = False) -> list[dict]:
+def _tailles(cible: Path) -> Path:
+    """Nombre de fiches ecrites chaque jour (« catalogue.tailles.json » a cote du catalogue)."""
+    return cible.with_name(f"{cible.stem}.tailles.json")
+
+
+def _lire_tailles(cible: Path, aujourdhui: date) -> dict[str, int]:
+    try:
+        tailles = json.loads(_tailles(cible).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    debut = (aujourdhui - timedelta(days=JOURS_REFERENCE)).isoformat()
+    return {j: int(n) for j, n in tailles.items() if isinstance(n, int) and debut <= j <= aujourdhui.isoformat()}
+
+
+def ecrire(cours: list[dict], cible: Path = CATALOGUE, forcer: bool = False,
+           aujourdhui: date | None = None) -> list[dict]:
     """Valide chaque entree avec le modele de l'API ; les entrees invalides sont signalees et laissees de cote.
 
-    Leve CatalogueReduit, sans rien ecrire, si moins de 90 % des entrees du catalogue precedent restent
-    (sauf forcer, pour une source retiree volontairement)."""
+    Leve CatalogueReduit, sans rien ecrire, si moins de 90 % des entrees restent par rapport au catalogue
+    precedent ou au plus grand des JOURS_REFERENCE derniers jours (sauf forcer, pour une source retiree
+    volontairement : la reference repart alors du nouveau catalogue)."""
+    aujourdhui = aujourdhui or aujourdhui_paris()
+    tailles = {} if forcer else _lire_tailles(cible, aujourdhui)
     valides, vus = [], set()
     for c in cours:
         try:
@@ -543,10 +566,19 @@ def ecrire(cours: list[dict], cible: Path = CATALOGUE, forcer: bool = False) -> 
         if len(valides) < PART_MINIMALE * avant:
             raise CatalogueReduit(f"{len(valides)} cours valides contre {avant} dans le catalogue precedent : "
                                   "catalogue garde tel quel (relancer avec --forcer si la baisse est voulue)")
+        if tailles and len(valides) < PART_MINIMALE * (plus_grand := max(tailles.values())):
+            jour = max(j for j, n in tailles.items() if n == plus_grand)
+            raise CatalogueReduit(f"{len(valides)} cours valides contre {plus_grand} le {jour} (plus grand catalogue "
+                                  f"des {JOURS_REFERENCE} derniers jours) : pertes cumulees, catalogue garde tel quel "
+                                  "(relancer avec --forcer si la baisse est voulue)")
     cible.parent.mkdir(parents=True, exist_ok=True)
     tmp = cible.with_suffix(".tmp")
     tmp.write_text(json.dumps(valides, ensure_ascii=False), encoding="utf-8")
     tmp.replace(cible)
+    tailles[aujourdhui.isoformat()] = max(len(valides), tailles.get(aujourdhui.isoformat(), 0))
+    tmp = _tailles(cible).with_suffix(".tmp")
+    tmp.write_text(json.dumps(dict(sorted(tailles.items()))), encoding="utf-8")
+    tmp.replace(_tailles(cible))
     return valides
 
 

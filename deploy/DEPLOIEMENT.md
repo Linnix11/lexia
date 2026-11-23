@@ -96,7 +96,8 @@ La DILA publie chaque soir vers 21 h les textes et décisions modifiés du jour 
 1. télécharge les nouvelles archives LEGI, CASS, JADE et CONSTIT dans `/opt/lexia/data/raw/dila` ;
 2. s'il y a du nouveau, réimporte les sources, calcule les embeddings des seuls passages nouveaux ou modifiés et construit `data/index.nouveau` (`python -m ingest.mise_a_jour`, en tant que `lexia`, en priorité basse) ;
 3. refuse le nouvel index s'il perd plus de 2 % des passages ou des embeddings, ou une source entière ;
-4. le met en service (l'ancien est gardé dans `data/index.precedent`), redémarre le service (une trentaine de secondes) et revient à l'ancien si `/api/sante` ne répond plus.
+4. le met en service (l'ancien est gardé dans `data/index.precedent`), redémarre le service (une trentaine de secondes) et revient à l'ancien si `/api/sante` ne répond plus ; un e-mail part à chaque échec, et un second si le service reste muet avec l'ancien index ;
+5. compare les articles cités par les pages publiques (`data/citations-publiees.json`, envoyé par `publier.sh`) au nouvel index et prévient par e-mail si l'un d'eux a changé (pages à recompiler sur le Mac).
 
 | Action | Commande (sur le serveur) |
 |---|---|
@@ -157,8 +158,9 @@ Restaurer : arrêter le service (`systemctl stop lexia`), supprimer `/opt/lexia/
 ## Sécurité
 
 - L'API n'écoute que sur `127.0.0.1` : seul nginx est exposé.
-- Limite de requêtes par IP côté nginx (20 par minute) et côté application (`RATE_LIMIT_PER_MINUTE`).
-- Le service tourne sous un utilisateur système sans shell, avec un durcissement systemd minimal.
+- Limite de requêtes côté nginx (par adresse IPv4, par réseau /64 en IPv6 : 120 par minute sur l'API, 5 par minute sur la connexion et les codes) et côté application (`RATE_LIMIT_PER_MINUTE`). `publier.sh` signale les lignes de `deploy/nginx-lexia.conf` absentes du serveur (fichier modifié par certbot, jamais remplacé) : les recopier, puis `nginx -t && systemctl reload nginx`.
+- Le service tourne sous un utilisateur système sans shell, durci par systemd (`deploy/lexia.service`, à vérifier avec `systemd-analyze security lexia`), mémoire limitée à 75 % du VPS, date de Paris (`TZ=Europe/Paris`).
+- Dépendances Python figées avec empreintes (`deploy/requirements-serveur.txt` et `deploy/requirements-torch.txt`, générés par `.venv/bin/python deploy/figer_dependances.py` à partir de `deploy/requirements-serveur.in`) et installées avec `--require-hashes`, un seul index par fichier.
 - Aucune donnée personnelle collectée : pas de compte, journaux sans le texte des questions, favoris stockés dans le navigateur.
 
 ## Sécurité du serveur (audit du 2026-11-13)

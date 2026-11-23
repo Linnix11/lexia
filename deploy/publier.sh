@@ -59,11 +59,15 @@ rsync -az --delete --partial-dir=.rsync-partiel --timeout=120 \
   --exclude '.git' --exclude '.venv' --exclude '.cache' --exclude 'node_modules' --exclude '.env' \
   --exclude 'donnees' --exclude '.claude' --exclude 'sauvegardes' \
   --exclude 'data/raw' --exclude 'data/embeddings' --exclude 'data/passages' \
-  --exclude 'data/cours_recuperes' --exclude 'data/mise_a_jour_reussie' \
+  --exclude 'data/cours_recuperes' --exclude 'data/mise_a_jour_reussie' --exclude 'data/citations-publiees.json' \
   --exclude 'logs' --exclude 'eval/resultats' --exclude '__pycache__' --exclude '.pytest_cache' \
   --exclude 'web/src' --exclude 'tests' \
   ${EXCLURE_INDEX[@]+"${EXCLURE_INDEX[@]}"} \
   ./ "$SERVEUR:$APP/"
+
+# Articles cites par les pages publiques : web/src ne part pas, la copie est comparee chaque nuit au nouvel index
+# (api.donnees_publiques.ecarts_citations, audit du 2026-11-23, C5).
+rsync -az --timeout=120 web/src/site/contenu/citations.json "$SERVEUR:$APP/data/citations-publiees.json"
 
 echo "== .env (seulement s'il manque sur le serveur)"
 if ! ssh "$SERVEUR" "test -f $APP/.env"; then

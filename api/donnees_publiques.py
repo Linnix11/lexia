@@ -7,12 +7,16 @@ sources : une seule verite. Apres une modification des formules, des matieres ou
     .venv/bin/python -m api.donnees_publiques
 
 puis committer `web/src/site/donnees-publiques.json` et `web/src/site/contenu/noms-sources.json` (le test `tests/test_pages_publiques.py` echoue sinon).
+
+Citations des articles (`contenu/citations.json`) : relues dans l'index (data/index ou LEXIA_INDEX) ; chaque nuit,
+le serveur compare la copie publiee a son nouvel index et previent l'administrateur (ecarts_citations).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 from pathlib import Path
 
@@ -20,6 +24,7 @@ from api.config import ROOT
 from api.matieres import LIBELLES, MATIERES, sources_par_matiere
 from api.plans import FORMULES
 from api.textes import NOMS
+from ingest.sources.legi import url_article
 
 FICHIER = ROOT / "web" / "src" / "site" / "donnees-publiques.json"
 
@@ -83,10 +88,23 @@ CITATIONS: dict[str, tuple[str, str] | str] = {
     "ddhc_1789:13": ("ddhc_1789", "13"),
 }
 FICHIER_CITATIONS = ROOT / "web" / "src" / "site" / "contenu" / "citations.json"
+# Copie envoyee sur le serveur par deploy/publier.sh (web/src n'y part pas), comparee chaque nuit au nouvel index.
+CITATIONS_PUBLIEES = ROOT / "data" / "citations-publiees.json"
+# Champs compares : la version cite la date de l'archive DILA, qui change a chaque mise a jour.
+CHAMPS_COMPARES = ("texte", "numero", "alineas", "url")
+_LIEN_LEGIFRANCE = re.compile(r"^https://www\.legifrance\.gouv\.fr/(?:codes|loda)/article_lc/(LEGIARTI\d+)$")
+
+
+def _lien(source_id: str, url: str) -> str:
+    """Lien Legifrance selon la regle actuelle (ingest.sources.legi.url_article). Un index construit avant B11
+    (audit du 2026-11-18) donnait /codes/ a la DDHC et a l'ordonnance 58-1067 (audit du 2026-11-23, D10)."""
+    m = _LIEN_LEGIFRANCE.match(url)
+    return url_article(source_id, m.group(1)) if m else url
 
 
 def citations(index: Path) -> dict:
-    """Texte, lien officiel et version de chaque article cite, tels que l'index les donne."""
+    """Texte, lien officiel et version de chaque article cite, tels que l'index les donne (lien Legifrance
+    recalcule selon la regle actuelle)."""
     con = sqlite3.connect(f"file:{index / 'lexia.sqlite'}?mode=ro", uri=True)
     out = {}
     for cle, ref in CITATIONS.items():
@@ -102,7 +120,7 @@ def citations(index: Path) -> dict:
             "texte": d["entete"].split(", article ")[0].strip(),
             "numero": d["numero"],
             "alineas": [a.strip() for a in d["texte"].split("\n\n") if a.strip()],
-            "url": d["url"],
+            "url": _lien(d["source_id"], d["url"]),
             "version": d.get("version") or "",
         }
     con.close()
@@ -111,6 +129,30 @@ def citations(index: Path) -> dict:
 
 def texte_citations(index: Path) -> str:
     return json.dumps(citations(index), ensure_ascii=False, indent=1) + "\n"
+
+
+def ecarts_citations(index: Path, fichier: Path = CITATIONS_PUBLIEES) -> list[str]:
+    """Articles cites par les pages publiques qui ne sont plus ceux de l'index (texte, numero, lien) ou n'y ont
+    plus une seule version en vigueur. Liste vide : pages a jour ; fichier absent : rien a comparer.
+
+    Appele chaque nuit apres la construction de l'index (ingest/mise_a_jour.py) : a une date de bascule, une page
+    publique pouvait citer une version finie sans que personne ne le sache (audit du 2026-11-23, C5)."""
+    if not fichier.exists():
+        return []
+    publiees = json.loads(fichier.read_text(encoding="utf-8"))
+    try:
+        actuelles = citations(index)
+    except ValueError as e:
+        return [str(e)]
+    ecarts = []
+    for cle in sorted(set(publiees) | set(actuelles)):
+        avant, apres = publiees.get(cle), actuelles.get(cle)
+        if avant is None or apres is None:
+            ecarts.append(f"{cle} : {'absent des pages publiees' if avant is None else 'plus cite par le depot'}")
+            continue
+        if champs := [c for c in CHAMPS_COMPARES if avant.get(c) != apres.get(c)]:
+            ecarts.append(f"{cle} : {', '.join(champs)} change(s)")
+    return ecarts
 
 
 if __name__ == "__main__":

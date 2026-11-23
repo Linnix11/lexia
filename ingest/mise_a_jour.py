@@ -382,7 +382,28 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     n, e, _ = compter(NOUVEAU)
     print(f"Nouvel index pret : {n} passages, {e} embeddings ({dila.date_corpus(RAW_DIR, 'legi')} pour les textes)")
+    citations_publiques(NOUVEAU)
     return 0
+
+
+def citations_publiques(index: Path) -> list[str]:
+    """Articles cites par les pages publiques prerendues, compares au nouvel index (audit du 2026-11-23, C5) : un
+    ecart previent l'administrateur sans retenir l'index (les pages sont compilees sur le Mac)."""
+    from api import donnees_publiques
+    try:
+        ecarts = donnees_publiques.ecarts_citations(index)
+    except Exception as e:  # noqa: BLE001  (controle seulement, jamais bloquant)
+        ecarts = [f"controle impossible : {e}"]
+    if ecarts:
+        message = ("Pages publiques a recompiler : articles cites changes dans le nouvel index (relancer "
+                   "python -m api.donnees_publiques avec un index a jour, relire les pages, publier) : "
+                   + " ; ".join(ecarts))
+        print(f"  {message}", file=sys.stderr)
+        try:
+            fraicheur.alerter(message)
+        except Exception as e2:  # noqa: BLE001
+            print(f"  alerte non envoyee : {e2}", file=sys.stderr)
+    return ecarts
 
 
 if __name__ == "__main__":

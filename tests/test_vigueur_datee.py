@@ -34,23 +34,18 @@ STABLE = _article("code_civil:STABLE", "1240", "Tout fait quelconque de l'homme 
                   {"en_vigueur": True, "date_debut": "2016-10-01"}, "en vigueur")
 
 
-class _Jour(dt.date):
-    """date.today() simulee."""
-    valeur = CONSTRUCTION
-
-    @classmethod
-    def today(cls):
-        return dt.date.fromisoformat(cls.valeur)
-
-
 @pytest.fixture
 def jour(monkeypatch):
-    monkeypatch.setattr(textes, "date", _Jour)
-    monkeypatch.setattr(mise_a_jour, "date", _Jour)
+    """Date du jour simulee (ingest.env.aujourdhui_paris, date de Paris depuis l'audit du 2026-11-23, C4)."""
+    simulee = {"valeur": CONSTRUCTION}
+
+    def aujourdhui():
+        return dt.date.fromisoformat(simulee["valeur"])
+    for module in (textes, mise_a_jour, build_index):
+        monkeypatch.setattr(module, "aujourdhui_paris", aujourdhui)
 
     def regler(valeur: str) -> None:
-        _Jour.valeur = valeur
-    regler(CONSTRUCTION)
+        simulee["valeur"] = valeur
     return regler
 
 

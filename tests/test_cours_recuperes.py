@@ -281,6 +281,33 @@ def test_catalogue_qui_perd_trop_de_fiches_garde_l_ancien(tmp_path):
     assert ecrire_catalogue([], cible, forcer=True) == []                     # baisse voulue
 
 
+def test_pertes_cumulees_sur_plusieurs_nuits_refusees(tmp_path):
+    """C3 (audit du 2026-11-23) : 8 % de moins chaque nuit passait toujours, la comparaison se faisant a la veille."""
+    from datetime import date, timedelta
+
+    from ingest.cours_recuperes import CatalogueReduit, ecrire as ecrire_catalogue
+    cible = tmp_path / "catalogue.json"
+    cours = [{**FACTICE, "id": f"cours-{i}"} for i in range(100)]
+    jour = date(2026, 11, 1)
+    ecrire_catalogue(cours, cible, aujourdhui=jour)
+    ecrire_catalogue(cours[:92], cible, aujourdhui=jour + timedelta(days=1))     # 92 % du plus grand : accepte
+    with pytest.raises(CatalogueReduit, match="2026-11-01"):
+        ecrire_catalogue(cours[:85], cible, aujourdhui=jour + timedelta(days=2))  # 92 % de la veille, 85 % du max
+    assert len(json.loads(cible.read_text(encoding="utf-8"))) == 92
+    # Au-dela de 30 jours, le plus grand catalogue ne compte plus ; --forcer repart du nouveau catalogue
+    assert len(ecrire_catalogue(cours[:85], cible, aujourdhui=jour + timedelta(days=31))) == 85
+    assert len(ecrire_catalogue(cours[:10], cible, forcer=True, aujourdhui=jour + timedelta(days=32))) == 10
+    assert len(ecrire_catalogue(cours[:10], cible, aujourdhui=jour + timedelta(days=33))) == 10
+
+
+def test_tailles_illisibles_n_empechent_pas_l_ecriture(tmp_path):
+    from ingest.cours_recuperes import ecrire as ecrire_catalogue
+    cible = tmp_path / "catalogue.json"
+    (tmp_path / "catalogue.tailles.json").write_text("{pas du json")
+    assert len(ecrire_catalogue([{**FACTICE, "id": "a"}], cible)) == 1
+    assert list(json.loads((tmp_path / "catalogue.tailles.json").read_text()).values()) == [1]
+
+
 def test_fiche_xml_illisible_ignoree(tmp_path, monkeypatch):
     import zipfile
     from ingest import cours_recuperes as cr

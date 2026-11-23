@@ -44,6 +44,12 @@ URL_ARTICLE = "https://www.legifrance.gouv.fr/codes/article_lc/{id}"
 URL_ARTICLE_TEXTE = "https://www.legifrance.gouv.fr/loda/article_lc/{id}"
 
 
+def url_article(source_id: str, art_id: str) -> str:
+    """Lien Legifrance d'une version d'article (LEGIARTI...) : /codes/ pour un code, /loda/ sinon."""
+    code = source_id.startswith("code_") or source_id == "livre_procedures_fiscales"
+    return (URL_ARTICLE if code else URL_ARTICLE_TEXTE).format(id=art_id)
+
+
 # Ligne sans contenu : « I. Paragraphe modificateur », « II. - (Abrogé). », « (texte non reproduit). »
 _LIGNE_VIDE = re.compile(
     r"^(?:(?:[IVX]+|\d+°?|[a-z])\s*[.)°]?\s*[-–:]?\s*)?\(?\s*(?:(?:alin[ée]as?|paragraphes?|dispositions?|articles?)\s+)?"
@@ -169,8 +175,7 @@ def parse_article(raw: bytes, *, date_recuperation: str, version_archive: str,
         numero=num,
         titre=" > ".join(chemin) or None,
         alineas=alineas,
-        url=(URL_ARTICLE if source_id.startswith("code_") or source_id == "livre_procedures_fiscales"
-             else URL_ARTICLE_TEXTE).format(id=art_id),
+        url=url_article(source_id, art_id),
         version=f"Version {periode}, article {statut} ({version_archive})",
         date_recuperation=date_recuperation,
         meta=meta,

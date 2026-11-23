@@ -36,6 +36,15 @@ class ParseError(RuntimeError):
     pass
 
 
+class PagesEnEchec(ParseError):
+    """Pages de decision illisibles ou injoignables ; les autres decisions de la liste ont ete telechargees."""
+
+    def __init__(self, echecs: list[str], ajoutes: list[str]):
+        self.echecs, self.ajoutes = echecs, ajoutes
+        super().__init__(f"{len(echecs)} page(s) de decision en echec, {len(ajoutes)} decision(s) ajoutee(s) "
+                         f"quand meme : " + " ; ".join(echecs))
+
+
 def liste(html: str) -> dict[str, str]:
     """{chemin: cle} des decisions DC, QPC et L de la page des dernieres decisions, dans l'ordre de la page.
     La cle (numero|nature, comme cles()) est lue dans le titre du lien : une decision deja dans l'archive DILA
@@ -55,7 +64,11 @@ def code(chemin: str) -> str:
 
 def synchroniser(http: httpx.Client, raw_dir: Path, deja: set[str]) -> list[str]:
     """Telecharge les decisions recentes absentes du cache et de l'archive DILA ; retire du cache celles que
-    l'archive contient desormais. deja : cles des decisions de l'archive (cles()). Renvoie les codes ajoutes."""
+    l'archive contient desormais. deja : cles des decisions de l'archive (cles()). Renvoie les codes ajoutes.
+
+    Une page illisible (maintenance, format nouveau) ou injoignable ne bloque plus les suivantes : la liste va de
+    la plus recente a la plus ancienne, et la page fautive restait en tete plusieurs nuits sans qu'aucune nouvelle
+    decision n'entre (audit du 2026-11-23, C1). Les echecs sont listes ensemble a la fin (PagesEnEchec)."""
     raw_dir.mkdir(parents=True, exist_ok=True)
     for f in raw_dir.glob("*.htm"):
         if cles(lire(f.read_text(encoding="utf-8"))) & deja:
@@ -65,19 +78,25 @@ def synchroniser(http: httpx.Client, raw_dir: Path, deja: set[str]) -> list[str]
     chemins = liste(r.text)
     if not chemins:
         raise ParseError("Aucune decision dans la page des dernieres decisions : structure du site changee ?")
-    ajoutes = []
+    ajoutes, echecs = [], []
     for chemin, cle in chemins.items():
         f = raw_dir / f"{code(chemin)}.htm"
         if f.exists() or cle in deja:
             continue
-        page = http.get(SITE + chemin)
-        page.raise_for_status()
-        if cles(lire(page.text)) & deja:
+        try:
+            page = http.get(SITE + chemin)
+            page.raise_for_status()
+            if cles(lire(page.text)) & deja:
+                continue
+        except (ParseError, httpx.HTTPError) as e:
+            echecs.append(f"{chemin} ({type(e).__name__} : {e})")
             continue
         tmp = f.with_suffix(".tmp")
         tmp.write_text(page.text, encoding="utf-8")
         tmp.replace(f)
         ajoutes.append(code(chemin))
+    if echecs:
+        raise PagesEnEchec(echecs, ajoutes)
     return ajoutes
 
 

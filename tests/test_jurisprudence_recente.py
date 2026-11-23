@@ -203,6 +203,43 @@ def test_synchronisation_du_site_ne_telecharge_que_le_nouveau(tmp_path):
     assert sorted(f.name for f in tmp_path.glob("*.htm")) == ["20261230_1231QPC.htm"]
 
 
+def test_page_illisible_en_tete_les_suivantes_entrent_quand_meme(tmp_path):
+    """T3 (audit du 2026-11-23, C1) : la plus recente est en maintenance, la suivante est lue et mise en cache ;
+    une seule erreur a la fin, qui nomme la page fautive."""
+    site = _site()
+    site.reponses["/decision/2026/20261233QPC.htm"] = "<html><body><p>Maintenance</p></body></html>"
+    deja = _deja_sauf("/decision/2026/20261233QPC.htm", "/decision/2026/20261230_1231QPC.htm")
+    with site.client() as http, pytest.raises(constit_site.PagesEnEchec) as e:
+        constit_site.synchroniser(http, tmp_path, deja)
+    assert e.value.ajoutes == ["20261230_1231QPC"] and len(e.value.echecs) == 1
+    assert "20261233QPC.htm" in str(e.value) and "ParseError" in str(e.value)
+    assert sorted(f.name for f in tmp_path.glob("*")) == ["20261230_1231QPC.htm"]   # ni .tmp ni page fautive
+
+
+def test_reseau_coupe_sur_une_page_les_autres_entrent(tmp_path):
+    """T3 : connexion coupee sur la premiere page, page absente (404) plus loin : rien d'ecrit pour elles."""
+    site = _site()
+    appel = site.__call__
+
+    def coupe(requete):
+        if requete.url.path == "/decision/2026/20261233QPC.htm":
+            raise httpx.ConnectError("connexion coupee", request=requete)
+        return appel(requete)
+
+    deja = _deja_sauf("/decision/2026/20261233QPC.htm", "/decision/2026/20261230_1231QPC.htm",
+                      "/decision/2026/2026340L.htm")
+    with httpx.Client(transport=httpx.MockTransport(coupe)) as http, pytest.raises(constit_site.PagesEnEchec) as e:
+        constit_site.synchroniser(http, tmp_path, deja)
+    assert e.value.ajoutes == ["20261230_1231QPC"]
+    assert len(e.value.echecs) == 2 and "ConnectError" in e.value.echecs[0] and "2026340L" in e.value.echecs[1]
+    # Nuit suivante, connexion revenue : la page coupee entre, la page absente reste en echec, la page deja en
+    # cache n'est pas redemandee
+    with site.client() as http, pytest.raises(constit_site.PagesEnEchec) as e:
+        constit_site.synchroniser(http, tmp_path, deja)
+    assert e.value.ajoutes == ["20261233QPC"]
+    assert "/decision/2026/20261230_1231QPC.htm" not in [r.url.path for r in site.requetes[-3:]]
+
+
 def test_constit_complete_l_archive(tmp_path):
     raw = tmp_path / "raw"
     (raw / "dila").mkdir(parents=True)
