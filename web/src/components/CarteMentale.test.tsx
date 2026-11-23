@@ -37,6 +37,14 @@ const libellesDessin = () => Array.from(dessin().querySelectorAll('text')).map((
 })
 
 describe('Carte mentale', () => {
+  it('garde le focus : titre de la section à l’ouverture, bouton à la fermeture (audit du 2026-11-23, D4)', async () => {
+    render(<CarteMentale demande={demande} />)
+    fireEvent.click(screen.getByRole('button', { name: /carte mentale/i }))
+    expect(screen.getByRole('heading', { name: 'Carte mentale' })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(screen.getByRole('button', { name: /carte mentale/i })).toHaveFocus()
+  })
+
   it('demande la carte au clic, la dessine et donne la version en liste et l’avertissement', async () => {
     render(<CarteMentale demande={demande} />)
     expect(fetch).not.toHaveBeenCalled()

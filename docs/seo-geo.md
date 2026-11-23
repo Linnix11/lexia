@@ -183,8 +183,10 @@ tout le texte des pages publiques et de `llms.txt`).
   Piste : faire injecter ces valeurs par le serveur au moment de la réponse.
 - Adresses inexistantes : toujours 200 avec la coquille de l'application. Répondre 404 demanderait au serveur de
   connaître toutes les routes de l'application ; à faire en même temps que la piste précédente.
-- Les extraits enrichis « FAQ » sont réservés par Google, depuis 2023, à des sites officiels et de santé : le
-  balisage FAQPage sert ici à la compréhension par les moteurs et les assistants, pas à un affichage particulier.
+- Les extraits enrichis « FAQ » ne sont plus affichés par Google Search depuis le 7 mai 2026 (documentation
+  Google relue à l'audit du 23 novembre 2026, D7) : le balisage FAQPage ne sert qu'à la compréhension par les
+  moteurs et les assistants. Il ne reprend plus que la question de cours propre à chaque matière ; la question
+  promotionnelle commune aux 20 matières et aux guides est retirée.
 - Tarifs et accueil : tant que la configuration du serveur n'est pas lue (HTML prérendu), les formules payantes
   proposent « Créer un compte » au lieu du bouton de demande, et la mention de TVA n'apparaît pas (audit du
   23 novembre, D1). Les citations sont lues dans l'index du Mac : les relire depuis l'index du serveur après

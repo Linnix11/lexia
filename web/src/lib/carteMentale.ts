@@ -153,6 +153,8 @@ export function nomFichier(titre: string): string {
   return `carte-mentale${base ? `-${base}` : ''}.png`
 }
 
+export const MENTION_IA_CARTE = 'Carte générée par une intelligence artificielle (Lexia) : vérifiez les sources citées.'
+
 /** Image PNG du dessin (SVG dessine dans un canvas, fond blanc, deux fois plus net), sans bibliotheque. */
 export async function exporterPng(svg: SVGSVGElement, largeur: number, hauteur: number, nom: string): Promise<void> {
   const copie = svg.cloneNode(true) as SVGSVGElement
@@ -168,15 +170,19 @@ export async function exporterPng(svg: SVGSVGElement, largeur: number, hauteur: 
       image.src = url
     })
     const echelle = 2
+    const bandeau = 26 // mention « generee par IA » sous le dessin (reglement (UE) 2024/1689, art. 50 ; audit du 2026-11-23, E11)
     const canvas = document.createElement('canvas')
     canvas.width = largeur * echelle
-    canvas.height = hauteur * echelle
+    canvas.height = (hauteur + bandeau) * echelle
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('canvas')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.scale(echelle, echelle)
     ctx.drawImage(image, 0, 0, largeur, hauteur)
+    ctx.fillStyle = '#666e69'
+    ctx.font = '12px Inter, -apple-system, "Segoe UI", sans-serif'
+    ctx.fillText(MENTION_IA_CARTE, 12, hauteur + 17, largeur - 24)
     const png = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/png'))
     if (!png) throw new Error('png')
     const lien = document.createElement('a')

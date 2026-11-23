@@ -30,7 +30,9 @@ const LIBELLES_ANNEES: Record<string, string> = { L1: 'Licence 1', L2: 'Licence 
 export const titreComplet = (p: Pick<PageSeo, 'chemin' | 'titre'>) => (p.chemin === '/' ? p.titre : `${p.titre} · ${NOM}`)
 const url = (chemin: string) => ORIGINE + (chemin === '/' ? '/' : chemin)
 
-const editeur = { '@type': 'Organization', '@id': `${ORIGINE}/#editeur`, name: EDITEUR, url: ORIGINE }
+/** Noeud de l'editeur : ajoute a chaque graphe par balisesTete (publication.ts), car un « @id » ne relie pas une
+ *  page a une autre (audit du 2026-11-23, D6). */
+export const editeur = { '@type': 'Organization', '@id': `${ORIGINE}/#editeur`, name: EDITEUR, url: ORIGINE }
 
 const fil = (...etapes: [string, string][]) => ({
   '@type': 'BreadcrumbList',
@@ -61,7 +63,8 @@ const faq = (questions: { question: string; reponse: string }[]) => ({
   mainEntity: questions.map((q) => ({ '@type': 'Question', name: q.question, acceptedAnswer: { '@type': 'Answer', text: q.reponse } })),
 })
 
-/** Questions frequentes d'une matiere : la question de cours, puis trois reponses tirees des donnees du depot. */
+/** Questions frequentes d'une matiere : la question de cours, puis deux reponses tirees des donnees du depot. La
+ *  question promotionnelle commune aux 20 pages est retiree (audit du 2026-11-23, D7). */
 export function questionsMatiere(m: MatierePublique): { question: string; reponse: string }[] {
   const sources = m.sources.map((s) => m.noms_sources?.[s] ?? s)
   return [
@@ -74,14 +77,19 @@ export function questionsMatiere(m: MatierePublique): { question: string; repons
       question: `Sur quelles sources Lexia s’appuie-t-il en ${m.libelle.charAt(0).toLowerCase()}${m.libelle.slice(1)} ?`,
       reponse: `Sur les textes et décisions officiels suivants : ${sources.join(', ')}. Chaque réponse cite l’article ou la décision qui la fonde, avec un lien vers le texte officiel.`,
     },
-    {
-      question: 'Lexia aide-t-il pour le cas pratique, le commentaire d’arrêt et la dissertation ?',
-      reponse: 'Oui : après avoir choisi la matière, le mode Cas pratique présente qualification, problème de droit, majeure, mineure et conclusion ; le mode Commentaire d’arrêt la fiche d’arrêt, le sens, la valeur, la portée et un plan ; le mode Dissertation les définitions, une problématique et un plan en deux parties.',
-    },
   ]
 }
 
-const DESCRIPTION_ACCUEIL = 'Lexia, assistant d’étude du droit pour les étudiants en licence : explications, fiches, questionnaires et méthodes, appuyés sur plus de 900 000 passages officiels cités.'
+const DESCRIPTION_ACCUEIL = 'Lexia, assistant d’étude du droit pour les étudiants en licence : explications, fiches, questionnaires et méthodes, appuyés sur un corpus de plus de 900 000 passages officiels.'
+
+const euros = (e: number) => `${e.toFixed(2).replace('.', ',')} €`
+
+/** Description de /tarifs tiree des formules du depot (api/plans.py), comme llms.txt : jamais de prix en dur (D13). */
+export function descriptionTarifs(): string {
+  const [gratuit, ...payantes] = donnees.formules
+  return `Formules de Lexia : gratuite avec un compte (${gratuit.questions_par_jour} questions et ${gratuit.quiz_par_jour} questionnaires par jour), `
+    + `${payantes.map((f) => `${f.nom} à ${euros(f.prix_mensuel_euros)}`).join(' et ')} par mois, sans engagement.`
+}
 
 function pagesFixes(): PageSeo[] {
   return [
@@ -96,7 +104,7 @@ function pagesFixes(): PageSeo[] {
     },
     {
       chemin: '/tarifs', titre: TITRES_PUBLICS['/tarifs'],
-      description: `Formules de Lexia : gratuite avec un compte (${donnees.formules[0].questions_par_jour} questions et ${donnees.formules[0].quiz_par_jour} questionnaires par jour), Étudiant à 4,99 € et Intensif à 9,99 € par mois, sans engagement.`,
+      description: descriptionTarifs(),
       prerendu: true, sitemap: true, type: 'website',
       jsonld: () => [application(), fil(['Tarifs', '/tarifs'])],
     },
@@ -149,7 +157,7 @@ const pageMatiere = (m: MatierePublique): PageSeo => {
         educationalLevel: LIBELLES_ANNEES[annee] ?? 'Licence', learningResourceType: 'Fiche de présentation',
         about: [m.libelle, ...(m.mots ?? [])], isAccessibleForFree: true, publisher: { '@id': `${ORIGINE}/#editeur` },
       },
-      faq(questionsMatiere(m)),
+      faq(m.questions.map((q) => ({ question: q.question, reponse: q.reponse }))),
       fil(['Matières', '/matieres'], [m.libelle, chemin]),
     ],
   }

@@ -214,6 +214,14 @@ describe('Site', () => {
     expect(JSON.parse(String(appel[1].body))).toEqual({ mot_de_passe: 'motdepasse-solide', code: '123456' })
   })
 
+  it('connexion champs vides : bouton actif, raison dite au clic (audit du 2026-11-23, D8)', async () => {
+    aller('/connexion')
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Se connecter' }))
+    expect(screen.getByText('Saisissez votre adresse e-mail et votre mot de passe.')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/auth/connexion'))).toBe(false)
+  })
+
   it('connexion avec double authentification : code demande apres le mot de passe', async () => {
     aller('/connexion')
     render(<Site />)

@@ -49,6 +49,15 @@ afterEach(() => {
 const demande = () => ({ type: 'cours' as const, id: '7' })
 
 describe('Résumé vocal', () => {
+  it('garde le focus : titre de la section à l’ouverture, bouton à la fermeture (audit du 2026-11-23, D4)', async () => {
+    render(<ResumeVocal demande={demande} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Écouter un résumé' }))
+    expect(screen.getByRole('heading', { name: 'Résumé vocal' })).toHaveFocus()
+    await screen.findByText(RESUME.titre)
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(screen.getByRole('button', { name: 'Écouter un résumé' })).toHaveFocus()
+  })
+
   it('demande le résumé au clic, l’affiche avec l’avertissement et le lit phrase par phrase', async () => {
     render(<ResumeVocal demande={demande} />)
     expect(fetch).not.toHaveBeenCalled()

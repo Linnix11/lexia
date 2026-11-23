@@ -1,7 +1,10 @@
 # Lexia : pages publiques ouvertes aux moteurs de recherche et aux moteurs de reponse (robots des assistants
 # compris), espace des comptes et API exclus (audit du 2026-11-19, WEB-15 ; referencement, D116).
+# /app$ et /app/ plutot que /app : ce prefixe excluait aussi /apple-touch-icon.png (audit du 2026-11-23, D11).
 User-agent: *
-Disallow: /app
+Disallow: /app$
+Disallow: /app/
+Disallow: /app?
 Disallow: /compte
 Disallow: /admin
 Disallow: /cours-recuperes

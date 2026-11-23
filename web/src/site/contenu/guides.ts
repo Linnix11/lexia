@@ -95,7 +95,6 @@ const CORPS: Record<string, CorpsGuide> = {
     faq: [
       { question: 'Quelle différence entre la majeure et la mineure ?', reponse: 'La majeure énonce la règle de droit et son fondement (un article, une jurisprudence). La mineure applique cette règle aux faits de l’énoncé, condition par condition.' },
       { question: 'Faut-il citer de la jurisprudence dans un cas pratique ?', reponse: 'Oui lorsqu’elle précise ou complète la règle légale, mais le texte vient d’abord. Indiquez la juridiction et la date de la décision.' },
-      { question: 'Lexia peut-il m’aider à préparer un cas pratique ?', reponse: 'Oui : le mode Cas pratique de Lexia présente la qualification des faits, le problème de droit, la majeure, la mineure et la conclusion, avec les articles cités et le texte officiel à un clic. Il sert à vérifier votre raisonnement, pas à remplacer votre copie.' },
     ],
   },
   'methode-commentaire-arret': {
@@ -157,7 +156,6 @@ const CORPS: Record<string, CorpsGuide> = {
     faq: [
       { question: 'Comment reconnaître un arrêt de rejet et un arrêt de cassation ?', reponse: 'Par le dispositif : « rejette le pourvoi » pour un arrêt de rejet, « casse et annule » pour un arrêt de cassation. Un arrêt de cassation commence en général par un visa du texte appliqué.' },
       { question: 'Le commentaire d’arrêt est-il une dissertation sur le thème de l’arrêt ?', reponse: 'Non. Le cours sert à éclairer la décision ; chaque développement doit partir de l’arrêt et y revenir.' },
-      { question: 'Lexia peut-il m’aider pour un commentaire d’arrêt ?', reponse: 'Oui : le mode Commentaire d’arrêt de Lexia propose une fiche d’arrêt, le sens, la valeur et la portée, une problématique et un plan, avec les textes cités. Indiquez la juridiction, la date et le numéro de l’arrêt.' },
     ],
   },
   'fiche-responsabilite-civile-pour-faute': {
@@ -382,7 +380,6 @@ const CORPS: Record<string, CorpsGuide> = {
     faq: [
       { question: 'Quelle différence entre la dissertation et le commentaire d’arrêt ?', reponse: 'La dissertation part d’un sujet et construit sa propre démonstration à partir du cours. Le commentaire part d’une décision et explique son sens, sa valeur et sa portée : chaque développement y revient à l’arrêt.' },
       { question: 'Faut-il toujours deux parties et deux sous-parties ?', reponse: 'C’est la règle attendue dans la plupart des facultés de droit, mais aucun texte ne l’impose. Suivez les consignes de votre équipe pédagogique.' },
-      { question: 'Lexia peut-il m’aider pour une dissertation ?', reponse: 'Oui : le mode Dissertation de Lexia propose des définitions, une problématique, un plan en deux parties et les sources mobilisables, avec le texte officiel à un clic. Il sert à vérifier votre réflexion, pas à rédiger votre copie.' },
     ],
   },
   'methode-fiche-arret': {

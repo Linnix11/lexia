@@ -609,6 +609,9 @@ describe('Reponse directe d abord (audit du 16 novembre 2026, point 3)', () => {
     expect(md.indexOf('## L’essentiel')).toBeGreaterThan(0)
     expect(md.indexOf('## L’essentiel')).toBeLessThan(md.indexOf('## Droit positif'))
     expect(md).toContain('- On répare le dommage causé par sa faute. [1]')
+    // Contenu genere marque comme tel (audit du 2026-11-23, E11)
+    expect(md).toContain('Fiche générée par une intelligence artificielle')
+    expect(md.indexOf('intelligence artificielle')).toBeLessThan(md.indexOf('## L’essentiel'))
   })
 })
 
@@ -943,6 +946,16 @@ describe('Depots de cours, version 2 (D107)', () => {
       .toEqual(['cours-contrats (PDF)', 'cours-contrats (DOCX)', 'cours-contrats (RTF)'])
     expect(envois[0].url).toContain('matiere=droit_civil')
     expect(envois[0].url).not.toContain('chapitre3')
+  })
+
+  it('depot : bouton actif sans fichier ni matiere, la raison est dite au clic (audit du 2026-11-23, D8)', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Déposer' }))
+    expect(screen.getByText('Choisissez d’abord un ou plusieurs fichiers.')).toBeInTheDocument()
+    fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Déposer' }))
+    expect(screen.getByText('Choisissez la matière du cours.')).toBeInTheDocument()
   })
 
   it('montre la progression de l envoi puis la lecture du fichier', async () => {

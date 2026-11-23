@@ -21,7 +21,9 @@ export function Accueil() {
   const { profil } = useSession()
   const cible = profil ? '/app' : '/inscription'
   // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
-  const supprime = new URLSearchParams(window.location.search).has('compte-supprime')
+  // Lu apres le premier rendu, identique a la page prerendue (sinon erreur d'hydratation ; audit du 2026-11-23, D12).
+  const [supprime, setSupprime] = useState(false)
+  useEffect(() => setSupprime(new URLSearchParams(window.location.search).has('compte-supprime')), [])
   // Limites de la formule gratuite lues sur le serveur, pas ecrites en dur (audit du 2026-11-18, D12)
   const [gratuit, setGratuit] = useState<Formule | null>(FORMULES_PUBLIQUES.find((x) => x.id === 'gratuit') ?? null)
   useEffect(() => {

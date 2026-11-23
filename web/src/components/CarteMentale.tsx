@@ -2,6 +2,7 @@
 // docs/cartes-mentales.md). Le serveur rend un plan verifie ; le navigateur le dessine en SVG maison.
 // Accessibilite : la meme carte en listes imbriquees, toujours presente (visible au clavier, ou en « Vue en liste »).
 import { useMemo, useRef, useState } from 'react'
+import { useFocusSection } from '../lib/focusSection'
 import { api, ApiError, type CarteMentale as Carte, type DemandeCarte, type FeuilleCarte, type NoeudCarte } from '../lib/api'
 import { COULEURS, disposer, exporterPng, nomFichier, type Boite } from '../lib/carteMentale'
 
@@ -111,6 +112,7 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
   demande: (notion: string) => DemandeCarte; libelle?: string; avecNotion?: boolean
 }) {
   const [ouvert, setOuvert] = useState(false)
+  const { titre, ouvreur } = useFocusSection(ouvert)
   const [carte, setCarte] = useState<Carte | null>(null)
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -161,7 +163,7 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
 
   if (!ouvert)
     return (
-      <button type="button" onClick={ouvrir}
+      <button ref={ouvreur} type="button" onClick={ouvrir}
         className="min-h-6 rounded-full border border-line px-2.5 text-[11px] text-forest hover:border-[#9eafa3]">
         {libelle}
       </button>
@@ -172,12 +174,12 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
   return (
     <section aria-label="Carte mentale" className="mt-2 w-full rounded-[10px] border border-[#cfd9d1] bg-[#f6f8f3] p-3 text-[12px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-[10px] font-bold tracking-[1.4px] text-forest uppercase">Carte mentale</h4>
+        <h4 ref={titre} tabIndex={-1} className="text-[11px] font-bold tracking-[1.4px] text-forest uppercase">Carte mentale</h4>
         <button type="button" onClick={() => setOuvert(false)} className="text-[11px] text-muted hover:text-forest">Fermer</button>
       </div>
       {avecNotion && (
         <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); charger() }}>
-          <label className="grid min-w-[180px] flex-1 gap-1 text-[10px] text-muted">
+          <label className="grid min-w-[180px] flex-1 gap-1 text-[11px] text-muted">
             Notion (facultatif)
             <input value={notion} onChange={(e) => setNotion(e.target.value)} maxLength={120}
               placeholder="ex. responsabilité du fait des choses"
@@ -191,7 +193,7 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
       {carte && !carte.branches.length && <p role="alert" className="mt-2 text-[#8c4a36]">{carte.message}</p>}
       {carte && disposition && (
         <>
-          <p className="mt-1 text-[10px] text-muted">
+          <p className="mt-1 text-[11px] text-muted">
             {carte.partiel && 'Carte du début du document, trop long pour être pris en entier · '}
             {`${carte.restants} carte(s) restante(s) aujourd’hui`}
           </p>
@@ -232,8 +234,8 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
             : 'sr-only focus-within:not-sr-only focus-within:mt-2 focus-within:block focus-within:rounded-[8px] focus-within:border focus-within:border-line focus-within:bg-white focus-within:p-3'}>
             <Liste carte={carte} replies={replies} basculer={basculer} />
           </div>
-          <p className="mt-2 text-[10px] text-muted">Cliquez sur une branche pour la replier ; les articles soulignés ouvrent le texte officiel.</p>
-          <p className="mt-1 text-[10px] leading-[1.4] text-[#746347]">{carte.avertissement || AVERTISSEMENT}</p>
+          <p className="mt-2 text-[11px] text-muted">Cliquez sur une branche pour la replier ; les articles soulignés ouvrent le texte officiel.</p>
+          <p className="mt-1 text-[11px] leading-[1.4] text-[#746347]">{carte.avertissement || AVERTISSEMENT}</p>
         </>
       )}
     </section>

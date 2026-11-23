@@ -21,6 +21,8 @@ export function DepotCours() {
   const [matiere, setMatiere] = useState('')
   const [titre, setTitre] = useState('')
   const [envoi, setEnvoi] = useState(false)
+  // Bouton actif : la raison d'un refus est dite au clic (audit du 2026-11-19, WEB-10 ; audit du 2026-11-23, D8)
+  const [aide, setAide] = useState<string | null>(null)
   const [survol, setSurvol] = useState(false)
   const choix = useRef<HTMLInputElement>(null)
   const place = coursMax > 0 ? Math.max(0, coursMax - mesCours.length) : Infinity
@@ -29,6 +31,7 @@ export function DepotCours() {
 
   const ajouter = (fichiers: File[]) => {
     if (envoi || fichiers.length === 0) return
+    setAide(null)
     const neufs = fichiers.map((f): Ligne => {
       const refus = refusFichier(f)
       return { fichier: f, etat: refus ? { etape: 'refus', message: refus } : { etape: 'attente' } }
@@ -42,7 +45,9 @@ export function DepotCours() {
 
   const deposer = async (e: FormEvent) => {
     e.preventDefault()
-    if (!matiere || aEnvoyer.length === 0) return
+    if (aEnvoyer.length === 0) return setAide('Choisissez d’abord un ou plusieurs fichiers.')
+    if (!matiere) return setAide('Choisissez la matière du cours.')
+    setAide(null)
     setEnvoi(true)
     let deposes = 0
     let restant = place
@@ -108,7 +113,7 @@ export function DepotCours() {
           </div>
           <label className="grid gap-1.5 text-[11px] text-muted">
             Matière
-            <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={champ}>
+            <select value={matiere} onChange={(e) => { setMatiere(e.target.value); setAide(null) }} className={champ}>
               <option value="">Choisir…</option>
               <OptionsMatieres matieres={matieres} />
             </select>
@@ -119,10 +124,11 @@ export function DepotCours() {
               <input value={titre} onChange={(e) => setTitre(e.target.value)} maxLength={120} placeholder="Ex. Chapitre 3 : les vices du consentement" className={champ} />
             </label>
           )}
-          <button type="submit" disabled={aEnvoyer.length === 0 || !matiere || envoi || plein}
+          <button type="submit" disabled={envoi || plein} aria-describedby="aide-depot"
             className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
             {envoi ? 'Envoi…' : aEnvoyer.length > 1 ? `Déposer ${aEnvoyer.length} cours` : 'Déposer'}
           </button>
+          <p id="aide-depot" role="status" className="w-full text-[12px] text-[#8c4a36] empty:hidden">{aide ?? ''}</p>
         </form>
       </div>
       {plein && <p className="mt-2 text-[11px] text-[#8c4a36]">Limite atteinte pour votre formule : retirez un cours ou passez à une formule supérieure.</p>}

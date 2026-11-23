@@ -2,6 +2,7 @@
 // Le serveur redige le texte ; le navigateur le lit (Web Speech API), phrase par phrase, sans cout serveur.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, ApiError, type DemandeResume, type ResumeVocal as Resume } from '../lib/api'
+import { useFocusSection } from '../lib/focusSection'
 import { decouperPhrases, dureeLisible, prendreLaMain, rendreLaMain, synthese, voixFrancaises } from '../lib/voix'
 
 const VITESSES = [0.75, 1, 1.25, 1.5]
@@ -23,6 +24,7 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
   const enLecture = useRef(false)
   const moi = useRef({})
   const s = synthese()
+  const { titre, ouvreur } = useFocusSection(ouvert)
 
   const paragraphes = useMemo(() => decouperPhrases(resume?.paragraphes ?? []), [resume])
   const phrases = useMemo(() => paragraphes.flat(), [paragraphes])
@@ -88,7 +90,7 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
 
   if (!ouvert)
     return (
-      <button type="button" onClick={charger}
+      <button ref={ouvreur} type="button" onClick={charger}
         className="min-h-6 rounded-full border border-line px-2.5 text-[11px] text-forest hover:border-[#9eafa3]">
         {libelle}
       </button>
@@ -98,7 +100,7 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
   return (
     <section aria-label="Résumé vocal" className="mt-2 w-full rounded-[10px] border border-[#cfd9d1] bg-[#f6f8f3] p-3 text-[12px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-[10px] font-bold tracking-[1.4px] text-forest uppercase">Résumé vocal</h4>
+        <h4 ref={titre} tabIndex={-1} className="text-[11px] font-bold tracking-[1.4px] text-forest uppercase">Résumé vocal</h4>
         <button type="button" onClick={fermer} className="text-[11px] text-muted hover:text-forest">Fermer</button>
       </div>
       {chargement && <p role="status" className="mt-2 text-muted">Préparation du résumé… (jusqu’à une minute)</p>}
@@ -107,7 +109,7 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
       {resume && resume.paragraphes.length > 0 && (
         <>
           <p className="mt-1 text-[12.5px] font-semibold">{resume.titre}</p>
-          <p className="text-[10px] text-muted">
+          <p className="text-[11px] text-muted">
             Environ {dureeLisible(resume.duree_estimee_s)} à vitesse normale
             {resume.partiel && ' · Résumé du début du document, trop long pour être résumé en entier'}
             {` · ${resume.restants} résumé(s) restant(s) aujourd’hui`}
@@ -152,13 +154,13 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
             <p className="mt-2 text-[11px] text-muted">La lecture à voix haute n’est pas disponible dans ce navigateur : voici le résumé à lire.</p>
           )}
           {s && voixChoisie && !voixChoisie.localService && (
-            <p className="mt-1 text-[10px] text-muted">
+            <p className="mt-1 text-[12px] text-muted">
               Lecture par une voix en ligne de votre navigateur : le texte du résumé est envoyé à son éditeur (par
               exemple Google pour Chrome) : aucune voix française n’est installée sur cet appareil.
             </p>
           )}
           {s && voix.length === 0 && (
-            <p className="mt-1 text-[10px] text-muted">Aucune voix française sur cet appareil : la voix par défaut lit le texte.</p>
+            <p className="mt-1 text-[11px] text-muted">Aucune voix française sur cet appareil : la voix par défaut lit le texte.</p>
           )}
           <div className="mt-2 grid max-w-[75ch] gap-1.5 leading-[1.6]">
             {paragraphes.map((ps, p) => {
@@ -180,7 +182,7 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
               )
             })}
           </div>
-          <p className="mt-2 text-[10px] leading-[1.4] text-[#746347]">{resume.avertissement || AVERTISSEMENT}</p>
+          <p className="mt-2 text-[11px] leading-[1.4] text-[#746347]">{resume.avertissement || AVERTISSEMENT}</p>
         </>
       )}
     </section>

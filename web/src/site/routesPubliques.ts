@@ -6,8 +6,8 @@ import { GUIDES_LISTE } from './contenu/guidesListe'
 /** « droit_des_contrats » devient « droit-des-contrats ». */
 export const slugMatiere = (id: string) => id.replace(/_/g, '-')
 
-export const titreMatiere = (m: { libelle: string; annee?: string }) =>
-  `${m.libelle} (${m.annee}) : cours, questions et sources officielles`
+// Court : 62 caracteres au plus avec « · Lexia », les moteurs coupent vers 60 (audit du 2026-11-23, D13)
+export const titreMatiere = (m: { libelle: string; annee?: string }) => `${m.libelle} (${m.annee}) : cours et sources`
 
 export const CHEMINS_MATIERES = matieres.map((m) => `/matieres/${slugMatiere(m.id)}`)
 export const CHEMINS_GUIDES = GUIDES_LISTE.map((g) => `/guides/${g.slug}`)

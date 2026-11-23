@@ -154,7 +154,8 @@ export function VueMatieres() {
       ) : (
         <>
           <div className="mb-[18px] flex flex-wrap items-center gap-2">
-            <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-[7px] border border-line bg-white px-3 py-2 text-[12px] text-muted">
+            {/* Bordure a 3:1 et contour au focus sur le label : le champ est en outline-none (audit du 2026-11-23, D3) */}
+            <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-[7px] border border-[#878f88] bg-white px-3 py-2 text-[12px] text-muted focus-within:border-forest focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest">
               <span className="sr-only">Chercher une matière</span>
               <span aria-hidden>⌕</span>
               <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)}

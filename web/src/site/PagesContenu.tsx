@@ -8,7 +8,7 @@ import { citation, libelleCitation, versionCourte } from './contenu/citations'
 import { GUIDES, clesCitations, guideParSlug, type Bloc } from './contenu/guides'
 import { MATIERES_PUBLIQUES, matiereParSlug } from './contenu/matieres'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
-import { questionsMatiere } from './seo'
+import { EDITEUR, questionsMatiere } from './seo'
 
 const LIBELLES_ANNEES: Record<string, string> = { L1: 'Licence 1', L2: 'Licence 2', L3: 'Licence 3' }
 const dateLisible = (iso: string) =>
@@ -242,7 +242,7 @@ export function PageGuide({ slug }: { slug: string }) {
           <div className="mt-5"><Surtitre>{g.niveau} · Guide</Surtitre></div>
           <h1 className="mt-3 font-display text-[32px] leading-[1.12] font-normal tracking-[-.5px]">{g.titre}</h1>
           <p className="mt-2 text-[12px] text-muted">
-            Publié le <time dateTime={g.publie}>{dateLisible(g.publie)}</time> par Lexia
+            Publié le <time dateTime={g.publie}>{dateLisible(g.publie)}</time> par {EDITEUR}, éditeur de Lexia
             {matieres.length > 0 && <> · Matières : {matieres.map((m, i) => (
               <span key={m.id}>{i > 0 && ', '}<Lien href={`/matieres/${m.slug}`} className="text-forest hover:underline">{m.libelle}</Lien></span>
             ))}</>}

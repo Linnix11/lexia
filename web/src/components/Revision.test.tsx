@@ -50,6 +50,26 @@ describe('revision des cartes', () => {
     expect(screen.getByRole('button', { name: 'Réviser' })).toBeDisabled()
   })
 
+  it('annonce la carte puis la reponse et met le focus sur le verso (audit du 2026-11-23, D5)', () => {
+    render(<Banc depart={[carte('a', 'Conditions de 1240 ?', 'Faute, dommage, lien'), carte('b', 'Vrai ou faux : X', 'Faux')]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Réviser (2)' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Carte 1 sur 2 : Conditions de 1240 ?')
+    fireEvent.click(screen.getByRole('button', { name: 'Voir la réponse' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Réponse : Faute, dommage, lien')
+    expect(screen.getByRole('region', { name: 'Réponse' })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Je savais' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Carte 2 sur 2 : Vrai ou faux : X')
+  })
+
+  it('retire une carte en deux temps (audit du 2026-11-23, D14)', () => {
+    render(<Banc depart={[carte('a', 'Conditions de 1240 ?', 'Faute, dommage, lien')]} />)
+    fireEvent.click(screen.getByText('Voir mes cartes (1)'))
+    fireEvent.click(screen.getByRole('button', { name: /^Retirer la carte/ }))
+    expect(screen.getByText('Voir mes cartes (1)')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Confirmer le retrait de la carte/ }))
+    expect(screen.queryByText(/Voir mes cartes/)).not.toBeInTheDocument()
+  })
+
   it('sans carte : invitation a en ajouter', () => {
     render(<Banc depart={[]} />)
     expect(screen.getByText(/Aucune carte pour l’instant/)).toBeInTheDocument()

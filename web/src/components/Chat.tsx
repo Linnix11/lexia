@@ -211,7 +211,8 @@ export function Chat({ complet = false }: { complet?: boolean }) {
       {aDeposer && <DepotRapide key={aDeposer.map((f) => f.name).join('|')} fichiers={aDeposer} onFermer={() => setADeposer(null)} />}
       <form
         onSubmit={soumettre}
-        className="mt-auto flex gap-[9px] rounded-[10px] border border-[#878f88] bg-white p-[7px] focus-within:border-[#809b89] focus-within:shadow-[0_0_0_3px_#315e4b13]"
+        // Contour foret au focus sur tout le formulaire : le champ est en outline-none (audit du 2026-11-23, D2, WCAG 2.4.7)
+        className="mt-auto flex gap-[9px] rounded-[10px] border border-[#878f88] bg-white p-[7px] focus-within:border-forest focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest"
       >
         <button type="button" onClick={() => choixFichier.current?.click()}
               title="Ajouter un cours (PDF, Word, photo…) · Ctrl/Cmd + Maj + U" aria-label="Ajouter un cours"

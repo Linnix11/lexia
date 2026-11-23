@@ -3,7 +3,7 @@
 import donnees from './donnees-publiques.json'
 import { GUIDES } from './contenu/guides'
 import { MATIERES_PUBLIQUES } from './contenu/matieres'
-import { EDITEUR, IMAGE_PARTAGE, NOM, ORIGINE, pagesSeo, titreComplet, type PageSeo } from './seo'
+import { EDITEUR, IMAGE_PARTAGE, NOM, ORIGINE, editeur, pagesSeo, titreComplet, type PageSeo } from './seo'
 
 const attr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const texteHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -17,7 +17,10 @@ export function balisesTete(p: PageSeo): string {
   const titre = titreComplet(p)
   const url = urlPage(p.chemin)
   const image = urlPage(IMAGE_PARTAGE)
-  const ld = p.jsonld()
+  const graphe = p.jsonld()
+  // Noeud de l'editeur dans chaque graphe qui le cite (publisher, author) : un « @id » n'est resolu que dans sa page (D6)
+  const cite = JSON.stringify(graphe).includes(`"${editeur['@id']}"`)
+  const ld = cite && !graphe.some((n) => (n as { '@id'?: string })['@id'] === editeur['@id']) ? [editeur, ...graphe] : graphe
   return [
     `<title>${texteHtml(titre)}</title>`,
     `<meta name="description" content="${attr(p.description)}" />`,

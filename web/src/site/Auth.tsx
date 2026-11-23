@@ -41,6 +41,8 @@ export function Connexion() {
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault()
+    // Bouton actif champs vides : la raison est dite au clic (WEB-10 ; audit du 2026-11-23, D8)
+    if (!email.trim() || !mdp) return setErreur('Saisissez votre adresse e-mail et votre mot de passe.')
     setErreur(null)
     setEnvoi(true)
     try {
@@ -101,7 +103,7 @@ export function Connexion() {
           <input type="password" autoComplete="current-password" required value={mdp} onChange={(e) => setMdp(e.target.value)} className={champ} />
         </label>
         <Erreur message={erreur} />
-        <button type="submit" disabled={envoi || !email || !mdp} className={bouton}>{envoi ? 'Connexion…' : 'Se connecter'}</button>
+        <button type="submit" disabled={envoi} className={bouton}>{envoi ? 'Connexion…' : 'Se connecter'}</button>
       </form>
       <p className="mt-3 text-center text-[12px] text-muted">
         <Lien href="/mot-de-passe-oublie" className="text-forest hover:underline">Mot de passe oublié ?</Lien>

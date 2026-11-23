@@ -4,14 +4,14 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from '../Site'
-import { CITATIONS, citation, libelleCitation, numeroLisible } from './contenu/citations'
+import { CITATIONS, citation, libelleCitation, numeroLisible, versionCourte } from './contenu/citations'
 import { GUIDES, clesCitations } from './contenu/guides'
 import { GUIDES_LISTE } from './contenu/guidesListe'
 import { MATIERES_PUBLIQUES } from './contenu/matieres'
 import donnees from './donnees-publiques.json'
 import { balisesTete, fichierPage, llmsTxt, pageHtml, sitemapXml } from './publication'
 import { CHEMINS_GUIDES, CHEMINS_MATIERES, TITRES_PUBLICS } from './routesPubliques'
-import { ORIGINE, pagesSeo, questionsMatiere } from './seo'
+import { ORIGINE, pagesSeo, questionsMatiere, titreComplet } from './seo'
 
 const PUBLIC = join(__dirname, '..', '..', 'public')
 const pages = pagesSeo()
@@ -58,6 +58,10 @@ describe('contenu des pages publiques', () => {
     expect(numeroLisible('1112-1')).toBe('1112-1')
     expect(libelleCitation(citation('code_civil:1101'))).toBe('Code civil, art. 1101')
     expect(libelleCitation(citation('ordonnance_58_1067:23-2'))).toBe('Ordonnance n° 58-1067 du 7 novembre 1958, art. 23-2')
+    // Date de mise a jour gardee (Licence Ouverte 2.0 ; audit du 2026-11-23, E8)
+    expect(versionCourte({ ...citation('code_civil:1101'), version: 'Version depuis le 1er octobre 2016, article en vigueur (archive DILA LEGI du 2026-11-08, mise à jour du 2026-11-16)' }))
+      .toBe('version depuis le 1er octobre 2016, article en vigueur (DILA, mise à jour du 16 novembre 2026)')
+    for (const c of Object.values(CITATIONS)) expect(versionCourte(c)).not.toMatch(/archive|\d{4}-\d{2}/)
   })
 
   it('guides avec une reponse directe, des sections et des articles cites', () => {
@@ -85,22 +89,43 @@ describe('balises de referencement', () => {
       expect(p.titre).toBe(TITRES_PUBLICS[p.chemin])
       expect(p.description.length, p.chemin).toBeGreaterThanOrEqual(70)
       expect(p.description.length, p.chemin).toBeLessThanOrEqual(200)
+      // Titre complet de 62 caracteres au plus : les moteurs le coupent vers 60 (audit du 2026-11-23, D13)
+      if (p.chemin.startsWith('/matieres/')) expect(titreComplet(p).length, p.chemin).toBeLessThanOrEqual(62)
     }
+    // Description des tarifs tiree des formules du depot, sans prix en dur (D13)
+    const tarifs = pages.find((p) => p.chemin === '/tarifs')!
+    for (const f of donnees.formules.slice(1)) expect(tarifs.description).toContain(`${f.nom} à ${f.prix_mensuel_euros.toFixed(2).replace('.', ',')} €`)
     expect(pages.map((p) => p.chemin)).toEqual(expect.arrayContaining([...CHEMINS_MATIERES, ...CHEMINS_GUIDES, '/', '/tarifs', '/matieres', '/guides']))
   })
 
   it('tete complete : titre, description, canonique, Open Graph, Twitter et JSON-LD lisible', () => {
     const p = pages.find((x) => x.chemin === '/matieres/droit-des-contrats')!
     const tete = balisesTete(p)
-    expect(tete).toContain('<title>Droit des contrats (L2) : cours, questions et sources officielles · Lexia</title>')
+    expect(tete).toContain('<title>Droit des contrats (L2) : cours et sources · Lexia</title>')
     expect(tete).toContain(`<link rel="canonical" href="${ORIGINE}/matieres/droit-des-contrats" />`)
     expect(tete).toContain(`<meta property="og:image" content="${ORIGINE}/og-lexia.png" />`)
     expect(tete).toContain('<meta name="twitter:card" content="summary_large_image" />')
     const ld = JSON.parse(tete.split('<script type="application/ld+json">')[1].split('</script>')[0])
     const types = ld['@graph'].map((x: { '@type': string }) => x['@type'])
-    expect(types).toEqual(['LearningResource', 'FAQPage', 'BreadcrumbList'])
-    const faq = ld['@graph'][1].mainEntity.map((q: { name: string }) => q.name)
-    expect(faq).toEqual(questionsMatiere(MATIERES_PUBLIQUES.find((m) => m.id === 'droit_des_contrats')!).map((q) => q.question))
+    // Noeud de l'editeur present dans le graphe qui le cite (audit du 2026-11-23, D6)
+    expect(types).toEqual(['Organization', 'LearningResource', 'FAQPage', 'BreadcrumbList'])
+    expect(ld['@graph'][0]).toMatchObject({ '@id': `${ORIGINE}/#editeur`, name: 'Axion Studio' })
+    // FAQPage : la seule question de cours propre a la matiere, sans question promotionnelle commune (D7)
+    const contrats = MATIERES_PUBLIQUES.find((m) => m.id === 'droit_des_contrats')!
+    const faq = ld['@graph'][2].mainEntity.map((q: { name: string }) => q.name)
+    expect(faq).toEqual(contrats.questions.map((q) => q.question))
+    expect(questionsMatiere(contrats).map((q) => q.question).join(' ')).not.toMatch(/Lexia aide-t-il/)
+    expect(GUIDES.flatMap((g) => g.faq.map((q) => q.question)).join(' ')).not.toMatch(/Lexia peut-il/)
+  })
+
+  it('chaque graphe qui cite l’editeur le contient, une seule fois (D6)', () => {
+    for (const p of pages) {
+      const tete = balisesTete(p)
+      if (!tete.includes('application/ld+json')) continue
+      const graphe = JSON.parse(tete.split('<script type="application/ld+json">')[1].split('</script>')[0])['@graph'] as { '@id'?: string }[]
+      const cite = JSON.stringify(graphe).includes('#editeur')
+      expect(graphe.filter((n) => n['@id'] === `${ORIGINE}/#editeur`).length, p.chemin).toBe(cite ? 1 : 0)
+    }
   })
 
   it('accueil : Organization, WebSite et application avec les prix du depot', () => {
@@ -124,10 +149,15 @@ describe('balises de referencement', () => {
     const robots = readFileSync(join(PUBLIC, 'robots.txt'), 'utf8')
     expect(robots).toContain(`Sitemap: ${ORIGINE}/sitemap.xml`)
     const exclus = [...robots.matchAll(/^Disallow: (\S+)/gm)].map((m) => m[1])
-    expect(exclus).toEqual(expect.arrayContaining(['/app', '/compte', '/admin', '/api/']))
+    expect(exclus).toEqual(expect.arrayContaining(['/app$', '/app/', '/compte', '/admin', '/api/']))
+    // Regle de robots.txt : prefixe, ou adresse exacte si elle finit par « $ »
+    const exclue = (u: string) => exclus.some((e) => (e.endsWith('$') ? u === e.slice(0, -1) : u.startsWith(e)))
     const urls = [...sitemapXml().matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(ORIGINE.length))
     expect(urls).toHaveLength(pages.length)
-    for (const u of urls) expect(exclus.some((e) => u.startsWith(e)), u).toBe(false)
+    for (const u of urls) expect(exclue(u), u).toBe(false)
+    // Icones et image de partage lisibles par les robots (audit du 2026-11-23, D11) ; l'espace reste exclu
+    for (const u of ['/apple-touch-icon.png', '/favicon.ico', '/og-lexia.png', '/manifest.json']) expect(exclue(u), u).toBe(false)
+    for (const u of ['/app', '/app/fiches']) expect(exclue(u), u).toBe(true)
   })
 
   it('llms.txt : resume, matieres et guides avec leurs adresses', () => {
@@ -154,7 +184,7 @@ describe('pages dans le site', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Droit pénal' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Code pénal, art. 111-3' })).toHaveAttribute('href', citation('code_penal:111-3').url)
     expect(screen.getByRole('link', { name: 'Créer un compte gratuit' })).toHaveAttribute('href', '/inscription')
-    expect(document.title).toBe('Droit pénal (L2) : cours, questions et sources officielles · Lexia')
+    expect(document.title).toBe('Droit pénal (L2) : cours et sources · Lexia')
   })
 
   it('guide : reponse directe, textes cites et fil d’Ariane', async () => {

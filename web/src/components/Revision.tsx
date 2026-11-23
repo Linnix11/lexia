@@ -1,5 +1,5 @@
 // Revision des cartes a retourner (lib/cartes.ts) : resume dans « Fiches & revisions » et seance carte par carte.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { aReviser, carteDeFiche, INTERVALLES_JOURS, type Carte } from '../lib/cartes'
 import { tronquer } from '../lib/personnalisation'
 import { useApp } from '../state/contexte'
@@ -15,6 +15,8 @@ const jour = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: '
 export function CarteRevisions({ onReviser }: { onReviser: () => void }) {
   const { cartes, favoris, ajouterCartes, retirerCarte } = useApp()
   const [maintenant] = useState(() => new Date()) // heure d'ouverture de la vue
+  // Retrait d'une carte en deux temps, comme les fiches (WEB-20 ; audit du 2026-11-23, D14)
+  const [aRetirer, setARetirer] = useState<string | null>(null)
   const dues = aReviser(cartes, maintenant).length
   const tirees = () => ajouterCartes(favoris.map((f) => carteDeFiche(f)).filter((c): c is Carte => c !== null))
   return (
@@ -50,8 +52,17 @@ export function CarteRevisions({ onReviser }: { onReviser: () => void }) {
                     {Date.parse(c.prochaine) <= maintenant.getTime() ? 'à revoir' : `prochaine révision le ${jour(c.prochaine)}`}
                   </span>
                 </span>
-                <button type="button" onClick={() => retirerCarte(c.id)} aria-label={`Retirer la carte « ${tronquer(c.recto, 40)} »`}
-                  className="shrink-0 text-[11px] text-muted hover:text-[#8c4a36]">Retirer</button>
+                <button type="button"
+                  onClick={() => {
+                    if (aRetirer !== c.id) return setARetirer(c.id)
+                    setARetirer(null)
+                    retirerCarte(c.id)
+                  }}
+                  onBlur={() => setARetirer((x) => (x === c.id ? null : x))}
+                  aria-label={aRetirer === c.id ? `Confirmer le retrait de la carte « ${tronquer(c.recto, 40)} »` : `Retirer la carte « ${tronquer(c.recto, 40)} »`}
+                  className={`shrink-0 text-[11px] hover:text-[#8c4a36] ${aRetirer === c.id ? 'font-semibold text-[#8c4a36]' : 'text-muted'}`}>
+                  {aRetirer === c.id ? 'Confirmer le retrait' : 'Retirer'}
+                </button>
               </li>
             ))}
           </ul>
@@ -71,6 +82,11 @@ export function SeanceRevision({ onFin }: { onFin: () => void }) {
   const [retournee, setRetournee] = useState(false)
   const [bilan, setBilan] = useState({ sues: 0, aRevoir: 0 })
   const carte = cartes.find((c) => c.id === file[position])
+  // Verso focalise a l'affichage : le lecteur d'ecran le lit avant « Je savais » (audit du 2026-11-23, D5)
+  const verso = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (retournee) verso.current?.focus()
+  }, [retournee])
 
   const noter = (sue: boolean) => {
     if (!carte) return
@@ -101,13 +117,18 @@ export function SeanceRevision({ onFin }: { onFin: () => void }) {
         <button type="button" onClick={onFin} className="text-forest hover:underline">Arrêter</button>
       </div>
       <p className="mt-3 font-display text-[19px] leading-[1.35] whitespace-pre-line">{carte.recto}</p>
+      {/* Toujours present : annonce la carte suivante, puis la reponse (un aria-live cree avec son contenu se tait) */}
+      <p role="status" className="sr-only">
+        {retournee ? `Réponse : ${carte.verso}` : `Carte ${position + 1} sur ${file.length} : ${carte.recto}`}
+      </p>
       {!retournee ? (
         <button type="button" onClick={() => setRetournee(true)} className={`mt-4 ${boutonPlein}`} autoFocus>
           Voir la réponse
         </button>
       ) : (
         <>
-          <div className="mt-4 rounded-lg bg-[#f6f4ee] px-3 py-2.5 text-[13px] leading-[1.55] whitespace-pre-line" aria-live="polite">
+          <div ref={verso} tabIndex={-1} aria-label="Réponse" role="region"
+            className="mt-4 rounded-lg bg-[#f6f4ee] px-3 py-2.5 text-[13px] leading-[1.55] whitespace-pre-line">
             {carte.verso}
           </div>
           {carte.sources.length > 0 && (
@@ -122,7 +143,7 @@ export function SeanceRevision({ onFin }: { onFin: () => void }) {
           )}
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" onClick={() => noter(false)} className={bouton}>À revoir</button>
-            <button type="button" onClick={() => noter(true)} className={boutonPlein} autoFocus>Je savais</button>
+            <button type="button" onClick={() => noter(true)} className={boutonPlein}>Je savais</button>
           </div>
         </>
       )}

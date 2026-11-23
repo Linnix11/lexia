@@ -17,6 +17,8 @@ function bloc(titre: string, items: Element[], sources: FicheSource[]): string[]
   return lignes
 }
 
+export const MENTION_IA_FICHE = '_Fiche générée par une intelligence artificielle (Lexia) : vérifiez les sources citées._'
+
 export function ficheEnMarkdown(f: Favori): string {
   const r = f.reponse
   const [b1, b2, b3] = infosMode(f.mode).blocs
@@ -26,6 +28,9 @@ export function ficheEnMarkdown(f: Favori): string {
     '',
     `Question : ${f.question}  `,
     `${infosMode(f.mode).label} · enregistrée le ${date} · Lexia`,
+    '',
+    // Marquage du contenu genere (reglement (UE) 2024/1689, art. 50 ; audit du 2026-11-23, E11)
+    MENTION_IA_FICHE,
     '',
     ...bloc('L’essentiel', r.reponse_directe ?? [], r.sources),
     ...bloc(b1, r.droit_positif, r.sources),
