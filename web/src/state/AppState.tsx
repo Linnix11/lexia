@@ -31,7 +31,15 @@ function quizRepris(compte: string): EtatQuiz {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [vue, setVue] = useState<Vue>('espace')
+  const [vue, setVueEtat] = useState<Vue>('espace')
+  // Une autre vue s'ouvre en haut de la page, comme une navigation (recette du 2026-11-20, D-3). Fait avant
+  // le rendu : la conversation peut ensuite defiler jusqu'a son dernier message.
+  const vueActuelle = useRef(vue)
+  const setVue = useCallback((v: Vue) => {
+    if (v !== vueActuelle.current) window.scrollTo(0, 0)
+    vueActuelle.current = v
+    setVueEtat(v)
+  }, [])
   const { rafraichir, profil } = useSession()
   const compte = profil?.email ?? ''
   const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre(compte))

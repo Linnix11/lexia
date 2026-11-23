@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { Lien, useRouteur } from '../lib/router'
 import { BandeauEmail } from '../site/VerifierEmail'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
@@ -23,10 +23,15 @@ const ANNEES = ['L1', 'L2', 'L3'] as const
 export function CadreEspace({ titre, children }: { titre?: string; children: ReactNode }) {
   return (
     <>
+      {/* Lien d'evitement, premier arret du clavier (RGAA 12.7 ; recette du 2026-11-20, D-9) */}
+      <a href="#contenu" onClick={allerAuContenu}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-forest focus:px-3 focus:py-2 focus:text-[13px] focus:text-white">
+        Aller au contenu
+      </a>
       <BandeauEmail />
       <div className="min-h-screen pb-[calc(61px+env(safe-area-inset-bottom))] tab:grid tab:grid-cols-[68px_minmax(0,1fr)] tab:pb-0 desk:grid-cols-[232px_minmax(0,1fr)]">
         <Sidebar horsEspace={titre !== undefined} />
-        <main className="min-w-0">
+        <main id="contenu" tabIndex={-1} className="min-w-0 outline-none">
           <Topbar titre={titre} />
           <div className="mx-auto max-w-[1300px] px-4 pt-6 pb-6 min-[361px]:px-4 tab:px-[22px] tab:pt-[29px] desk:px-[38px] desk:pt-9 desk:pb-[52px]">
             {children}
@@ -40,6 +45,15 @@ export function CadreEspace({ titre, children }: { titre?: string; children: Rea
       <Toast />
     </>
   )
+}
+
+/** Focus sur le contenu sans toucher a l'adresse : le routeur et le jeton des liens lisent le « # ». */
+function allerAuContenu(e: MouseEvent<HTMLAnchorElement>) {
+  const cible = document.getElementById('contenu')
+  if (!cible) return
+  e.preventDefault()
+  cible.focus()
+  cible.scrollIntoView({ block: 'start' })
 }
 
 /** horsEspace : page du cadre hors de /app (Mon compte) ; un clic ramene a la vue choisie de l'espace. */
@@ -111,18 +125,20 @@ export function Topbar({ titre }: { titre?: string }) {
   const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
   const libelle = titre ?? VUES.find((v) => v.id === vue)?.label
   return (
-    <header className="flex h-14 items-center justify-between border-b border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
-      <div className="text-[12px] text-muted">
+    // Mobile : le titre se tronque, les actions et le rond du compte gardent leur taille ; le rond est le seul
+    // acces a « Mon compte » sur telephone (recette du 2026-11-20, D-2).
+    <header className="flex h-14 items-center justify-between gap-2 border-b border-line bg-surface/65 px-4 tab:h-[68px] tab:px-[22px] desk:px-[38px]">
+      <div className="min-w-0 truncate text-[12px] text-muted" title={libelle}>
         <span className="hidden tab:inline">Espace étudiant <span aria-hidden> / </span> </span>
         <b className="font-semibold text-ink">{libelle}</b>
       </div>
-      <div className="flex items-center gap-2.5 tab:gap-[17px]">
+      <div className="flex shrink-0 items-center gap-1.5 min-[400px]:gap-2.5 tab:gap-[17px]">
         <label className="sr-only" htmlFor="niveau">Choisir le semestre</label>
         <select
           id="niveau"
           value={semestre}
           onChange={(e) => setSemestre(Number(e.target.value) as Semestre)}
-          className="rounded-[7px] border border-line bg-surface px-2 py-[7px] text-[12px] text-[#505b54] tab:px-[11px] tab:py-2"
+          className="max-w-[8.5rem] rounded-[7px] border border-line bg-surface px-2 py-[7px] text-[12px] text-[#505b54] tab:px-[11px] tab:py-2"
         >
           {ANNEES.map((annee) => (
             <optgroup key={annee} label={annee}>
@@ -140,7 +156,7 @@ export function Topbar({ titre }: { titre?: string }) {
           </Lien>
         )}
         {profil && (
-          <Lien href="/compte" title="Mon compte" className="flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage">
+          <Lien href="/compte" title="Mon compte" className="flex items-center gap-1 whitespace-nowrap rounded-full bg-mint px-2.5 py-1 text-[11px] text-forest hover:bg-sage">
             {/* visible aussi sur mobile, sans le nom de la formule (audit du 2026-11-18, D7) */}
             <span className="font-semibold">{restant}</span>
             <span><span className="hidden tab:inline">question{(restant ?? 0) > 1 ? 's' : ''} </span>restante{(restant ?? 0) > 1 ? 's' : ''}</span>
@@ -148,7 +164,7 @@ export function Topbar({ titre }: { titre?: string }) {
           </Lien>
         )}
         {/* zone de clic de 44 px, pastille de 31 px (WCAG 2.5.5 ; audit du 2026-11-19, WEB-9) */}
-        <Lien href="/compte" aria-label="Mon compte" title={profil?.email} className="group grid size-11 place-items-center rounded-full">
+        <Lien href="/compte" aria-label="Mon compte" title={profil?.email} className="group grid size-11 shrink-0 place-items-center rounded-full">
           <span className="grid size-[31px] place-items-center rounded-full bg-[#e9dfd0] text-[11px] font-bold text-[#694b31] group-hover:ring-2 group-hover:ring-[#d6c6ad]">
             {initiales}
           </span>

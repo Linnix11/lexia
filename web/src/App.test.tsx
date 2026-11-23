@@ -748,6 +748,43 @@ describe('Audit du 18 novembre 2026, lot D', () => {
   })
 })
 
+describe('Recette du 20 novembre 2026', () => {
+  it('changer de vue ramene en haut de la page (D-3)', async () => {
+    const defiler = vi.fn()
+    vi.stubGlobal('scrollTo', defiler)
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    expect(defiler).toHaveBeenCalledWith(0, 0)
+    defiler.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: /Mes matières/ }))   // meme vue : on ne bouge pas
+    expect(defiler).not.toHaveBeenCalled()
+  })
+
+  it('lien d evitement vers le contenu, premier element du clavier (D-9)', async () => {
+    render(<Site />)
+    const lien = await screen.findByRole('link', { name: 'Aller au contenu' })
+    const contenu = document.getElementById('contenu')!
+    expect(contenu.tagName).toBe('MAIN')
+    expect(contenu).toHaveAttribute('tabindex', '-1')
+    // Avant la navigation principale dans l'ordre du document.
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
+    expect(lien.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(lien)
+    expect(document.activeElement).toBe(contenu)
+  })
+
+  it('mobile : l en-tete tient dans l ecran, le titre se tronque et le rond du compte ne retrecit pas (D-2)', async () => {
+    window.history.pushState({}, '', '/compte')
+    render(<Site />)
+    const rond = await screen.findByRole('link', { name: 'Mon compte' })
+    const entete = rond.closest('header')!
+    const [titre, actions] = [...entete.children] as HTMLElement[]
+    expect(titre.className.split(' ')).toEqual(expect.arrayContaining(['min-w-0', 'truncate']))
+    expect(actions.className.split(' ')).toContain('shrink-0')
+    expect(rond.className.split(' ')).toContain('shrink-0')
+  })
+})
+
 describe('Liens internes (D4)', () => {
   it('un lien target="_blank" s ouvre dans un nouvel onglet, pas dans la page', async () => {
     const { RouteurProvider, Lien } = await import('./lib/router')
