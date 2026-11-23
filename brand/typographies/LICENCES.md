@@ -3,11 +3,6 @@
 Vérification du 23 novembre 2026, sur les fichiers eux-mêmes (table `name` des polices) et les textes de licence
 joints. Aucun outil ni service payant n'est utilisé.
 
-Les deux sources ne disent pas tout à fait la même chose (audit du 23 novembre 2026, D15) : les années de
-copyright diffèrent pour Inter, et seul le fichier de Source Serif 4 déclare le nom réservé « Source ». Les deux
-mentions sont reproduites ci-dessous telles quelles ; par prudence, le nom réservé déclaré dans la police est
-respecté.
-
 | Élément | Fichier | Licence | Titulaire | Provenance |
 |---|---|---|---|---|
 | Source Serif 4 (police variable, axes graisse 200 à 900 et taille optique 8 à 60) | `SourceSerif4-Variable.ttf`, licence `SourceSerif4-OFL.txt` | SIL Open Font License 1.1 | Table `name` de la police : « © 2014 - 2021 Adobe Systems Incorporated, with Reserved Font Name ‘Source’ ». Texte OFL joint (copie du dépôt google/fonts) : « Copyright 2014 The Source Serif 4 Project Authors », sans nom réservé | Dépôt google/fonts, dossier `ofl/sourceserif4` (https://github.com/google/fonts/tree/main/ofl/sourceserif4), projet d'origine https://github.com/adobe-fonts/source-serif |
