@@ -9,6 +9,7 @@ import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { CarteRevisions, SeanceRevision } from '../components/Revision'
 import { aReviser } from '../lib/cartes'
+import { lireCartesMentales, retirerCarteMentale, type CarteEnregistree } from '../lib/cartesEnregistrees'
 import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
@@ -314,6 +315,63 @@ export function VueFiches() {
                     <Reponse message={{ id: f.id, question: f.question, mode: f.mode, etat: 'ok', reponse: f.reponse }} actions={false} titre={false} />
                   </div>
                 )}
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+/** Cartes mentales enregistrees avec « Enregistrer la carte », dans ce navigateur (lib/cartesEnregistrees.ts). */
+export function VueCartes() {
+  const { setVue } = useApp()
+  const compte = useSession().profil?.email ?? ''
+  const [cartes, setCartes] = useState<CarteEnregistree[]>(() => lireCartesMentales(compte))
+  const [ouverte, setOuverte] = useState<string | null>(null)
+  const [aRetirer, setARetirer] = useState<string | null>(null)
+  return (
+    <>
+      <EnTete surtitre="Mes cartes mentales" titre="Vos cartes."
+        texte="Les cartes enregistrées restent dans ce navigateur uniquement : téléchargez-les en image (PNG) pour les garder ailleurs." />
+      {cartes.length === 0 ? (
+        <Card className="p-6 text-center">
+          <p className="font-display text-[19px]">Aucune carte enregistrée pour l’instant.</p>
+          <p className="mt-1.5 text-[12px] text-muted">
+            Créez une carte mentale depuis une réponse, un cours déposé ou une matière, puis cliquez sur « Enregistrer la carte ».
+          </p>
+          <button type="button" onClick={() => setVue('assistant')} className="mt-4 rounded-[7px] bg-forest px-3 py-2 text-[12px] text-white hover:bg-forest-dark">
+            Ouvrir l’assistant
+          </button>
+        </Card>
+      ) : (
+        <ul className="grid gap-2.5">
+          {cartes.map((c) => (
+            <li key={c.id}>
+              <Card className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <button type="button" className="min-w-0 flex-1 text-left" aria-expanded={ouverte === c.id}
+                    onClick={() => setOuverte(ouverte === c.id ? null : c.id)}>
+                    <span className="block font-display text-[17px]">{c.titre}</span>
+                    <span className="mt-1 block text-[11px] text-muted">
+                      Enregistrée le {new Date(c.enregistree_le).toLocaleDateString('fr-FR')} · {c.carte.branches.length} branche(s)
+                    </span>
+                  </button>
+                  <button type="button"
+                    onClick={() => {
+                      if (aRetirer !== c.id) return setARetirer(c.id)
+                      setARetirer(null)
+                      if (ouverte === c.id) setOuverte(null)
+                      setCartes(retirerCarteMentale(c.id, compte))
+                    }}
+                    onBlur={() => setARetirer((x) => (x === c.id ? null : x))}
+                    aria-label={aRetirer === c.id ? `Confirmer le retrait de « ${c.titre} »` : `Retirer la carte « ${c.titre} »`}
+                    className={`min-h-11 text-[11px] hover:text-[#8c4a36] ${aRetirer === c.id ? 'font-semibold text-[#8c4a36]' : 'text-muted'}`}>
+                    {aRetirer === c.id ? 'Confirmer le retrait' : 'Retirer'}
+                  </button>
+                </div>
+                {ouverte === c.id && <CarteMentale enregistree={c.carte} onFermer={() => setOuverte(null)} />}
               </Card>
             </li>
           ))}

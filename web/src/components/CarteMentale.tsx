@@ -5,6 +5,10 @@ import { useMemo, useRef, useState } from 'react'
 import { useFocusSection } from '../lib/focusSection'
 import { api, ApiError, type CarteMentale as Carte, type DemandeCarte, type FeuilleCarte, type NoeudCarte } from '../lib/api'
 import { COULEURS, disposer, exporterPng, nomFichier, type Boite } from '../lib/carteMentale'
+import { Chargement } from './Chargement'
+import { enregistrerCarteMentale, MESSAGE_LIMITE_CARTES } from '../lib/cartesEnregistrees'
+import { useSessionFacultative } from '../state/session'
+import { useAppFacultatif } from '../state/contexte'
 
 const AVERTISSEMENT = 'Carte générée automatiquement : vérifiez avec les textes.'
 const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -107,13 +111,25 @@ function Dessin({ boites, basculer }: { boites: Boite[]; basculer: (b: number) =
   )
 }
 
-/** demande : construite au clic ; avecNotion : champ « notion » facultatif avant la demande (matiere). */
-export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = false }: {
-  demande: (notion: string) => DemandeCarte; libelle?: string; avecNotion?: boolean
+const MESSAGES_ENREGISTREMENT = {
+  ok: 'Carte enregistrée dans « Mes cartes mentales » (dans ce navigateur uniquement).',
+  deja: 'Cette carte est déjà dans « Mes cartes mentales ».',
+  limite: MESSAGE_LIMITE_CARTES,
+  erreur: 'Le navigateur n’a pas pu enregistrer la carte (navigation privée ou stockage plein).',
+} as const
+
+/** demande : construite au clic ; avecNotion : champ « notion » facultatif avant la demande (matiere).
+ * enregistree : carte deja gardee (page « Mes cartes mentales ») affichee sans rien demander au serveur. */
+export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = false, enregistree, onFermer }: {
+  demande?: (notion: string) => DemandeCarte; libelle?: string; avecNotion?: boolean
+  enregistree?: Carte; onFermer?: () => void
 }) {
-  const [ouvert, setOuvert] = useState(false)
+  const [ouvert, setOuvert] = useState(!!enregistree)
   const { titre, ouvreur } = useFocusSection(ouvert)
-  const [carte, setCarte] = useState<Carte | null>(null)
+  const [carte, setCarte] = useState<Carte | null>(enregistree ?? null)
+  const compte = useSessionFacultative()?.profil?.email ?? ''
+  const app = useAppFacultatif()
+  const [sauvegarde, setSauvegarde] = useState<keyof typeof MESSAGES_ENREGISTREMENT | null>(null)
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [notion, setNotion] = useState('')
@@ -125,13 +141,14 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
   const disposition = useMemo(() => (carte && carte.branches.length ? disposer(carte, replies) : null), [carte, replies])
 
   const charger = async () => {
-    if (chargement) return
+    if (chargement || !demande) return
     setChargement(true)
     setErreur(null)
     try {
       const c = await api.carteMentale(demande(notion.trim()))
       setReplies(new Set())
       setCarte(c)
+      setSauvegarde(null)
     } catch (e) {
       setErreur(e instanceof ApiError ? e.message : 'La carte mentale n’a pas pu être préparée.')
     } finally {
@@ -175,7 +192,7 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
     <section aria-label="Carte mentale" className="mt-2 w-full rounded-[10px] border border-[#cfd9d1] bg-[#f6f8f3] p-3 text-[12px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 ref={titre} tabIndex={-1} className="text-[11px] font-bold tracking-[1.4px] text-forest uppercase">Carte mentale</h4>
-        <button type="button" onClick={() => setOuvert(false)} className="text-[11px] text-muted hover:text-forest">Fermer</button>
+        <button type="button" onClick={() => (onFermer ? onFermer() : setOuvert(false))} className="text-[11px] text-muted hover:text-forest">Fermer</button>
       </div>
       {avecNotion && (
         <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); charger() }}>
@@ -188,15 +205,20 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
           <button type="submit" disabled={chargement} className={bouton}>{carte ? 'Refaire la carte' : 'Créer la carte'}</button>
         </form>
       )}
-      {chargement && <p role="status" className="mt-2 text-muted">Préparation de la carte… (jusqu’à une minute)</p>}
+      {chargement && (
+        <Chargement className="mt-2" duree="jusqu’à une minute"
+          etapes={['Lecture du contenu…', 'Recherche des articles à citer…', 'Construction des branches…', 'Vérification des renvois…', 'Presque prête…']} />
+      )}
       {erreur && <p role="alert" className="mt-2 text-[#8c4a36]">{erreur}</p>}
       {carte && !carte.branches.length && <p role="alert" className="mt-2 text-[#8c4a36]">{carte.message}</p>}
       {carte && disposition && (
         <>
-          <p className="mt-1 text-[11px] text-muted">
-            {carte.partiel && 'Carte du début du document, trop long pour être pris en entier · '}
-            {`${carte.restants} carte(s) restante(s) aujourd’hui`}
-          </p>
+          {!enregistree && (
+            <p className="mt-1 text-[11px] text-muted">
+              {carte.partiel && 'Carte du début du document, trop long pour être pris en entier · '}
+              {`${carte.restants} carte(s) restante(s) aujourd’hui`}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Affichage de la carte">
             <button type="button" className={bouton} aria-pressed={vue === 'liste'}
               onClick={() => setVue(vue === 'liste' ? 'dessin' : 'liste')}>
@@ -215,7 +237,21 @@ export function CarteMentale({ demande, libelle = 'Carte mentale', avecNotion = 
             <button type="button" className={bouton} disabled={replies.size === carte.branches.length}
               onClick={() => setReplies(new Set(carte.branches.map((_, i) => i)))}>Tout replier</button>
             {vue === 'dessin' && <button type="button" className={bouton} onClick={exporter}>Image PNG</button>}
+            {!enregistree && compte && (
+              <button type="button" className={`${bouton} border-forest font-semibold`}
+                onClick={() => setSauvegarde(enregistrerCarteMentale(carte, compte))}>
+                Enregistrer la carte
+              </button>
+            )}
           </div>
+          {sauvegarde && (
+            <p role="status" className={`mt-1 text-[11px] ${sauvegarde === 'ok' || sauvegarde === 'deja' ? 'text-forest' : 'text-[#8c4a36]'}`}>
+              {MESSAGES_ENREGISTREMENT[sauvegarde]}
+              {(sauvegarde === 'ok' || sauvegarde === 'deja') && app && (
+                <> <button type="button" onClick={() => app.setVue('cartes')} className="font-semibold underline">Voir mes cartes</button></>
+              )}
+            </p>
+          )}
           {export_ && <p role="alert" className="mt-1 text-[11px] text-[#8c4a36]">{export_}</p>}
           {vue === 'dessin' && (
             <div className="mt-2 max-h-[70vh] overflow-auto rounded-[8px] border border-line bg-white [-webkit-overflow-scrolling:touch]">

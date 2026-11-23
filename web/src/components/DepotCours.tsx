@@ -5,6 +5,7 @@ import { useApp } from '../state/contexte'
 import { ACCEPT, FORMATS_LISIBLES, fichiersDeposes, refusFichier, sansExtension, titresDistincts } from '../lib/fichiers'
 import { Card, CardHead } from './Layout'
 import { OptionsMatieres } from './OptionsMatieres'
+import { Chargement, Rond } from './Chargement'
 
 type Etat =
   | { etape: 'attente' }
@@ -125,7 +126,8 @@ export function DepotCours() {
             </label>
           )}
           <button type="submit" disabled={envoi || plein} aria-describedby="aide-depot"
-            className="rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            {envoi && <Rond className="h-3.5 w-3.5" />}
             {envoi ? 'Envoi…' : aEnvoyer.length > 1 ? `Déposer ${aEnvoyer.length} cours` : 'Déposer'}
           </button>
           <p id="aide-depot" role="status" className="w-full text-[12px] text-[#8c4a36] empty:hidden">{aide ?? ''}</p>
@@ -147,9 +149,10 @@ function LigneDepot({ ligne: { fichier, etat } }: { ligne: Ligne }) {
     <li className="grid gap-1">
       <span className="flex justify-between gap-2">
         <span className="min-w-0 truncate font-semibold text-ink">{fichier.name}</span>
-        <span className="shrink-0 text-muted">
+        <span className="inline-flex shrink-0 items-center gap-1 text-muted">
+          {(etat.etape === 'envoi' || etat.etape === 'lecture') && <Rond className="h-3 w-3 text-forest" />}
           {etat.etape === 'attente' ? 'prêt à envoyer' : etat.etape === 'envoi' ? `envoi ${pourcent} %`
-            : etat.etape === 'lecture' ? 'lecture du fichier…' : etat.etape === 'fait' ? 'déposé' : 'refusé'}
+            : etat.etape === 'lecture' ? 'lecture du fichier (un scan peut prendre une minute)…' : etat.etape === 'fait' ? 'déposé' : 'refusé'}
         </span>
       </span>
       {(etat.etape === 'envoi' || etat.etape === 'lecture') && (

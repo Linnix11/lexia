@@ -74,8 +74,8 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   le nom n'est pas indispensable au service (demande de l'éditeur du 2026-11-18) ; à confirmer avec le juriste.
 - Dans le navigateur seulement (rien n'est envoyé au serveur, D85) : conversation en cours (30 derniers messages)
   et dernier questionnaire dans `sessionStorage`, sous une empreinte du compte, effacés à la fermeture de l'onglet,
-  à la déconnexion et à la suppression du compte ; fiches, cartes à réviser (D104), semestre et dernière matière choisie (D100) dans
-  `localStorage`, fiches, cartes et matière effacées à la suppression du compte. Décrit dans la
+  à la déconnexion et à la suppression du compte ; fiches, cartes mentales enregistrées (D123), cartes à réviser (D104), semestre et dernière matière choisie (D100) dans
+  `localStorage`, fiches, cartes mentales, cartes à réviser et matière effacées à la suppression du compte. Décrit dans la
   politique de confidentialité (« Données collectées »).
 - Destinataires : éditeur ; Hostinger (hébergement) ; Resend (envoi des e-mails, `api/courriel.py` : confirmation
   d'adresse, réinitialisation, alerte de code de double authentification incorrect (`envoyer_alerte_code_faux`),

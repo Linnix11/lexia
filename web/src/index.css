@@ -85,3 +85,15 @@ textarea:not([aria-invalid="true"]):not(:focus),
 select:not([aria-invalid="true"]):not(:focus) {
   border-color: #878f88;
 }
+
+/* Barre d'attente des actions longues (components/Chargement.tsx) : un segment qui va et vient */
+@keyframes lexia-barre {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.lexia-barre {
+  animation: lexia-barre 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lexia-barre { animation: none; }
+}

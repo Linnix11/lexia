@@ -115,6 +115,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
+/** Session si la page en a une (null hors du fournisseur : composant rendu seul dans un test, page publique). */
+export function useSessionFacultative(): Session | null {
+  return useContext(Ctx)
+}
+
 export function useSession(): Session {
   const v = useContext(Ctx)
   if (!v) throw new Error('useSession doit etre utilise dans <SessionProvider>')

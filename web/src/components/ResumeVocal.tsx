@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, ApiError, type DemandeResume, type ResumeVocal as Resume } from '../lib/api'
 import { useFocusSection } from '../lib/focusSection'
+import { Chargement } from './Chargement'
 import { decouperPhrases, dureeLisible, prendreLaMain, rendreLaMain, synthese, voixFrancaises } from '../lib/voix'
 
 const VITESSES = [0.75, 1, 1.25, 1.5]
@@ -103,7 +104,10 @@ export function ResumeVocal({ demande, libelle = 'Écouter un résumé' }: { dem
         <h4 ref={titre} tabIndex={-1} className="text-[11px] font-bold tracking-[1.4px] text-forest uppercase">Résumé vocal</h4>
         <button type="button" onClick={fermer} className="text-[11px] text-muted hover:text-forest">Fermer</button>
       </div>
-      {chargement && <p role="status" className="mt-2 text-muted">Préparation du résumé… (jusqu’à une minute)</p>}
+      {chargement && (
+        <Chargement className="mt-2" duree="jusqu’à une minute"
+          etapes={['Lecture du contenu…', 'Rédaction du résumé…', 'Mise en forme pour l’écoute…', 'Presque prêt…']} />
+      )}
       {erreur && <p role="alert" className="mt-2 text-[#8c4a36]">{erreur}</p>}
       {resume && !resume.paragraphes.length && <p role="alert" className="mt-2 text-[#8c4a36]">{resume.message}</p>}
       {resume && resume.paragraphes.length > 0 && (

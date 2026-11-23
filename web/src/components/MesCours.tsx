@@ -4,6 +4,7 @@ import { api, ApiError, type ApercuCours, type CoursDepose } from '../lib/api'
 import { useApp } from '../state/contexte'
 import { FORMATS_LISIBLES, formatAccepte, refusFichier, sansExtension, STATUTS } from '../lib/fichiers'
 import { OptionsMatieres } from './OptionsMatieres'
+import { Chargement, Rond } from './Chargement'
 import { CarteMentale } from './CarteMentale'
 import { ResumeVocal } from './ResumeVocal'
 
@@ -210,10 +211,15 @@ export function DepotRapide({ fichiers, onFermer }: { fichiers: File[]; onFermer
             </label>
           )}
           <button type="submit" disabled={!matiere || envoi !== null || place === 0}
-            className="rounded-[7px] bg-forest px-3 py-[8px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-[7px] bg-forest px-3 py-[8px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            {envoi && <Rond className="h-3.5 w-3.5" />}
             {envoi ? `Envoi de ${envoi}…` : 'Déposer'}
           </button>
         </div>
+      )}
+      {envoi && (
+        <Chargement duree="jusqu’à une minute pour un scan"
+          etapes={['Envoi du fichier…', 'Lecture du fichier…', 'Lecture des pages scannées, s’il y en a…', 'Découpage en passages…']} />
       )}
       {place === 0 && acceptes.length > 0 && <p className="text-[11px] text-[#8c4a36]">Limite de {coursMax} cours atteinte pour votre formule.</p>}
       {erreurs.map((m) => <p key={m} role="alert" className="text-[11px] text-[#8c4a36]">{m}</p>)}

@@ -14,6 +14,7 @@ const VUES: { id: Vue; label: string; court: string; ico: string }[] = [
   { id: 'assistant', label: 'Assistant IA', court: 'Assistant', ico: '✳' },
   { id: 'matieres', label: 'Mes matières', court: 'Matières', ico: '▤' },
   { id: 'fiches', label: 'Fiches & révisions', court: 'Fiches', ico: '▧' },
+  { id: 'cartes', label: 'Mes cartes mentales', court: 'Cartes', ico: '✣' },
   { id: 'bibliotheque', label: 'Bibliothèque', court: 'Biblio', ico: '▥' },
 ]
 

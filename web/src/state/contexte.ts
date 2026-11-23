@@ -4,7 +4,7 @@ import type { Carte } from '../lib/cartes'
 import type { Favori } from '../lib/favoris'
 import type { Semestre } from '../lib/semestres'
 
-export type Vue = 'espace' | 'assistant' | 'matieres' | 'fiches' | 'bibliotheque'
+export type Vue = 'espace' | 'assistant' | 'matieres' | 'fiches' | 'cartes' | 'bibliotheque'
 
 export interface Message {
   id: string
@@ -82,6 +82,11 @@ export interface AppState {
 }
 
 export const Ctx = createContext<AppState | null>(null)
+
+/** Etat de l'espace etudiant s'il entoure le composant (null sur une page publique ou dans un test isole). */
+export function useAppFacultatif(): AppState | null {
+  return useContext(Ctx)
+}
 
 export function useApp(): AppState {
   const v = useContext(Ctx)

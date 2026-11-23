@@ -2,7 +2,7 @@ import { QuizModal } from './components/QuizModal'
 import { CadreEspace } from './components/Layout'
 import { SourcePanel } from './components/SourcePanel'
 import { useApp } from './state/contexte'
-import { VueAssistant, VueBibliotheque, VueEspace, VueFiches, VueMatieres } from './views/Vues'
+import { VueAssistant, VueBibliotheque, VueCartes, VueEspace, VueFiches, VueMatieres } from './views/Vues'
 
 function Contenu() {
   const { vue } = useApp()
@@ -12,6 +12,7 @@ function Contenu() {
       {vue === 'assistant' && <VueAssistant />}
       {vue === 'matieres' && <VueMatieres />}
       {vue === 'fiches' && <VueFiches />}
+      {vue === 'cartes' && <VueCartes />}
       {vue === 'bibliotheque' && <VueBibliotheque />}
     </>
   )

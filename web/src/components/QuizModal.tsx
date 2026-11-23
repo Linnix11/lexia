@@ -7,6 +7,7 @@ import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
 import { ChoixCours } from './ChoixCours'
 import { OptionsMatieres } from './OptionsMatieres'
+import { Chargement, Rond } from './Chargement'
 
 const FORMATS: { id: FormatQuiz; label: string }[] = [
   { id: 'qcm', label: 'QCM' },
@@ -139,7 +140,8 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
           </label>
           <div className="tab:col-span-3">
             <button type="submit" disabled={etat !== 'libre'}
-              className="rounded-[7px] bg-forest px-[13px] py-2.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">
+              className="inline-flex items-center gap-2 rounded-[7px] bg-forest px-[13px] py-2.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">
+              {etat === 'generation' && <Rond className="h-3.5 w-3.5" />}
               {etat === 'generation' ? 'Génération en cours…' : quiz ? 'Générer un nouveau questionnaire ↗' : 'Générer le questionnaire ↗'}
             </button>
           </div>
@@ -154,9 +156,12 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
         )}
 
         {etat === 'generation' && (
-          <div className="grid animate-pulse gap-3 border-t border-line pt-4">
-            <p role="status" className="sr-only">Génération du questionnaire en cours.</p>
-            {[0, 1, 2].map((i) => <div key={i} aria-hidden className="h-10 rounded bg-[#ece9e0]" />)}
+          <div className="grid gap-3 border-t border-line pt-4">
+            <Chargement duree="jusqu’à une minute"
+              etapes={['Recherche des textes sur ce thème…', 'Rédaction des questions…', 'Rédaction des corrigés…', 'Vérification des sources…', 'Presque prêt…']} />
+            <div aria-hidden className="grid animate-pulse gap-3 motion-reduce:animate-none">
+              {[0, 1, 2].map((i) => <div key={i} className="h-10 rounded bg-[#ece9e0]" />)}
+            </div>
           </div>
         )}
 

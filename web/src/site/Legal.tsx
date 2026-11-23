@@ -441,7 +441,7 @@ export function Confidentialite() {
         </p>
         <p>
           Certaines données restent dans votre navigateur et ne sont pas envoyées au serveur : vos fiches
-          enregistrées, vos cartes à réviser avec leur date de prochaine révision, le semestre et la dernière matière choisis (stockage local, jusqu’à ce que vous les
+          enregistrées, vos cartes mentales enregistrées, vos cartes à réviser avec leur date de prochaine révision, le semestre et la dernière matière choisis (stockage local, jusqu’à ce que vous les
           supprimiez) ; la conversation
           en cours (30 derniers messages) et le dernier questionnaire avec sa correction (stockage de session,
           effacé à la fermeture de l’onglet, à la déconnexion et à la suppression du compte), pour ne pas les perdre

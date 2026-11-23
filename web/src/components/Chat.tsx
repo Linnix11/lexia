@@ -8,6 +8,7 @@ import { ChoixCours } from './ChoixCours'
 import { ACCEPT, fichiersDeposes } from '../lib/fichiers'
 import { DepotRapide } from './MesCours'
 import { OptionsMatieres } from './OptionsMatieres'
+import { Chargement, Rond } from './Chargement'
 
 const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
   { label: 'Hiérarchie des normes', question: 'Explique-moi la hiérarchie des normes', mode: 'expliquer' },
@@ -17,9 +18,11 @@ const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
 
 function Attente() {
   return (
-    <div className="rounded-[10px] bg-[#f6f4ee] px-4 py-3.5">
-      <p className="mb-2.5 text-[11px] text-muted">Lexia cherche dans les textes et la jurisprudence…</p>
-      <div aria-hidden className="grid animate-pulse gap-2">
+    <div className="grid gap-2.5">
+      <Chargement duree="10 à 30 secondes en général"
+        etapes={['Lexia cherche dans les textes et la jurisprudence…', 'Tri des passages les plus utiles…',
+          'Rédaction de la réponse…', 'Vérification des sources citées…', 'Encore un instant…']} />
+      <div aria-hidden className="grid animate-pulse gap-2 px-1 motion-reduce:animate-none">
         <div className="h-3 w-2/3 rounded bg-[#e7e4da]" />
         <div className="h-3 w-full rounded bg-[#ece9e0]" />
         <div className="h-3 w-5/6 rounded bg-[#ece9e0]" />
@@ -242,8 +245,9 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           disabled={occupe}
           // bouton desactive pendant une reponse : son libelle « Recherche… » le dit (audit du 2026-11-18, D8)
           title={occupe ? 'Une réponse est en cours de préparation.' : undefined}
-          className="rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
         >
+          {occupe && <Rond className="h-3.5 w-3.5" />}
           {occupe ? 'Recherche…' : 'Envoyer ↗'}
         </button>
       </form>

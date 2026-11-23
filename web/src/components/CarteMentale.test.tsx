@@ -1,5 +1,5 @@
 // Carte mentale (D112) : plan demande au serveur, dessin SVG, repli, zoom, version en liste accessible.
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CarteMentale as Carte } from '../lib/api'
 import { couperLignes, disposer, nomFichier } from '../lib/carteMentale'
@@ -37,6 +37,27 @@ const libellesDessin = () => Array.from(dessin().querySelectorAll('text')).map((
 })
 
 describe('Carte mentale', () => {
+  it('affiche une carte enregistrée sans rien demander au serveur ni le quota du jour', () => {
+    const fermer = vi.fn()
+    render(<CarteMentale enregistree={{ ...CARTE, restants: 0 }} onFermer={fermer} />)
+    expect(screen.getByText('Fondement', { selector: 'tspan, text' })).toBeInTheDocument()
+    expect(screen.queryByText(/restante\(s\) aujourd’hui/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Enregistrer la carte' })).not.toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(fermer).toHaveBeenCalled()
+  })
+
+  it('montre l’animation de chargement pendant la préparation', async () => {
+    let finir: (r: Response) => void = () => {}
+    reponse = () => new Promise<Response>((r) => { finir = r })
+    render(<CarteMentale demande={demande} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Carte mentale' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Lecture du contenu…')
+    finir(new Response(JSON.stringify(CARTE), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    await waitFor(() => expect(screen.queryByText('Lecture du contenu…')).not.toBeInTheDocument())
+  })
+
   it('garde le focus : titre de la section à l’ouverture, bouton à la fermeture (audit du 2026-11-23, D4)', async () => {
     render(<CarteMentale demande={demande} />)
     fireEvent.click(screen.getByRole('button', { name: /carte mentale/i }))
