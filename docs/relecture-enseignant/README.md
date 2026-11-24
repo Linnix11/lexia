@@ -1,6 +1,6 @@
 # Relecture de Lexia par un enseignant
 
-Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia par un enseignant en droit.
+Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia par un enseignant en droit ; réponses reposées le 24 novembre 2026.
 
 | Fichier | Rôle | Destinataire |
 |---|---|---|
@@ -14,14 +14,13 @@ Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia p
 | `outils/interroger.py` | Pose les questions au moteur local (même chemin que `POST /chat`) | Éditeur |
 | `outils/generer.py` | Construit `dossier.md`, `dossier.docx`, `grille.xlsx` et `lettre.docx` | Éditeur |
 
-État : 21 réponses sur 30. Les 9 autres n'ont pas pu être obtenues le 23 novembre (Gemini indisponible puis quota
-gratuit épuisé). Le dossier ne doit pas être envoyé avant de les avoir complétées : voir la section 5 de
-`constats-avant-relecture.md`.
+État : 30 réponses sur 30, obtenues le 24 novembre 2026 (code `c9c92cd`). 24 justes, 1 fausse (28), 3 douteuses
+(21, 24, 26), 2 abstentions correctes : voir `constats-avant-relecture.md`, sections 1 et 7, avant l'envoi.
 
 Régénérer (depuis la racine du dépôt) :
 
 ```bash
-.venv/bin/python docs/relecture-enseignant/outils/interroger.py --n 7,9,10,13,14,19,20,21,26 --pause 60
+.venv/bin/python docs/relecture-enseignant/outils/interroger.py --pause 60
 ```
 
 ```bash
