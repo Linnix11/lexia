@@ -115,7 +115,8 @@ def get_settings() -> Settings:
             "siren": os.environ.get("LEGAL_SIREN", ""),
             "directeur": os.environ.get("LEGAL_DIRECTEUR", ""),
             "telephone": os.environ.get("LEGAL_TELEPHONE", ""),
-            # LCEN art. 1-1, 4° : nom, adresse et telephone de l'hebergeur (Hostinger ne publie pas de numero)
+            # LCEN art. 1-1, I, 4° : nom, adresse et telephone de l'hebergeur. Hostinger ne publie pas de numero
+            # (pages officielles revues le 24/11/2026, docs/avant-la-vente.md, section 2) : pas de valeur par defaut
             "hebergeur_telephone": os.environ.get("LEGAL_HEBERGEUR_TELEPHONE", ""),
             # ex. « TVA non applicable, art. 293 B du CGI » (micro-entreprise) ou « TVA incluse »
             "tva": os.environ.get("LEGAL_TVA", ""),

@@ -68,6 +68,17 @@ Larnaca et donnent compliance@hostinger.com), politique de confidentialité, pag
 Un numéro lituanien figure dans les enregistrements RIPE (registre des adresses IP), qui ne sont pas un site de
 Hostinger : il n'a pas été retenu.
 
+Vérifié à nouveau le 24 novembre 2026 (D127), toujours sans numéro : conditions universelles en anglais et en
+français (https://www.hostinger.com/legal/universal-terms-of-service-agreement,
+https://www.hostinger.com/fr/legal/termes-universels-de-contrat-de-service, révisées les 29 septembre et 9 octobre
+2026), page de contact (https://www.hostinger.com/contacts : chat, formulaires, press@hostinger.com) et politique de
+confidentialité (https://www.hostinger.com/legal/privacy-policy, révisée le 14 octobre 2026, qui parle d'appels
+sans donner de numéro). Les adresses https://www.hostinger.com/fr/mentions-legales et
+https://www.hostinger.com/fr/contacts répondent « page introuvable ». L'obligation est celle de la LCEN (loi
+n° 2004-575 du 21 juin 2004), article 1-1, I, 4°, issu de la loi n° 2024-449 du 21 mai 2024 (ancien article 6, III) :
+« le nom, la dénomination ou la raison sociale, l'adresse et le numéro de téléphone du fournisseur de services
+d'hébergement » (texte lu sur Légifrance le 24 novembre 2026). Aucune valeur par défaut n'est donc mise dans le code.
+
 À faire par l'éditeur : demander par écrit au support Hostinger (ou à compliance@hostinger.com) le numéro de
 téléphone à faire figurer dans des mentions légales françaises, puis le donner à renseigner dans
 `/opt/lexia/.env`. D'ici là, la page affiche « à compléter ».
@@ -88,6 +99,34 @@ avant d'adhérer.
 | Avenir Conso (anciennement AME Conso) | https://www.avenir-conso.com/ | Non publié |
 | ANM Consommation | https://www.anm-conso.com/ | Non publié |
 | Médiation Solution | https://sasmediationsolution-conso.fr/ | Non publié |
+
+**Service gratuit pendant la bêta : l'obligation joue-t-elle déjà ?** (vérifié le 24 novembre 2026, D127)
+
+- Code de la consommation, article L. 611-1 (Légifrance, version en vigueur au 24 novembre 2026) : le litige visé
+  est « un litige de nature contractuelle » portant « sur l'exécution d'un contrat de vente ou de fourniture de
+  services » ; le 4° définit le « contrat de prestation de services » comme celui « en contrepartie duquel le
+  consommateur s'engage à payer le prix ».
+- Article L. 612-1 : « le professionnel garantit au consommateur le recours effectif à un dispositif de médiation
+  de la consommation ». Les exclusions des articles L. 611-3 et L. 611-4 ne visent pas les services gratuits.
+- economie.gouv.fr (rubrique « Vous êtes un professionnel », « Vos principales obligations ») : l'accès à la
+  médiation vaut pour « tout litige éventuel lié à l'exécution du contrat conclu » avec le consommateur, et le nom,
+  les coordonnées et le site du médiateur figurent sur le site et dans les conditions générales. La page « Choisir
+  un médiateur » précise qu'on ne peut pas mentionner un médiateur sans avoir conclu de convention avec lui, et ne
+  publie aucun tarif (offres à demander aux médiateurs).
+
+Conclusion : le critère du prix de l'article L. 611-1, 4° plaide pour un service gratuit hors du champ, mais le 1°
+emploie un autre terme (« fourniture de services »), qui n'est pas défini, et aucune source officielle lue ne dit
+expressément qu'un service gratuit est exclu. Surtout, les CGU proposent déjà une formule payante demandée par
+e-mail (article 4) et renvoient au médiateur à l'article 6. Le texte affiché n'est donc pas modifié : l'encart
+reste tant que `LEGAL_MEDIATEUR` est vide.
+
+Options pour l'éditeur :
+- A (recommandée). Adhérer avant l'ouverture et avant toute vente, même par e-mail : la SMP affichait le 17
+  novembre 25 € HT pour 3 ans sous 60 000 € de chiffre d'affaires (tableau ci-dessus, à reconfirmer), puis
+  renseigner `LEGAL_MEDIATEUR` ; l'encart disparaît sans changer le code.
+- B. Garder la bêta gratuite sans médiateur : retirer la demande de formule payante par e-mail tant que
+  `LEGAL_MEDIATEUR` est vide, et faire valider par un juriste une rédaction de l'article 9 sans médiateur pour le
+  service gratuit ; nouvelle version des CGU (`web/src/lib/cgu.ts` et `api/paiement.py`).
 
 À faire par l'éditeur : choisir, adhérer (convention signée), puis donner le nom, l'adresse postale et le site du
 médiateur à renseigner dans `LEGAL_MEDIATEUR`. Les CGU (article 9, « Droit applicable », depuis la version du 20 novembre 2026) l'affichent alors.
