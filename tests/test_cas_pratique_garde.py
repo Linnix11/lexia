@@ -31,7 +31,8 @@ def test_seuls_les_cas_d_une_chose_en_cause_changent():
     """Les autres cas des jeux d'evaluation gardent un prompt identique : leurs resultats ne peuvent pas baisser."""
     touches = {c.id for f in sorted(Path("eval").glob("*.yaml")) for c in charger(f)
                if c.mode == "cas_pratique" and lexique.chose_en_cause(c.question)}
-    assert touches == {"cp-01", "cp-02", "cp-33", "cp-34"}
+    # gan-22 : cas du ballon du dossier enseignant (D126), ajoute pour la notion du fait des choses
+    assert touches == {"cp-01", "cp-02", "cp-33", "cp-34", "gan-22"}
 
 
 def test_chose_et_dommage_sans_age_le_lexique_propose_1242():

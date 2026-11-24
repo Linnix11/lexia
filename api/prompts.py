@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from api import grands_arrets, lexique
 from api.concordance import note as note_concordance
 from api.textes import en_vigueur_aujourdhui
@@ -272,6 +274,30 @@ def note_mariage(question: str, passages: list[dict]) -> str:
     return note
 
 
+_JUGE_ADMINISTRATIF = re.compile(r"conseil d.etat|juge administratif|juridictions? administratives?")
+
+
+def note_constitutionnalite(question: str, passages: list[dict]) -> str:
+    """Note au modele quand l'article 61 de la Constitution est fourni. Dossier enseignant, question 28 (24/11) : la
+    reponse disait que les lois ordinaires « doivent être soumises » au Conseil constitutionnel avant leur
+    promulgation, et ne corrigeait pas la premisse d'un controle de constitutionnalite par le Conseil d'Etat."""
+    if not any(p.get("source_id") == "constitution_1958" and p.get("numero") == "61" for p in passages):
+        return ""
+    note = ("Note : l'article 61 de la Constitution (dans les extraits) distingue deux cas. Les lois organiques, les "
+            "propositions de loi de l'article 11 et les règlements des assemblées sont soumis d'office au Conseil "
+            "constitutionnel (alinéa 1). Les autres lois ne sont contrôlées avant leur promulgation que si une "
+            "autorité énumérée à l'alinéa 2 les défère : ne dis jamais que toute loi est soumise au Conseil "
+            "constitutionnel.")
+    q = lexique.normaliser(question)
+    if _JUGE_ADMINISTRATIF.search(q) and "constitution" in q:
+        note += (" Le juge administratif ne contrôle pas la constitutionnalité des lois : il applique la loi même "
+                 "contraire à la Constitution (théorie de la loi-écran). Depuis 2010, il peut seulement transmettre "
+                 "une question prioritaire de constitutionnalité au Conseil constitutionnel (article 61-1), et il "
+                 "écarte une loi contraire à un traité (contrôle de conventionnalité). Si la question suppose le "
+                 "contraire, corrige cette prémisse dès la réponse directe.")
+    return note
+
+
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
                 semestre: int | None = None, anciens: dict | None = None, cours: str | None = None) -> str:
     consigne = (public(niveau, semestre) + consigne_cours(cours) + MODES[mode]
@@ -283,6 +309,8 @@ def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | No
         consigne += "\n" + circulation
     if mariage := note_mariage(question, passages):
         consigne += "\n" + mariage
+    if constitutionnalite := note_constitutionnalite(question, passages):
+        consigne += "\n" + constitutionnalite
     if mode == "cas_pratique" and (garde := note_garde(question, passages)):
         consigne += "\n" + garde
     if grands := grands_arrets.note(passages):

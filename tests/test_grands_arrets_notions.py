@@ -93,6 +93,16 @@ def test_fiche_lexia_jamais_presentee_comme_decision():
     ("Qu'est-ce que le bloc de constitutionnalité ?", "bloc_constitutionnalite", "cc-71-44-dc"),
     ("Quels sont les fondements de la responsabilité administrative ?", "responsabilite_administrative", "blanco"),
     ("Le juge peut-il réviser le contrat en cas d'imprévision ?", "imprevision", "canal-de-craponne"),
+    # dossier enseignant du 24/11 : questions 4, 13, 17, 24 et 28 sans grand arret
+    ("Quelles sont les conditions de la responsabilité civile du fait personnel ?", "fait_personnel", "derguini"),
+    ("Paul a emprunté le ballon de Marc. D'un tir mal ajusté, le ballon frappe Léa, qui se fracture le poignet. "
+     "Contre qui peut-elle agir ?", "fait_des_choses", "jand-heur"),
+    ("Le maire prend un arrêté interdisant toute manifestation sur la voie publique pendant un mois. Que peut faire "
+     "une association ?", "police_administrative", "benjamin"),
+    ("Propose-moi un plan de dissertation sur le sujet : « Le Conseil constitutionnel, gardien des droits et "
+     "libertés ? »", "controle_constitutionnalite", "cc-71-44-dc"),
+    ("Comment le Conseil d'État contrôle-t-il la constitutionnalité des lois votées par le Parlement ?",
+     "juge_administratif_et_loi", "nicolo"),
 ])
 def test_notion_reconnue_et_ses_grands_arrets(question, notion, premier):
     assert notion in grands_arrets.notions_de(question)
@@ -100,7 +110,7 @@ def test_notion_reconnue_et_ses_grands_arrets(question, notion, premier):
 
 
 @pytest.mark.parametrize("question", [
-    "Franck casse la vitre de son voisin avec un ballon. Le voisin peut-il obtenir réparation ?",
+    "Franck casse la vitre de son voisin d'un coup de poing. Le voisin peut-il obtenir réparation ?",
     "Mme Mercier a vendu sa maison à M. Costa. La vente est-elle valable ?",
     "Qu'est-ce que l'intérêt à agir en procédure civile ?",
     "Une clause contraire à l'ordre public et à la liberté contractuelle est-elle valable ?",
@@ -110,6 +120,12 @@ def test_pas_de_grand_arret_hors_sujet(question):
     """Nom courant sans contexte d'arret (D90), notion voisine (interet a agir du proces civil, ordre public du
     contrat) : aucun grand arret."""
     assert grands_arrets.arrets_pour(question) == []
+
+
+def test_vehicule_a_moteur_pas_de_fait_des_choses():
+    """Une voiture cause le dommage : loi du 5 juillet 1985, pas la garde de la chose (R-1), meme avec un velo."""
+    q = "La voiture de Paul dévale la pente et renverse Léa, qui était à vélo. Léa peut-elle être indemnisée ?"
+    assert "fait_des_choses" not in grands_arrets.notions_de(q)
 
 
 def test_arret_nomme_en_premier():
@@ -292,4 +308,4 @@ def test_source_attendue_ga():
     assert correspond("ga:jand-heur", grands_arrets.fiche(f"{SOURCE_FICHES}:jand-heur"))
     assert correspond("ga:blieck", BLIECK)
     assert not correspond("ga:franck", grands_arrets.fiche(f"{SOURCE_FICHES}:jand-heur"))
-    assert len(charger(JEU)) == 20 and Path(JEU).exists()
+    assert len(charger(JEU)) == 25 and Path(JEU).exists()

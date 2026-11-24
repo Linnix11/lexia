@@ -1610,6 +1610,11 @@ notions:
     libelle: Responsabilité des commettants du fait de leurs préposés
     motifs: ['\bcommettants?\b', '\bpreposes?\b']
     arrets: [costedoat, cousin]
+  fait_personnel:
+    # dossier enseignant, question 4 (24/11) : « conditions de la responsabilite civile du fait personnel »
+    libelle: Responsabilité du fait personnel
+    motifs: ['fait personnel', 'responsabilite (?:civile )?(?:delictuelle |extracontractuelle )?pour faute']
+    arrets: [derguini, lemaire]
   faute_enfant:
     libelle: Faute de l'enfant et discernement en droit civil
     motifs: ['\binfans\b', "faute (?:d'un|de l'|du) (?:jeune )?(?:enfant|mineur)", 'discernement .{0,40}(?:faute|responsabilite civile)', 'trouble mental']
@@ -1731,9 +1736,15 @@ notions:
     libelle: Bloc de constitutionnalité
     motifs: ['bloc de constitutionnalite', 'valeur constitutionnelle', 'principes? fondamentaux? reconnus? par les lois de la republique', '\bpfrlr\b', 'preambule (?:de la constitution|de 1946|de 1958)', 'normes? de reference du controle de constitutionnalite']
     arrets: [cc-71-44-dc, cc-81-132-dc, kone, cc-86-224-dc, cc-2018-717-qpc]
+  juge_administratif_et_loi:
+    # dossier enseignant, question 28 (24/11) : le Conseil d'Etat ne controle pas la constitutionnalite des lois
+    libelle: Juge administratif et contrôle de la loi
+    motifs: ["conseil d.etat .{0,60}constitutionnalite", 'juge administratif .{0,60}constitutionnalite', "constitutionnalite .{0,60}(?:conseil d.etat|juge administratif)", 'loi[- ]ecran']
+    arrets: [nicolo, cc-2009-595-dc]
   controle_constitutionnalite:
     libelle: Contrôle de constitutionnalité des lois
-    motifs: ['controle de (?:la )?constitutionnalite', 'constitutionnalite des lois', 'lois? referendaires?']
+    # dossier enseignant, question 24 (24/11) : « le Conseil constitutionnel, gardien des droits et libertes ? »
+    motifs: ['controle de (?:la )?constitutionnalite', 'constitutionnalite des lois', 'lois? referendaires?', 'conseil constitutionnel.{0,60}(?:droits et libertes|libertes (?:fondamentales|publiques))', 'gardien des (?:droits et )?libertes']
     arrets: [cc-71-44-dc, cc-62-20-dc, cc-85-197-dc, cc-74-54-dc]
   qpc:
     libelle: Question prioritaire de constitutionnalité
@@ -1771,7 +1782,8 @@ notions:
     arrets: [gomel, camino, ville-nouvelle-est]
   police_administrative:
     libelle: Police administrative
-    motifs: ['police administrative', 'pouvoirs? de police', 'police municipale', 'police generale', 'mesures? de police', 'ordre public']
+    # dossier enseignant, question 17 (24/11) : arrete du maire interdisant les manifestations
+    motifs: ['police administrative', 'pouvoirs? de police', 'police municipale', 'police generale', 'mesures? de police', 'ordre public', 'interdi\w* .{0,60}manifestations?', 'manifestations? sur la voie publique', 'arretes? (?:municipal|du maire|prefectoral)']
     avec: 'police|maire|prefet|administrati'
     arrets: [benjamin, morsang, labonne, lutetia]
   dignite:

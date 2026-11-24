@@ -31,6 +31,7 @@ from functools import lru_cache
 
 import yaml
 
+from api import lexique
 from api.config import ROOT
 from api.textes import sans_accents
 
@@ -222,9 +223,13 @@ def notions_de(texte: str) -> list[str]:
     t = sans_accents(texte).lower()
     if _NUMERO_DECISION.search(t):
         return []
+    # Cas pratique ou une chose cause le dommage (« le ballon frappe Lea ») sans les mots « fait des choses » :
+    # meme detection que la note sur la garde (D119) ; un vehicule a moteur releve de la loi de 1985 (dossier
+    # enseignant, question 13, 24/11).
+    chose = lexique.chose_en_cause(texte) is not None and lexique.vehicule_en_cause(texte) is None
     return [n.id for n in registre().notions.values()
-            if any(m.search(t) for m in n.motifs) and (n.avec is None or n.avec.search(t))
-            and (n.sauf is None or not n.sauf.search(t))]
+            if (any(m.search(t) for m in n.motifs) or (chose and n.id == "fait_des_choses"))
+            and (n.avec is None or n.avec.search(t)) and (n.sauf is None or not n.sauf.search(t))]
 
 
 def arrets_pour(texte: str) -> list[Arret]:

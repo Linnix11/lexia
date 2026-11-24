@@ -1,4 +1,4 @@
-# Grands arrets par notion (D124) - version 1 (2026-11-23)
+# Grands arrets par notion (D124) - version 2 (2026-11-24 : gan-21 a gan-25, D126)
 #
 # Questions de cours qui portent sur une notion sans nommer l'arret : ses grands arrets doivent arriver parmi les
 # extraits (decision de l'index ou fiche redigee par Lexia, registry/grands_arrets.yaml). Source attendue
@@ -28,3 +28,9 @@ cas:
   - {id: gan-18, matiere: droit_constitutionnel, attendu: [reponse], sources: ["ga:cc-2009-595-dc", "ga:cc-2010-605-dc"], question: "Comment fonctionne la question prioritaire de constitutionnalité ?"}
   - {id: gan-19, matiere: droit_administratif, attendu: [reponse], sources: ["ga:tarn-et-garonne"], question: "Un tiers peut-il contester la validité d'un contrat administratif ?"}
   - {id: gan-20, matiere: droit_des_contrats, attendu: [reponse], sources: ["ga:mercier"], question: "Quelle différence entre obligation de moyens et obligation de résultat ?"}
+  # dossier enseignant du 24/11 (questions 4, 13, 17, 24, 28) : aucune notion reconnue, aucun grand arret
+  - {id: gan-21, matiere: droit_civil, attendu: [reponse], sources: ["ga:derguini"], question: "Quelles sont les conditions de la responsabilité civile du fait personnel ?"}
+  - {id: gan-22, matiere: droit_civil, mode: cas_pratique, attendu: [reponse], sources: ["ga:jand-heur"], question: "Paul, 20 ans, a emprunté le ballon de son ami Marc pour jouer seul dans un parc. D'un tir mal ajusté, le ballon frappe Léa, une passante, qui tombe et se fracture le poignet. Léa veut être indemnisée. Contre qui et sur quel fondement peut-elle agir ?"}
+  - {id: gan-23, matiere: droit_administratif, mode: cas_pratique, attendu: [reponse], sources: ["ga:benjamin"], question: "Le maire d'une commune prend un arrêté interdisant toute manifestation sur la voie publique pendant un mois, en invoquant de façon générale le risque de troubles. Une association qui voulait manifester la semaine prochaine veut contester cet arrêté. Que peut-elle faire et avec quelles chances ?"}
+  - {id: gan-24, matiere: droit_constitutionnel, mode: dissertation, attendu: [reponse], sources: ["ga:cc-71-44-dc"], question: "Propose-moi un plan de dissertation sur le sujet : « Le Conseil constitutionnel, gardien des droits et libertés ? »"}
+  - {id: gan-25, matiere: droit_constitutionnel, attendu: [reponse], sources: ["ga:nicolo"], question: "Comment le Conseil d'État contrôle-t-il la constitutionnalité des lois votées par le Parlement ?"}
