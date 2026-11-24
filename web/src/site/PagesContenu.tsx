@@ -7,6 +7,7 @@ import { useSession } from '../state/session'
 import { citation, libelleCitation, versionCourte } from './contenu/citations'
 import { GUIDES, clesCitations, guideParSlug, type Bloc } from './contenu/guides'
 import { MATIERES_PUBLIQUES, matiereParSlug } from './contenu/matieres'
+import { LienInscription } from './Invitation'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 import { EDITEUR, questionsMatiere } from './seo'
 
@@ -80,7 +81,7 @@ function Inscription({ texte }: { texte: string }) {
     <aside className="mt-10 rounded-xl border border-forest bg-mint px-5 py-5">
       <p className="text-[14px] leading-[1.6] text-ink">{texte}</p>
       <div className="mt-4 flex flex-wrap gap-3">
-        <Lien href={profil ? '/app' : '/inscription'} className={bouton}>{profil ? 'Ouvrir mon espace' : 'Créer un compte gratuit'}</Lien>
+        {profil ? <Lien href="/app" className={bouton}>Ouvrir mon espace</Lien> : <LienInscription className={bouton} />}
         <Lien href="/tarifs" className={boutonSecondaire}>Voir les formules</Lien>
       </div>
     </aside>

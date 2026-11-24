@@ -219,12 +219,82 @@ describe('Assistant', () => {
   it('adresse non confirmee : bandeau et renvoi de l e-mail', async () => {
     emailVerifie = false
     render(<Site />)
-    expect(await screen.findByText(/Confirmez votre adresse e-mail/)).toBeInTheDocument()
+    expect((await screen.findAllByText(/Confirmez votre adresse e-mail/)).length).toBeGreaterThan(0)
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Renvoyer/ }))
+      fireEvent.click(screen.getAllByRole('button', { name: /Renvoyer/ })[0])
     })
     expect(await screen.findByText(/Nouvel e-mail envoyé/)).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/auth/email/renvoyer'))).toBe(true)
+  })
+
+  // Adresse non confirmee (D129) : la question partait, echouait en 403, et « Reessayer » echouait encore.
+  it('adresse non confirmee : l envoi est bloque au-dessus du champ, avec l explication et le renvoi de l e-mail', async () => {
+    emailVerifie = false
+    render(<Site />)
+    const champ = await screen.findByLabelText('Votre question')
+    const blocage = await screen.findByTestId('envoi-bloque')
+    expect(blocage).toHaveTextContent(/Confirmez votre adresse e-mail pour poser une question/)
+    expect(blocage).toHaveTextContent('etu@exemple.fr')
+    expect(champ.getAttribute('aria-describedby')).toContain('envoi-bloque')
+    expect(screen.getByRole('button', { name: /Envoyer/ })).toBeDisabled()
+    fireEvent.change(champ, { target: { value: 'Que dit l’article 1240 ?' } })
+    await act(async () => {
+      fireEvent.submit(champ.closest('form')!)
+    })
+    // Suggestions bloquees aussi : aucune question ne part
+    for (const nom of ['Hiérarchie des normes', 'Fiche de révision', 'Méthode du cas pratique']) {
+      const s = screen.getByRole('button', { name: nom })
+      expect(s).toBeDisabled()
+      await act(async () => { fireEvent.click(s) })
+    }
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)
+    await act(async () => {
+      fireEvent.click(within(blocage).getByRole('button', { name: 'Renvoyer l’e-mail' }))
+    })
+    expect(await within(blocage).findByText(/Nouvel e-mail envoyé/)).toBeInTheDocument()
+  })
+
+  it('adresse confirmee dans un autre onglet : le retour sur l onglet relit le profil et debloque l envoi', async () => {
+    emailVerifie = false
+    render(<Site />)
+    await screen.findByTestId('envoi-bloque')
+    emailVerifie = true
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await waitFor(() => expect(screen.queryByTestId('envoi-bloque')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Envoyer/ })).toBeEnabled()
+    expect(screen.queryByText(/Confirmez votre adresse e-mail/)).not.toBeInTheDocument()
+  })
+
+  it('adresse non confirmee : « Créer la fiche » ne part pas non plus, et le dit sans « Réessayer »', async () => {
+    emailVerifie = false
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Fiches & révisions/ }))
+    fireEvent.change(screen.getByLabelText(/Nouvelle fiche sur/), { target: { value: 'le dol' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Créer la fiche' }))
+    })
+    expect(screen.getAllByText(/Confirmez votre adresse e-mail pour poser vos questions : ouvrez le lien/).length).toBeGreaterThan(0)
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/chat'))).toBe(false)
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('refus 403 : pas de « Réessayer » qui echouerait de nouveau', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith('/auth/session') || url.endsWith('/auth/moi')) return repondre({ ...PROFIL, email_verifie: true })
+      if (url.endsWith('/config')) return repondre({ comptes: true, contact_email: null })
+      if (url.endsWith('/matieres')) return repondre([])
+      if (url.endsWith('/chat')) return repondre({ detail: 'Confirmez votre adresse e-mail pour poser vos questions.' }, 403)
+      return repondre({}, 404)
+    })
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText('Votre question'), { target: { value: 'Que dit l’article 1240 ?' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Envoyer/ }))
+    })
+    expect(await screen.findByText('Confirmez votre adresse e-mail pour poser vos questions.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 
   it('la boite a outils ouvre l assistant dans le bon mode sans envoyer de question', async () => {

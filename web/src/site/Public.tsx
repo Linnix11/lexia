@@ -17,7 +17,7 @@ function Logo() {
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
-  const { profil } = useSession()
+  const { profil, config } = useSession()
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-line bg-surface/70">
@@ -35,9 +35,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             ) : (
               <>
                 <Lien href="/connexion" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Connexion</Lien>
-                <Lien href="/inscription" className={`${bouton} whitespace-nowrap`}>
-                  <span className="tab:hidden">S’inscrire</span><span className="hidden tab:inline">Créer un compte</span>
-                </Lien>
+                {config?.beta_fermee ? (
+                  // Beta fermee : l'inscription exige un code, l'en-tete mene a la demande d'invitation (D129)
+                  <Lien href="/invitation" className={`${bouton} whitespace-nowrap`}>
+                    <span className="tab:hidden">Invitation</span><span className="hidden tab:inline">Demander une invitation</span>
+                  </Lien>
+                ) : (
+                  <Lien href="/inscription" className={`${bouton} whitespace-nowrap`}>
+                    <span className="tab:hidden">S’inscrire</span><span className="hidden tab:inline">Créer un compte</span>
+                  </Lien>
+                )}
               </>
             )}
           </nav>

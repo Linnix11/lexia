@@ -4,6 +4,7 @@ import { VERSION_CGU } from '../lib/cgu'
 import { NOM_MAX, PRENOM_MAX } from '../lib/personnalisation'
 import { Lien, suiteSure, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
+import { LienInscription } from './Invitation'
 import { PublicLayout, bouton } from './Public'
 
 export const champ = 'w-full rounded-[8px] border border-line bg-white px-3 py-2.5 text-[14px] text-ink aria-[invalid=true]:border-[#c2765f]'
@@ -109,7 +110,7 @@ export function Connexion() {
         <Lien href="/mot-de-passe-oublie" className="text-forest hover:underline">Mot de passe oublié ?</Lien>
       </p>
       <p className="mt-5 text-center text-[13px] text-muted">
-        Pas encore de compte ? <Lien href="/inscription" className="font-semibold text-forest hover:underline">Créer un compte gratuit</Lien>
+        Pas encore de compte ? <LienInscription className="font-semibold text-forest hover:underline" />
       </p>
     </Carte>
   )
@@ -190,13 +191,19 @@ export function Inscription() {
     <Carte titre="Créer un compte" sousTitre={beta ? 'Lexia est en bêta fermée : l’inscription demande un code d’accès.' : gratuit}>
       <form onSubmit={soumettre} className="grid gap-4" noValidate>
         {beta && (
-          <label className="grid gap-1.5 text-[13px]">
-            Code d’accès à la bêta
-            <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={quitter('code')} maxLength={60}
-              autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="ABCDE-FGHJK"
-              aria-invalid={!!montre('code')} aria-describedby="err-code" className={`${champ} tracking-[2px]`} />
-            {aide('err-code', montre('code'))}
-          </label>
+          <div className="grid gap-1.5">
+            <label className="grid gap-1.5 text-[13px]">
+              Code d’accès à la bêta
+              <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={quitter('code')} maxLength={60}
+                autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="ABCDE-FGHJK"
+                aria-invalid={!!montre('code')} aria-describedby="err-code" className={`${champ} tracking-[2px]`} />
+              {aide('err-code', montre('code'))}
+            </label>
+            {/* Hors du libelle : le nom du champ reste « Code d'acces a la beta » (D129) */}
+            <p className="text-[12px] text-muted">
+              Pas de code ? <Lien href="/invitation" className="font-semibold text-forest hover:underline">Demandez une invitation</Lien>
+            </p>
+          </div>
         )}
         <div className="grid gap-4 min-[420px]:grid-cols-2">
           <label className="grid content-start gap-1.5 text-[13px]">

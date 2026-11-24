@@ -3,6 +3,7 @@ import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { FORMULES_PUBLIQUES, Formules } from './Tarifs'
+import { LienInscription } from './Invitation'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 const PILIERS = [
@@ -18,8 +19,8 @@ const ETAPES = [
 ]
 
 export function Accueil() {
-  const { profil } = useSession()
-  const cible = profil ? '/app' : '/inscription'
+  const { profil, config } = useSession()
+  const beta = Boolean(config?.beta_fermee)
   // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
   // Lu apres le premier rendu, identique a la page prerendue (sinon erreur d'hydratation ; audit du 2026-11-23, D12).
   const [supprime, setSupprime] = useState(false)
@@ -48,9 +49,11 @@ export function Accueil() {
             questionnaires, toujours appuyés sur les textes et les décisions que vous pouvez ouvrir et vérifier.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Lien href={cible} className={bouton}>{profil ? 'Ouvrir mon espace' : 'Créer un compte gratuit'}</Lien>
+            {profil ? <Lien href="/app" className={bouton}>Ouvrir mon espace</Lien> : <LienInscription className={bouton} />}
             <Lien href="/tarifs" className={boutonSecondaire}>Voir les formules</Lien>
           </div>
+          {/* Beta fermee dite sous le bouton : l'inscription exige un code (D129) */}
+          {beta && !profil && <p className="mt-3 text-[13px] font-semibold text-forest">Bêta fermée : accès sur invitation.</p>}
           <p className="mt-3 text-[12px] text-muted">
             {gratuit
               ? `Gratuit : ${gratuit.questions_par_jour} questions et ${gratuit.quiz_par_jour} questionnaires par jour, sans carte bancaire.`

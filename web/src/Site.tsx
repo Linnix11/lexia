@@ -4,6 +4,7 @@ import { Accueil } from './site/Accueil'
 import { Connexion, Inscription } from './site/Auth'
 import { PublicLayout, Section, bouton } from './site/Public'
 import { Tarifs } from './site/Tarifs'
+import { Invitation } from './site/Invitation'
 import { CHEMINS_GUIDES, CHEMINS_MATIERES, TITRES_PUBLICS } from './site/routesPubliques'
 import { VerifierEmail } from './site/VerifierEmail'
 import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
@@ -31,6 +32,7 @@ const PageGuide = lazy(() => import('./site/PagesContenu').then((m) => ({ defaul
 const PUBLIQUES: Record<string, () => ReactNode> = {
   '/': () => <Accueil />,
   '/tarifs': () => <Tarifs />,
+  '/invitation': () => <Invitation />, // beta fermee (D129)
   '/mentions-legales': () => <MentionsLegales />,
   '/cgu': () => <Cgu />,
   '/confidentialite': () => <Confidentialite />,
@@ -65,6 +67,7 @@ const TITRES: Record<string, string> = {
   '/nouveau-mot-de-passe': 'Nouveau mot de passe',
   '/connexion': 'Connexion',
   '/inscription': 'Créer un compte',
+  '/invitation': 'Demander une invitation',
   ...Object.fromEntries(VUES.map((v) => [v.chemin, v.label])), // /app : « Mon espace »
   '/compte': 'Mon compte',
   '/cours-recuperes': 'Fiches pratiques de l’administration',

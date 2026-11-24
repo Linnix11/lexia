@@ -86,19 +86,17 @@ export function texteLien(profil: { email: string; lien_envoye?: boolean }): str
     : `le lien a été envoyé à ${profil.email}.`
 }
 
-/** Bandeau affiche tant que l'adresse n'est pas confirmee : sans elle, aucune question n'est possible. */
-export function BandeauEmail() {
+/** Renvoi du lien de confirmation, partage par le bandeau et l'encart au-dessus du champ de question. */
+function useRenvoi() {
   const { profil, rafraichir } = useSession()
   const [envoi, setEnvoi] = useState(false)
   const [message, setMessage] = useState('')
-  if (!profil || profil.email_verifie !== false) return null
-
   const renvoyer = async () => {
     setEnvoi(true)
     setMessage('')
     try {
       await api.renvoyerVerification()
-      setMessage(`Nouvel e-mail envoyé à ${profil.email}.`)
+      setMessage(`Nouvel e-mail envoyé à ${profil?.email ?? ''}.`)
       await rafraichir()
     } catch (e) {
       setMessage(e instanceof ApiError ? e.message : 'Envoi impossible pour le moment.')
@@ -106,6 +104,20 @@ export function BandeauEmail() {
       setEnvoi(false)
     }
   }
+  const boutonRenvoi = (
+    <button type="button" onClick={renvoyer} disabled={envoi}
+      className="rounded-[7px] border border-[#d8c3a4] px-2.5 py-1 text-[12px] text-[#5f4f37] hover:bg-[#f6ece0] disabled:opacity-60">
+      {envoi ? 'Envoi…' : 'Renvoyer l’e-mail'}
+    </button>
+  )
+  return { boutonRenvoi, message }
+}
+
+/** Bandeau affiche tant que l'adresse n'est pas confirmee : sans elle, aucune question n'est possible. */
+export function BandeauEmail() {
+  const { profil } = useSession()
+  const { boutonRenvoi, message } = useRenvoi()
+  if (!profil || profil.email_verifie !== false) return null
 
   return (
     <div role="status" className="border-b border-[#ecd9c4] bg-cream px-4 py-2.5 text-[12px] text-[#5f4f37] tab:px-6">
@@ -114,12 +126,28 @@ export function BandeauEmail() {
           <strong className="font-semibold">Confirmez votre adresse e-mail</strong> pour poser vos questions :
           {' '}{texteLien(profil)}
         </span>
-        <button type="button" onClick={renvoyer} disabled={envoi}
-          className="rounded-[7px] border border-[#d8c3a4] px-2.5 py-1 text-[12px] text-[#5f4f37] hover:bg-[#f6ece0] disabled:opacity-60">
-          {envoi ? 'Envoi…' : 'Renvoyer l’e-mail'}
-        </button>
+        {boutonRenvoi}
         {message && <span className="text-[#746347]">{message}</span>}
       </div>
+    </div>
+  )
+}
+
+/** Encart au-dessus du champ de question quand l'adresse n'est pas confirmee (D129) : l'envoi y est bloque
+ *  au lieu de partir et d'echouer en 403 avec un « Reessayer » qui echouait aussi. */
+export function EnvoiBloque({ id }: { id: string }) {
+  const { profil } = useSession()
+  const { boutonRenvoi, message } = useRenvoi()
+  if (!profil || profil.email_verifie !== false) return null
+  return (
+    <div id={id} data-testid="envoi-bloque"
+      className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[10px] border border-[#ecd9c4] bg-cream px-3.5 py-3 text-[12px] leading-[1.5] text-[#5f4f37]">
+      <span>
+        <strong className="font-semibold">Confirmez votre adresse e-mail pour poser une question</strong> :{' '}
+        {texteLien(profil)} Une fois l’adresse confirmée, revenez sur cet onglet : l’envoi se débloque.
+      </span>
+      {boutonRenvoi}
+      {message && <span role="status" className="text-[#746347]">{message}</span>}
     </div>
   )
 }

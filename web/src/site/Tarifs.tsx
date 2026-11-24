@@ -4,6 +4,7 @@ import { api, type Formule } from '../lib/api'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Payer } from './Payer'
+import { LienInscription } from './Invitation'
 import { formules as formulesDuDepot } from './donnees-publiques.json'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
@@ -41,13 +42,16 @@ export function Formules() {
         if (f.id === 'gratuit') {
           action = profil
             ? <Lien href="/app" className={boutonSecondaire}>{actuelle ? 'Votre formule actuelle' : 'Ouvrir mon espace'}</Lien>
-            : <Lien href="/inscription" className={bouton}>Créer un compte</Lien>
+            : <LienInscription className={bouton}>Créer un compte</LienInscription>
         } else if (actuelle) {
           action = <span className={`${boutonSecondaire} cursor-default`}>Votre formule actuelle</span>
         } else if (!config) {
           // Configuration pas encore lue (page prerendue, premier rendu) : lien neutre plutot qu'un « Bientot
           // disponible » faux, lu par les moteurs (audit du 2026-11-23, D1). Le vrai bouton suit la configuration.
           action = <Lien href="/inscription" className={miseEnAvant ? bouton : boutonSecondaire}>Créer un compte</Lien>
+        } else if (!profil && config.beta_fermee) {
+          // Beta fermee : sans compte, ni paiement ni demande de formule ; d'abord l'invitation (D129)
+          action = <LienInscription className={miseEnAvant ? bouton : boutonSecondaire} />
         } else if (config?.paiement) {
           action = <Payer formule={f} principal={miseEnAvant} />
         } else if (config?.contact_email) {

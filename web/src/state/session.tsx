@@ -73,6 +73,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     api.config().then(setConfig).catch(() => setConfig(null))
   }, [])
 
+  // Adresse confirmee dans un autre onglet (lien de l'e-mail) : le retour sur celui-ci relit le profil, ce qui
+  // retire le bandeau et debloque l'envoi des questions sans recharger la page (D129).
+  const nonConfirme = profil?.email_verifie === false
+  useEffect(() => {
+    if (!nonConfirme) return
+    const auRetour = () => {
+      if (document.visibilityState === 'visible') void rafraichir()
+    }
+    document.addEventListener('visibilitychange', auRetour)
+    window.addEventListener('focus', auRetour)
+    return () => {
+      document.removeEventListener('visibilitychange', auRetour)
+      window.removeEventListener('focus', auRetour)
+    }
+  }, [nonConfirme, rafraichir])
+
   useEffect(() => {
     quandSessionExpiree(() => {
       setProfil(null)

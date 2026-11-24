@@ -177,6 +177,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const q = question.trim()
       if (!q || occupe) return
       const m = modeDemande ?? mode
+      if (profil?.email_verifie === false) {
+        // Adresse non confirmee : refus garde ici, sans appel ni decompte (D129). Le message le dit dans la conversation.
+        setMessages((ms) => [...ms, { id: nouvelId(), question: q, mode: m, etat: 'erreur', statut: 403,
+          erreur: 'Confirmez votre adresse e-mail pour poser vos questions : ouvrez le lien reçu par e-mail.' }])
+        return
+      }
       setMode(m) // le choix affiche en haut de l'assistant suit la derniere demande
       const id = nouvelId()
       setMessages((ms) => [...ms, { id, question: q, mode: m, etat: 'en_cours' }])
@@ -194,7 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => void rafraichir())
     },
-    [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche, optionsCours],
+    [mode, matiere, niveau, semestre, occupe, rafraichir, enregistrerFiche, optionsCours, profil?.email_verifie],
   )
 
   // La generation continue si la fenetre est fermee (clic hors de la fenetre, Echap, changement de page) :

@@ -3,6 +3,8 @@ import type { Mode } from '../lib/api'
 import { infosMode, MODES } from '../lib/modes'
 import { Lien } from '../lib/router'
 import { useApp } from '../state/contexte'
+import { useSession } from '../state/session'
+import { EnvoiBloque } from '../site/VerifierEmail'
 import { Reponse } from './Reponse'
 import { ChoixCours } from './ChoixCours'
 import { ACCEPT, fichiersDeposes } from '../lib/fichiers'
@@ -34,6 +36,10 @@ function Attente() {
 export function Chat({ complet = false }: { complet?: boolean }) {
   const { messages, envoyer, occupe, matiere, setMatiere, matieres, effacer, mode: modeChoisi, setMode } = useApp()
   const [texte, setTexte] = useState('')
+  // Adresse non confirmee : le serveur refuse toute question (403). L'envoi est bloque ici, explique au-dessus du
+  // champ, au lieu de partir et d'echouer avec un « Reessayer » qui echouait aussi (D129).
+  const bloque = useSession().profil?.email_verifie === false
+  const idBlocage = complet ? 'envoi-bloque-complet' : 'envoi-bloque'
   // L'assistant complet propose les modes ; la carte de « Mon espace » reste en mode explication.
   const mode = complet ? modeChoisi : 'expliquer'
   const infos = infosMode(mode)
@@ -91,7 +97,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
   const [tropCourt, setTropCourt] = useState(false)
   const soumettre = (e: FormEvent) => {
     e.preventDefault()
-    if (occupe || !texte.trim()) return
+    if (bloque || occupe || !texte.trim()) return
     if (texte.trim().length < 3) return setTropCourt(true)  // l'API exige 3 caracteres (ChatRequest)
     setTropCourt(false)
     envoyer(texte, mode)
@@ -173,7 +179,8 @@ export function Chat({ complet = false }: { complet?: boolean }) {
                 key={s.label}
                 type="button"
                 onClick={() => envoyer(s.question, s.mode)}
-                className="rounded-full border border-line bg-chip px-2.5 py-2 text-[11px] text-[#59615b] hover:border-[#9eafa3] hover:text-forest"
+                disabled={bloque}
+                className="rounded-full border border-line bg-chip px-2.5 py-2 text-[11px] text-[#59615b] hover:border-[#9eafa3] hover:text-forest disabled:opacity-50"
               >
                 {s.label}
               </button>
@@ -196,7 +203,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
                   <span>{m.erreur}</span>
                   {m.statut === 402 ? (
                     <Lien href="/tarifs" className="text-[11px] font-semibold text-forest hover:underline">Voir les formules</Lien>
-                  ) : (
+                  ) : m.statut === 403 || bloque ? null : (
                     <button type="button" onClick={() => envoyer(m.question, m.mode)} disabled={occupe}
                       className="text-[11px] font-semibold text-forest hover:underline disabled:opacity-50">
                       Réessayer
@@ -212,6 +219,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
       )}
 
       {aDeposer && <DepotRapide key={aDeposer.map((f) => f.name).join('|')} fichiers={aDeposer} onFermer={() => setADeposer(null)} />}
+      <EnvoiBloque id={idBlocage} />
       <form
         onSubmit={soumettre}
         // Contour foret au focus sur tout le formulaire : le champ est en outline-none (audit du 2026-11-23, D2, WCAG 2.4.7)
@@ -237,13 +245,14 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           placeholder={complet ? infos.placeholder : 'Écrivez votre question de droit…'}
           autoComplete="off"
           maxLength={2000}
-          aria-describedby={complet ? 'aide-saisie-complete' : 'aide-saisie'}
+          aria-describedby={`${complet ? 'aide-saisie-complete' : 'aide-saisie'}${bloque ? ` ${idBlocage}` : ''}`}
           className="min-w-0 flex-1 resize-none self-center border-0 bg-transparent px-2 py-[7px] text-[12px] leading-[1.5] text-ink outline-none"
         />
         <button
           type="submit"
-          disabled={occupe}
-          // bouton desactive pendant une reponse : son libelle « Recherche… » le dit (audit du 2026-11-18, D8)
+          disabled={occupe || bloque}
+          // bouton desactive pendant une reponse : son libelle « Recherche… » le dit (audit du 2026-11-18, D8) ;
+          // adresse non confirmee : l'encart juste au-dessus du champ le dit (D129)
           title={occupe ? 'Une réponse est en cours de préparation.' : undefined}
           className="inline-flex items-center gap-1.5 rounded-[7px] bg-forest px-3.5 text-[12px] text-white hover:bg-forest-dark disabled:opacity-50"
         >
