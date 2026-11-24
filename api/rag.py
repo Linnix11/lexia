@@ -521,8 +521,11 @@ class Lexia:
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode, cours_seul=option_cours == "seul")
-            # Arret abandonne seul a l'appui d'une regle : ce n'est pas du droit positif (D124)
+            # Arret abandonne seul a l'appui d'une regle : ce n'est pas du droit positif (D124) ; fiche Lexia seule :
+            # pas davantage, et un grand arret cite en source est nomme dans le texte (D128)
             grands_arrets.ecarter_abandonnes(reponse, passages)
+            grands_arrets.ecarter_fiches_seules(reponse, passages)
+            grands_arrets.nommer_grands_arrets(reponse, passages)
         sources = sources_citees(reponse, table)
         if avec_cours and reponse["statut"] == "reponse":  # ancien numero du Code civil dans le cours (audit C6)
             avertir_anciens_numeros(reponse, sources, passages)

@@ -306,6 +306,51 @@ def ecarter_abandonnes(reponse: dict, passages: list[dict]) -> int:
     return len(seul) + len(directe)
 
 
+def ecarter_fiches_seules(reponse: dict, passages: list[dict]) -> int:
+    """Un element de droit positif qui ne s'appuie que sur des fiches Lexia passe dans l'explication : une fiche
+    non officielle presente l'arret, elle ne fonde pas seule la regle actuelle (D128 ; gan-01 du 24/11 : la garde
+    n'etait sourcee que par la fiche Franck). La reponse directe, resume de la reponse, n'est pas touchee."""
+    fiches = {p["id"] for p in passages if p.get("source_id") == SOURCE_FICHES}
+    if not fiches or reponse.get("statut") != "reponse":
+        return 0
+    seules = [e for e in reponse.get("droit_positif", []) if e["sources"] and set(e["sources"]) <= fiches]
+    if seules:
+        reponse["droit_positif"] = [e for e in reponse["droit_positif"] if e not in seules]
+        reponse["explication"] = list(reponse.get("explication", [])) + seules
+    return len(seules)
+
+
+_DATE = re.compile(r"\b(\d{1,2}(?:er)? [a-z]+ \d{4})\b")
+
+
+def _nomme(a: dict, texte: str) -> bool:
+    """Le texte cite-t-il ce grand arret (sa date, ou le nom d'usage reconnu par le registre) ?"""
+    t = sans_accents(texte).lower().replace("\u2019", "'")
+    date = _DATE.search(sans_accents(a["citation"]).lower())
+    if date and date.group(1) in t:
+        return True
+    arret = registre().arrets.get(a["id"])
+    return bool(arret and arret.motif and arret.motif.search(t))
+
+
+def nommer_grands_arrets(reponse: dict, passages: list[dict]) -> int:
+    """Un element qui s'appuie sur un grand arret sans le nommer recoit sa citation entre parentheses : l'etudiant
+    ne voyait le nom qu'en ouvrant la source (D128 ; gan-06 du 24/11 : Costa, Simmenthal et Jacques Vabre cites en
+    source, jamais nommes). Renvoie le nombre d'elements completes."""
+    grands = {p["id"]: p["grand_arret"] for p in passages if p.get("grand_arret")}
+    if not grands or reponse.get("statut") != "reponse":
+        return 0
+    n = 0
+    for cle in ("reponse_directe", "droit_positif", "explication"):
+        for e in reponse.get(cle, []):
+            manquants = [grands[s]["citation"] for s in e.get("sources", [])
+                         if s in grands and not _nomme(grands[s], e["texte"])]
+            if manquants:
+                e["texte"] = f"{e['texte'].rstrip().rstrip('.')} ({' ; '.join(dict.fromkeys(manquants))})."
+                n += 1
+    return n
+
+
 def note(passages: list[dict]) -> str:
     """Note au modele quand des grands arrets figurent parmi les extraits (S1, S2... dans l'ordre des passages)."""
     lignes = [f"- [S{i}] {p['grand_arret']['citation']} : {STATUTS[p['grand_arret']['statut']]}. "

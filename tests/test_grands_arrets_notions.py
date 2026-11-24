@@ -234,6 +234,36 @@ def test_arret_abandonne_seul_n_est_pas_du_droit_positif():
     assert reponse["reponse_directe"] == []
 
 
+def test_fiche_lexia_seule_n_est_pas_du_droit_positif():
+    """gan-01 du 24/11 : la garde n'etait sourcee que par la fiche Franck (D128)."""
+    passages = [article(2)] + _marques("franck")
+    franck = passages[1]["id"]
+    reponse = {"statut": "reponse", "droit_positif": [
+        {"texte": "Le gardien a l'usage, la direction et le contrôle.", "sources": [franck]},
+        {"texte": "On répond des choses que l'on a sous sa garde.", "sources": ["code_civil:A2", franck]}],
+        "explication": [], "reponse_directe": [{"texte": "Le gardien répond de la chose.", "sources": [franck]}]}
+    assert grands_arrets.ecarter_fiches_seules(reponse, passages) == 1
+    assert [e["texte"] for e in reponse["droit_positif"]] == ["On répond des choses que l'on a sous sa garde."]
+    assert reponse["explication"][0]["sources"] == [franck]
+    assert len(reponse["reponse_directe"]) == 1   # resume de la reponse : garde
+
+
+def test_grand_arret_cite_sans_son_nom_est_nomme():
+    """gan-06 du 24/11 : Costa cite en source, jamais nomme dans le texte (D128)."""
+    passages = [article(0)] + _marques("costa", "jand-heur")
+    costa, jand = passages[1]["id"], passages[2]["id"]
+    reponse = {"statut": "reponse", "droit_positif": [
+        {"texte": "Le droit de l'Union prime le droit national.", "sources": [costa]},
+        {"texte": "Selon l'arrêt Jand'heur, la responsabilité est de plein droit.", "sources": [jand]},
+        {"texte": "Arrêt du 13 février 1930 : présomption de responsabilité.", "sources": [jand]}],
+        "explication": [], "reponse_directe": []}
+    assert grands_arrets.nommer_grands_arrets(reponse, passages) == 1
+    textes = [e["texte"] for e in reponse["droit_positif"]]
+    assert textes[0] == f"Le droit de l'Union prime le droit national ({REG.arrets['costa'].citation})."
+    assert textes[1:] == ["Selon l'arrêt Jand'heur, la responsabilité est de plein droit.",
+                          "Arrêt du 13 février 1930 : présomption de responsabilité."]
+
+
 def test_chat_deplace_l_arret_abandonne_et_vigueur_de_la_fiche():
     class LLM:
         def generate_json(self, *, prompt, **kw):
