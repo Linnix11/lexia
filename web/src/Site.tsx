@@ -9,6 +9,7 @@ import { VerifierEmail } from './site/VerifierEmail'
 import { MotDePasseOublie, NouveauMotDePasse } from './site/MotDePasse'
 import { SessionProvider, useSession } from './state/session'
 import { AppProvider } from './state/AppState'
+import { VUES } from './state/contexte'
 import { Signet } from './components/Logo'
 
 // Administration chargee a part : seuls les administrateurs la telechargent (audit du 2026-11-18, D11).
@@ -46,7 +47,8 @@ const INVITES: Record<string, () => ReactNode> = {
   '/inscription': () => <Inscription />,
 }
 const MEMBRES: Record<string, () => ReactNode> = {
-  '/app': () => <App />,
+  // Une adresse par vue de l'espace (D125), la vue est lue dans l'adresse par AppProvider
+  ...Object.fromEntries(VUES.map((v) => [v.chemin, () => <App />])),
   '/compte': () => <Compte />,
   '/cours-recuperes': () => <CoursRecuperes />,
 }
@@ -63,7 +65,7 @@ const TITRES: Record<string, string> = {
   '/nouveau-mot-de-passe': 'Nouveau mot de passe',
   '/connexion': 'Connexion',
   '/inscription': 'Créer un compte',
-  '/app': 'Mon espace',
+  ...Object.fromEntries(VUES.map((v) => [v.chemin, v.label])), // /app : « Mon espace »
   '/compte': 'Mon compte',
   '/cours-recuperes': 'Fiches pratiques de l’administration',
   '/admin': 'Administration',

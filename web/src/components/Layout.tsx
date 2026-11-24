@@ -1,22 +1,11 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { Lien, useRouteur } from '../lib/router'
+import { Lien } from '../lib/router'
 import { BandeauEmail } from '../site/VerifierEmail'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
-import { useApp, type Vue } from '../state/contexte'
+import { useApp, VUES } from '../state/contexte'
 import { useSession } from '../state/session'
 import { BoutonAvis } from './AvisBeta'
 import { LogoHorizontal, Signet } from './Logo'
-
-// court : libelle visible sous l'icone dans la barre du bas du mobile (audit du 2026-11-18, D7), contenu
-// dans le libelle complet qui reste le nom accessible.
-const VUES: { id: Vue; label: string; court: string; ico: string }[] = [
-  { id: 'espace', label: 'Mon espace', court: 'Espace', ico: '⌂' },
-  { id: 'assistant', label: 'Assistant IA', court: 'Assistant', ico: '✳' },
-  { id: 'matieres', label: 'Mes matières', court: 'Matières', ico: '▤' },
-  { id: 'fiches', label: 'Fiches & révisions', court: 'Fiches', ico: '▧' },
-  { id: 'cartes', label: 'Mes cartes mentales', court: 'Cartes', ico: '✣' },
-  { id: 'bibliotheque', label: 'Bibliothèque', court: 'Biblio', ico: '▥' },
-]
 
 const ANNEES = ['L1', 'L2', 'L3'] as const
 
@@ -58,10 +47,9 @@ function allerAuContenu(e: MouseEvent<HTMLAnchorElement>) {
   cible.scrollIntoView({ block: 'start' })
 }
 
-/** horsEspace : page du cadre hors de /app (Mon compte) ; un clic ramene a la vue choisie de l'espace. */
+/** horsEspace : page du cadre hors de /app (Mon compte) ; un clic ouvre l'adresse de la vue choisie (D125). */
 export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
   const { vue, setVue, matieres, semestre, niveau } = useApp()
-  const { naviguer } = useRouteur()
   return (
     // Barre du bas du mobile : hauteur et marge de la barre d'accueil de l'iPhone (env(), viewport-fit=cover),
     // masquee pendant la saisie (index.css, data-barre-bas) ; audit mobile du 2026-11-18.
@@ -88,10 +76,7 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
               <li key={v.id}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setVue(v.id)
-                    if (horsEspace) naviguer('/app')
-                  }}
+                  onClick={() => setVue(v.id)}
                   aria-current={actif ? 'page' : undefined}
                   title={v.label}
                   className={`flex min-w-[42px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[#565f59]

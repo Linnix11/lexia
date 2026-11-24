@@ -516,7 +516,7 @@ describe('Audit du 16 novembre 2026', () => {
     const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
     fireEvent.click(within(nav).getByRole('button', { name: /Fiches & révisions/ }))
     expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/app')
+    expect(window.location.pathname).toBe('/app/fiches')
   })
 
   it('questionnaire lance : le formulaire se replie en une ligne, rouvrable (point 10)', async () => {
@@ -1062,5 +1062,85 @@ describe('Depots de cours, version 2 (D107)', () => {
     })
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/cours/7/supprimer'))).toBe(true)
     confirmer.mockRestore()
+  })
+})
+
+describe('Adresses de l espace etudiant (recette du 2026-11-23, D125)', () => {
+  const VUES_ADRESSES: [string, RegExp, string, string][] = [
+    ['/app/assistant', /Assistant IA/, 'Posez votre question.', 'Assistant IA'],
+    ['/app/matieres', /Mes matières/, 'Matières disponibles.', 'Mes matières'],
+    ['/app/fiches', /Fiches & révisions/, 'Vos fiches.', 'Fiches & révisions'],
+    ['/app/cartes', /Mes cartes mentales/, 'Vos cartes.', 'Mes cartes mentales'],
+    ['/app/bibliotheque', /Bibliothèque/, 'Annales et ressources.', 'Bibliothèque'],
+  ]
+  // Precedent ou Suivant du navigateur : jsdom envoie popstate apres coup
+  const historique = (sens: 'back' | 'forward') => act(async () => {
+    const fait = new Promise((r) => window.addEventListener('popstate', r, { once: true }))
+    window.history[sens]()
+    await fait
+  })
+
+  it('chaque vue du menu met son adresse et le titre de l onglet a jour', async () => {
+    render(<Site />)
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' })
+    for (const [chemin, bouton, titre, onglet] of VUES_ADRESSES) {
+      fireEvent.click(within(nav).getByRole('button', { name: bouton }))
+      expect(await screen.findByRole('heading', { level: 1, name: titre })).toBeInTheDocument()
+      expect(window.location.pathname).toBe(chemin)
+      expect(within(nav).getByRole('button', { name: bouton })).toHaveAttribute('aria-current', 'page')
+      await waitFor(() => expect(document.title).toBe(`${onglet} · Lexia`))
+    }
+    fireEvent.click(within(nav).getByRole('button', { name: /Mon espace/ }))
+    expect(window.location.pathname).toBe('/app')
+    await waitFor(() => expect(document.title).toBe('Mon espace · Lexia'))
+  })
+
+  it.each(VUES_ADRESSES)('ouvrir directement %s (rechargement) affiche la bonne vue', async (chemin, bouton, titre) => {
+    window.history.pushState({}, '', chemin)
+    render(<Site />)
+    expect(await screen.findByRole('heading', { level: 1, name: titre })).toBeInTheDocument()
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
+    expect(within(nav).getByRole('button', { name: bouton })).toHaveAttribute('aria-current', 'page')
+    expect(window.location.pathname).toBe(chemin)
+  })
+
+  it('une barre finale est acceptee, une vue inconnue donne Page introuvable', async () => {
+    window.history.pushState({}, '', '/app/fiches/')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Vos fiches.' })).toBeInTheDocument()
+    cleanup()
+    window.history.pushState({}, '', '/app/inconnue')
+    render(<Site />)
+    // la page se redessine une fois la session lue : on attend l'affichage stable
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument())
+    expect(window.location.pathname).toBe('/app/inconnue')
+  })
+
+  it('Precedent et Suivant du navigateur changent la vue', async () => {
+    render(<Site />)
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' })
+    fireEvent.click(within(nav).getByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(within(nav).getByRole('button', { name: /Fiches & révisions/ }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Vos fiches.' })).toBeInTheDocument()
+
+    await historique('back')
+    expect(window.location.pathname).toBe('/app/matieres')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Matières disponibles.' })).toBeInTheDocument()
+    await historique('back')
+    expect(window.location.pathname).toBe('/app')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Matières disponibles.' })).not.toBeInTheDocument()
+    expect(within(nav).getByRole('button', { name: /Mon espace/ })).toHaveAttribute('aria-current', 'page')
+    await historique('forward')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Matières disponibles.' })).toBeInTheDocument()
+  })
+
+  it('un bouton d une vue (Ouvrir l assistant) change aussi l adresse, Precedent y ramene', async () => {
+    window.history.pushState({}, '', '/app/fiches')
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir l’assistant' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Posez votre question.' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/app/assistant')
+    await historique('back')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Vos fiches.' })).toBeInTheDocument()
   })
 })

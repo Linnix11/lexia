@@ -6,6 +6,24 @@ import type { Semestre } from '../lib/semestres'
 
 export type Vue = 'espace' | 'assistant' | 'matieres' | 'fiches' | 'cartes' | 'bibliotheque'
 
+/** Vues de l'espace etudiant, chacune a son adresse (recette du 2026-11-23, D125) : recharger, partager ou
+ * revenir en arriere garde la vue. /app reste l'accueil de l'espace. court : libelle sous l'icone dans la barre
+ * du bas du mobile (audit du 2026-11-18, D7), contenu dans le libelle complet qui reste le nom accessible. */
+export const VUES: { id: Vue; chemin: string; label: string; court: string; ico: string }[] = [
+  { id: 'espace', chemin: '/app', label: 'Mon espace', court: 'Espace', ico: '⌂' },
+  { id: 'assistant', chemin: '/app/assistant', label: 'Assistant IA', court: 'Assistant', ico: '✳' },
+  { id: 'matieres', chemin: '/app/matieres', label: 'Mes matières', court: 'Matières', ico: '▤' },
+  { id: 'fiches', chemin: '/app/fiches', label: 'Fiches & révisions', court: 'Fiches', ico: '▧' },
+  { id: 'cartes', chemin: '/app/cartes', label: 'Mes cartes mentales', court: 'Cartes', ico: '✣' },
+  { id: 'bibliotheque', chemin: '/app/bibliotheque', label: 'Bibliothèque', court: 'Biblio', ico: '▥' },
+]
+
+/** Vue d'une adresse de l'espace (barre finale ignoree), null hors de l'espace ou pour une adresse inconnue. */
+export function vueDeChemin(chemin: string): Vue | null {
+  const route = chemin.replace(/\/+$/, '') || '/'
+  return VUES.find((v) => v.chemin === route)?.id ?? null
+}
+
 export interface Message {
   id: string
   question: string

@@ -31,3 +31,18 @@ def test_api_et_front(tmp_path):
     assert "Lexia" in c.get("/assistant").text          # ecran de l'application
     assert c.get("/api/inconnu").status_code == 404      # une route API absente ne renvoie pas le front
     assert "ne pas servir" not in c.get("/../secret.txt").text
+
+
+def test_vues_de_l_espace_servent_l_application(tmp_path):
+    """/app/matieres, /app/fiches... (D125) : la coquille de l'application, jamais la page publique prerendue
+    de meme nom (/matieres) ni une erreur ; le rechargement d'une vue de l'espace l'affiche donc."""
+    c = _serveur(tmp_path)
+    publique = tmp_path / "dist" / "pages" / "matieres"
+    publique.mkdir(parents=True)
+    (publique / "index.html").write_text("<html>Matieres publiques</html>")
+    assert c.get("/matieres").text == "<html>Matieres publiques</html>"
+    for chemin in ("/app", "/app/", "/app/assistant", "/app/matieres", "/app/fiches", "/app/cartes", "/app/bibliotheque"):
+        r = c.get(chemin)
+        assert r.status_code == 200, chemin
+        assert r.text == "<html>Lexia</html>", chemin
+        assert r.headers["cache-control"] == "no-cache", chemin

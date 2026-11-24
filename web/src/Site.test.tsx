@@ -83,6 +83,24 @@ describe('Site', () => {
     expect(window.location.pathname).toBe('/connexion')
   })
 
+  it('vue de l espace ouverte sans compte : connexion, puis retour sur cette vue (D125)', async () => {
+    aller('/app/matieres')
+    render(<Site />)
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
+    expect(new URLSearchParams(window.location.search).get('suite')).toBe('/app/matieres')
+    fireEvent.change(screen.getByLabelText('Adresse e-mail'), { target: { value: 'etu@exemple.fr' } })
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'motdepasse-solide' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }))
+    })
+    fireEvent.change(await screen.findByLabelText(/Code de l’application/), { target: { value: '123456' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Valider' }))
+    })
+    await waitFor(() => expect(window.location.pathname).toBe('/app/matieres'))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Matières disponibles.' })).toBeInTheDocument()
+  })
+
   it('premier chargement : un 502 passager ne deconnecte pas, la page demandee s ouvre (WEB-1)', async () => {
     connecte = true
     let echecs = 2

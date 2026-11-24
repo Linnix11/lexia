@@ -5,7 +5,8 @@ import { ecrireFavoris, lireFavoris, MAX_FICHES, MESSAGE_LIMITE_FICHES, type Fav
 import { ecrireDerniereMatiere, lireDerniereMatiere } from '../lib/personnalisation'
 import { ecrireSeance, lireSeance } from '../lib/seance'
 import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
-import { Ctx, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
+import { useRouteur } from '../lib/router'
+import { Ctx, VUES, vueDeChemin, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
 import { useSession } from './session'
 
 const AUCUN_COURS: CoursDepose[] = []
@@ -31,15 +32,15 @@ function quizRepris(compte: string): EtatQuiz {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [vue, setVueEtat] = useState<Vue>('espace')
-  // Une autre vue s'ouvre en haut de la page, comme une navigation (recette du 2026-11-20, D-3). Fait avant
-  // le rendu : la conversation peut ensuite defiler jusqu'a son dernier message.
-  const vueActuelle = useRef(vue)
+  // La vue suit l'adresse (D125) : Precedent, Suivant et le rechargement la retrouvent. Hors de l'espace
+  // (Mon compte), aucune vue n'est marquee dans le menu ; un clic y ramene a l'adresse de la vue choisie.
+  const { chemin, naviguer } = useRouteur()
+  const vue: Vue = vueDeChemin(chemin) ?? 'espace'
+  // Une autre vue s'ouvre en haut de la page, comme une navigation (recette du 2026-11-20, D-3) : naviguer
+  // remonte avant le rendu, la conversation peut ensuite defiler jusqu'a son dernier message.
   const setVue = useCallback((v: Vue) => {
-    if (v !== vueActuelle.current) window.scrollTo(0, 0)
-    vueActuelle.current = v
-    setVueEtat(v)
-  }, [])
+    naviguer(VUES.find((x) => x.id === v)?.chemin ?? '/app')
+  }, [naviguer])
   const { rafraichir, profil } = useSession()
   const compte = profil?.email ?? ''
   const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre(compte))
