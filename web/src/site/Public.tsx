@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { LogoHorizontal, Signet } from '../components/Logo'
+import { betaFermee } from './beta'
 
 export const bouton = 'inline-flex items-center justify-center rounded-[8px] bg-forest px-4 py-2.5 text-[13px] font-medium text-white hover:bg-forest-dark disabled:opacity-60'
 export const boutonSecondaire = 'inline-flex items-center justify-center rounded-[8px] border border-line bg-surface px-4 py-2.5 text-[13px] text-forest hover:border-[#9eafa3]'
@@ -35,7 +36,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             ) : (
               <>
                 <Lien href="/connexion" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Connexion</Lien>
-                {config?.beta_fermee ? (
+                {betaFermee(config) ? (
                   // Beta fermee : l'inscription exige un code, l'en-tete mene a la demande d'invitation (D129)
                   <Lien href="/invitation" className={`${bouton} whitespace-nowrap`}>
                     <span className="tab:hidden">Invitation</span><span className="hidden tab:inline">Demander une invitation</span>

@@ -4,6 +4,7 @@ import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { FORMULES_PUBLIQUES, Formules } from './Tarifs'
 import { LienInscription } from './Invitation'
+import { betaFermee } from './beta'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 const PILIERS = [
@@ -20,7 +21,7 @@ const ETAPES = [
 
 export function Accueil() {
   const { profil, config } = useSession()
-  const beta = Boolean(config?.beta_fermee)
+  const beta = betaFermee(config) // valeur publiee dans le HTML prerendu (D132)
   // Arrivee depuis « Mon compte » apres suppression : sans ce message, rien ne confirmait la suppression.
   // Lu apres le premier rendu, identique a la page prerendue (sinon erreur d'hydratation ; audit du 2026-11-23, D12).
   const [supprime, setSupprime] = useState(false)

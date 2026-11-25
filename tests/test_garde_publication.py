@@ -114,3 +114,36 @@ def test_publication_garde_les_fichiers_ecrits_par_le_serveur(tmp_path):
     assert not (serveur / "ancien.py").exists()                 # --delete agit bien sur le reste
     for chemin in gardes:
         assert (serveur / chemin).read_text() == "serveur\n", chemin
+
+
+# Beta fermee ecrite dans le HTML prerendu (web/src/site/beta-publiee.json, D132) : la publication refuse si elle ne
+# suit pas BETA_FERMEE du serveur, lue sur /api/config du service en marche (jamais dans le .env).
+def preparer_beta(tmp_path, publiee, serveur_ferme):
+    depot, serveur, env = preparer(tmp_path)
+    (depot / "web" / "src" / "site").mkdir(parents=True)
+    (depot / "web" / "src" / "site" / "beta-publiee.json").write_text(f'{{"beta_fermee": {str(publiee).lower()}}}\n')
+    config = serveur / "config.json"
+    if serveur_ferme is not None:
+        config.write_text(f'{{"comptes": true, "beta_fermee": {str(serveur_ferme).lower()}}}')
+    return depot, env | {"LEXIA_CONFIG_URL": f"file://{config}"}
+
+
+def test_beta_publiee_identique_au_serveur(tmp_path):
+    depot, env = preparer_beta(tmp_path, True, True)
+    assert lancer(depot, env, "beta_concorde").returncode == 0
+
+
+def test_beta_publiee_differente_du_serveur_refusee(tmp_path):
+    depot, env = preparer_beta(tmp_path, True, False)
+    r = lancer(depot, env, "beta_concorde")
+    assert r.returncode == 1 and "beta-publiee.json" in r.stderr
+    assert lancer(depot, env, "beta_concorde", LEXIA_FORCER="1").returncode == 0
+    (tmp_path / "b").mkdir()
+    depot2, env2 = preparer_beta(tmp_path / "b", False, True)
+    assert lancer(depot2, env2, "beta_concorde").returncode == 1
+
+
+def test_configuration_du_serveur_illisible_avertit_sans_bloquer(tmp_path):
+    depot, env = preparer_beta(tmp_path, True, None)       # service arrete ou premier deploiement
+    r = lancer(depot, env, "beta_concorde")
+    assert r.returncode == 0 and "non comparee" in r.stderr

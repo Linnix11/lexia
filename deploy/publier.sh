@@ -18,6 +18,7 @@ cd "$RACINE"
 source deploy/garde_publication.sh
 arbre_propre
 contient_le_serveur
+beta_concorde        # beta du HTML prerendu = beta du serveur (D132)
 
 echo "== Tests"
 .venv/bin/python -m pytest -q

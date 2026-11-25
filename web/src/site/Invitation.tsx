@@ -4,12 +4,13 @@
 import type { ReactNode } from 'react'
 import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
+import { betaFermee } from './beta'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
 /** Lien d'entree d'un visiteur : vers l'inscription, ou vers la demande d'invitation en beta fermee
- *  (seulement si la configuration lue sur le serveur l'annonce). */
+ *  (configuration du serveur, ou valeur publiee avant qu'elle soit lue : HTML prerendu, D132). */
 export function LienInscription({ className, children = 'Créer un compte gratuit' }: { className?: string; children?: ReactNode }) {
-  return useSession().config?.beta_fermee
+  return betaFermee(useSession().config)
     ? <Lien href="/invitation" className={className}>Demander une invitation</Lien>
     : <Lien href="/inscription" className={className}>{children}</Lien>
 }

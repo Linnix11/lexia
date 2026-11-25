@@ -3,6 +3,7 @@
 import donnees from './donnees-publiques.json'
 import { GUIDES } from './contenu/guides'
 import { MATIERES_PUBLIQUES } from './contenu/matieres'
+import { BETA_FERMEE_PUBLIEE } from './beta'
 import { EDITEUR, IMAGE_PARTAGE, NOM, ORIGINE, editeur, pagesSeo, titreComplet, type PageSeo } from './seo'
 
 const attr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -82,6 +83,9 @@ export function llmsTxt(): string {
     '- Chaque réponse cite l’article ou la décision qui la fonde, avec un lien vers le texte officiel ; une référence introuvable est retirée avant d’être montrée.',
     `- ${MATIERES_PUBLIQUES.length} matières de la L1 à la L3, classées d’après les maquettes de huit facultés de droit.`,
     `- Formules : ${f.map((x) => `${x.nom} (${prixLisible(x.prix_mensuel_euros)}, ${x.questions_par_jour} questions par jour)`).join(', ')}.`,
+    ...(BETA_FERMEE_PUBLIEE
+      ? [`- Accès : Lexia est en bêta fermée, l’inscription demande un code d’accès remis sur invitation (demande : ${urlPage('/invitation')}).`]
+      : []),
     '- Lexia est un outil d’étude : il ne donne pas de conseil juridique personnalisé et ne remplace pas un professionnel du droit.',
     '',
     '## Matières',

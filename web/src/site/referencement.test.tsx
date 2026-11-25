@@ -11,6 +11,7 @@ import { MATIERES_PUBLIQUES } from './contenu/matieres'
 import donnees from './donnees-publiques.json'
 import { balisesTete, fichierPage, llmsTxt, pageHtml, sitemapXml } from './publication'
 import { CHEMINS_GUIDES, CHEMINS_MATIERES, TITRES_PUBLICS } from './routesPubliques'
+import { BETA_FERMEE_PUBLIEE } from './beta'
 import { ORIGINE, pagesSeo, questionsMatiere, titreComplet } from './seo'
 
 const PUBLIC = join(__dirname, '..', '..', 'public')
@@ -183,7 +184,9 @@ describe('pages dans le site', () => {
     render(<Site />)
     expect(await screen.findByRole('heading', { level: 1, name: 'Droit pénal' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Code pénal, art. 111-3' })).toHaveAttribute('href', citation('code_penal:111-3').url)
-    expect(screen.getByRole('link', { name: 'Créer un compte gratuit' })).toHaveAttribute('href', '/inscription')
+    // Configuration absente : bouton selon la beta publiee dans le HTML prerendu (D132)
+    const [nom, cible] = BETA_FERMEE_PUBLIEE ? ['Demander une invitation', '/invitation'] : ['Créer un compte gratuit', '/inscription']
+    expect(screen.getByRole('link', { name: nom })).toHaveAttribute('href', cible)
     expect(document.title).toBe('Droit pénal (L2) : cours et sources · Lexia')
   })
 

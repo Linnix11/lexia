@@ -11,8 +11,10 @@
 #                           au redemarrage de la machine) ; attend qu'il se libere, 30 min au plus ;
 #   - rendre_verrou       : le libere, seulement s'il est a nous ;
 #   - nginx_a_jour        : signale les limites de debit et routes protegees du depot absentes de la
-#                           configuration nginx en service (fichier modifie par certbot, jamais remplace).
-# LEXIA_FORCER=1 passe outre les deux premieres verifications (jamais le verrou).
+#                           configuration nginx en service (fichier modifie par certbot, jamais remplace) ;
+#   - beta_concorde       : refuse si la beta ecrite dans le HTML prerendu (web/src/site/beta-publiee.json)
+#                           differe de celle du serveur (BETA_FERMEE, lue sur /api/config, jamais dans le .env).
+# LEXIA_FORCER=1 passe outre arbre_propre, contient_le_serveur et beta_concorde (jamais le verrou).
 
 VERROU="${LEXIA_VERROU:-/run/lexia-publication}"
 ATTENTE_VERROU="${LEXIA_ATTENTE_VERROU:-1800}"   # secondes
@@ -95,4 +97,24 @@ nginx_a_jour() {
     return 1
   fi
   echo "  limites nginx identiques au depot"
+}
+
+# Beta fermee des pages prerendues (D132) : le HTML est compile sans la configuration du serveur. Une valeur qui ne
+# suit pas BETA_FERMEE montrerait « Demander une invitation » sur un site ouvert (ou l'inverse) aux moteurs et au
+# premier affichage. Le service en marche fait foi : son /api/config reflete le .env qu'il a lu.
+beta_concorde() {
+  [ "${LEXIA_FORCER:-}" = 1 ] && return 0
+  local fichier="${LEXIA_BETA_DEPOT:-web/src/site/beta-publiee.json}" lire='import json, sys; print(1 if json.load(sys.stdin).get("beta_fermee") else 0)'
+  local depot serveur
+  depot=$(python3 -c "$lire" < "$fichier")
+  if ! serveur=$(ssh "$SERVEUR" "curl -sf --max-time 10 '${LEXIA_CONFIG_URL:-http://127.0.0.1:8000/api/config}'" | python3 -c "$lire" 2>/dev/null); then
+    echo "  ATTENTION : configuration du serveur illisible (service arrete ?) : beta non comparee" >&2
+    return 0
+  fi
+  if [ "$depot" != "$serveur" ]; then
+    echo "Refus : $fichier annonce beta_fermee=$([ "$depot" = 1 ] && echo true || echo false), le serveur" >&2
+    echo "$([ "$serveur" = 1 ] && echo true || echo false) : corrigez le fichier, committez, puis publiez. LEXIA_FORCER=1 pour passer outre." >&2
+    return 1
+  fi
+  echo "  beta fermee du HTML prerendu identique au serveur"
 }

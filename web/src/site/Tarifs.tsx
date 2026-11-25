@@ -48,7 +48,8 @@ export function Formules() {
         } else if (!config) {
           // Configuration pas encore lue (page prerendue, premier rendu) : lien neutre plutot qu'un « Bientot
           // disponible » faux, lu par les moteurs (audit du 2026-11-23, D1). Le vrai bouton suit la configuration.
-          action = <Lien href="/inscription" className={miseEnAvant ? bouton : boutonSecondaire}>Créer un compte</Lien>
+          // Beta fermee publiee (D132) : demande d'invitation des le HTML prerendu
+          action = <LienInscription className={miseEnAvant ? bouton : boutonSecondaire}>Créer un compte</LienInscription>
         } else if (!profil && config.beta_fermee) {
           // Beta fermee : sans compte, ni paiement ni demande de formule ; d'abord l'invitation (D129)
           action = <LienInscription className={miseEnAvant ? bouton : boutonSecondaire} />
