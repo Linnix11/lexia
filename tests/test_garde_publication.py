@@ -147,3 +147,12 @@ def test_configuration_du_serveur_illisible_avertit_sans_bloquer(tmp_path):
     depot, env = preparer_beta(tmp_path, True, None)       # service arrete ou premier deploiement
     r = lancer(depot, env, "beta_concorde")
     assert r.returncode == 0 and "non comparee" in r.stderr
+
+
+def test_dependances_du_front_installees_avant_ses_tests():
+    # Copie propre (git worktree add --detach) : sans node_modules, « npm test » echouait (vitest introuvable)
+    # avant que « npm ci » ne soit lance pour la compilation (publication du 25/11).
+    code = [l.split("#")[0] for l in (GARDE.parent / "publier.sh").read_text().splitlines()]
+    texte = "\n".join(code)
+    assert texte.count("npm ci") == 1                       # une seule installation
+    assert texte.index("npm ci") < texte.index("npm test")

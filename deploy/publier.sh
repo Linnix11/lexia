@@ -22,10 +22,11 @@ beta_concorde        # beta du HTML prerendu = beta du serveur (D132)
 
 echo "== Tests"
 .venv/bin/python -m pytest -q
-(cd web && npm test)
+# npm ci avant les tests du front : une copie propre n'a pas de node_modules (vitest introuvable, 25/11)
+(cd web && npm ci && npm test)
 
 echo "== Compilation du front"
-(cd web && npm ci && npm run build)
+(cd web && npm run build)
 
 echo "== Index de recherche"
 # Le serveur met son index a jour chaque nuit depuis la DILA (D78, deploy/mettre_a_jour_corpus.sh) : par
