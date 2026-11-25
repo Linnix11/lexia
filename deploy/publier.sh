@@ -4,8 +4,9 @@
 #   LEXIA_SERVEUR=root@1.2.3.4 LEXIA_DOMAINE=lexia.mondomaine.fr deploy/publier.sh
 #
 # Etapes : tests, compilation du front, envoi du code + front + index de recherche,
-# installation des dependances, redemarrage du service. Le .env n'est envoye que s'il
-# n'existe pas encore sur le serveur (deploy/env.production.exemple sert de modele).
+# installation des dependances, redemarrage du service, puis IndexNow si LEXIA_INDEXNOW=1 (D134, desactive par
+# defaut). Le .env n'est envoye que s'il n'existe pas encore sur le serveur (deploy/env.production.exemple
+# sert de modele).
 set -euo pipefail
 
 SERVEUR="${LEXIA_SERVEUR:?Definir LEXIA_SERVEUR, ex. root@1.2.3.4}"
@@ -147,6 +148,11 @@ for i in $(seq 1 60); do
   if ssh "$SERVEUR" "curl -sf http://127.0.0.1:8000/api/sante" >/dev/null; then
     ssh "$SERVEUR" "curl -s http://127.0.0.1:8000/api/sante"; echo
     echo "Publie."
+    # IndexNow (D134) : prepare, desactive par defaut. LEXIA_INDEXNOW=1 signale les adresses du sitemap aux
+    # moteurs qui suivent le protocole (Bing...) ; un refus n'annule pas la publication (docs/seo-geo.md, partie 7).
+    if [ "${LEXIA_INDEXNOW:-}" = 1 ]; then
+      python3 deploy/indexnow.py --envoyer || echo "  ATTENTION : IndexNow n'a pas accepte l'envoi (ci-dessus)" >&2
+    fi
     exit 0
   fi
   sleep 10

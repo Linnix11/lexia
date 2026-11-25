@@ -50,8 +50,22 @@ export function pageHtml(gabarit: string, p: PageSeo, corps: string): string {
     throw new Error('Gabarit inattendu : <title> ou <div id="root"></div> absent de dist/index.html')
   }
   return gabarit
+    .replace(/\s*<!-- Coquille vide[^>]*-->/, '')
+    .replace(/\s*<meta name="robots"[^>]*>/, '') // page de contenu : indexable (D134)
     .replace(/\s*<meta name="description"[^>]*>/, '')
     .replace(/<title>[\s\S]*?<\/title>/, balisesTete(p))
+    .replace('<div id="root"></div>', `<div id="root">${corps}</div>`)
+}
+
+/** dist/introuvable.html : page introuvable prerendue, servie avec un 404 par api/serveur.py (D134). Garde le
+ *  noindex de la coquille, sans description ni adresse canonique. */
+export function pageIntrouvableHtml(gabarit: string, corps: string): string {
+  if (!gabarit.includes('<meta name="robots" content="noindex" />') || !gabarit.includes('<div id="root"></div>')) {
+    throw new Error('Gabarit inattendu : noindex ou <div id="root"></div> absent de dist/index.html')
+  }
+  return gabarit
+    .replace(/\s*<meta name="description"[^>]*>/, '')
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>Page introuvable · ${NOM}</title>`)
     .replace('<div id="root"></div>', `<div id="root">${corps}</div>`)
 }
 

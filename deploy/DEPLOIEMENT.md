@@ -48,7 +48,8 @@ Le script :
 3. prend le verrou de publication du serveur (`/run/lexia-publication`) : un seul envoi à la fois, les autres attendent 30 minutes au plus ; il est rendu à la fin, même en cas d'échec. Puis il envoie le code et le front avec rsync. L'index de recherche du serveur est gardé tel quel, puisqu'il est mis à jour chaque nuit (voir « Mise à jour du corpus »). `LEXIA_AVEC_INDEX=1` envoie à la place celui du Mac (4 Go) ;
 4. installe les dépendances Python (PyTorch en version CPU) ;
 5. installe le service systemd et la configuration nginx, puis redémarre le service ;
-6. attend que `/api/sante` réponde.
+6. attend que `/api/sante` réponde ;
+7. seulement avec `LEXIA_INDEXNOW=1` (désactivé par défaut) : signale les adresses du sitemap à IndexNow (`deploy/indexnow.py --envoyer`, D134) ; un refus n'annule pas la publication. Mise en service : `docs/seo-geo.md`, partie 8, point 3.
 
 **Premier lancement** : ajouter `HF_HUB_OFFLINE=0` à `/opt/lexia/.env` pour que le service télécharge les modèles (~1,6 Go, compter quelques minutes), puis retirer la ligne : ensuite, le service les lit dans le cache sans interroger Hugging Face.
 

@@ -109,6 +109,8 @@ def _serveur(tmp_path):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<html>coquille</html>")
+    (dist / "introuvable.html").write_text("<html>introuvable</html>")
+    (dist / "chemins-application.json").write_text('["/", "/tarifs", "/app"]')
     (dist / "sitemap.xml").write_text("<urlset/>")
     (dist / "pages" / "tarifs").mkdir(parents=True)
     (dist / "pages" / "index.html").write_text("<html>accueil prerendu</html>")
@@ -127,8 +129,8 @@ def test_pages_prerendues_servies_a_leur_adresse(tmp_path):
     assert c.get("/app").text == "<html>coquille</html>"            # page non prerendue : coquille de l'application
     assert c.get("/sitemap.xml").text == "<urlset/>"
     assert c.get("/sitemap.xml").headers["cache-control"] == "no-cache"   # audit du 2026-11-23, D11
-    # dist/pages/ n'est pas une seconde adresse des memes pages
-    assert c.get("/pages/tarifs/index.html").text == "<html>coquille</html>"
+    # dist/pages/ n'est pas une seconde adresse des memes pages (404 depuis D134)
+    assert c.get("/pages/tarifs/index.html").status_code == 404
     assert "ne pas servir" not in c.get("/../secret").text
     assert "ne pas servir" not in c.get("/%2e%2e/secret").text
 

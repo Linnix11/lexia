@@ -181,8 +181,11 @@ tout le texte des pages publiques et de `llms.txt`).
   la compilation. Un prérendu aurait montré des encarts « à compléter » aux robots ; ces pages reçoivent donc
   seulement leur titre, leur description et leur adresse canonique, le texte restant affiché par le navigateur.
   Piste : faire injecter ces valeurs par le serveur au moment de la réponse.
-- Adresses inexistantes : toujours 200 avec la coquille de l'application. Répondre 404 demanderait au serveur de
-  connaître toutes les routes de l'application ; à faire en même temps que la piste précédente.
+- Adresses inexistantes : réglé par D134. Le prérendu écrit la liste des écrans du routeur
+  (`dist/chemins-application.json`) et la page introuvable (`dist/introuvable.html`) ; le serveur répond 404 avec
+  cette page à toute autre adresse (`/a-propos`, `/Tarifs`, `/index.html`, `/guides/zzz`...). La coquille vide
+  (connexion, inscription, invitation, espace) porte `noindex` (balise et en-tête `X-Robots-Tag`) ; les pages
+  prérendues restent indexables. `/tarifs/` répond encore 200 (adresse canonique sans barre).
 - Les extraits enrichis « FAQ » ne sont plus affichés par Google Search depuis le 7 mai 2026 (documentation
   Google relue à l'audit du 23 novembre 2026, D7) : le balisage FAQPage ne sert qu'à la compréhension par les
   moteurs et les assistants. Il ne reprend plus que la question de cours propre à chaque matière ; la question
@@ -212,8 +215,10 @@ vérifiables. Ce qui est en place :
 À faire, sans coût :
 
 1. Bing Webmaster Tools en priorité : Copilot et, en partie, la recherche de ChatGPT s'appuient sur l'index de Bing.
-2. IndexNow (protocole gratuit de Bing et d'autres moteurs) : prévenir les moteurs à chaque publication. Demande un
-   fichier de clé à la racine et un appel après `deploy/publier.sh` ; à décider par l'éditeur.
+2. IndexNow (protocole gratuit de Bing et d'autres moteurs) : prévenir les moteurs à chaque publication. Préparé
+   par D134, pas activé : fichier de clé `web/public/<clé>.txt` (publié avec le front), script
+   `deploy/indexnow.py` (essai à blanc par défaut), appel en fin de `deploy/publier.sh` seulement avec
+   `LEXIA_INDEXNOW=1`. Mise en service par l'éditeur : partie 8, point 3.
 3. Suivi : une fois par mois, poser les mêmes 10 questions (celles de la partie 4) à ChatGPT, Perplexity, Gemini
    et Copilot, et noter si Lexia est cité et quelle page. Compter dans les statistiques Cloudflare les visites
    venant de chatgpt.com, perplexity.ai, gemini.google.com et copilot.microsoft.com.
@@ -229,7 +234,20 @@ Par ordre de priorité. Aucune ne coûte d'argent.
    doit contenir le titre « Droit pénal » ; `/sitemap.xml` et `/llms.txt` doivent répondre en XML et en texte.
 2. Google Search Console : propriété de domaine (enregistrement TXT dans le DNS de Cloudflare), envoi de
    `https://lexia-axionstudio.cloud/sitemap.xml`, inspection de l'accueil et d'une matière.
-3. Bing Webmaster Tools : import depuis la Search Console, envoi du même sitemap.
+3. Bing Webmaster Tools : import depuis la Search Console, envoi du même sitemap. Puis IndexNow (D134), dans
+   cet ordre :
+   1. Après une publication, vérifier le fichier de clé : `curl -s https://lexia-axionstudio.cloud/<clé>.txt` doit
+      renvoyer la clé (valeur `CLE` de `deploy/indexnow.py`). La clé n'est pas un secret : le moteur lit ce
+      fichier pour vérifier que l'envoi vient du site. Pour utiliser une clé générée par Bing Webmaster Tools à
+      la place, changer `CLE` et renommer le fichier, dans le même commit (`tests/test_indexnow.py` le vérifie).
+   2. Essai à blanc depuis le Mac, après `npm run build` dans `web/` : `python3 deploy/indexnow.py` affiche les
+      adresses du sitemap et ce qui serait envoyé ; rien ne part.
+   3. Premier envoi : `python3 deploy/indexnow.py --envoyer` (refusé si le fichier de clé n'est pas en ligne).
+      Réponse attendue : 200 ou 202 (clé en cours de vérification).
+   4. Ensuite, à chaque publication qui change des pages : `LEXIA_INDEXNOW=1` devant `deploy/publier.sh`. Le
+      script envoie toutes les adresses du sitemap (37) ; pour une publication sans changement de contenu, ne
+      pas mettre la variable. Un refus d'IndexNow n'annule pas la publication.
+   5. Vérifier dans Bing Webmaster Tools que les adresses envoyées apparaissent (rubrique IndexNow).
 4. Cloudflare : laisser désactivés le blocage des robots d'IA (« AI Scrapers and Crawlers ») et la réécriture
    gérée de `robots.txt`, et vérifier que le « Bot Fight Mode » ne bloque pas Googlebot ni Bingbot (au
    23 novembre, tous reçoivent une réponse 200).

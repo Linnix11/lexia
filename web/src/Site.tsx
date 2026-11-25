@@ -55,6 +55,13 @@ const MEMBRES: Record<string, () => ReactNode> = {
   '/cours-recuperes': () => <CoursRecuperes />,
 }
 
+/** Ecrans du routeur, ecrits par le prerendu dans dist/chemins-application.json : le serveur sert la coquille a
+ *  ces adresses (barre finale toleree) et une vraie 404 partout ailleurs (api/serveur.py, D134). */
+// eslint-disable-next-line react-refresh/only-export-components
+export const CHEMINS_APPLICATION: string[] = [
+  ...new Set([...Object.keys(PUBLIQUES), ...Object.keys(INVITES), ...Object.keys(MEMBRES), '/admin']),
+].sort()
+
 /** Titre de l'onglet par page (WCAG 2.4.2, audit du 2026-11-19, WEB-5). */
 const TITRES: Record<string, string> = {
   '/': 'Lexia, assistant d’étude du droit',
@@ -140,6 +147,8 @@ function Redirection({ vers }: { vers: string }) {
   return <Chargement />
 }
 
+/** Page introuvable : aussi prerendue dans dist/introuvable.html, servie avec un vrai 404 par api/serveur.py (D134).
+ *  Liens vers les pages les plus utiles a un visiteur arrive d'un moteur ou d'un lien casse. */
 function Introuvable() {
   return (
     <PublicLayout>
@@ -147,6 +156,10 @@ function Introuvable() {
         <h1 className="font-display text-[34px] font-normal">Page introuvable</h1>
         <p className="mt-2 text-muted">Cette adresse ne correspond à aucune page de Lexia.</p>
         <Lien href="/" className={`${bouton} mt-6`}>Revenir à l’accueil</Lien>
+        <ul className="mt-6 flex flex-col items-center gap-2 text-[14px] tab:flex-row tab:justify-center tab:gap-6">
+          <li><Lien href="/matieres" className="inline-flex min-h-11 items-center text-forest underline underline-offset-2">Les matières de la licence de droit</Lien></li>
+          <li><Lien href="/guides" className="inline-flex min-h-11 items-center text-forest underline underline-offset-2">Guides de méthode et fiches</Lien></li>
+        </ul>
       </Section>
     </PublicLayout>
   )

@@ -5,8 +5,12 @@ import { StrictMode } from 'react'
 import { prerender } from 'react-dom/static'
 import Site from './Site'
 
+export { CHEMINS_APPLICATION } from './Site'
 export { pagesSeo } from './site/seo'
-export { fichierPage, llmsTxt, pageHtml, sitemapXml } from './site/publication'
+export { fichierPage, llmsTxt, pageHtml, pageIntrouvableHtml, sitemapXml } from './site/publication'
+
+/** Adresse sans route, rendue pour ecrire dist/introuvable.html (D134). */
+export const CHEMIN_INTROUVABLE = '/404'
 
 /** HTML de la page a l'adresse courante (window.location), Suspense et pages chargees a part comprises. */
 export async function rendre(): Promise<string> {
