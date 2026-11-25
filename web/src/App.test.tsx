@@ -923,6 +923,15 @@ describe('Depots de cours, version 2 (D107)', () => {
     return envois
   }
 
+  // La liste des matieres arrive apres le premier rendu : sous charge, choisir « droit_civil » avant que l'option
+  // existe laissait la matiere vide, et le depot ne partait pas (publication du 25/11).
+  async function choisirDroitCivil() {
+    const select = screen.getByLabelText('Matière')
+    await waitFor(() => expect(select.querySelector('option[value="droit_civil"]')).not.toBeNull())
+    fireEvent.change(select, { target: { value: 'droit_civil' } })
+    expect(select).toHaveValue('droit_civil')
+  }
+
   it('depose plusieurs fichiers avec progression et refuse clairement format et taille avant l envoi', async () => {
     const envois = simulerEnvoi((nom) => nom === 'scan.pdf'
       ? { status: 422, corps: { detail: 'Ce document scanné est illisible : vérifiez que le scan est net.' } }
@@ -942,7 +951,7 @@ describe('Depots de cours, version 2 (D107)', () => {
     expect(within(liste).getByText(/fichier trop volumineux \(21,0 Mo, 20 Mo au plus\)/)).toBeInTheDocument()
     expect(within(liste).getByText(/photo HEIC : enregistrez-la en JPEG/)).toBeInTheDocument()
     expect(screen.queryByLabelText('Titre (facultatif)')).not.toBeInTheDocument()   // plusieurs fichiers : leurs noms
-    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await choisirDroitCivil()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Déposer 2 cours' }))
     })
@@ -958,7 +967,7 @@ describe('Depots de cours, version 2 (D107)', () => {
     fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: [
       new File(['%PDF'], 'cours-contrats.pdf', { type: 'application/pdf' }), new File(['x'], 'cours-contrats.docx'),
       new File(['x'], 'cours-contrats.rtf')] } })
-    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await choisirDroitCivil()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Déposer 3 cours' }))
     })
@@ -985,7 +994,7 @@ describe('Depots de cours, version 2 (D107)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
     fireEvent.change(screen.getByTestId('depot-fichier'), { target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] } })
     expect(screen.getByLabelText('Titre (facultatif)')).toHaveValue('photo')
-    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'droit_civil' } })
+    await choisirDroitCivil()
     fireEvent.click(screen.getByRole('button', { name: 'Déposer' }))
     expect(screen.getByRole('progressbar', { name: 'Dépôt de photo.jpg' })).toHaveAttribute('aria-valuenow', '0')
     expect(await screen.findByText(/déposé \(12 pages, 30 passages\)/)).toBeInTheDocument()
