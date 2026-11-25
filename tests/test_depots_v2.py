@@ -157,10 +157,18 @@ def test_ocr_trop_long_tue_avec_tout_son_groupe(tmp_path, monkeypatch):
     _faux_programme(tmp_path, "tesseract", f"echo $$ > {pid}\nexec sleep 30\n")
     _faux_programme(tmp_path, "pdftoppm", "exit 1\n")
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
-    debut = time.monotonic()
-    with pytest.raises(ErreurCours, match="trop de temps"):
-        lire_isole("photo.jpg", PHOTO.read_bytes(), delai=3)
-    assert time.monotonic() - debut < 10
+    # Le delai couvre aussi le demarrage du lecteur (Python et ses imports) : sur une machine chargee, 3 s ne
+    # suffisaient parfois pas pour qu'il lance tesseract, et le test echouait sans fichier pid (publication du
+    # 25/11). Delai allonge seulement si tesseract n'a pas encore demarre.
+    for delai in (3, 10, 30):
+        debut = time.monotonic()
+        with pytest.raises(ErreurCours, match="trop de temps"):
+            lire_isole("photo.jpg", PHOTO.read_bytes(), delai=delai)
+        assert time.monotonic() - debut < delai + 7
+        if pid.exists() and pid.read_text().strip():
+            break
+    else:
+        pytest.fail("le processus de lecture n'a pas lance tesseract en 30 s")
     numero = int(pid.read_text())
     time.sleep(0.2)
     with pytest.raises(ProcessLookupError):
