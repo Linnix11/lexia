@@ -625,6 +625,34 @@ describe('Audit du 16 novembre 2026', () => {
     expect(titres.indexOf('Annales d’examens')).toBeLessThan(titres.indexOf('Sources de confiance'))
   })
 
+  it('bibliotheque : en L2, manuels et annales de la L2 et non plus ceux de la L1', async () => {
+    const annale = (id: number, niveau: string) => ({ id, titre: `Sujet de ${niveau}`, matiere: 'droit_civil', libelle_matiere: 'Droit civil',
+      niveau, annee: 2025, universite: 'Université test', session: '', url: `https://exemple.fr/sujet-${id}`, corrige: false, ajoute_le: '2026-11-01' })
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/matieres')) return repondre([
+        { id: 'introduction_au_droit', libelle: 'Introduction au droit', sources: ['code_civil'], annee: 'L1' },
+        { id: 'droit_administratif', libelle: 'Droit administratif', sources: ['code_civil'], annee: 'L2' },
+        { id: 'droit_penal', libelle: 'Droit pénal', sources: ['code_penal'], annee: 'L2' },
+      ])
+      if (url.endsWith('/annales')) return repondre({ niveaux: ['L1', 'L2'], annales: [annale(1, 'L1'), annale(2, 'L2')] })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.change(await screen.findByLabelText('Choisir le semestre'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: /Bibliothèque/ }))
+    expect(await screen.findByText('Sujet de L2')).toBeInTheDocument()
+    expect(screen.queryByText('Sujet de L1')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Niveau')).toHaveValue('L2')
+    expect(screen.getByText('Références à explorer pour votre année (L2)')).toBeInTheDocument()
+    expect(screen.getByText('Droit administratif')).toBeInTheDocument()
+    expect(screen.getByText('Droit pénal')).toBeInTheDocument()
+    expect(screen.queryByText('Introduction au droit')).not.toBeInTheDocument()
+    // L'etudiant peut toujours revenir a toutes les annales.
+    fireEvent.change(screen.getByLabelText('Niveau'), { target: { value: '' } })
+    expect(screen.getByText('Sujet de L1')).toBeInTheDocument()
+  })
+
   it('bibliotheque : barre de recherche facultative sur les cours recuperes, les annales et les sources', async () => {
     const cours = { id: 'sp-f1', titre: 'Divorce accepté', matiere: 'droit_de_la_famille', libelle_matiere: 'Droit de la famille',
       auteur: 'DILA', source: 'Service Public / DILA', source_url: 'https://exemple.invalid/', url_original: 'https://exemple.invalid/f1',

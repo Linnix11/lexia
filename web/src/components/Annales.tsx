@@ -11,9 +11,11 @@ export function CarteAnnales() {
   const [annales, setAnnales] = useState<Annale[] | null>(null)
   const [erreur, setErreur] = useState(false)
   // Matiere en cours dans l'espace preselectionnee quand des annales existent pour elle (audit, point 13).
-  const { matiere: matiereCourante } = useApp()
+  // Le niveau de l'etudiant (deduit du semestre) est preselectionne de meme : le filtre partait toujours de « Tous »,
+  // si bien qu'en L2 la bibliotheque montrait d'abord les memes annales qu'en L1. null : choix automatique.
+  const { matiere: matiereCourante, niveau: niveauCourant } = useApp()
   const [matiere, setMatiere] = useState(matiereCourante ?? '')
-  const [niveau, setNiveau] = useState('')
+  const [niveau, setNiveau] = useState<string | null>(null)
   const [nombre, setNombre] = useState(PAR_PAGE)
 
   useEffect(() => {
@@ -32,7 +34,10 @@ export function CarteAnnales() {
   const filtre = matieres.some(([id]) => id === matiere) ? matiere : ''
   const niveaux = useMemo(() => [...new Set((annales ?? []).map((a) => a.niveau))].sort(), [annales])
   // Un recueil couvre toutes les matieres de son semestre : il reste visible quel que soit le filtre.
-  const visibles = (annales ?? []).filter((a) => (!filtre || a.matiere === filtre || a.matiere === RECUEIL) && (!niveau || a.niveau === niveau))
+  const dansLaMatiere = (annales ?? []).filter((a) => !filtre || a.matiere === filtre || a.matiere === RECUEIL)
+  // Preselection seulement s'il existe des annales de ce niveau (sinon « Tous » plutot qu'une liste vide).
+  const filtreNiveau = niveau ?? (dansLaMatiere.some((a) => a.niveau === niveauCourant) ? niveauCourant : '')
+  const visibles = dansLaMatiere.filter((a) => !filtreNiveau || a.niveau === filtreNiveau)
 
   return (
     <Card className="p-[19px] tab:col-span-2">
@@ -48,7 +53,7 @@ export function CarteAnnales() {
           </label>
           <label className="grid gap-1 text-[11px] text-muted">
             Niveau
-            <select value={niveau} onChange={(e) => { setNiveau(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
+            <select value={filtreNiveau} onChange={(e) => { setNiveau(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
               <option value="">Tous</option>
               {niveaux.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>

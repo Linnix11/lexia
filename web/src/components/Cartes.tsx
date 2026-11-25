@@ -1,4 +1,4 @@
-import type { Mode } from '../lib/api'
+import type { Matiere, Mode, Niveau } from '../lib/api'
 import { dateLongue, plusRecente, useFraicheur } from '../lib/fraicheur'
 import { useApp } from '../state/contexte'
 import { Card, CardHead } from './Layout'
@@ -49,18 +49,38 @@ export function CarteSources() {
   )
 }
 
-const OUVRAGES = [
-  { couv: 'C°', classe: 'bg-[#d9e2d9] text-forest', titre: 'Manuels de droit constitutionnel', recherche: 'droit constitutionnel manuel', note: 'Repères bibliographiques · à confirmer selon votre cours' },
-  { couv: 'D°', classe: 'bg-[#e7dfd1] text-[#795932]', titre: 'Introduction générale au droit', recherche: 'introduction au droit', note: 'Références sélectionnées par les bibliothèques' },
-  { couv: 'O°', classe: 'bg-[#e4e1ed] text-[#5b5777]', titre: 'Droit des obligations', recherche: 'droit des obligations', note: 'Contrats et responsabilité civile' },
-]
+const COULEURS = ['bg-[#d9e2d9] text-forest', 'bg-[#e7dfd1] text-[#795932]', 'bg-[#e4e1ed] text-[#5b5777]']
+
+/** Manuels a chercher au catalogue pour les matieres de l'annee de l'etudiant (annee des matieres, D97). La liste
+ * etait ecrite en dur avec trois matieres de L1 : en L2 ou en L3, la bibliotheque restait celle de la L1. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function ouvragesDeLAnnee(matieres: Matiere[], niveau: Niveau) {
+  return matieres.filter((m) => m.annee === niveau).map((m, i) => {
+    const mot = m.libelle.replace(/^Droit\s+(?:des\s+|de\s+la\s+|du\s+|de\s+l[’']|d[’']|de\s+)?/i, '') || m.libelle
+    return {
+      couv: `${mot.charAt(0).toUpperCase()}°`,
+      classe: COULEURS[i % COULEURS.length],
+      titre: m.libelle,
+      recherche: `${m.libelle} manuel`,
+      note: `Manuels de ${niveau} · à confirmer selon votre cours`,
+    }
+  })
+}
 
 export function CarteBibliotheque({ complete = false }: { complete?: boolean }) {
-  const liste = complete ? OUVRAGES : OUVRAGES.slice(0, 2)
+  const { niveau, matieres } = useApp()
+  const ouvrages = ouvragesDeLAnnee(matieres, niveau)
+  const liste = complete ? ouvrages : ouvrages.slice(0, 2)
   return (
     <Card className="p-4 tab:p-[19px]">
-      <CardHead titre="Bibliothèque universitaire" sousTitre="Références recommandées à explorer"
+      <CardHead titre="Bibliothèque universitaire" sousTitre={`Références à explorer pour votre année (${niveau})`}
         droite={<a className={fleche} href="https://www.sudoc.abes.fr/" target="_blank" rel="noreferrer" aria-label="Ouvrir le catalogue Sudoc">↗</a>} />
+      {liste.length === 0 && (
+        <p className="mt-3 border-t border-line-soft pt-3 text-[11px] leading-[1.45] text-muted">
+          Les matières de votre année ne sont pas encore chargées : vous pouvez chercher vos manuels directement au
+          catalogue des bibliothèques universitaires (Sudoc).
+        </p>
+      )}
       {liste.map((o) => (
         <div key={o.titre} className="mt-3 flex gap-[11px] border-t border-line-soft pt-3">
           <div aria-hidden className={`grid h-11 w-[34px] shrink-0 place-items-center rounded font-display text-[15px] ${o.classe}`}>{o.couv}</div>
