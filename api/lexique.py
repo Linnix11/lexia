@@ -266,6 +266,12 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     # --- droit de la famille (Code civil, CASF) -------------------------------------------------
     (r"autorite parentale", ((CC, "371-1"),)),
     (r"\bdivorce", ((CC, "229"),)),
+    # Divorce pour alteration definitive du lien conjugal : un an de separation (art. 238 depuis le 1er janvier 2021).
+    # Dossier enseignant, question 15 (25/11) : sans 237 et 238 parmi les extraits, la reponse disait 14 mois
+    # insuffisants d'apres une decision de l'epoque des deux ans (D133).
+    (r"alteration definitive du lien conjugal|cessation de la communaute de vie"
+     r"|divorc.{0,160}\b(?:vivent|vivant|vit|vivaient)\b.{0,20}separ|\b(?:vivent|vivant|vit|vivaient)\b.{0,20}separ.{0,160}divorc",
+     ((CC, "238"), (CC, "237"))),
     (r"\bfiliation", ((CC, "310-1"),)),
     (r"obligation alimentaire|\baliments\b", ((CC, "205"),)),
     (r"pension alimentaire|contribution a l.entretien", ((CC, "371-2"), (CC, "373-2-2"))),

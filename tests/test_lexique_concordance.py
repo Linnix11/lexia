@@ -32,6 +32,10 @@ INDEX_REEL = Path(__file__).resolve().parent.parent / "data" / "index"
     ("Quel est le principe de la force obligatoire du contrat ?", (CC, "1103")),
     ("Qu’est-ce que le devoir d’information ?", (CC, "1112-1")),  # apostrophes typographiques
     ("Qu'est-ce que la violence économique ?", (CC, "1143")),
+    # D133 : dossier enseignant, question 15
+    ("Claire et David sont mariés. Ils vivent séparément depuis quatorze mois et Claire veut divorcer, mais David "
+     "refuse. Claire peut-elle obtenir le divorce ?", (CC, "238")),
+    ("Qu'est-ce que le divorce pour altération définitive du lien conjugal ?", (CC, "238")),
 ])
 def test_lexique_reconnait_les_notions(question, attendu):
     assert attendu in lexique.suggestions(question)
@@ -41,6 +45,7 @@ def test_lexique_reconnait_les_notions(question, attendu):
     ("Qu'est-ce que la force majeure en matière contractuelle ?", (CC, "414")),   # « majeure » != majorité
     ("Comment se passe la dissolution du PACS ?", (CONST, "12")),
     ("Que dit l'article précédent ?", (CC, "5")),
+    ("Deux concubins vivent séparément depuis un an. Doivent-ils partager leurs biens ?", (CC, "238")),   # D133
 ])
 def test_lexique_sans_faux_positif(question, exclu):
     assert exclu not in lexique.suggestions(question)
