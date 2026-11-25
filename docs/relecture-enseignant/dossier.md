@@ -1,6 +1,6 @@
 # Lexia : dossier de relecture par un enseignant en droit
 
-Axion Studio, 25 novembre 2026. Réponses produites par le moteur de Lexia (version 368b642), sans retouche.
+Axion Studio, 25 novembre 2026. Réponses produites par le moteur de Lexia (version 7208eab), sans retouche.
 
 Version imprimable avec cases de notation : `dossier.docx`. Saisie des notes : `grille.xlsx`. Lettre d'accompagnement : `lettre.md`.
 

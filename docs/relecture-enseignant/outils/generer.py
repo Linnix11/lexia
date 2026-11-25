@@ -25,7 +25,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 DOSSIER = Path(__file__).resolve().parent.parent
 DATE = "25 novembre 2026"
-VERSION = "368b642"
+VERSION = "7208eab"
 
 PRESENTATION = [
     "Lexia est un assistant d'étude du droit français destiné aux étudiants de licence (L1 à L3), publié par Axion Studio et accessible sur https://lexia-axionstudio.cloud.",

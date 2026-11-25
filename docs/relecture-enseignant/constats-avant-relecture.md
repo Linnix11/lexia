@@ -1,6 +1,6 @@
 # Constats avant relecture
 
-Relecture interne des réponses de Lexia du 25 novembre 2026 (moteur local, code `368b642` : version en ligne
+Relecture interne des réponses de Lexia du 25 novembre 2026 (moteur local, code `7208eab` : version en ligne
 `1b877cc` plus D133). Ce document n'est pas destiné à l'enseignant : il liste ce qui semble faux ou douteux, pour que
 l'éditeur décide de corriger Lexia avant l'envoi ou d'envoyer le dossier tel quel.
 
@@ -9,11 +9,11 @@ versions précédentes de ce document (23 novembre ; 24 novembre, codes `c9c92cd
 l'historique git.
 
 Les 30 questions ont été posées sur `1b877cc`. La question 15 était alors fausse (voir section 2) : D133 l'a corrigée
-et elle a été reposée sur `368b642`. D133 ne change les suggestions d'aucune autre des 30 questions.
+et elle a été reposée sur `7208eab`. D133 ne change les suggestions d'aucune autre des 30 questions.
 
 ## 1. Bilan
 
-| | 23 nov. | 24 nov. (`60f0f03`) | 25 nov. (`368b642`) |
+| | 23 nov. | 24 nov. (`60f0f03`) | 25 nov. (`7208eab`) |
 |---|---|---|---|
 | Réponses obtenues | 21 sur 30 | 30 sur 30 | 30 sur 30, toutes par Gemini |
 | Justes (souvent incomplètes) | 14 | 25 | **25** : 1 à 20, 22 à 25, 28 |
@@ -99,7 +99,7 @@ disparu comme condition de validité en 2016 et ne renvoie pas aux art. 1162 et 
 
 ## 6. Ce qui reste à faire avant l'envoi
 
-1. Publier D133 sur le site : le dossier décrit `368b642`, le site sert `1b877cc` (sans la correction de la
+1. Publier D133 sur le site : le dossier décrit `7208eab`, le site sert `1b877cc` (sans la correction de la
    question 15).
 2. Décider si les questions 21 et 26, et les repères S1 de la 25, justifient une correction avant l'envoi.
 3. Compléter les passages entre crochets de la lettre (`lettre.md`, puis régénérer `lettre.docx`) : signataire,

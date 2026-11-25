@@ -14,7 +14,7 @@ Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia p
 | `outils/interroger.py` | Pose les questions au moteur local (même chemin que `POST /chat`) | Éditeur |
 | `outils/generer.py` | Construit `dossier.md`, `dossier.docx`, `grille.xlsx` et `lettre.docx` | Éditeur |
 
-État : 30 réponses sur 30, reposées le 25 novembre 2026 (code `368b642`). 25 justes, aucune fausse, 2 douteuses
+État : 30 réponses sur 30, reposées le 25 novembre 2026 (code `7208eab`). 25 justes, aucune fausse, 2 douteuses
 (21, 26), 3 abstentions correctes : voir `constats-avant-relecture.md`, sections 1 et 6, avant l'envoi.
 
 Régénérer (depuis la racine du dépôt) :
