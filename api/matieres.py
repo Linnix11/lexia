@@ -36,7 +36,7 @@ MATIERES: dict[str, Matiere] = {
     "droit_de_la_famille": Matiere("Droit de la famille", "L1", (
         "mariage", "divorce", "filiation", "autorité parentale", "régimes matrimoniaux", "successions",
         "libéralités", "droit patrimonial de la famille"), ("code_civil", "judilibre")),
-    "droit_des_biens": Matiere("Droit des biens", "L1", ("propriété", "possession", "servitudes", "usufruit"),
+    "droit_des_biens": Matiere("Droit des biens", "L2", ("propriété", "possession", "servitudes", "usufruit"),
                                ("code_civil", "judilibre")),
     "droit_des_contrats": Matiere("Droit des contrats", "L2", (
         "droit des obligations", "régime général de l'obligation", "contrats spéciaux", "droit de la consommation"),
