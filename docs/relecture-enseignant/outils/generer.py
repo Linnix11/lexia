@@ -24,8 +24,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 
 DOSSIER = Path(__file__).resolve().parent.parent
-DATE = "24 novembre 2026"
-VERSION = "60f0f03"
+DATE = "25 novembre 2026"
+VERSION = "368b642"
 
 PRESENTATION = [
     "Lexia est un assistant d'étude du droit français destiné aux étudiants de licence (L1 à L3), publié par Axion Studio et accessible sur https://lexia-axionstudio.cloud.",
@@ -41,7 +41,7 @@ PRESENTATION = [
 ]
 
 MODE_EMPLOI = [
-    "Le dossier contient 30 questions posées à Lexia le 24 novembre 2026, avec la réponse obtenue telle quelle, sans retouche : 12 questions de cours, 8 cas pratiques, 5 demandes de fiche ou de plan de dissertation, 5 questions pièges.",
+    "Le dossier contient 30 questions posées à Lexia le 25 novembre 2026, avec la réponse obtenue telle quelle, sans retouche : 12 questions de cours, 8 cas pratiques, 5 demandes de fiche ou de plan de dissertation, 5 questions pièges.",
     "Les questions pièges (n° 26 à 30) portent sur un texte abrogé, une notion confondue, un droit étranger ou une décision introuvable : elles servent à voir si Lexia admet ses limites. Une abstention y est une bonne réponse.",
     "Pour chaque réponse sont indiqués le modèle qui a répondu (Gemini ou Groq) et les sources citées, avec leur lien. Les repères [S1], [S2]... renvoient à la liste des sources de la réponse.",
     "Notez chaque réponse sur les cinq critères de la grille, de 0 à 3. Un critère sans objet (par exemple la méthode pour une simple définition) peut rester vide.",
