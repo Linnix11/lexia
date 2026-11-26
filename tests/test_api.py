@@ -284,7 +284,8 @@ def test_quiz_qcm_generation_et_correction(env):
     assert "bonne_reponse" not in data["questions"][0]           # la reponse n'est pas envoyee
     assert data["controle"]["elements_retires"] == 2
 
-    c = client.post("/quiz/correct", json={"quiz_id": data["quiz_id"], "reponses": [{"index": 0, "valeur": 0}]}).json()
+    bonne = data["questions"][0]["choix"].index("Une faute")   # choix melanges a la generation (D140)
+    c = client.post("/quiz/correct", json={"quiz_id": data["quiz_id"], "reponses": [{"index": 0, "valeur": bonne}]}).json()
     assert c["score"] == 1 and c["resultats"][0]["statut"] == "correct"
     assert c["resultats"][0]["sources"] == ["code_civil:LEGIARTI000032041571"]
 

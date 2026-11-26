@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Lien } from '../lib/router'
-import type { FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
-import { cartesDuQuiz } from '../lib/cartes'
+import type { Correction, FormatQuiz, Quiz, ResultatQuestion } from '../lib/api'
+import { cartesDuQuiz, estErreur } from '../lib/cartes'
 import { numeroSource, titreCourt } from '../lib/sources'
 import { useDialog } from '../lib/useDialog'
 import { useApp } from '../state/contexte'
@@ -48,6 +48,103 @@ function bonneReponse(q: Quiz['questions'][number], r: ResultatQuestion): string
   return null
 }
 
+/** Apres la correction, sous chaque choix : bonne reponse, reponse donnee, et pourquoi le choix est juste ou faux (D140). */
+function Marque({ bonne, choisi, justification }: { bonne: boolean; choisi: boolean; justification?: string }) {
+  if (!bonne && !choisi && !justification) return null
+  return (
+    <p className="mt-0.5 ml-[22px] text-[11px] leading-[1.45] text-muted">
+      {bonne && <b className="text-forest">✓ Bonne réponse{choisi ? ', votre réponse' : ''}. </b>}
+      {choisi && !bonne && <b className="text-[#8c4a36]">✗ Votre réponse. </b>}
+      {justification}
+    </p>
+  )
+}
+
+const melanger = (n: number) => {
+  const ordre = Array.from({ length: n }, (_, i) => i)
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[ordre[i], ordre[j]] = [ordre[j], ordre[i]]
+  }
+  return ordre
+}
+
+interface EtatReprise {
+  indices: number[]
+  ordres: Record<number, number[]> // QCM : choix dans un nouvel ordre, pour ne pas repondre de memoire de place
+  reponses: Record<number, number | boolean>
+  verifiee: boolean
+}
+
+/** Refaire les questions ratees (QCM, vrai ou faux) : sur place, sans appel au serveur ni quota (D140). Les bonnes
+ * reponses sont deja connues du navigateur depuis la correction. */
+function Reprise({ quiz, correction, etat, changer, quitter }: {
+  quiz: Quiz; correction: Correction; etat: EtatReprise; changer: (e: EtatReprise) => void; quitter: () => void
+}) {
+  const titre = useRef<HTMLHeadingElement>(null)
+  useEffect(() => titre.current?.focus(), [])
+  const questions = etat.indices.map((i) => ({ q: quiz.questions.find((x) => x.index === i)!, r: correction.resultats.find((x) => x.index === i)! }))
+    .filter(({ q, r }) => q && r)
+  const justes = questions.filter(({ q, r }) => etat.reponses[q.index] === r.bonne_reponse).length
+  return (
+    <div className="border-t border-line pt-3">
+      <h3 ref={titre} tabIndex={-1} className="text-[13px] font-semibold text-forest outline-none">
+        Questions ratées, à refaire
+      </h3>
+      <p className="mt-1 text-[11px] text-muted">Les choix sont présentés dans un autre ordre. Rien n’est décompté.</p>
+      <ol>
+        {questions.map(({ q, r }) => {
+          const valeur = etat.reponses[q.index]
+          const ok = valeur === r.bonne_reponse
+          const choix: { label: string; valeur: number | boolean }[] = quiz.format === 'qcm'
+            ? (etat.ordres[q.index] ?? []).map((j) => ({ label: q.choix?.[j] ?? '', valeur: j }))
+            : [{ label: 'Vrai', valeur: true }, { label: 'Faux', valeur: false }]
+          return (
+            <li key={q.index} className="border-b border-line-soft py-3.5">
+              <fieldset disabled={etat.verifiee}>
+                <legend className="text-[12.5px] leading-[1.45] font-semibold">{q.index + 1}. {q.question ?? q.affirmation}</legend>
+                <div className="mt-2.5 grid gap-[7px]">
+                  {choix.map((c) => (
+                    <div key={String(c.valeur)}>
+                      <label className="flex items-start gap-2 text-[12px] text-[#545d56]">
+                        <input type="radio" name={`reprise${q.index}`} checked={valeur === c.valeur} className="mt-0.5 accent-forest"
+                          onChange={() => changer({ ...etat, reponses: { ...etat.reponses, [q.index]: c.valeur } })} />
+                        {c.label}
+                      </label>
+                      {etat.verifiee && (
+                        <Marque bonne={c.valeur === r.bonne_reponse} choisi={c.valeur === valeur}
+                          justification={typeof c.valeur === 'number' && (c.valeur === valeur || c.valeur === r.bonne_reponse) ? r.justifications?.[c.valeur] : undefined} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+              {etat.verifiee && (
+                <p className="mt-2 text-[12px] leading-[1.55]">
+                  <span className={`mr-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUTS[valeur === undefined ? 'non_repondu' : ok ? 'correct' : 'incorrect'].classe}`}>
+                    {STATUTS[valeur === undefined ? 'non_repondu' : ok ? 'correct' : 'incorrect'].texte}
+                  </span>
+                  {r.explication}
+                </p>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {etat.verifiee
+          ? <p role="status" className="mr-auto text-[13px] font-semibold text-forest">Reprise : {justes} / {questions.length}</p>
+          : <button type="button" onClick={() => changer({ ...etat, verifiee: true })}
+              className="rounded-[7px] bg-forest px-[13px] py-2.5 text-[12px] text-white hover:bg-forest-dark">Vérifier</button>}
+        <button type="button" onClick={quitter}
+          className="rounded-[7px] border border-line px-[13px] py-2.5 text-[12px] text-forest hover:border-[#9eafa3]">
+          Revenir à la correction
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function QuizModal() {
   const { quizOuvert, matiere } = useApp()
   if (!quizOuvert) return null
@@ -67,6 +164,8 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
   // Un questionnaire est affiche : le formulaire se replie en une ligne pour laisser la place a l'exercice
   // (audit du 2026-11-16, point 10). Il reste ouvert si l'on arrive avec un nouveau theme a travailler.
   const [reglages, setReglages] = useState(!quiz?.quiz_id || themeDemande !== undefined)
+  // Reprise des questions ratees en cours (D140) : locale a la fenetre, perdue a sa fermeture
+  const [reprise, setReprise] = useState<EtatReprise | null>(null)
 
   const generer = () => {
     if (theme.trim().length < 3) {
@@ -78,8 +177,17 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
       && !window.confirm('Remplacer le questionnaire en cours ? Vos réponses et la correction seront effacées.')) return
     genererQuiz({ theme: theme.trim(), nombre, format, matiere: mat })
     setReglages(false)
+    setReprise(null)
   }
   const corriger = corrigerQuiz
+
+  // Apres la correction (D140) : erreurs en cartes, et questions ratees a refaire (QCM, vrai ou faux)
+  const ratees = correction?.resultats.filter(estErreur) ?? []
+  const aRefaire = ratees.filter((r) => r.bonne_reponse !== undefined).map((r) => r.index)
+  const enCartes = (erreursSeules: boolean) => quiz && correction
+    && ajouterCartes(cartesDuQuiz(quiz, correction, new Date(), { erreursSeules, reponses, matiere: parametres?.matiere }))
+  const refaire = () => quiz && setReprise({ indices: aRefaire, verifiee: false, reponses: {},
+    ordres: Object.fromEntries(aRefaire.map((i) => [i, melanger(quiz.questions.find((q) => q.index === i)?.choix?.length ?? 0)])) })
 
   const sources = correction?.sources ?? quiz?.sources ?? []
   const champ = 'w-full min-w-0 rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink'
@@ -167,21 +275,38 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
 
         {quiz?.quiz_id && (
           <div className="border-t border-line">
-            {correction && (
+            {correction && !reprise && (
               <div className="my-3 flex flex-wrap items-center justify-between gap-2">
                 <p role="status" className="text-[13px] font-semibold text-forest">Score : {correction.score} / {correction.total}</p>
-                <button type="button" onClick={() => ajouterCartes(cartesDuQuiz(quiz, correction))}
-                  className="rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
-                  Ajouter aux cartes à réviser
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  {aRefaire.length > 0 && (
+                    <button type="button" onClick={refaire}
+                      className="min-h-9 rounded-[7px] bg-forest px-2.5 py-1.5 text-[11px] text-white hover:bg-forest-dark">
+                      Refaire les questions ratées ({aRefaire.length})
+                    </button>
+                  )}
+                  {ratees.length > 0 && (
+                    <button type="button" onClick={() => enCartes(true)}
+                      className="min-h-9 rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
+                      Ajouter mes erreurs aux cartes ({ratees.length})
+                    </button>
+                  )}
+                  <button type="button" onClick={() => enCartes(false)}
+                    className="min-h-9 rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
+                    {ratees.length > 0 ? 'Ajouter toutes les questions' : 'Ajouter aux cartes à réviser'}
+                  </button>
+                </div>
               </div>
+            )}
+            {correction && reprise && (
+              <Reprise quiz={quiz} correction={correction} etat={reprise} changer={setReprise} quitter={() => setReprise(null)} />
             )}
             {quiz.obtenu < quiz.demande && !correction && (
               <p className="mt-3 text-[11px] text-muted">
                 {quiz.obtenu} question(s) vérifiable(s) sur {quiz.demande} demandées : les autres ont été écartées faute de source.
               </p>
             )}
-            <ol>
+            <ol hidden={!!(reprise && correction)}>
               {quiz.questions.map((q) => {
                 const r = correction?.resultats.find((x) => x.index === q.index)
                 const nom = `q${q.index}`
@@ -193,18 +318,24 @@ function QuizContenu({ themeDemande, matiereInitiale }: { themeDemande?: string;
                       </legend>
                       <div className="mt-2.5 grid gap-[7px]">
                         {quiz.format === 'qcm' && q.choix?.map((c, j) => (
-                          <label key={j} className="flex items-start gap-2 text-[12px] text-[#545d56]">
-                            <input type="radio" name={nom} checked={reponses[q.index] === j}
-                              onChange={() => repondreQuiz(q.index, j)} className="mt-0.5 accent-forest" />
-                            {c}
-                          </label>
+                          <div key={j}>
+                            <label className="flex items-start gap-2 text-[12px] text-[#545d56]">
+                              <input type="radio" name={nom} checked={reponses[q.index] === j}
+                                onChange={() => repondreQuiz(q.index, j)} className="mt-0.5 accent-forest" />
+                              {c}
+                            </label>
+                            {r && <Marque bonne={r.bonne_reponse === j} choisi={reponses[q.index] === j} justification={r.justifications?.[j]} />}
+                          </div>
                         ))}
                         {quiz.format === 'vrai_faux' && [true, false].map((v) => (
-                          <label key={String(v)} className="flex items-start gap-2 text-[12px] text-[#545d56]">
-                            <input type="radio" name={nom} checked={reponses[q.index] === v}
-                              onChange={() => repondreQuiz(q.index, v)} className="mt-0.5 accent-forest" />
-                            {v ? 'Vrai' : 'Faux'}
-                          </label>
+                          <div key={String(v)}>
+                            <label className="flex items-start gap-2 text-[12px] text-[#545d56]">
+                              <input type="radio" name={nom} checked={reponses[q.index] === v}
+                                onChange={() => repondreQuiz(q.index, v)} className="mt-0.5 accent-forest" />
+                              {v ? 'Vrai' : 'Faux'}
+                            </label>
+                            {r && <Marque bonne={r.bonne_reponse === v} choisi={reponses[q.index] === v} />}
+                          </div>
                         ))}
                         {quiz.format === 'ouvertes' && (
                           <textarea rows={3} aria-label={`Votre réponse à la question ${q.index + 1}`}

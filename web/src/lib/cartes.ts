@@ -1,6 +1,6 @@
 // Cartes a retourner avec repetition espacee, tirees des questionnaires corriges et des fiches.
 // Aucun appel au modele ni au serveur : les cartes restent dans ce navigateur, comme les fiches.
-import type { Correction, FicheSource, Quiz } from './api'
+import type { Correction, FicheSource, QuestionQuiz, Quiz, ResultatQuestion } from './api'
 import { empreinte, type Favori } from './favoris'
 
 export interface SourceCarte {
@@ -18,6 +18,7 @@ export interface Carte {
   niveau: number // 1 a 5
   prochaine: string // ISO : la carte est a revoir a partir de cette date
   creee_le: string
+  matiere?: string // matiere du questionnaire d'origine, pour reviser une matiere a la fois (D140)
 }
 
 // Systeme de Leitner simplifie : une carte sue au niveau n revient apres INTERVALLES_JOURS[n - 1] jours.
@@ -50,13 +51,25 @@ function nouvelleCarte(id: string, origine: Carte['origine'], recto: string, ver
   return { id, origine, recto, verso, sources, niveau: 1, prochaine: minuitDans(maintenant, 0), creee_le: maintenant.toISOString() }
 }
 
-/** Une carte par question corrigee dont la reponse est connue. */
-export function cartesDuQuiz(quiz: Quiz, correction: Correction, maintenant = new Date()): Carte[] {
+/** Question ratee : fausse, partielle, sans reponse ou a verifier (D140). */
+export const estErreur = (r: ResultatQuestion) => r.statut !== 'correct'
+
+/** Ce que l'etudiant avait repondu, en clair (QCM, vrai ou faux), pour le verso d'une carte d'erreur. */
+function reponseDonnee(q: QuestionQuiz, valeur: unknown): string {
+  if (typeof valeur === 'number' && q.choix) return q.choix[valeur] ?? ''
+  if (typeof valeur === 'boolean') return valeur ? 'Vrai' : 'Faux'
+  return ''
+}
+
+/** Une carte par question corrigee dont la reponse est connue. `erreursSeules` : les questions ratees seulement,
+ * avec au verso la reponse donnee et, au QCM, pourquoi elle etait fausse (D140). */
+export function cartesDuQuiz(quiz: Quiz, correction: Correction, maintenant = new Date(),
+  options: { erreursSeules?: boolean; reponses?: Record<number, unknown>; matiere?: string | null } = {}): Carte[] {
   const sources = [...correction.sources, ...quiz.sources]
   const cartes: Carte[] = []
   for (const q of quiz.questions) {
     const r = correction.resultats.find((x) => x.index === q.index)
-    if (!r) continue
+    if (!r || (options.erreursSeules && !estErreur(r))) continue
     let reponse = ''
     if (typeof r.bonne_reponse === 'number' && q.choix) reponse = q.choix[r.bonne_reponse] ?? ''
     else if (typeof r.bonne_reponse === 'boolean') reponse = r.bonne_reponse ? 'Vrai' : 'Faux'
@@ -64,10 +77,30 @@ export function cartesDuQuiz(quiz: Quiz, correction: Correction, maintenant = ne
     if (!reponse) continue
     const recto = quiz.format === 'vrai_faux' ? `Vrai ou faux : ${q.affirmation ?? q.question ?? ''}` : (q.question ?? q.affirmation ?? '')
     if (!recto.trim()) continue
-    const verso = [reponse, r.explication?.trim()].filter(Boolean).join('\n\n')
-    cartes.push(nouvelleCarte(`quiz:${quiz.quiz_id}:${q.index}`, 'quiz', recto, verso, sourcesCitees(r.sources, sources), maintenant))
+    const valeur = options.reponses?.[q.index]
+    const donnee = r.statut === 'incorrect' ? reponseDonnee(q, valeur) : ''
+    const pourquoi = donnee && typeof valeur === 'number' ? (r.justifications?.[valeur] ?? '').trim() : ''
+    const erreur = donnee ? `Votre réponse : ${donnee}.${pourquoi ? ` ${pourquoi}` : ''}` : ''
+    const verso = [reponse, r.explication?.trim(), erreur].filter(Boolean).join('\n\n')
+    const carte = nouvelleCarte(`quiz:${quiz.quiz_id}:${q.index}`, 'quiz', recto, verso, sourcesCitees(r.sources, sources), maintenant)
+    cartes.push(options.matiere ? { ...carte, matiere: options.matiere } : carte)
   }
   return cartes
+}
+
+/** Progres : cartes par niveau et cartes qui reviennent bientot (D140). */
+export function progres(cartes: Carte[], maintenant = new Date()) {
+  const t = maintenant.getTime()
+  const finDemain = Date.parse(minuitDans(maintenant, 2))
+  const finSemaine = Date.parse(minuitDans(maintenant, 8))
+  const date = (c: Carte) => Date.parse(c.prochaine)
+  return {
+    nouvelles: cartes.filter((c) => c.niveau <= 1).length,
+    enCours: cartes.filter((c) => c.niveau === 2 || c.niveau === 3).length,
+    acquises: cartes.filter((c) => c.niveau >= 4).length,
+    demain: cartes.filter((c) => date(c) > t && date(c) < finDemain).length,
+    semaine: cartes.filter((c) => date(c) > t && date(c) < finSemaine).length,
+  }
 }
 
 /** Au recto la question posee ; au verso la reponse directe, a defaut les trois premieres regles de droit positif. */

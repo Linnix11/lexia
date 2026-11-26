@@ -115,6 +115,7 @@ export interface ResultatQuestion {
   explication: string
   sources: string[]
   bonne_reponse?: number | boolean
+  justifications?: string[] // QCM : pourquoi chaque choix est juste ou faux, dans l'ordre des choix (D140)
   elements_attendus?: string[]
   commentaire?: string
   elements_manquants?: string[]

@@ -8,6 +8,7 @@ compte qui l'a cree et la correction (sans le texte des reponses de l'etudiant).
 from __future__ import annotations
 
 import json
+import random
 import sqlite3
 import threading
 import time
@@ -16,7 +17,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from api import prompts
-from api.citations import Controle, labels_valides, verifier_texte
+from api.citations import _LABELS_DANS_TEXTE, Controle, labels_valides, retirer_reperes, verifier_texte
+from api.concordance import annoter, numeros_actuels
 from api.journal import Journal
 from api.llm.base import LLM, LLMError
 from api.rag import AVERTISSEMENT, Lexia, fiche_source, table_extraits
@@ -111,10 +113,15 @@ def _valider_question(q: dict, fmt: str, table: dict[str, dict], controle: Contr
     sources = labels_valides(q.get("sources"), table, controle)
     if not sources:
         return None
-    explication = str(q.get("explication") or "").strip()
+    def net(t) -> str:
+        # Reperes « S8 », « (S1, S2) » ecrits dans le texte : sans sens pour l'etudiant, retires comme dans les
+        # reponses (D136, R10) ; le 26/11, des corriges disaient « l'extrait S8 precise... » (D140)
+        return retirer_reperes(_LABELS_DANS_TEXTE.sub("", str(t or "").strip()), table)
+
+    explication = net(q.get("explication"))
     if fmt == "qcm":
-        enonce = str(q.get("question") or "").strip()
-        choix = [str(c).strip() for c in q.get("choix") or []]
+        enonce = net(q.get("question"))
+        choix = [net(c) for c in q.get("choix") or []]
         bonne = q.get("bonne_reponse")
         if not enonce or not 3 <= len(choix) <= 5 or len(set(choix)) != len(choix) or not all(choix):
             return None
@@ -122,16 +129,23 @@ def _valider_question(q: dict, fmt: str, table: dict[str, dict], controle: Contr
             return None
         textes = [enonce, explication, *choix]
         item = {"question": enonce, "choix": choix, "bonne_reponse": bonne}
+        # Pourquoi chaque choix est juste ou faux (D140) : facultatif, la question reste sans lui (modele de
+        # secours, liste de mauvaise longueur, phrase non verifiable)
+        justifs = q.get("justifications")
+        if isinstance(justifs, list) and len(justifs) == len(choix):
+            justifs = [net(j) for j in justifs]
+            if all(justifs) and all(verifier_texte(j, passages, Controle()) for j in justifs):
+                item["justifications"] = justifs
     elif fmt == "vrai_faux":
-        enonce = str(q.get("affirmation") or "").strip()
+        enonce = net(q.get("affirmation"))
         rep = q.get("reponse")
         if not enonce or not isinstance(rep, bool):
             return None
         textes = [enonce, explication]
         item = {"affirmation": enonce, "reponse": rep}
     else:
-        enonce = str(q.get("question") or "").strip()
-        attendus = [str(e).strip() for e in q.get("elements_attendus") or [] if str(e).strip()]
+        enonce = net(q.get("question"))
+        attendus = [e for e in (net(x) for x in q.get("elements_attendus") or []) if e]
         if not enonce or not attendus:
             return None
         textes = [enonce, explication, *attendus]
@@ -139,6 +153,40 @@ def _valider_question(q: dict, fmt: str, table: dict[str, dict], controle: Contr
     if not all(verifier_texte(t, passages, controle) for t in textes):
         return None
     return {**item, "explication": explication, "sources": sources}
+
+
+def _melanger(q: dict, hasard: random.Random, place: int | None = None) -> dict:
+    """Choix du QCM dans un ordre tire au hasard, justifications comprises ; la bonne reponse a la `place` donnee
+    (modulo le nombre de choix) si elle l'est. Le 26/11, 9 bonnes reponses sur 10 etaient le choix B : l'etudiant
+    apprenait la place de la reponse, pas le droit (D140)."""
+    if "choix" not in q:
+        return q
+    ordre = [i for i in range(len(q["choix"])) if i != q["bonne_reponse"]]
+    hasard.shuffle(ordre)
+    ordre.insert(hasard.randrange(len(q["choix"])) if place is None else place % len(q["choix"]), q["bonne_reponse"])
+    out = {**q, "choix": [q["choix"][i] for i in ordre], "bonne_reponse": ordre.index(q["bonne_reponse"])}
+    if "justifications" in q:
+        out["justifications"] = [q["justifications"][i] for i in ordre]
+    return out
+
+
+_CHAMPS_TEXTE = ("question", "affirmation", "explication")
+_CHAMPS_LISTE = ("choix", "justifications", "elements_attendus")
+
+
+def _signaler_anciens(q: dict, par_id: dict[str, dict]) -> dict:
+    """« article 1382 du Code civil » donne pour le droit actuel : ancienne numerotation signalee, comme dans les
+    reponses (D136), d'apres les extraits que la question cite. Apres la verification des references : la mention
+    ajoute le numero actuel, qui peut manquer aux extraits (D140)."""
+    actuels = numeros_actuels([par_id[i] for i in q["sources"] if i in par_id])
+    out = dict(q)
+    for champ in _CHAMPS_TEXTE:
+        if isinstance(out.get(champ), str):
+            out[champ] = annoter(out[champ], actuels)
+    for champ in _CHAMPS_LISTE:
+        if isinstance(out.get(champ), list):
+            out[champ] = [annoter(t, actuels) for t in out[champ]]
+    return out
 
 
 def _version_publique(q: dict, index: int, fmt: str) -> dict:
@@ -154,6 +202,7 @@ class QuizService:
         self.lexia, self.llm = lexia, llm
         self.store = store or QuizStore()
         self.journal = journal or Journal(None)
+        self.hasard = random.Random()  # ordre des choix du QCM (les tests en fixent la graine)
 
     def generer(self, theme: str, fmt: str, nombre: int, matiere: str | None, niveau: str | None = None,
                 semestre: int | None = None, cours_ids: list[int] | None = None, avec_officiel: bool = True,
@@ -170,18 +219,23 @@ class QuizService:
         if passages:
             brut, modele, passages = self.lexia.generer(
                 system=prompts.SYSTEME_QUIZ,
-                construire=lambda ps: prompts.prompt_quiz(theme, fmt, nombre, ps, niveau, semestre, option_cours),
+                construire=lambda ps: prompts.prompt_quiz(theme, fmt, nombre, ps, niveau, semestre, option_cours,
+                                                          infos.get("concordance")),
                 passages=passages,
                 schema=prompts.SCHEMAS_QUIZ[fmt],
                 temperature=0.5,
             )
             table = table_extraits(passages)
+            par_id = {p["id"]: p for p in passages}
+            places: list[int] = []   # bonnes reponses reparties entre A, B, C et D, dans un ordre tire au hasard
             for q in brut.get("questions") or []:
                 v = _valider_question(q, fmt, table, controle)
                 if v is None:
                     controle.elements_retires += 1
                 elif len(questions) < nombre:
-                    questions.append(v)
+                    if not places:
+                        places = self.hasard.sample(range(4), 4)
+                    questions.append(_signaler_anciens(_melanger(v, self.hasard, places.pop()), par_id))
         quiz = Quiz(id=str(uuid.uuid4()), format=fmt, theme=theme, questions=questions, table=table,
                     proprietaire=uid)
         if questions:
@@ -227,6 +281,8 @@ class QuizService:
                 ok = isinstance(valeur, int) and not isinstance(valeur, bool) and valeur == q["bonne_reponse"]
                 res.update(statut="non_repondu" if valeur is None else ("correct" if ok else "incorrect"),
                            bonne_reponse=q["bonne_reponse"])
+                if q.get("justifications"):   # pourquoi chaque choix est juste ou faux (D140)
+                    res["justifications"] = q["justifications"]
             elif quiz.format == "vrai_faux":
                 res.update(statut="non_repondu" if valeur is None else
                            ("correct" if valeur is q["reponse"] else "incorrect"), bonne_reponse=q["reponse"])

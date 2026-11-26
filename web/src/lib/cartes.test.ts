@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Correction, FicheSource, Quiz, ReponseChat } from './api'
 import {
   aReviser, ajouterCartes, carteDeFiche, cartesDuQuiz, effacerCartes, ecrireCartes, INTERVALLES_JOURS, lireCartes,
-  MAX_CARTES, reviser, type Carte,
+  MAX_CARTES, progres, reviser, type Carte,
 } from './cartes'
 import type { Favori } from './favoris'
 
@@ -60,6 +60,37 @@ describe('cartes tirees d un questionnaire corrige', () => {
     const c: Correction = { quiz_id: 'q-1', score: 0, total: 1, sources: [],
       resultats: [{ index: 0, statut: 'a_verifier', explication: '', sources: [] }] }
     expect(cartesDuQuiz(q, c, MAINTENANT)).toEqual([])
+  })
+})
+
+describe('erreurs d un questionnaire en cartes (D140)', () => {
+  const q = quiz('qcm', [
+    { index: 0, question: 'Quelle condition ?', choix: ['Une faute', 'Un contrat', 'Un notaire'] },
+    { index: 1, question: 'Quel texte ?', choix: ['1240', '1103'] },
+    { index: 2, question: 'Sans réponse ?', choix: ['a', 'b'] },
+  ])
+  const c: Correction = { quiz_id: 'q-1', score: 1, total: 3, sources: [S1, S2], resultats: [
+    { index: 0, statut: 'incorrect', explication: 'Article 1240.', sources: ['a1240'], bonne_reponse: 0,
+      justifications: ['Juste : la faute.', 'Faux : aucun contrat entre l’auteur et la victime.', 'Faux : rien à voir.'] },
+    { index: 1, statut: 'correct', explication: '', sources: [], bonne_reponse: 0 },
+    { index: 2, statut: 'non_repondu', explication: '', sources: [], bonne_reponse: 1 },
+  ] }
+
+  it('les questions ratees seulement, avec la reponse donnee et pourquoi elle etait fausse, et la matiere', () => {
+    const cartes = cartesDuQuiz(q, c, MAINTENANT, { erreursSeules: true, reponses: { 0: 1 }, matiere: 'droit_civil' })
+    expect(cartes.map((x) => x.id)).toEqual(['quiz:q-1:0', 'quiz:q-1:2'])
+    expect(cartes[0].verso).toBe('Une faute\n\nArticle 1240.\n\nVotre réponse : Un contrat. Faux : aucun contrat entre l’auteur et la victime.')
+    expect(cartes[1].verso).toBe('b')
+    expect(cartes.every((x) => x.matiere === 'droit_civil')).toBe(true)
+    // sans option : toutes les questions, comme avant
+    expect(cartesDuQuiz(q, c, MAINTENANT)).toHaveLength(3)
+  })
+
+  it('progres : niveaux et cartes qui reviennent demain ou dans la semaine', () => {
+    const le = (j: number) => new Date(2026, 10, 19 + j).toISOString()
+    const p = progres([{ ...nouvelle('a'), niveau: 5, prochaine: le(20) }, { ...nouvelle('b'), niveau: 2, prochaine: le(1) },
+      { ...nouvelle('c'), niveau: 3, prochaine: le(5) }, nouvelle('d')], MAINTENANT)
+    expect(p).toEqual({ nouvelles: 1, enCours: 2, acquises: 1, demain: 1, semaine: 2 })
   })
 })
 

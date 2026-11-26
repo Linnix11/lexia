@@ -233,7 +233,7 @@ export function VueFiches() {
   const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz, occupe } = useApp()
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [theme, setTheme] = useState('')
-  const [revision, setRevision] = useState(false)
+  const [revision, setRevision] = useState<{ matiere: string | null } | null>(null) // seance en cours (D140 : matiere)
   // Bouton actif : la raison d'un refus est dite au clic plutot qu'en infobulle (audit du 2026-11-19, WEB-10)
   const [aide, setAide] = useState<string | null>(null)
   // Retrait d'une fiche en deux temps (WEB-20)
@@ -251,7 +251,8 @@ export function VueFiches() {
     <>
       <EnTete surtitre="Fiches & révisions" titre="Vos fiches."
         texte="Les fiches et les cartes restent dans ce navigateur uniquement : exportez les fiches pour les garder ailleurs ou les ouvrir sur un autre appareil." />
-      {revision ? <SeanceRevision onFin={() => setRevision(false)} /> : <CarteRevisions onReviser={() => setRevision(true)} />}
+      {revision ? <SeanceRevision matiere={revision.matiere} onFin={() => setRevision(null)} />
+        : <CarteRevisions onReviser={(matiere) => setRevision({ matiere })} />}
       {favoris.length > 0 && (
         <div className="mb-3 flex justify-end">
           <button type="button" onClick={() => telecharger('fiches-lexia.md', fichesEnMarkdown(favoris))}
