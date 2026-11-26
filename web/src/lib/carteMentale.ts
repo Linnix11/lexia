@@ -16,6 +16,7 @@ export interface Boite {
   branche: number // -1 pour la notion centrale
   lien: FeuilleCarte['lien']
   replie: number // enfants caches (branche repliee), 0 sinon
+  statut?: FeuilleCarte['statut'] // grand arret abandonne ou nuance (D138)
 }
 
 export interface Trait {
@@ -41,7 +42,9 @@ const ECART_LIGNES = 10
 const INTERLIGNE = 16
 const MARGE_INTERNE = 10
 const MARGE = 16
-const MAX_LIGNES = 4
+// 6 lignes : un libelle de 120 caracteres et la mention « ancien numero » ou « arret abandonne » tiennent sans
+// etre coupes (4 lignes coupaient la mention, revue du 26/11, D138).
+const MAX_LIGNES = 6
 
 /** Coupe un libelle en lignes de `max` caracteres au plus, aux espaces ; MAX_LIGNES lignes, puis « … ». */
 export function couperLignes(texte: string, max: number): string[] {
@@ -74,11 +77,12 @@ interface Noeud {
   lien: FeuilleCarte['lien']
   enfants: Noeud[]
   replie: number
+  statut?: FeuilleCarte['statut']
 }
 
 function arbre(carte: CarteMentale, replies: ReadonlySet<number>): Noeud {
   const feuilles = (cle: string, articles: FeuilleCarte[], b: number): Noeud[] =>
-    articles.map((a, i) => ({ cle: `${cle}-a${i}`, genre: 'feuille', texte: a.texte, branche: b, lien: a.lien, enfants: [], replie: 0 }))
+    articles.map((a, i) => ({ cle: `${cle}-a${i}`, genre: 'feuille', texte: a.texte, branche: b, lien: a.lien, enfants: [], replie: 0, statut: a.statut }))
   return {
     cle: 'centre', genre: 'centre', texte: carte.titre, branche: -1, lien: null, replie: 0,
     enfants: carte.branches.map((br, b) => {
@@ -122,7 +126,7 @@ export function disposer(carte: CarteMentale, replies: ReadonlySet<number> = new
     const b: Boite = {
       cle: n.cle, genre: n.genre, lignes, x: colonnes[profondeur], y: haut + (hauteurs.get(n)! - h) / 2,
       l: LARGEURS[n.genre], h, couleur: n.branche < 0 ? ENCRE : COULEURS[n.branche % COULEURS.length],
-      branche: n.branche, lien: n.lien, replie: n.replie,
+      branche: n.branche, lien: n.lien, replie: n.replie, statut: n.statut,
     }
     boites.push(b)
     if (parent) {
@@ -154,6 +158,60 @@ export function nomFichier(titre: string): string {
 }
 
 export const MENTION_IA_CARTE = 'Carte générée par une intelligence artificielle (Lexia) : vérifiez les sources citées.'
+
+/** Plan de la carte en texte, a coller dans ses fiches (« Copier le plan », D138) : branches numerotees,
+ * sous-idees en tirets, references entre parentheses. */
+export function planTexte(carte: CarteMentale): string {
+  const refs = (articles: FeuilleCarte[]) => (articles.length ? ` (${articles.map((a) => a.texte).join(' ; ')})` : '')
+  const lignes = [carte.titre, '']
+  carte.branches.forEach((b, i) => {
+    lignes.push(`${i + 1}. ${b.libelle}${refs(b.articles)}`)
+    for (const e of b.enfants) lignes.push(`   - ${e.libelle}${refs(e.articles)}`)
+  })
+  lignes.push('', MENTION_IA_CARTE)
+  return lignes.join('\n')
+}
+
+const echapper = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+function feuillesHtml(articles: FeuilleCarte[]): string {
+  if (!articles.length) return ''
+  return ` <span class="refs">(${articles.map((a) => (a.lien
+    ? `<a href="${echapper(a.lien.url)}">${echapper(a.texte)}</a>`
+    : echapper(a.texte))).join(' ; ')})</span>`
+}
+
+/** Page a imprimer ou a enregistrer en PDF (D138) : le dessin entier sur une page en paysage, puis le plan en
+ * liste (lisible meme quand le dessin est grand), liens vers le texte officiel gardes dans le PDF, mention IA. */
+export function pageImpression(carte: CarteMentale, svg: string, date = new Date()): string {
+  const plan = carte.branches.map((b, i) => {
+    const couleur = COULEURS[i % COULEURS.length]
+    const enfants = b.enfants.map((e) => `<li>${echapper(e.libelle)}${feuillesHtml(e.articles)}</li>`).join('')
+    return `<li class="branche" style="border-color:${couleur}"><strong style="color:${couleur}">${echapper(b.libelle)}</strong>`
+      + `${feuillesHtml(b.articles)}${enfants ? `<ul>${enfants}</ul>` : ''}</li>`
+  }).join('')
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Carte mentale · ${echapper(carte.titre)}</title>
+<style>
+@page { size: A4 landscape; margin: 10mm }
+body { margin: 0; color: #202724; font: 10.5pt/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif }
+h1 { margin: 0 0 4mm; font: 600 16pt Georgia, "Times New Roman", serif }
+h2 { margin: 0 0 3mm; font: 600 12pt Georgia, "Times New Roman", serif }
+.dessin svg { display: block; width: 100%; height: auto; max-height: 165mm }
+.plan { break-before: page; page-break-before: always }
+.plan > ol { margin: 0; padding: 0; list-style: none; columns: 2; column-gap: 10mm }
+.branche { break-inside: avoid; margin: 0 0 4mm; padding-left: 3mm; border-left: 3px solid }
+.branche ul { margin: 1mm 0 0; padding-left: 5mm }
+.refs, .refs a { color: #4f5853 }
+.mention { margin-top: 5mm; color: #666e69; font-size: 8.5pt }
+@media screen { body { margin: 16px } .plan { margin-top: 24px } }
+</style></head><body>
+<h1>${echapper(carte.titre)}</h1>
+<div class="dessin">${svg}</div>
+<section class="plan"><h2>Plan de la carte</h2><ol>${plan}</ol>
+<p class="mention">${echapper(carte.avertissement || 'Carte générée automatiquement : vérifiez avec les textes.')} ${echapper(MENTION_IA_CARTE)}
+Imprimée le ${date.toLocaleDateString('fr-FR')}.</p></section>
+</body></html>`
+}
 
 /** Image PNG du dessin (SVG dessine dans un canvas, fond blanc, deux fois plus net), sans bibliotheque. */
 export async function exporterPng(svg: SVGSVGElement, largeur: number, hauteur: number, nom: string): Promise<void> {

@@ -41,6 +41,11 @@ sans code nommé ni extrait, la feuille reste sans lien.
   libellé cite un article, une décision ou un pourvoi absent des extraits envoyés est retirée ; une feuille
   n'est gardée que si elle contient une référence et que cette référence figure dans les extraits envoyés.
   Moins de deux branches vérifiables : pas de carte, rien de décompté.
+- Grands arrêts (D138) : une feuille qui désigne un grand arrêt du registre (`registry/grands_arrets.yaml` : nom
+  d'usage, pourvoi, requête) parmi les extraits envoyés, ou nommé par le document, prend sa citation d'usage
+  (« CE, 30 mars 1916, Compagnie générale d'éclairage de Bordeaux (Gaz de Bordeaux) ») ; un arrêt abandonné est
+  suivi de « (arrêt abandonné : n'est plus le droit positif) », un arrêt nuancé de « (solution nuancée depuis) »
+  (champ `statut`). Une référence déjà portée par la branche n'est pas répétée sous ses sous-idées.
 
 ## Rendu
 
@@ -52,10 +57,13 @@ sans code nommé ni extrait, la feuille reste sans lien.
   pour tout le site (`vite build` avant et après).
 - Disposition en arbre horizontal : notion à gauche, branches, sous-branches, feuilles « articles » en
   pastilles soulignées quand elles ont un lien. Couleur par branche, libellés coupés en lignes de 20 à 25
-  caractères (4 lignes au plus).
+  caractères (6 lignes au plus). Arrêt abandonné : bordure en tirets.
 - Zoom (boutons + et -, 50 à 200 %), défilement dans le cadre, repli d'une branche d'un clic (un rond « +n »
   dit combien d'éléments sont cachés), « Tout replier » et « Tout déplier ».
 - Export en image PNG (SVG dessiné dans un canvas, deux fois plus net, fond blanc, sans bibliothèque).
+- « Imprimer ou PDF » (D138) : dessin entier sur une page A4 paysage, puis plan en liste, liens gardés, mention IA.
+- « Copier le plan » (D138) : plan numéroté en texte, avec les références.
+- « Réviser » (D138) : sous-idées et références masquées (« ? »), révélées une à une ou toutes, avec un compteur.
 - Mobile : cadre défilant de la largeur de l'écran ; la vue en liste est proposée d'abord sous 640 px.
 - Accessibilité : le dessin est `aria-hidden` (ses liens hors de l'ordre de tabulation) ; la même carte en
   listes imbriquées est toujours présente pour les lecteurs d'écran, masquée visuellement quand le dessin est
@@ -74,5 +82,6 @@ sans code nommé ni extrait, la feuille reste sans lien.
 
 ## Plus tard
 
-- Garder les cartes dans « Fiches & révisions » (navigateur).
+- Garder les cartes dans « Fiches & révisions » (navigateur) : fait (« Mes cartes mentales », D123), avec une
+  recherche dès quatre cartes (D138).
 - Une carte qui réunit plusieurs cours déposés d'une même matière.

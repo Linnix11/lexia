@@ -171,7 +171,13 @@ def test_bornes_de_la_carte():
     branches = cm.nettoyer(brut, passages, Controle())
     assert len(branches) == cm.MAX_BRANCHES
     assert all(len(b["enfants"]) == cm.MAX_ENFANTS for b in branches)
-    assert all(len(b["articles"]) == cm.MAX_ARTICLES for b in branches)   # doublons retires, puis coupe a 3
+    # le meme article, quelle que soit son ecriture : une seule feuille (D138)
+    assert all([a["texte"] for a in b["articles"]] == ["article 1240 du Code civil"] for b in branches)
+    plusieurs = [{**PASSAGE, "id": f"code_civil:A{n}", "numero": str(n)} for n in range(1240, 1246)]
+    noeud = cm.nettoyer({"branches": [{"libelle": "B", "enfants": [],
+                                       "articles": [f"article {n} du Code civil" for n in range(1240, 1246)]}]},
+                        plusieurs, Controle())[0]
+    assert len(noeud["articles"]) == cm.MAX_ARTICLES                     # coupe a 3
     long = cm._libelle("**Mot** " * 60 + ".")
     assert len(long) <= cm.MAX_LIBELLE + 1 and "*" not in long and long.endswith("…")
     # objets hors forme : ignores sans erreur
@@ -226,3 +232,79 @@ def test_bornes_de_jetons_et_de_duree():
     assert s._timeout == 25.0 and s._max_jetons == cm.MAX_JETONS_CARTE
     # reponses : inchangees
     assert _construire_llm(settings)._timeout == settings.llm_timeout
+
+
+# --- Revue du 26/11 (D138) : grands arrets, statut, doublons, caracteres de controle ---------------------------
+
+def _passage_grand_arret(ident: str, **champs) -> dict:
+    from api import grands_arrets
+    a = grands_arrets.registre().arrets[ident]
+    p = grands_arrets.passage_fiche(a) if a.fiche else {
+        "id": a.index, "source_id": a.index.split(":")[0], "type": "decision", "numero": None,
+        "entete": f"Décision {a.reference}", "texte": "Sommaire.", "url": f"https://officiel/{ident}",
+        "meta": {"numeros_pourvoi": [a.reference]}, **champs}
+    return grands_arrets.marquer(p, a, ajoute=True)
+
+
+def test_grand_arret_en_feuille_citation_d_usage_et_statut():
+    """Carte reelle « imprevision » (Gemini, 26/11) : les feuilles « Fiche Lexia (non officielle) : Cass. civ.,
+    6 mars 1876, Canal de Craponne » et l'en-tete recopie de Gaz de Bordeaux (150 caracteres, nom coupe a 120)
+    etaient retirees ; l'arret abandonne n'etait signale nulle part."""
+    craponne = _passage_grand_arret("canal-de-craponne")
+    gaz = _passage_grand_arret("gaz-de-bordeaux", entete="Conseil d'Etat, du 30 mars 1916, 59928")
+    brut = {"branches": [
+        {"libelle": "Refus historique de la révision (Canal de Craponne)", "enfants": [], "articles": [
+            "Fiche Lexia (non officielle) : Cass. civ., 6 mars 1876, Canal de Craponne"]},
+        {"libelle": "Droit administratif", "enfants": [], "articles": [
+            "Conseil d'Etat, du 30 mars 1916, 59928, publié au recueil Lebon (grand arrêt : CE, 30 mars 1916, "
+            "Compagnie générale d'éclairage de Bordeaux (Gaz de Bordeaux))"]}]}
+    controle = Controle()
+    refus, admin = cm.nettoyer(brut, [PASSAGE, craponne, gaz], controle)
+    assert refus["libelle"] == ("Refus historique de la révision (Canal de Craponne) "
+                                "(arrêt abandonné : n'est plus le droit positif)")
+    assert refus["articles"] == [{"texte": "Cass. civ., 6 mars 1876, Canal de Craponne (arrêt abandonné : n'est plus "
+                                           "le droit positif)", "arret": "canal-de-craponne", "statut": "abandonne"}]
+    assert admin["articles"][0]["texte"] == ("CE, 30 mars 1916, Compagnie générale d'éclairage de Bordeaux "
+                                             "(Gaz de Bordeaux)")
+    assert "statut" not in admin["articles"][0] and controle.citations_retirees == 0
+    # liens : decision officielle fournie ; une fiche Lexia n'a pas d'adresse
+    service = cm.CartesMentales(None, Retriever(), None)
+    assert service.lien_arret("gaz-de-bordeaux", [gaz])["url"] == "https://officiel/gaz-de-bordeaux"
+    assert service.lien_arret("canal-de-craponne", [craponne]) is None
+
+
+def test_arret_abandonne_par_son_pourvoi_et_arret_absent_des_extraits():
+    desmares = _passage_grand_arret("desmares")
+    brut = {"branches": [
+        {"libelle": "Faute de la victime", "enfants": [],
+         "articles": ["Cass. civ. 2e, 21 juillet 1982, pourvoi 81-12.850"]},
+        {"libelle": "Garde", "enfants": [], "articles": ["arrêt Franck"]}]}   # Franck : pas parmi les extraits
+    controle = Controle()
+    victime, garde = cm.nettoyer(brut, [PASSAGE, desmares], controle)
+    assert victime["articles"][0]["texte"].startswith("Cass. civ. 2e, 21 juillet 1982")
+    assert victime["articles"][0]["texte"].endswith("(arrêt abandonné : n'est plus le droit positif)")
+    assert victime["articles"][0]["statut"] == "abandonne"
+    assert garde["articles"] == [] and controle.citations_retirees == 1
+    # arret nomme par le document lui-meme (cours depose) : garde, avec son statut
+    cours = {"id": "document:1", "source_id": "document", "texte": "L'arrêt Desmares de 1982 a été abandonné en 1987."}
+    feuille = cm.nettoyer({"branches": [{"libelle": "X", "enfants": [], "articles": ["arrêt Desmares"]}]},
+                          [cours], Controle())
+    assert feuille[0]["articles"][0]["texte"] == ("Cass. civ. 2e, 21 juillet 1982, Desmares "
+                                                  "(arrêt abandonné : n'est plus le droit positif)")
+
+
+def test_reference_de_la_branche_pas_repetee_dessous_et_caracteres_de_controle():
+    """Carte reelle « promesse unilaterale » : l'article 1124 sous la branche et sous ses deux sous-idees ;
+    carte « fait des choses » : « LOI n\\x00 85-677 »."""
+    brut = {"branches": [
+        {"libelle": "Régime", "articles": ["Code civil, article 1240"], "enfants": [
+            {"libelle": "Option", "articles": ["article 1240 du Code civil"]},
+            {"libelle": "Sanc\x00tion", "articles": ["art. 1240 C. civ."]}]},
+        {"libelle": "Effets", "articles": [], "enfants": [
+            {"libelle": "Lésion", "articles": ["article 1240 du Code civil"]}]}]}
+    regime, effets = cm.nettoyer(brut, [PASSAGE], Controle())
+    assert [a["texte"] for a in regime["articles"]] == ["Code civil, article 1240"]
+    assert [e["articles"] for e in regime["enfants"]] == [[], []]
+    assert regime["enfants"][1]["libelle"] == "Sanc tion"
+    assert cm._libelle("LOI n\x00 85-677 du 5 juillet 1985, article 1") == "LOI n° 85-677 du 5 juillet 1985, article 1"
+    assert effets["enfants"][0]["articles"][0]["texte"] == "article 1240 du Code civil"   # autre branche : garde

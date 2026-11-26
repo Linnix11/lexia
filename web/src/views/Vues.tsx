@@ -10,7 +10,7 @@ import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { CarteRevisions, SeanceRevision } from '../components/Revision'
 import { aReviser } from '../lib/cartes'
-import { lireCartesMentales, retirerCarteMentale, type CarteEnregistree } from '../lib/cartesEnregistrees'
+import { filtrerCartes, lireCartesMentales, retirerCarteMentale, type CarteEnregistree } from '../lib/cartesEnregistrees'
 import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
@@ -335,10 +335,29 @@ export function VueCartes() {
   const [cartes, setCartes] = useState<CarteEnregistree[]>(() => lireCartesMentales(compte))
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [aRetirer, setARetirer] = useState<string | null>(null)
+  const [recherche, setRecherche] = useState('')
+  const trouvees = filtrerCartes(cartes, recherche)
   return (
     <>
       <EnTete surtitre="Mes cartes mentales" titre="Vos cartes."
-        texte="Les cartes enregistrées restent dans ce navigateur uniquement : téléchargez-les en image (PNG) pour les garder ailleurs." />
+        texte="Les cartes enregistrées restent dans ce navigateur uniquement : imprimez-les, enregistrez-les en PDF ou en image (PNG) pour les garder ailleurs." />
+      {/* Recherche des que la liste ne tient plus d'un coup d'oeil (50 cartes au plus, D138) */}
+      {cartes.length > 3 && (
+        <div className="mb-3">
+          <label className="grid gap-1 text-[11px] text-muted">
+            Rechercher une carte (titre, notion, article)
+            <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)}
+              placeholder="ex. garde, 1242, imprévision"
+              className="min-h-10 rounded-[7px] border border-line bg-white px-3 text-[13px] text-ink" />
+          </label>
+          <p className="mt-1 text-[11px] text-muted" aria-live="polite">
+            {recherche.trim() ? `${trouvees.length} carte(s) sur ${cartes.length}` : `${cartes.length} cartes enregistrées`}
+          </p>
+        </div>
+      )}
+      {cartes.length > 0 && trouvees.length === 0 && (
+        <p className="text-[12px] text-muted">Aucune carte ne correspond à « {recherche.trim()} ».</p>
+      )}
       {cartes.length === 0 ? (
         <Card className="p-6 text-center">
           <p className="font-display text-[19px]">Aucune carte enregistrée pour l’instant.</p>
@@ -351,7 +370,7 @@ export function VueCartes() {
         </Card>
       ) : (
         <ul className="grid gap-2.5">
-          {cartes.map((c) => (
+          {trouvees.map((c) => (
             <li key={c.id}>
               <Card className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">

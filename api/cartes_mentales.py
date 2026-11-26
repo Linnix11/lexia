@@ -17,7 +17,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from api import prompts
+from api import grands_arrets, prompts
 from api.auth import verifier_origine
 from api.citations import Controle, verifier_texte
 from api.concordance import REFORME_2016, anciens_cites, numeros_actuels
@@ -26,7 +26,7 @@ from api.matieres import MATIERES
 from api.references import _norm_num, articles_cites, extraire, variantes
 from api.resumes_vocaux import (MAX_CARACTERES_REPONSE, MAX_SOURCES_REPONSE, DemandeResume, DocumentIntrouvable,
                                 QuotaResumes, ResumesVocaux, borner, document_partiel)
-from api.textes import en_vigueur_aujourdhui
+from api.textes import en_vigueur_aujourdhui, sans_accents
 
 AVERTISSEMENT = "Carte générée automatiquement : vérifiez avec les textes."
 # Gemini compte la reflexion dans maxOutputTokens : un plan de 7 branches de 5 sous-branches (~1 500 jetons au
@@ -41,6 +41,11 @@ MAX_LIBELLE = 120        # caracteres
 
 _REPERES = re.compile(r"\s*[\[(]\s*S\d+(?:\s*[,;]\s*S\d+)*\s*[\])]", re.IGNORECASE)
 _MARKDOWN = re.compile(r"[*_#`>]+")
+# Caracteres de controle : une carte reelle portait « LOI n\x00 85-677 » (revue du 26/11, D138)
+_CONTROLE = re.compile(r"[\x00-\x1f\x7f]")
+_NUMERO_ABIME = re.compile(r"\b([nN])[\x00-\x1f\x7f]\s*(?=\d)")   # « n\x00 85-677 » : le signe ° perdu
+# Grand arret du registre (D124) dont la solution n'est plus le droit positif, ou a ete corrigee depuis
+NOTES_STATUT = {"abandonne": "arrêt abandonné : n'est plus le droit positif", "nuance": "solution nuancée depuis"}
 
 
 class DemandeCarte(BaseModel):
@@ -55,7 +60,8 @@ class DemandeCarte(BaseModel):
 
 def _libelle(brut) -> str:
     """Libelle sur une ligne, sans repere S1 ni Markdown, sans ponctuation finale, coupe a MAX_LIBELLE."""
-    texte = _MARKDOWN.sub("", _REPERES.sub("", str(brut or "")))
+    texte = _CONTROLE.sub(" ", _NUMERO_ABIME.sub(r"\1° ", str(brut or "")))
+    texte = _MARKDOWN.sub("", _REPERES.sub("", texte))
     texte = " ".join(texte.split()).strip(" .;:,-")
     if len(texte) > MAX_LIBELLE:
         texte = texte[:MAX_LIBELLE].rsplit(" ", 1)[0] + "…"
@@ -84,6 +90,70 @@ def _ancien_numero(texte: str, envoyes: list[dict]) -> tuple[str, tuple[str, ...
     return None
 
 
+def _grand_arret(texte: str) -> grands_arrets.Arret | None:
+    """Grand arret du registre (D124) que designe ce texte : nom d'usage (« Canal de Craponne », « Desmares »),
+    numero de pourvoi ou de requete, identifiant de la decision administrative."""
+    t = sans_accents(texte)
+    refs = extraire(texte)
+    numeros = {*refs.pourvois, *refs.decisions_admin}
+    for a in grands_arrets.registre().arrets.values():
+        if a.reference and (a.reference in numeros or re.search(rf"(?<![\d.-]){re.escape(a.reference)}(?![\d.-])", texte)):
+            return a
+        if a.index and any(d in a.index for d in refs.decisions_admin):
+            return a
+        if a.motif is not None and a.seul and a.motif.search(t):
+            return a
+    return None
+
+
+def _dans_les_extraits(a: grands_arrets.Arret, envoyes: list[dict]) -> bool:
+    """Le grand arret est parmi les extraits envoyes (decision de l'index ou fiche Lexia jointe par la recherche),
+    ou nomme par le document lui-meme (cours depose, reponse)."""
+    for p in envoyes:
+        if (p.get("grand_arret") or {}).get("id") == a.id or p.get("id") in (a.index, f"{grands_arrets.SOURCE_FICHES}:{a.id}"):
+            return True
+        if p.get("source_id") == "document" and a.motif is not None and a.motif.search(sans_accents(p.get("texte") or "")):
+            return True
+    return False
+
+
+def _avec_statut(texte: str, a: grands_arrets.Arret | None) -> str:
+    """« (arret abandonne : n'est plus le droit positif) » apres un grand arret abandonne : une carte ne doit jamais
+    le donner pour le droit actuel (revue du 26/11, D138)."""
+    if a is None or a.statut not in NOTES_STATUT or "abandonn" in sans_accents(texte) or "nuanc" in sans_accents(texte):
+        return texte
+    return f"{texte} ({NOTES_STATUT[a.statut]})"
+
+
+def _feuille(brut, envoyes: list[dict], controle: Controle) -> dict | None:
+    """Feuille verifiee : une reference (article, decision, pourvoi, grand arret) presente dans les extraits."""
+    complet = " ".join(_CONTROLE.sub(" ", str(brut or "")).split())
+    arret = _grand_arret(complet)
+    if arret is not None and _dans_les_extraits(arret, envoyes):
+        # Grand arret designe par son nom ou par l'en-tete recopie de l'extrait (« Conseil d'Etat, du 30 mars 1916,
+        # 59928, publie au recueil Lebon (grand arret : ...) ») : citation d'usage du registre, que l'etudiant
+        # apprend, avec son statut. Un arret ancien sans pourvoi (Canal de Craponne) n'etait pas une reference
+        # reconnue, et l'en-tete coupe a 120 caracteres perdait le nom de l'arret : la feuille etait retiree.
+        return {"texte": _avec_statut(arret.citation, arret), "arret": arret.id,
+                **({"statut": arret.statut} if arret.statut in NOTES_STATUT else {})}
+    texte = _libelle(brut)
+    if not texte:
+        return None
+    # Une feuille est une reference (article, decision, pourvoi) presente dans les extraits envoyes.
+    if extraire(texte).vide or not verifier_texte(texte, envoyes, controle) or _hors_du_document(texte, envoyes):
+        controle.citations_retirees += 1
+        return None
+    if ancien := _ancien_numero(texte, envoyes):
+        n, nouveaux = ancien
+        mot = "article" if len(nouveaux) == 1 else "articles"
+        # lien vers l'article actuel, pas vers l'ancienne version (lu puis retire par carte())
+        return {"texte": f"{texte} (ancien numéro, aujourd'hui {mot} {', '.join(nouveaux)})",
+                "actuel": f"article {nouveaux[0]} du Code civil"}
+    if arret is not None and arret.statut in NOTES_STATUT:
+        return {"texte": _avec_statut(texte, arret), "statut": arret.statut}
+    return {"texte": texte}
+
+
 def _noeud(brut, envoyes: list[dict], controle: Controle) -> dict | None:
     if not isinstance(brut, dict):   # forme deja controlee (api/llm/forme.py) ; filet
         controle.elements_retires += 1
@@ -94,26 +164,27 @@ def _noeud(brut, envoyes: list[dict], controle: Controle) -> dict | None:
     if not verifier_texte(libelle, envoyes, controle):
         controle.elements_retires += 1
         return None
+    if (arret := _grand_arret(libelle)) is not None and arret.statut == "abandonne":
+        libelle = _avec_statut(libelle, arret)
     articles: list[dict] = []
     for a in brut.get("articles") or []:
-        texte = _libelle(a)
-        if not texte or any(x["texte"] == texte for x in articles):
+        feuille = _feuille(a, envoyes, controle)
+        if feuille is None or any(_meme_reference(x["texte"], feuille["texte"]) for x in articles):
             continue
-        # Une feuille est une reference (article, decision, pourvoi) presente dans les extraits envoyes.
-        if extraire(texte).vide or not verifier_texte(texte, envoyes, controle) or _hors_du_document(texte, envoyes):
-            controle.citations_retirees += 1
-            continue
-        if ancien := _ancien_numero(texte, envoyes):
-            n, nouveaux = ancien
-            mot = "article" if len(nouveaux) == 1 else "articles"
-            texte = f"{texte} (ancien numéro, aujourd'hui {mot} {', '.join(nouveaux)})"
-            # lien vers l'article actuel, pas vers l'ancienne version (lu puis retire par carte())
-            articles.append({"texte": texte, "actuel": f"article {nouveaux[0]} du Code civil"})
-        else:
-            articles.append({"texte": texte})
+        articles.append(feuille)
         if len(articles) >= MAX_ARTICLES:
             break
     return {"libelle": libelle, "articles": articles}
+
+
+def _cle_reference(texte: str) -> tuple:
+    """Forme de comparaison d'une feuille : « Code civil, article 1124 » et « article 1124 du Code civil »."""
+    refs = extraire(texte)
+    return (refs.articles, refs.decisions_cc, refs.pourvois, refs.decisions_admin) if not refs.vide else (texte.lower(),)
+
+
+def _meme_reference(a: str, b: str) -> bool:
+    return a == b or _cle_reference(a) == _cle_reference(b)
 
 
 def nettoyer(brut: dict, envoyes: list[dict], controle: Controle) -> list[dict]:
@@ -127,6 +198,10 @@ def nettoyer(brut: dict, envoyes: list[dict], controle: Controle) -> list[dict]:
         for e in (b.get("enfants") or []):
             n = _noeud(e, envoyes, controle)
             if n is not None:
+                # Reference deja portee par la branche : pas repetee sous chaque sous-idee (une carte reelle montrait
+                # l'article 1124 trois fois dans la meme branche, revue du 26/11, D138).
+                n["articles"] = [a for a in n["articles"]
+                                 if not any(_meme_reference(a["texte"], x["texte"]) for x in noeud["articles"])]
                 enfants.append({**n, "enfants": []})
             if len(enfants) >= MAX_ENFANTS:
                 break
@@ -209,6 +284,18 @@ class CartesMentales:
                 return _lien(p)
         return None
 
+    def lien_arret(self, ident: str, candidats: list[dict]) -> dict | None:
+        """Decision officielle d'un grand arret : extrait fourni, sinon passage de l'index du registre (D124).
+        Une fiche Lexia n'a pas d'adresse : pas de lien."""
+        a = grands_arrets.registre().arrets.get(ident)
+        if a is None:
+            return None
+        for p in candidats:
+            if p.get("url") and ((p.get("grand_arret") or {}).get("id") == a.id or p.get("id") == a.index):
+                return _lien(p)
+        p = self.retriever.get(a.index) if a.index else None
+        return _lien(p) if p and p.get("url") else None
+
     # -- carte --
 
     def carte(self, d: DemandeCarte, document) -> dict:
@@ -234,7 +321,9 @@ class CartesMentales:
         for n in branches:
             for x in [n, *n["enfants"]]:
                 for a in x["articles"]:
-                    a["lien"] = self.lien(a.pop("actuel", None) or a["texte"], candidats)
+                    arret = a.pop("arret", None)
+                    a["lien"] = ((self.lien_arret(arret, candidats) if arret else None)
+                                 or self.lien(a.pop("actuel", None) or a["texte"], candidats))
                     liens += a["lien"] is not None
         titre_carte = _libelle(brut.get("titre"))
         if not verifier_texte(titre_carte, envoyes, controle):

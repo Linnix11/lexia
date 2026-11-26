@@ -565,6 +565,7 @@ export type DemandeCarte = DemandeResume | { type: 'matiere'; matiere: string; n
 export interface FeuilleCarte {
   texte: string // reference presente dans les extraits envoyes au modele
   lien: { url: string; entete: string } | null // texte officiel, quand Lexia le connait
+  statut?: 'abandonne' | 'nuance' // grand arret abandonne ou nuance depuis (D138)
 }
 
 export interface NoeudCarte {

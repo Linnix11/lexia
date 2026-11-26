@@ -60,6 +60,20 @@ export function retirerCarteMentale(id: string, compte: string): CarteEnregistre
   return liste
 }
 
+const sansAccents = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+/** Recherche dans « Mes cartes mentales » (D138) : chaque mot dans le titre, une branche, une sous-idee ou une
+ * reference (« 1240 » retrouve les cartes qui citent l'article 1240), sans tenir compte des accents. */
+export function filtrerCartes(cartes: CarteEnregistree[], recherche: string): CarteEnregistree[] {
+  const mots = sansAccents(recherche).split(/\s+/).filter(Boolean)
+  if (!mots.length) return cartes
+  return cartes.filter((c) => {
+    const texte = sansAccents([c.titre, ...c.carte.branches.flatMap((b) => [b.libelle, ...b.articles.map((a) => a.texte),
+      ...b.enfants.flatMap((e) => [e.libelle, ...e.articles.map((a) => a.texte)])])].join(' '))
+    return mots.every((m) => texte.includes(m))
+  })
+}
+
 /** Suppression du compte : ses cartes quittent aussi ce navigateur. */
 export function effacerCartesMentales(compte: string) {
   try {
