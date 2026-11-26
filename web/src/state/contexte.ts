@@ -61,6 +61,8 @@ export interface AppState {
   niveau: Niveau // deduit du semestre
   semestre: Semestre
   setSemestre: (s: Semestre) => void
+  /** Faux tant que l'etudiant n'a pas choisi son semestre dans ce navigateur (L1 S1 par defaut, D142) */
+  semestreChoisi: boolean
   matiere: string | null
   setMatiere: (m: string | null) => void
   mode: Mode // mode choisi dans l'assistant

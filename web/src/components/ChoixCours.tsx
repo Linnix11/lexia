@@ -8,7 +8,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
   // Un cours « erreur » reste interrogeable par mots-cles (audit C10) : il est propose comme les autres.
   if (mesCours.length === 0) {
     return (
-      <p className="w-full text-[11px] text-muted">
+      <p className="w-full text-[12px] text-muted">
         Travaillez sur votre propre cours :{' '}
         <button type="button" onClick={() => (surDepot ? surDepot() : setVue('matieres'))}
           className="font-semibold text-forest hover:underline">
@@ -27,7 +27,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
   const seulement = !avecOfficiel
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
-      <details className="relative text-[11px]">
+      <details className="relative text-[12px]">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 text-muted">
           {choisis.length > 1 ? 'Mes cours' : 'Mon cours'}
           <span className="max-w-[260px] truncate rounded-[7px] border border-line bg-white px-2 py-1.5 text-ink">
@@ -38,7 +38,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
           className="absolute z-10 mt-1 grid max-h-[320px] min-w-[240px] gap-1 overflow-auto rounded-[8px] border border-line bg-white p-2.5 shadow-md">
           {matieres.map((m) => (
             <div key={m} className="grid gap-1">
-              <span className="text-[11px] font-bold tracking-[1px] text-forest uppercase">{m}</span>
+              <span className="text-[12px] font-bold tracking-[1px] text-forest uppercase">{m}</span>
               {mesCours.filter((c) => c.libelle_matiere === m).map((c) => (
                 <label key={c.id} className="flex items-center gap-2 text-ink">
                   <input type="checkbox" checked={coursChoisis.includes(c.id)} onChange={() => basculer(c.id)} />
@@ -51,7 +51,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
             </div>
           ))}
           {choisis.length > 0 && (
-            <button type="button" onClick={() => setCoursChoisis([])} className="justify-self-start text-[11px] text-muted hover:text-forest">
+            <button type="button" onClick={() => setCoursChoisis([])} className="justify-self-start text-[12px] text-muted hover:text-forest">
               Aucun (textes officiels seuls)
             </button>
           )}
@@ -61,7 +61,7 @@ export function ChoixCours({ surDepot }: { surDepot?: () => void }) {
         // Interrupteur : allume, la reponse ne s'appuie que sur les cours deposes ; eteint, les textes
         // officiels completent les cours.
         <button type="button" role="switch" aria-checked={seulement} onClick={() => setAvecOfficiel(seulement)}
-          className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] ${
+          className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-[12px] ${
             seulement ? 'border-forest bg-mint font-semibold text-forest' : 'border-line bg-chip text-[#59615b] hover:border-[#9eafa3]'
           }`}>
           <span aria-hidden className={`relative h-[14px] w-[26px] rounded-full transition-colors ${seulement ? 'bg-forest' : 'bg-[#c9cec7]'}`}>

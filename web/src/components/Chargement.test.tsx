@@ -16,4 +16,15 @@ describe('Chargement', () => {
     act(() => { vi.advanceTimersByTime(60000) })
     expect(screen.getByRole('status')).toHaveTextContent('Presque prêt…')
   })
+
+  it('annonce un texte rassurant a la place de la duree passe le seuil (audit du 2026-11-25, G-5)', () => {
+    render(<Chargement etapes={['Lecture…']} duree="10 à 45 secondes en général"
+      longue={{ apres: 30, texte: 'Plus long que d’habitude, la réponse arrive.' }} />)
+    act(() => { vi.advanceTimersByTime(29000) })
+    expect(screen.getByText(/10 à 45 secondes en général/)).toBeInTheDocument()
+    expect(screen.queryByText('Plus long que d’habitude, la réponse arrive.')).not.toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(2000) })
+    expect(screen.queryByText(/10 à 45 secondes/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status').at(-1)).toHaveTextContent('Plus long que d’habitude, la réponse arrive.')
+  })
 })

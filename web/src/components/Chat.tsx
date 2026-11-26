@@ -21,7 +21,8 @@ const SUGGESTIONS: { label: string; question: string; mode: Mode }[] = [
 function Attente() {
   return (
     <div className="grid gap-2.5">
-      <Chargement duree="10 à 30 secondes en général"
+      <Chargement duree="10 à 45 secondes en général"
+        longue={{ apres: 30, texte: 'Plus long que d’habitude, la réponse arrive.' }}
         etapes={['Lexia cherche dans les textes et la jurisprudence…', 'Tri des passages les plus utiles…',
           'Rédaction de la réponse…', 'Vérification des sources citées…', 'Encore un instant…']} />
       <div aria-hidden className="grid animate-pulse gap-2 px-1 motion-reduce:animate-none">
@@ -125,7 +126,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
     <div className="relative flex min-h-[340px] min-w-0 flex-1 flex-col" {...glisser}>
       {survol && (
         <div aria-hidden className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-[10px] border-2 border-dashed border-forest bg-[#f6f8f3]/90 text-center">
-          <p className="font-display text-[19px] text-forest">Déposez votre cours ici<span className="mt-1 block font-sans text-[11px] text-muted">PDF (même scanné), Word, PowerPoint, photo de cours… · un fichier, plusieurs, ou un dossier</span></p>
+          <p className="font-display text-[19px] text-forest">Déposez votre cours ici<span className="mt-1 block font-sans text-[12px] text-muted">PDF (même scanné), Word, PowerPoint, photo de cours… · un fichier, plusieurs, ou un dossier</span></p>
         </div>
       )}
       {complet && (
@@ -138,7 +139,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
                 role="radio"
                 aria-checked={mode === m.id}
                 onClick={() => setMode(m.id)}
-                className={`rounded-full border px-2.5 py-1.5 text-[11px] ${
+                className={`rounded-full border px-2.5 py-1.5 text-[12px] ${
                   mode === m.id ? 'border-forest bg-mint font-semibold text-forest' : 'border-line bg-chip text-[#59615b] hover:border-[#9eafa3]'
                 }`}
               >
@@ -146,18 +147,18 @@ export function Chat({ complet = false }: { complet?: boolean }) {
               </button>
             ))}
           </div>
-          <label className="ml-auto flex items-center gap-1.5 text-[11px] text-muted">
+          <label className="ml-auto flex items-center gap-1.5 text-[12px] text-muted">
             Matière
             <select
               value={matiere ?? ''}
               onChange={(e) => setMatiere(e.target.value || null)}
-              className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[11px] text-ink"
+              className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink"
             >
               <option value="">Toutes</option>
               <OptionsMatieres matieres={matieres} />
             </select>
           </label>
-          <p className="w-full text-[11px] text-muted" aria-live="polite">{infos.description}</p>
+          <p className="w-full text-[12px] text-muted" aria-live="polite">{infos.description}</p>
         </div>
       )}
 
@@ -180,7 +181,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
                 type="button"
                 onClick={() => envoyer(s.question, s.mode)}
                 disabled={bloque}
-                className="rounded-full border border-line bg-chip px-2.5 py-2 text-[11px] text-[#59615b] hover:border-[#9eafa3] hover:text-forest disabled:opacity-50"
+                className="rounded-full border border-line bg-chip px-2.5 py-2 text-[12px] text-[#59615b] hover:border-[#9eafa3] hover:text-forest disabled:opacity-50"
               >
                 {s.label}
               </button>
@@ -191,10 +192,10 @@ export function Chat({ complet = false }: { complet?: boolean }) {
         <div className={`mb-3.5 grid min-w-0 gap-2.5 border-t border-line pt-[15px] ${complet ? '' : 'tab:max-h-[560px] tab:overflow-y-auto tab:pr-1'}`}>
           {messages.map((m) => (
             <div key={m.id} className="grid min-w-0 gap-2.5">
-              <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[12px] leading-[1.55] whitespace-pre-line">
+              <div className="ml-auto max-w-[92%] rounded-[10px] bg-[#edf1eb] px-3.5 py-3 text-[14px] leading-[1.55] whitespace-pre-line">
                 {m.question}
                 {m.mode !== 'expliquer' && (
-                  <span className="ml-2 text-[11px] text-muted">· {MODES.find((x) => x.id === m.mode)?.label}</span>
+                  <span className="ml-2 text-[12px] text-muted">· {MODES.find((x) => x.id === m.mode)?.label}</span>
                 )}
               </div>
               {m.etat === 'en_cours' && <Attente />}
@@ -202,10 +203,10 @@ export function Chat({ complet = false }: { complet?: boolean }) {
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#ecd9c4] bg-cream px-3.5 py-3 text-[12px] text-[#746347]">
                   <span>{m.erreur}</span>
                   {m.statut === 402 ? (
-                    <Lien href="/tarifs" className="text-[11px] font-semibold text-forest hover:underline">Voir les formules</Lien>
+                    <Lien href="/tarifs" className="text-[12px] font-semibold text-forest hover:underline">Voir les formules</Lien>
                   ) : m.statut === 403 || bloque ? null : (
                     <button type="button" onClick={() => envoyer(m.question, m.mode)} disabled={occupe}
-                      className="text-[11px] font-semibold text-forest hover:underline disabled:opacity-50">
+                      className="text-[12px] font-semibold text-forest hover:underline disabled:opacity-50">
                       Réessayer
                     </button>
                   )}
@@ -246,7 +247,7 @@ export function Chat({ complet = false }: { complet?: boolean }) {
           autoComplete="off"
           maxLength={2000}
           aria-describedby={`${complet ? 'aide-saisie-complete' : 'aide-saisie'}${bloque ? ` ${idBlocage}` : ''}`}
-          className="min-w-0 flex-1 resize-none self-center border-0 bg-transparent px-2 py-[7px] text-[12px] leading-[1.5] text-ink outline-none"
+          className="min-w-0 flex-1 resize-none self-center border-0 bg-transparent px-2 py-[7px] text-[14px] leading-[1.5] text-ink outline-none"
         />
         <button
           type="submit"

@@ -12,7 +12,7 @@ const MAX = 6
 function Groupe({ titre, children }: { titre: string; children: ReactNode }) {
   return (
     <section className="border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
-      <h3 className="text-[11px] font-bold tracking-[1.2px] text-forest uppercase">{titre}</h3>
+      <h3 className="text-[12px] font-bold tracking-[1.2px] text-forest uppercase">{titre}</h3>
       <ul className="mt-1.5 grid gap-1">{children}</ul>
     </section>
   )
@@ -66,7 +66,7 @@ export function RechercheBibliotheque() {
 
   return (
     <div className="mb-[18px] rounded-xl border border-line bg-surface p-4 tab:p-[19px]">
-      <label className="grid gap-1.5 text-[11px] text-muted">
+      <label className="grid gap-1.5 text-[12px] text-muted">
         Rechercher dans la bibliothèque (facultatif)
         <input type="search" maxLength={200} value={texte} onChange={(e) => setTexte(e.target.value)}
           placeholder="Un thème, une matière, une université… ex. divorce, bail, Assas"
@@ -87,13 +87,13 @@ export function RechercheBibliotheque() {
                 <li key={c.id}>
                   <Lien href={`/cours-recuperes?q=${encodeURIComponent(c.titre)}`} className={lien}>
                     <span className="min-w-0">{c.titre}</span>
-                    <span className="shrink-0 text-[11px] text-muted">{c.libelle_matiere}</span>
+                    <span className="shrink-0 text-[12px] text-muted">{c.libelle_matiere}</span>
                   </Lien>
                 </li>
               ))}
               {coursTrouves.length > MAX && (
                 <li>
-                  <Lien href={`/cours-recuperes?q=${encodeURIComponent(q)}`} className="px-2 text-[11px] text-forest hover:underline">
+                  <Lien href={`/cours-recuperes?q=${encodeURIComponent(q)}`} className="px-2 text-[12px] text-forest hover:underline">
                     Voir les {coursTrouves.length} fiches pratiques
                   </Lien>
                 </li>
@@ -106,7 +106,7 @@ export function RechercheBibliotheque() {
                 <li key={a.id}>
                   <a href={a.url} target="_blank" rel="noopener noreferrer" className={lien}>
                     <span className="min-w-0">{a.titre}</span>
-                    <span className="shrink-0 text-[11px] text-muted">{a.universite} · {a.annee} ↗<span className="sr-only"> (nouvel onglet)</span></span>
+                    <span className="shrink-0 text-[12px] text-muted">{a.universite} · {a.annee} ↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}
@@ -118,7 +118,7 @@ export function RechercheBibliotheque() {
                 <li key={s.nom}>
                   <a href={s.url} target="_blank" rel="noreferrer" className={lien}>
                     <span className="min-w-0">{s.nom}</span>
-                    <span className="shrink-0 text-[11px] text-muted">↗<span className="sr-only"> (nouvel onglet)</span></span>
+                    <span className="shrink-0 text-[12px] text-muted">↗<span className="sr-only"> (nouvel onglet)</span></span>
                   </a>
                 </li>
               ))}
@@ -128,7 +128,7 @@ export function RechercheBibliotheque() {
             <p className="text-[12px] text-muted">Rien dans la bibliothèque pour « {q} ».</p>
           )}
           <a href={`https://www.sudoc.abes.fr/cbs/xslt//DB=2.1/CMD?ACT=SRCHA&IKT=1016&SRT=RLV&TRM=${encodeURIComponent(q)}`}
-            target="_blank" rel="noreferrer" className="text-[11px] text-forest hover:underline">
+            target="_blank" rel="noreferrer" className="text-[12px] text-forest hover:underline">
             Chercher « {q} » dans le catalogue des bibliothèques universitaires (Sudoc) ↗<span className="sr-only"> (nouvel onglet)</span>
           </a>
         </div>

@@ -4,6 +4,7 @@ import { CarteAnnales } from '../components/Annales'
 import { CarteMentale } from '../components/CarteMentale'
 import { RechercheBibliotheque } from '../components/RechercheBibliotheque'
 import { Chat } from '../components/Chat'
+import { ChoixAnnee } from '../components/ChoixAnnee'
 import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
@@ -29,18 +30,18 @@ function EnTete({ surtitre, titre, texte, droite }: { surtitre: string; titre: s
   return (
     <div className="mb-[19px] tab:mb-[25px] tab:flex tab:items-end tab:justify-between tab:gap-5">
       <div>
-        <div className="text-[11px] font-bold tracking-[1.6px] text-forest uppercase">{surtitre}</div>
+        <div className="text-[12px] font-bold tracking-[1.6px] text-forest uppercase">{surtitre}</div>
         <h1 className="mt-[9px] mb-[7px] font-display text-[28px] leading-[1.1] font-normal tracking-[-.8px] min-[361px]:text-[31px] tab:text-[36px]">
           {titre}
         </h1>
         <p className="text-muted">{texte}</p>
       </div>
-      {droite && <div className="mt-3 pb-[3px] text-[11px] text-muted tab:mt-0">{droite}</div>}
+      {droite && <div className="mt-3 pb-[3px] text-[12px] text-muted tab:mt-0">{droite}</div>}
     </div>
   )
 }
 
-const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[11px] whitespace-nowrap text-forest">● Corpus officiel</span>
+const corpus = <span className="rounded-full bg-mint px-[9px] py-1.5 text-[12px] whitespace-nowrap text-forest">● Corpus officiel</span>
 
 /** De quoi reprendre la ou l'on s'etait arrete (D100) : questionnaire commence, dernier cours, derniere fiche. */
 function CarteReprendre() {
@@ -52,7 +53,7 @@ function CarteReprendre() {
   const dues = aReviser(cartes).length
   if (!quiz && !cours && !fiche && !dues) return null
   const ligne = 'flex items-center justify-between gap-3 border-t border-line-soft py-2.5 first:border-t-0 first:pt-0 last:pb-0'
-  const action = 'shrink-0 rounded-[7px] border border-line px-2.5 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]'
+  const action = 'shrink-0 rounded-[7px] border border-line px-2.5 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]'
   return (
     <Card className="p-[18px]">
       <CardHead titre="Pour reprendre" />
@@ -107,6 +108,7 @@ export function VueEspace() {
       )}
       <div className="grid items-start gap-[19px] tab:grid-cols-[minmax(0,1.2fr)_minmax(235px,.8fr)] desk:grid-cols-[minmax(0,1.65fr)_minmax(260px,.85fr)]">
         <div className="grid min-w-0 gap-[18px]">
+          <ChoixAnnee />
           <Card className="flex min-w-0 flex-col px-4 py-[18px] tab:px-[22px] tab:pt-[21px] tab:pb-[17px]">
             <CardHead titre="Assistant d’étude" sousTitre="Des explications appuyées sur des sources vérifiables" droite={corpus} />
             <Chat />
@@ -128,6 +130,7 @@ export function VueAssistant() {
     <>
       <EnTete surtitre="Assistant IA" titre="Posez votre question."
         texte="Choisissez le type d’aide : explication, fiche, cas pratique, commentaire d’arrêt ou dissertation." />
+      <ChoixAnnee className="mx-auto mb-[18px] max-w-[900px]" />
       <Card className="mx-auto flex max-w-[900px] flex-col px-4 py-[18px] tab:px-[22px] tab:pt-[21px] tab:pb-[17px]">
         <CardHead titre="Assistant d’étude" sousTitre="Cliquez sur une référence [1] pour lire la source" droite={corpus} />
         <div className="mt-4 flex flex-1 flex-col"><Chat complet /></div>
@@ -143,7 +146,7 @@ export function VueMatieres() {
   const [annee, setAnnee] = useState<Annee | null>(null)
   // Classement par annee de licence et recherche sur les intitules des maquettes et les sources (D97).
   const groupes = grouperParAnnee(filtrerMatieres(matieres, recherche)).filter((g) => !annee || g.annee === annee)
-  const puce = (actif: boolean) => `rounded-full border px-2.5 py-1.5 text-[11px] ${
+  const puce = (actif: boolean) => `rounded-full border px-2.5 py-1.5 text-[12px] ${
     actif ? 'border-forest bg-mint font-semibold text-forest' : 'border-line bg-chip text-[#59615b] hover:border-[#9eafa3]'}`
   return (
     <>
@@ -184,7 +187,7 @@ export function VueMatieres() {
           )}
           {groupes.map((g) => (
             <section key={g.titre} aria-labelledby={`annee-${g.annee ?? 'autres'}`} className="mb-[22px]">
-              <h2 id={`annee-${g.annee ?? 'autres'}`} className="mb-2.5 text-[11px] font-bold tracking-[1.6px] text-forest uppercase">
+              <h2 id={`annee-${g.annee ?? 'autres'}`} className="mb-2.5 text-[12px] font-bold tracking-[1.6px] text-forest uppercase">
                 {g.titre}{g.annee && g.annee === niveau ? ' · votre année' : ''}
               </h2>
               <div className="grid gap-[18px] tab:grid-cols-2 desk:grid-cols-3">
@@ -192,19 +195,19 @@ export function VueMatieres() {
                   // Matiere, cours personnels et actions d'abord ; textes officiels replies (audit du 2026-11-16, point 7).
                   <Card key={m.id} className="flex flex-col self-start p-[19px]">
                     <h3 className="font-display text-[21px]">{m.libelle}</h3>
-                    <p className="mt-1 text-[11px] text-muted">Sources principales : {sourcesPrincipales(m).join(' · ')}</p>
+                    <p className="mt-1 text-[12px] text-muted">Sources principales : {sourcesPrincipales(m).join(' · ')}</p>
                     <div className="mt-3"><ListeCoursMatiere matiere={m.id} /></div>
                     <div className="flex flex-wrap gap-2">
                       <button type="button" onClick={() => { setMatiere(m.id); setVue('assistant') }}
-                        className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark">Poser une question</button>
+                        className="rounded-[7px] bg-forest px-3 py-2 text-[12px] text-white hover:bg-forest-dark">Poser une question</button>
                       <button type="button" onClick={() => { setMatiere(m.id); ouvrirQuiz() }}
-                        className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
+                        className="rounded-[7px] border border-line px-3 py-2 text-[12px] text-forest hover:border-[#9eafa3]">S’entraîner</button>
                     </div>
                     <div className="mt-2">
                       <CarteMentale avecNotion libelle="Carte mentale de la matière"
                         demande={(notion) => ({ type: 'matiere', matiere: m.id, notion })} />
                     </div>
-                    <details className="mt-4 border-t border-line-soft pt-3 text-[11px] text-muted">
+                    <details className="mt-4 border-t border-line-soft pt-3 text-[12px] text-muted">
                       <summary className="cursor-pointer text-forest">Textes officiels ({m.sources.length})</summary>
                       <ul className="mt-2 grid gap-1.5">
                         {m.sources.map((s) => (
@@ -386,7 +389,7 @@ function CarteCoursRecuperes() {
   return (
     <Card className="p-[19px]">
       <CardHead titre="Cours récupérés" sousTitre="Cours de sites tiers sous licence libre, rangés par matière" />
-      <p className="mt-3 text-[11px] leading-[1.45] text-muted">
+      <p className="mt-3 text-[12px] leading-[1.45] text-muted">
         Ils ne sont pas rédigés par Lexia et peuvent contenir des erreurs : à vérifier avec les textes officiels.
       </p>
       <Lien href="/cours-recuperes" className="mt-3 inline-block rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
@@ -408,7 +411,7 @@ export function VueBibliotheque() {
         <CarteSources />
         <CarteCoursRecuperes />
       </div>
-      <p className="mt-4 text-[11px] text-muted">
+      <p className="mt-4 text-[12px] text-muted">
         Les bibliographies recommandées par les facultés partenaires seront ajoutées ici (métadonnées et liens uniquement).
       </p>
     </>

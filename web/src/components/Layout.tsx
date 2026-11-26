@@ -1,13 +1,13 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Lien } from '../lib/router'
 import { BandeauEmail } from '../site/VerifierEmail'
+import { ANNEES, LIBELLES_ANNEES } from '../lib/matieres'
 import { libelleSemestre, niveauDe, SEMESTRES, type Semestre } from '../lib/semestres'
 import { useApp, VUES } from '../state/contexte'
 import { useSession } from '../state/session'
 import { BoutonAvis } from './AvisBeta'
 import { LogoHorizontal, Signet } from './Logo'
 
-const ANNEES = ['L1', 'L2', 'L3'] as const
 
 /** Cadre de l'espace etudiant (barre laterale et en-tete), partage par /app et /compte : passer par son
  * compte ne fait plus perdre la navigation de l'espace (audit du 2026-11-16, point 14). */
@@ -26,7 +26,7 @@ export function CadreEspace({ titre, children }: { titre?: string; children: Rea
           <Topbar titre={titre} />
           <div className="mx-auto max-w-[1300px] px-4 pt-6 pb-6 min-[361px]:px-4 tab:px-[22px] tab:pt-[29px] desk:px-[38px] desk:pt-9 desk:pb-[52px]">
             {children}
-            <footer className="pt-5 text-[11px] leading-[1.6] text-[#5f6762] tab:flex tab:justify-between tab:gap-3.5">
+            <footer className="pt-5 text-[12px] leading-[1.6] text-[#5f6762] tab:flex tab:justify-between tab:gap-3.5">
               <span className="block">Lexia · étude du droit français</span>
               <span className="mt-1 block tab:mt-0">Les citations ouvrent la source, la date et la version utilisées.</span>
             </footer>
@@ -49,7 +49,7 @@ function allerAuContenu(e: MouseEvent<HTMLAnchorElement>) {
 
 /** horsEspace : page du cadre hors de /app (Mon compte) ; un clic ouvre l'adresse de la vue choisie (D125). */
 export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
-  const { vue, setVue, matieres, semestre, niveau } = useApp()
+  const { vue, setVue, matieres, semestre, niveau, semestreChoisi } = useApp()
   return (
     // Barre du bas du mobile : hauteur et marge de la barre d'accueil de l'iPhone (env(), viewport-fit=cover),
     // masquee pendant la saisie (index.css, data-barre-bas) ; audit mobile du 2026-11-18.
@@ -63,12 +63,12 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
         <Signet hauteur={34} className="desk:hidden" />
         <div className="hidden desk:block">
           <LogoHorizontal hauteur={45} />
-          <div className="mt-1 text-[11px] text-muted">L’espace d’étude juridique</div>
+          <div className="mt-1 text-[12px] text-muted">L’espace d’étude juridique</div>
         </div>
       </div>
 
       <nav aria-label="Navigation principale" className="h-full tab:h-auto tab:w-full">
-        <div className="mb-2 hidden px-2.5 text-[11px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
+        <div className="mb-2 hidden px-2.5 text-[12px] tracking-[1.25px] text-[#5f6762] uppercase desk:block">Espace étudiant</div>
         <ul className="flex h-full items-center justify-around tab:grid tab:h-auto tab:gap-1">
           {VUES.map((v) => {
             const actif = !horsEspace && vue === v.id
@@ -94,11 +94,15 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
       </nav>
 
       <div className="mt-auto hidden desk:block">
-        <div className="mb-2 px-2.5 text-[11px] tracking-[1.25px] text-[#5f6762] uppercase">Mon semestre</div>
+        <div className="mb-2 px-2.5 text-[12px] tracking-[1.25px] text-[#5f6762] uppercase">Mon semestre</div>
         <div className="rounded-[10px] border border-[#dfdfd5] bg-chip p-3">
-          <small className="text-[11px] text-muted">Semestre {semestre} · {niveau}</small>
-          <strong className="my-1.5 block text-[13px]">Parcours droit général</strong>
-          <small className="text-[11px] text-muted">{matieres.length > 1 ? `${matieres.length} matières disponibles` : `${matieres.length} matière disponible`}</small>
+          {/* L'annee choisie, a la place d'un « Parcours droit général » ecrit en dur ; tant qu'elle n'est pas
+              choisie, l'encart le dit au lieu d'afficher la L1 par defaut comme un choix (G-2, D142) */}
+          <small className="text-[12px] text-muted">{semestreChoisi ? 'Votre année' : 'Année non choisie'}</small>
+          <strong className="my-1.5 block text-[13px]">
+            {semestreChoisi ? `${LIBELLES_ANNEES[niveau]} · Semestre ${semestre}` : 'À choisir en haut de la page'}
+          </strong>
+          <small className="text-[12px] text-muted">{matieres.length > 1 ? `${matieres.length} matières disponibles` : `${matieres.length} matière disponible`}</small>
         </div>
       </div>
     </aside>
@@ -188,7 +192,7 @@ export function CardHead({ titre, sousTitre, droite }: { titre: string; sousTitr
     <div className="flex items-center justify-between gap-3">
       <div>
         <h2 className="text-[14px] font-[650]">{titre}</h2>
-        {sousTitre && <div className="mt-1 text-[11px] text-muted">{sousTitre}</div>}
+        {sousTitre && <div className="mt-1 text-[12px] text-muted">{sousTitre}</div>}
       </div>
       {droite}
     </div>

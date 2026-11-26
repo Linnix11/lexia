@@ -44,14 +44,14 @@ export function CarteAnnales() {
       <CardHead titre="Annales d’examens" sousTitre="Sujets publiés par les facultés ou relayés par des associations étudiantes, à ouvrir sur leur site" />
       {annales && annales.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
-          <label className="grid gap-1 text-[11px] text-muted">
+          <label className="grid gap-1 text-[12px] text-muted">
             Matière
             <select value={filtre} onChange={(e) => { setMatiere(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
               <option value="">Toutes</option>
               {matieres.map(([id, lib]) => <option key={id} value={id}>{lib}</option>)}
             </select>
           </label>
-          <label className="grid gap-1 text-[11px] text-muted">
+          <label className="grid gap-1 text-[12px] text-muted">
             Niveau
             <select value={filtreNiveau} onChange={(e) => { setNiveau(e.target.value); setNombre(PAR_PAGE) }} className="rounded-[7px] border border-line bg-white px-2 py-1.5 text-[12px] text-ink">
               <option value="">Tous</option>
@@ -74,12 +74,12 @@ export function CarteAnnales() {
             <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <div className="min-w-0">
                 <p className="text-[13px]">{a.titre}</p>
-                <p className="text-[11px] text-muted">
+                <p className="text-[12px] text-muted">
                   {a.libelle_matiere} · {a.niveau} · {a.universite} · {a.annee}{a.session ? ` · ${a.session}` : ''}{a.corrige ? ' · avec corrigé' : ''}
                 </p>
               </div>
               <a href={a.url} target="_blank" rel="noopener noreferrer"
-                className="shrink-0 rounded-[7px] border border-line px-3 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
+                className="shrink-0 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
                 Ouvrir le sujet<span className="sr-only"> (site d’origine, nouvel onglet)</span> ↗
               </a>
             </li>
@@ -88,7 +88,7 @@ export function CarteAnnales() {
       )}
       {visibles.length > nombre && (
         <button type="button" onClick={() => setNombre((n) => n + PAR_PAGE)}
-          className="mt-2 rounded-[7px] border border-line px-3 py-1.5 text-[11px] text-forest hover:border-[#9eafa3]">
+          className="mt-2 rounded-[7px] border border-line px-3 py-1.5 text-[12px] text-forest hover:border-[#9eafa3]">
           Afficher plus ({visibles.length - nombre} restantes)
         </button>
       )}

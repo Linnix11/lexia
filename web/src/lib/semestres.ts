@@ -31,6 +31,17 @@ export function lireSemestre(compte: string): Semestre {
   }
 }
 
+/** Vrai quand l'etudiant a deja choisi son semestre dans ce navigateur ; sinon l'espace le lui demande a la
+ * premiere ouverture, au lieu de le laisser en L1 sans le dire (audit du 2026-11-25, G-2). A appeler apres
+ * lireSemestre, qui reprend l'ancienne cle commune. */
+export function semestreEnregistre(compte: string): boolean {
+  try {
+    return !!compte && (SEMESTRES as number[]).includes(Number(localStorage.getItem(cle(compte))))
+  } catch {
+    return false
+  }
+}
+
 export function ecrireSemestre(s: Semestre, compte: string): void {
   if (!compte) return
   try {

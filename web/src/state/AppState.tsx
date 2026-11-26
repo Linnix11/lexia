@@ -4,7 +4,7 @@ import { ajouterCartes as ajouter, ecrireCartes, lireCartes, MESSAGE_LIMITE_CART
 import { ecrireFavoris, lireFavoris, MAX_FICHES, MESSAGE_LIMITE_FICHES, type Favori } from '../lib/favoris'
 import { ecrireDerniereMatiere, lireDerniereMatiere } from '../lib/personnalisation'
 import { ecrireSeance, lireSeance } from '../lib/seance'
-import { ecrireSemestre, lireSemestre, niveauDe, type Semestre } from '../lib/semestres'
+import { ecrireSemestre, lireSemestre, niveauDe, semestreEnregistre, type Semestre } from '../lib/semestres'
 import { useRouteur } from '../lib/router'
 import { Ctx, VUES, vueDeChemin, type AppState, type EtatQuiz, type Message, type ParametresQuiz, type ValeurQuiz, type Vue } from './contexte'
 import { useSession } from './session'
@@ -44,9 +44,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { rafraichir, profil } = useSession()
   const compte = profil?.email ?? ''
   const [semestre, setSemestreEtat] = useState<Semestre>(() => lireSemestre(compte))
+  // Lu apres lireSemestre (reprise de l'ancienne cle) : faux tant que l'etudiant n'a pas choisi (G-2, D142)
+  const [semestreChoisi, setSemestreChoisi] = useState(() => semestreEnregistre(compte))
   const niveau = niveauDe(semestre)
   const setSemestre = useCallback((s: Semestre) => {
     setSemestreEtat(s)
+    setSemestreChoisi(true)
     ecrireSemestre(s, compte)
   }, [compte])
   // Derniere matiere choisie reprise a la visite suivante (D100), gardee dans ce navigateur seulement.
@@ -299,6 +302,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       niveau,
       semestre,
       setSemestre,
+      semestreChoisi,
       matiere,
       setMatiere: choisirMatiere,
       mode,
@@ -336,7 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       notifier,
     }),
-    [vue, setVue, niveau, semestre, setSemestre, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, cartes, ajouterCartes, noterCarte, retirerCarte, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
+    [vue, setVue, niveau, semestre, setSemestre, semestreChoisi, choisirMatiere, mode, mesCours, coursMax, rafraichirCours, coursChoisis, avecOfficiel, optionsCours, matiere, matieres, messages, envoyer, occupe, favoris, basculerFavori, cartes, ajouterCartes, noterCarte, retirerCarte, sourceOuverte, quizOuvert, toast, notifier, dernierQuiz, genererQuiz, repondreQuiz, corrigerQuiz, signalerErreurQuiz],
   )
 
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>

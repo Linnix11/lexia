@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Site from './Site'
-import { lireSemestre } from './lib/semestres'
+import { ecrireSemestre, lireSemestre } from './lib/semestres'
 import { api, type ReponseChat } from './lib/api'
 import { ecrireFavoris, empreinte, lireFavoris } from './lib/favoris'
 import { ficheEnMarkdown } from './lib/exportFiches'
@@ -1249,5 +1249,45 @@ describe('Adresses de l espace etudiant (recette du 2026-11-23, D125)', () => {
     expect(window.location.pathname).toBe('/app/assistant')
     await historique('back')
     expect(await screen.findByRole('heading', { level: 1, name: 'Vos fiches.' })).toBeInTheDocument()
+  })
+})
+
+describe('Premiere ouverture et confort de lecture (audit du 2026-11-25, G-2 a G-4, D142)', () => {
+  it('demande l annee puis le semestre a la premiere ouverture, et le rappelle dans l encart du semestre', async () => {
+    render(<Site />)
+    const carte = await screen.findByRole('region', { name: /En quelle année êtes-vous/ })
+    expect(screen.getByText('Année non choisie')).toBeInTheDocument()
+    expect(within(carte).queryByRole('button', { name: /Semestre/ })).not.toBeInTheDocument()
+    fireEvent.click(within(carte).getByRole('button', { name: 'L2' }))
+    expect(within(carte).getByRole('button', { name: 'L2' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(carte).getAllByRole('button', { name: /Semestre/ }).map((b) => b.textContent)).toEqual(['Semestre 3', 'Semestre 4'])
+    fireEvent.click(within(carte).getByRole('button', { name: 'Semestre 3' }))
+    expect(screen.queryByRole('region', { name: /En quelle année êtes-vous/ })).not.toBeInTheDocument()
+    expect(lireSemestre('etu@exemple.fr')).toBe(3)
+    expect(screen.getByLabelText('Choisir le semestre')).toHaveValue('3')
+    expect(screen.getByText('Licence 2 · Semestre 3')).toBeInTheDocument()
+    expect(screen.queryByText('Parcours droit général')).not.toBeInTheDocument()
+  })
+
+  it('ne redemande rien quand le semestre est deja enregistre, ni apres un choix dans l en-tete', async () => {
+    ecrireSemestre(5, 'etu@exemple.fr')
+    render(<Site />)
+    expect(await screen.findByText('Licence 3 · Semestre 5')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /En quelle année êtes-vous/ })).not.toBeInTheDocument()
+    cleanup()
+    localStorage.clear()
+    render(<Site />)
+    await screen.findByRole('region', { name: /En quelle année êtes-vous/ })
+    fireEvent.change(screen.getByLabelText('Choisir le semestre'), { target: { value: '2' } })
+    expect(screen.queryByRole('region', { name: /En quelle année êtes-vous/ })).not.toBeInTheDocument()
+  })
+
+  it('reponses lisibles et citations de 24 px au moins', async () => {
+    await poser('article 1240')
+    const citation = screen.getAllByRole('button', { name: '[1] Code civil, article 1240' })[0]
+    expect(citation).toHaveClass('min-h-6', 'min-w-6', 'text-[12px]')
+    expect(citation.closest('li')).toHaveClass('text-[15px]')
+    expect(screen.getByText('article 1240').closest('div')).toHaveClass('text-[14px]')
+    expect(screen.getByLabelText('Votre question')).toHaveClass('text-[14px]')
   })
 })

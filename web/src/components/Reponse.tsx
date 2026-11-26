@@ -18,7 +18,7 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
   const { ouvrirSource } = useApp()
   if (!ids.length) return null
   return (
-    <span className="ml-1 inline-flex flex-wrap gap-1 align-baseline">
+    <span className="ml-1 inline-flex flex-wrap gap-1.5 align-baseline">
       {ids.map((id) => {
         const s = sources.find((x) => x.id === id)
         if (!s) return null
@@ -30,7 +30,8 @@ function Citations({ ids, sources }: { ids: string[]; sources: FicheSource[] }) 
             title={s.entete}
             // nom accessible « [1] Code civil, article 1240 », pas seulement « 1 » (audit du 2026-11-18, D8)
             aria-label={`[${numeroSource(sources, id)}] ${titreCourt(s.entete)}`}
-            className="rounded border-b border-[#b2c2b7] px-0.5 text-[11px] font-semibold text-forest hover:bg-mint"
+            // cibles de 24 px au moins, meme quand deux citations se suivent (WCAG 2.5.8 ; audit du 2026-11-25, G-4)
+            className="inline-flex min-h-6 min-w-6 items-center justify-center rounded border-b border-[#b2c2b7] px-1 text-[12px] font-semibold text-forest hover:bg-mint"
           >
             [{numeroSource(sources, id)}]
           </button>
@@ -55,13 +56,13 @@ function Bloc({ titre, items, sources, ton, rubriques = true }: {
   const couleur = ton === 'droit' ? 'text-forest' : ton === 'attention' ? 'text-[#8a6537]' : 'text-muted'
   return (
     <div className="mt-3.5">
-      <h4 className={`mb-1.5 text-[11px] font-bold tracking-[1.4px] uppercase ${couleur}`}>{titre}</h4>
+      <h4 className={`mb-1.5 text-[12px] font-bold tracking-[1.4px] uppercase ${couleur}`}>{titre}</h4>
       <ul className="grid max-w-[75ch] gap-1.5">
         {items.map((it, i) => (
-          <li key={i} className="text-[12.5px] leading-[1.6]">
+          <li key={i} className="text-[15px] leading-[1.6]">
             {/* rubrique affichee a son premier element : sous-titres propres a chaque mode */}
             {rubriques && it.rubrique && it.rubrique !== items[i - 1]?.rubrique && (
-              <span className="mt-1.5 mb-0.5 block text-[11.5px] font-semibold text-ink">{it.rubrique}</span>
+              <span className="mt-1.5 mb-0.5 block text-[14px] font-semibold text-ink">{it.rubrique}</span>
             )}
             {it.texte}
             <Citations ids={citations[i]} sources={sources} />
@@ -80,7 +81,7 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
   const anciennes = sourcesAnciennes(fraicheur, sources.map((s) => s.source_id))
   return (
     <div className="mt-4 border-t border-line-soft pt-3">
-      <h4 className="mb-1 text-[11px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
+      <h4 className="mb-1 text-[12px] font-bold tracking-[1.4px] text-muted uppercase">Sources utilisées</h4>
       <ul className="max-w-[75ch]">
         {sources.map((s, i) => (
           <li key={s.id}>
@@ -93,23 +94,23 @@ export function ListeSources({ sources }: { sources: FicheSource[] }) {
                 {symbole(s)}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] leading-[1.35] font-semibold" title={s.entete}>
+                <span className="block text-[13px] leading-[1.35] font-semibold" title={s.entete}>
                   <span className="text-forest">[{i + 1}]</span> {titreCourt(s.entete)}
                 </span>
-                <span className="mt-0.5 block text-[11px] break-words text-muted">{s.version}</span>
+                <span className="mt-0.5 block text-[12px] break-words text-muted">{s.version}</span>
               </span>
               {estFicheLexia(s) && (
-                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[11px] text-[#8a6537]">fiche Lexia, non officielle</span>
+                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[12px] text-[#8a6537]">fiche Lexia, non officielle</span>
               )}
               {s.en_vigueur === false && (
-                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[11px] text-[#8a6537]">ancienne version</span>
+                <span className="shrink-0 rounded-full bg-cream px-2 py-0.5 text-[12px] text-[#8a6537]">ancienne version</span>
               )}
             </button>
           </li>
         ))}
       </ul>
       {anciennes.map((a) => (
-        <p key={a.nom} className="mt-1 text-[11px] leading-[1.4] text-muted">
+        <p key={a.nom} className="mt-1 text-[12px] leading-[1.4] text-muted">
           {a.nom} : {libelleFraicheur(a)}. {a.nature === 'textes' ? 'Une modification' : 'Une décision'} plus récente peut ne pas y figurer.
         </p>
       ))}
@@ -134,14 +135,14 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
     setEtat('envoye')
     notifier('Merci pour votre retour')
   }
-  if (etat === 'envoye') return <span className="text-[11px] text-muted">Retour envoyé</span>
+  if (etat === 'envoye') return <span className="text-[12px] text-muted">Retour envoyé</span>
   if (etat === 'motif')
     return (
       <span className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] text-muted">Quel problème ?</span>
+        <span className="text-[12px] text-muted">Quel problème ?</span>
         {MOTIFS.map(([id, libelle]) => (
           <button key={id} type="button" onClick={() => envoyer(false, id)}
-            className="min-h-6 rounded-full border border-line px-2.5 text-[11px] text-[#59615b] hover:border-[#9eafa3]">
+            className="min-h-6 rounded-full border border-line px-2.5 text-[12px] text-[#59615b] hover:border-[#9eafa3]">
             {libelle}
           </button>
         ))}
@@ -149,10 +150,10 @@ function Retours({ reponse }: { reponse: ReponseChat }) {
     )
   return (
     <span className="flex items-center gap-1.5">
-      <span className="text-[11px] text-muted">Cette réponse vous a aidé ?</span>
+      <span className="text-[12px] text-muted">Cette réponse vous a aidé ?</span>
       {/* cibles de 24 px au moins (WCAG 2.5.8, audit du 2026-11-18, D8) */}
-      <button type="button" onClick={() => envoyer(true)} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Oui</button>
-      <button type="button" onClick={() => setEtat('motif')} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[11px] hover:border-[#9eafa3]">Non</button>
+      <button type="button" onClick={() => envoyer(true)} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[12px] hover:border-[#9eafa3]">Oui</button>
+      <button type="button" onClick={() => setEtat('motif')} className="min-h-6 min-w-6 rounded-full border border-line px-2.5 text-[12px] hover:border-[#9eafa3]">Non</button>
     </span>
   )
 }
@@ -182,7 +183,7 @@ function Developpements({ r, blocs }: { r: ReponseChat; blocs: [string, string, 
       <Bloc titre={exemples.length > 1 ? 'Exemples' : 'Exemple'} items={exemples} sources={r.sources} ton="neutre" rubriques={false} />
       <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
       <details className="mt-3.5 border-t border-line-soft pt-2.5">
-        <summary className="cursor-pointer text-[11px] font-semibold text-forest hover:underline">Développements et sources</summary>
+        <summary className="cursor-pointer text-[13px] font-semibold text-forest hover:underline">Développements et sources</summary>
         <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
         <Bloc titre={titreExplication} items={suite} sources={r.sources} ton="neutre" />
         <ListeSources sources={r.sources} />
@@ -207,7 +208,7 @@ function ReponseComplete({ message, actions = true, titre = true }: { message: M
           <Developpements r={r} blocs={infosMode(message.mode).blocs} />
         </>
       ) : (
-        <div className="border-l-2 border-[#c8a16d] bg-cream px-3 py-2.5 text-[12px] leading-[1.55] text-[#746347]">
+        <div className="border-l-2 border-[#c8a16d] bg-cream px-3 py-2.5 text-[14px] leading-[1.55] text-[#746347]">
           <strong className="mb-1 block text-[#5f4f37]">
             {r.statut === 'hors_champ' ? 'Hors du champ de Lexia' : 'Pas de réponse vérifiable'}
           </strong>

@@ -61,7 +61,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <div className="text-[11px] font-bold tracking-[1.6px] text-forest uppercase">
+            <div className="text-[12px] font-bold tracking-[1.6px] text-forest uppercase">
               {source ? NATURE[source.type] ?? 'Source' : 'Source'}
             </div>
             <h2 id="source-titre" className="mt-1 font-display text-[19px] leading-snug">
@@ -69,7 +69,7 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
             </h2>
             {/* Statut d'abord, classement complet replie (audit du 2026-11-16, point 4) */}
             {source && (
-              <p className="mt-1 text-[11px] text-muted">
+              <p className="mt-1 text-[12px] text-muted">
                 {source.version}
                 {source.en_vigueur === false && <span className="ml-1.5 rounded-full bg-cream px-2 py-0.5 text-[#8a6537]">ancienne version</span>}
               </p>
@@ -98,13 +98,13 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
               )}
               <div className="text-[13px] leading-[1.7] whitespace-pre-line">{source.texte}</div>
               {(titreCourt(source.entete) !== source.entete || (source.titre && source.titre !== source.entete)) && (
-                <details className="mt-5 text-[11px] leading-[1.45] text-muted">
+                <details className="mt-5 text-[12px] leading-[1.45] text-muted">
                   <summary className="cursor-pointer text-forest">Classement complet</summary>
                   <p className="mt-1.5">{source.entete}</p>
                   {source.titre && source.titre !== source.entete && <p className="mt-1">{source.titre}</p>}
                 </details>
               )}
-              <dl className="mt-5 grid gap-1.5 border-t border-line-soft pt-3 text-[11px]">
+              <dl className="mt-5 grid gap-1.5 border-t border-line-soft pt-3 text-[12px]">
                 {source.date && <div className="flex gap-2"><dt className="w-[90px] shrink-0 text-muted">Date</dt><dd>{source.date}</dd></div>}
                 {typeof source.meta.ecli === 'string' && (
                   <div className="flex gap-2"><dt className="w-[90px] shrink-0 text-muted">ECLI</dt><dd className="break-all">{source.meta.ecli}</dd></div>
@@ -130,12 +130,12 @@ function SourceContenu({ sourceOuverte }: { sourceOuverte: string }) {
         {source && (
           <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
             <button type="button" onClick={verifier} disabled={verification}
-              className="rounded-[7px] bg-forest px-3 py-2 text-[11px] text-white hover:bg-forest-dark disabled:opacity-60">
+              className="rounded-[7px] bg-forest px-3 py-2 text-[12px] text-white hover:bg-forest-dark disabled:opacity-60">
               {verification ? 'Vérification…' : 'Vérifier la version en vigueur'}
             </button>
             {source.url && (
               <a href={source.url} target="_blank" rel="noreferrer"
-                className="rounded-[7px] border border-line px-3 py-2 text-[11px] text-forest hover:border-[#9eafa3]">
+                className="rounded-[7px] border border-line px-3 py-2 text-[12px] text-forest hover:border-[#9eafa3]">
                 Ouvrir la source officielle ↗
               </a>
             )}
