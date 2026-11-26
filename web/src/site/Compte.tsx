@@ -9,6 +9,7 @@ import { effacerDerniereMatiere, NOM_MAX, PRENOM_MAX } from '../lib/personnalisa
 import { Lien, useRouteur } from '../lib/router'
 import { useSession } from '../state/session'
 import { DoubleAuthentification } from './DoubleAuthentification'
+import { betaFermee } from './beta'
 import { CadreEspace } from '../components/Layout'
 import { Surtitre, bouton, boutonSecondaire } from './Public'
 
@@ -301,7 +302,7 @@ function InfosEmail() {
 }
 
 export function Compte() {
-  const { profil, deconnexion, supprimer } = useSession()
+  const { profil, config, deconnexion, supprimer } = useSession()
   const { naviguer } = useRouteur()
   const [suppression, setSuppression] = useState(false)
   const [mdp, setMdp] = useState('')
@@ -348,7 +349,8 @@ export function Compte() {
                 <p className="font-display text-[24px]">{f.nom}</p>
                 {profil.formule_fin && <p className="text-[12px] text-muted">Active jusqu’au {new Date(profil.formule_fin).toLocaleDateString('fr-FR')}</p>}
               </div>
-              <Lien href="/tarifs" className={boutonSecondaire}>{f.id === 'intensif' ? 'Voir les formules' : 'Changer de formule'}</Lien>
+              {/* Beta fermee : rien a changer, la page Tarifs dit que rien n'est vendu (D135) */}
+              <Lien href="/tarifs" className={boutonSecondaire}>{f.id === 'intensif' || betaFermee(config) ? 'Voir les formules' : 'Changer de formule'}</Lien>
             </div>
             <div className="mt-5 grid gap-4">
               <Jauge libelle="Questions aujourd’hui" utilise={profil.usage.questions} limite={f.questions_par_jour} />

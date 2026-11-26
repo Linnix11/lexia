@@ -54,7 +54,13 @@ export function Accueil() {
             <Lien href="/tarifs" className={boutonSecondaire}>Voir les formules</Lien>
           </div>
           {/* Beta fermee dite sous le bouton : l'inscription exige un code (D129) */}
-          {beta && !profil && <p className="mt-3 text-[13px] font-semibold text-forest">Bêta fermée : accès sur invitation.</p>}
+          {/* Le testeur qui a deja recu un code va droit au formulaire (audit du 2026-11-25, G-1 ; D135) */}
+          {beta && !profil && (
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 text-[13px] font-semibold text-forest">
+              <span>Bêta fermée : accès sur invitation.</span>
+              <Lien href="/inscription" className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-forest-dark">J’ai un code d’accès</Lien>
+            </p>
+          )}
           <p className="mt-3 text-[12px] text-muted">
             {gratuit
               ? `Gratuit : ${gratuit.questions_par_jour} questions et ${gratuit.quiz_par_jour} questionnaires par jour, sans carte bancaire.`

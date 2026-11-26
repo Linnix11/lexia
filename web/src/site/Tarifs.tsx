@@ -5,6 +5,7 @@ import { Lien } from '../lib/router'
 import { useSession } from '../state/session'
 import { Payer } from './Payer'
 import { LienInscription } from './Invitation'
+import { betaFermee } from './beta'
 import { formules as formulesDuDepot } from './donnees-publiques.json'
 import { PublicLayout, Section, Surtitre, bouton, boutonSecondaire } from './Public'
 
@@ -16,6 +17,7 @@ const prix = (f: Formule) =>
 
 export function Formules() {
   const { profil, config } = useSession()
+  const beta = betaFermee(config) // valeur publiee dans le HTML prerendu, puis configuration du serveur (D132)
   // Formules du depot d'abord (page prerendue, D116), puis celles du serveur, qui font foi
   const [formules, setFormules] = useState<Formule[] | null>(FORMULES_PUBLIQUES)
   const [erreur, setErreur] = useState(false)
@@ -45,14 +47,16 @@ export function Formules() {
             : <LienInscription className={bouton}>Créer un compte</LienInscription>
         } else if (actuelle) {
           action = <span className={`${boutonSecondaire} cursor-default`}>Votre formule actuelle</span>
+        } else if (beta) {
+          // Beta fermee : aucune vente, pour un visiteur comme pour un compte (audit du 2026-11-25, J2 ; D135).
+          // Visiteur : l'invitation d'abord (D129). Compte : libelle neutre, ni demande par e-mail ni paiement.
+          action = profil
+            ? <span className={`${boutonSecondaire} cursor-default opacity-70`}>Non proposée pendant la bêta</span>
+            : <LienInscription className={miseEnAvant ? bouton : boutonSecondaire} />
         } else if (!config) {
           // Configuration pas encore lue (page prerendue, premier rendu) : lien neutre plutot qu'un « Bientot
           // disponible » faux, lu par les moteurs (audit du 2026-11-23, D1). Le vrai bouton suit la configuration.
-          // Beta fermee publiee (D132) : demande d'invitation des le HTML prerendu
           action = <LienInscription className={miseEnAvant ? bouton : boutonSecondaire}>Créer un compte</LienInscription>
-        } else if (!profil && config.beta_fermee) {
-          // Beta fermee : sans compte, ni paiement ni demande de formule ; d'abord l'invitation (D129)
-          action = <LienInscription className={miseEnAvant ? bouton : boutonSecondaire} />
         } else if (config?.paiement) {
           action = <Payer formule={f} principal={miseEnAvant} />
         } else if (config?.contact_email) {
@@ -97,6 +101,7 @@ export function Formules() {
 
 export function Tarifs() {
   const { config } = useSession()
+  const beta = betaFermee(config)
   return (
     <PublicLayout>
       <Section className="py-14">
@@ -107,6 +112,14 @@ export function Tarifs() {
           questions et de questionnaires par jour, et par le nombre de cours que vous pouvez déposer. Les compteurs
           quotidiens se remettent à zéro chaque jour à minuit.
         </p>
+        {/* Beta fermee : rien n'est vendu (audit du 2026-11-25, J2 ; D135). Lu en premier par le testeur arrive de
+            « Voir les formules » (limite atteinte, Mon compte). Valeur publiee au prerendu, puis serveur (D132). */}
+        {beta && (
+          <p className="-mt-4 mb-8 max-w-[620px] rounded-lg bg-mint px-4 py-3 text-[13px] leading-[1.6] text-forest">
+            Pendant la bêta fermée, Lexia est gratuit : les formules payantes ne sont pas vendues. Les limites
+            quotidiennes restent celles de votre formule.
+          </p>
+        )}
         <Formules />
         <p className="mt-6 text-[12px] text-muted">
           Prix toutes taxes comprises, par mois.{' '}
@@ -115,7 +128,7 @@ export function Tarifs() {
           Conditions de vente : <Lien href="/cgu" className="underline">conditions générales</Lien>, section 4.
         </p>
         <p className="mt-2 text-[12px] text-muted">
-          {config && (config.paiement
+          {!beta && config && (config.paiement
             ? 'Paiement par carte sur la page sécurisée de Stripe : Lexia ne voit pas vos coordonnées bancaires. La formule s’active dès la confirmation du paiement.'
             : 'Le paiement en ligne arrive bientôt.')}{' '}
           Sans engagement.

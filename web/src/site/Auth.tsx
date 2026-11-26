@@ -116,13 +116,27 @@ export function Connexion() {
   )
 }
 
+/** Code d'acces a la beta d'un lien d'invitation (D135). Forme a envoyer : `/inscription#code=...` ; ce qui suit
+ *  « # » n'est jamais envoye au serveur, donc jamais ecrit dans ses journaux (comme les jetons, router.tsx).
+ *  `?code=` est lu aussi, mais il arrive au serveur avec l'adresse. Rien ici n'envoie ni ne journalise l'adresse. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function codeDuLien(): string {
+  const lire = (s: string) => new URLSearchParams(s).get('code')
+  return (lire(window.location.hash.slice(1)) ?? lire(window.location.search) ?? '').trim().slice(0, 60)
+}
+
 export function Inscription() {
   const { inscription, config } = useSession()
   // Beta fermee (D121) : code d'acces exige quand le serveur l'annonce
   // ou quand le serveur a refuse l'inscription faute de code (configuration pas chargee : recette du 23/11)
   const [codeExige, setCodeExige] = useState(false)
   const beta = Boolean(config?.beta_fermee) || codeExige
-  const [code, setCode] = useState('')
+  // Code prerempli depuis le lien envoye par l'editeur (D135), toujours modifiable
+  const [code, setCode] = useState(codeDuLien)
+  useEffect(() => {
+    // Code retire de la barre d'adresse des la lecture : ni historique, ni favori, ni capture d'ecran qui le garde
+    if (codeDuLien()) window.history.replaceState(window.history.state, '', window.location.pathname)
+  }, [])
   const { naviguer } = useRouteur()
   const [email, setEmail] = useState('')
   const [prenom, setPrenom] = useState('') // prenom et nom demandes a l'inscription (D102)

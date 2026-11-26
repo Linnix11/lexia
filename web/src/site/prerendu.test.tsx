@@ -35,10 +35,18 @@ describe('pages prerendues', () => {
     '%s : boutons d’entree selon la bêta publiée, sans lien vers l’inscription si elle est fermée', async (chemin) => {
       window.history.replaceState(null, '', chemin)
       const html = await rendre()
-      expect(html.includes('href="/inscription"')).toBe(!BETA_FERMEE_PUBLIEE)
+      // Beta fermee : vers l'inscription, seulement les liens « J'ai un code » du testeur qui en a recu un (D135)
+      const versInscription = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('a[href="/inscription"]')]
+      expect(versInscription.length > 0).toBe(true)
+      for (const a of versInscription) expect(a.textContent?.startsWith('J’ai un code')).toBe(BETA_FERMEE_PUBLIEE)
       expect(html.includes('href="/invitation"')).toBe(BETA_FERMEE_PUBLIEE)
       expect(html.includes('Créer un compte')).toBe(!BETA_FERMEE_PUBLIEE)
-      if (chemin === '/') expect(html.includes('Bêta fermée : accès sur invitation.')).toBe(BETA_FERMEE_PUBLIEE)
+      if (chemin === '/') {
+        expect(html.includes('Bêta fermée : accès sur invitation.')).toBe(BETA_FERMEE_PUBLIEE)
+        expect(html.includes('>J’ai un code d’accès</a>')).toBe(BETA_FERMEE_PUBLIEE)
+      }
+      // Pas de vente pendant la beta, des le HTML prerendu (J2 du 2026-11-25)
+      if (chemin === '/tarifs') expect(html.includes('Pendant la bêta fermée, Lexia est gratuit')).toBe(BETA_FERMEE_PUBLIEE)
     })
 
   it('premier rendu du navigateur, configuration pas encore lue : mêmes boutons que le prérendu (hydratation)', async () => {

@@ -37,10 +37,14 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <>
                 <Lien href="/connexion" className="inline-flex min-h-11 items-center rounded-md px-1.5 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:px-2">Connexion</Lien>
                 {betaFermee(config) ? (
-                  // Beta fermee : l'inscription exige un code, l'en-tete mene a la demande d'invitation (D129)
-                  <Lien href="/invitation" className={`${bouton} whitespace-nowrap`}>
-                    <span className="tab:hidden">Invitation</span><span className="hidden tab:inline">Demander une invitation</span>
-                  </Lien>
+                  // Beta fermee : l'inscription exige un code, l'en-tete mene a la demande d'invitation (D129) ;
+                  // a partir de la tablette, lien direct pour qui a deja un code (D135). Telephone : sous le bouton de l'accueil.
+                  <>
+                    <Lien href="/inscription" className="hidden min-h-11 items-center rounded-md px-2 text-[13px] whitespace-nowrap text-[#505b54] hover:text-forest tab:inline-flex">J’ai un code</Lien>
+                    <Lien href="/invitation" className={`${bouton} whitespace-nowrap`}>
+                      <span className="tab:hidden">Invitation</span><span className="hidden tab:inline">Demander une invitation</span>
+                    </Lien>
+                  </>
                 ) : (
                   <Lien href="/inscription" className={`${bouton} whitespace-nowrap`}>
                     <span className="tab:hidden">S’inscrire</span><span className="hidden tab:inline">Créer un compte</span>

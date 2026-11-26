@@ -30,7 +30,7 @@ FORMULES: dict[str, Formule] = {
         questions_par_jour=10,
         quiz_par_jour=2,
         cours_max=3,
-        description="Pour découvrir Lexia : il suffit de créer un compte.",
+        description="Pour découvrir Lexia, sans carte bancaire.",
         avantages=("10 questions par jour", "2 questionnaires par jour", "3 cours déposés", "Tous les modes : explication, fiche, méthode",
                    "Sources officielles citées et vérifiables"),
     ),
