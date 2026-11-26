@@ -102,7 +102,8 @@ describe('Assistant', () => {
   it('propose les six semestres et envoie le semestre choisi', async () => {
     render(<Site />)
     const choix = await screen.findByLabelText('Choisir le semestre')
-    expect(within(choix).getAllByRole('option').map((o) => o.textContent)).toEqual([
+    expect(choix).toHaveValue('')   // annee pas encore choisie : le menu ne pretend pas L1 S1 (D142)
+    expect(within(choix).getAllByRole('option').map((o) => o.textContent)).toEqual(['Choisir l’année',
       'L1 · Semestre 1', 'L1 · Semestre 2', 'L2 · Semestre 3', 'L2 · Semestre 4', 'L3 · Semestre 5', 'L3 · Semestre 6'])
     fireEvent.change(choix, { target: { value: '4' } })
     expect(lireSemestre('etu@exemple.fr')).toBe(4)   // une cle par compte (WEB-16)
@@ -960,7 +961,7 @@ describe('Personnalisation (D100, D102)', () => {
     localStorage.setItem(`lexia.matiere.v1.${empreinte('etu@exemple.fr')}`, 'droit_civil')
     ecrireFavoris([{ id: 'r-1', question: 'La responsabilité du fait des choses', mode: 'fiche', enregistre_le: '2026-11-17T10:00:00Z', reponse: REPONSE }], 'etu@exemple.fr')
     render(<Site />)
-    expect(await screen.findByText('Droit civil · L1 · Semestre 1')).toBeInTheDocument()
+    expect(await screen.findByText('Droit civil · année non choisie')).toBeInTheDocument()   // D142 : rien d'imposé tant que l'année n'est pas choisie
     expect(screen.getByText('Dernière fiche : « La responsabilité du fait des choses »')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Revoir' }))
     expect(await screen.findByRole('heading', { name: 'Vos fiches.' })).toBeInTheDocument()

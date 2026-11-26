@@ -91,7 +91,7 @@ function CarteReprendre() {
 
 export function VueEspace() {
   const { profil } = useSession()
-  const { matiere, matieres, semestre } = useApp()
+  const { matiere, matieres, semestre, semestreChoisi } = useApp()
   const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
   const libelleMatiere = matieres.find((m) => m.id === matiere)?.libelle ?? 'Toutes les matières'
   return (
@@ -99,7 +99,7 @@ export function VueEspace() {
       <EnTete surtitre={dateDuJour()} titre={salutation(profil?.prenom)}
         texte={`Votre espace pour comprendre le droit et progresser à votre rythme.${
           restant === null ? '' : ` ${phraseQuestionsRestantes(restant, profil!.formule.questions_par_jour)}`}`}
-        droite={`${libelleMatiere} · ${libelleSemestre(semestre)}`} />
+        droite={`${libelleMatiere} · ${semestreChoisi ? libelleSemestre(semestre) : 'année non choisie'}`} />
       {profil && (!profil.prenom || !profil.nom) && (
         // Comptes crees avant D102 : invites a completer, jamais bloques.
         <p className="mb-[18px] rounded-xl border border-line bg-surface px-4 py-3 text-[12px] text-muted">

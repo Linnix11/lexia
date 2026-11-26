@@ -110,7 +110,7 @@ export function Sidebar({ horsEspace = false }: { horsEspace?: boolean }) {
 }
 
 export function Topbar({ titre }: { titre?: string }) {
-  const { vue, semestre, setSemestre } = useApp()
+  const { vue, semestre, setSemestre, semestreChoisi } = useApp()
   const { profil } = useSession()
   const initiales = (profil?.prenom?.trim() || profil?.email || 'ét').slice(0, profil?.prenom?.trim() ? 1 : 2).toUpperCase()
   const restant = profil ? Math.max(0, profil.formule.questions_par_jour - profil.usage.questions) : null
@@ -129,10 +129,12 @@ export function Topbar({ titre }: { titre?: string }) {
         <label className="sr-only" htmlFor="niveau">Choisir le semestre</label>
         <select
           id="niveau"
-          value={semestre}
+          // Tant que l'annee n'est pas choisie, le menu ne pretend pas « L1 · Semestre 1 » (D142)
+          value={semestreChoisi ? semestre : ''}
           onChange={(e) => setSemestre(Number(e.target.value) as Semestre)}
           className="rounded-[7px] border border-line bg-surface px-2 py-[7px] text-[12px] text-[#505b54] tab:px-[11px] tab:py-2"
         >
+          {!semestreChoisi && <option value="" disabled>Choisir l’année</option>}
           {ANNEES.map((annee) => (
             <optgroup key={annee} label={annee}>
               {SEMESTRES.filter((s) => niveauDe(s) === annee).map((s) => (
