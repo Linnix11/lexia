@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from api import prompts
 from api.auth import verifier_origine
 from api.citations import Controle, verifier_texte
-from api.concordance import DATE_REFORME, REFORME_2016
+from api.concordance import REFORME_2016, anciens_cites, numeros_actuels
 from api.journal import Journal
 from api.matieres import MATIERES
 from api.references import _norm_num, articles_cites, extraire, variantes
@@ -75,14 +75,12 @@ def _hors_du_document(texte: str, envoyes: list[dict]) -> bool:
 def _ancien_numero(texte: str, envoyes: list[dict]) -> tuple[str, tuple[str, ...]] | None:
     """(ancien numero, articles actuels) quand la feuille cite un numero du Code civil d'avant le 1er octobre 2016
     (« Article 1382 ») sans qu'un article actuel de ce numero soit parmi les extraits : la carte le donnait sans dire
-    qu'il est renumerote (recette du 23/11, R-5). L'article 1382 actuel (presomptions) fourni en extrait reste tel quel."""
-    actuels = {_norm_num(p.get("numero") or "") for p in envoyes if p.get("numero")
-               and (p.get("meta") or {}).get("en_vigueur") is not False
-               and (p.get("meta") or {}).get("date_fin") != DATE_REFORME}
-    for n, code in articles_cites(texte):
-        nouveaux = REFORME_2016.get(n)
-        if nouveaux and nouveaux != (n,) and code in (None, "code_civil") and n not in actuels:
-            return n, nouveaux
+    qu'il est renumerote (recette du 23/11, R-5). L'article 1382 actuel (presomptions) fourni en extrait reste tel quel.
+    Detection commune avec les reponses (api/concordance.py, D136)."""
+    for _, anciens in anciens_cites(texte, numeros_actuels(envoyes)):
+        for n, nouveaux in anciens:
+            if n in REFORME_2016:
+                return n, nouveaux
     return None
 
 

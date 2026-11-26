@@ -19,6 +19,17 @@ _LABEL_RE = re.compile(r"S\d+")
 # « [S1] », « (S2) », « [S1, S5] » ecrits dans le texte : la source s'affichait deux fois sur la meme
 # ligne (dans le texte et en pastille). Retires du texte et rattaches aux sources de l'element.
 _LABELS_DANS_TEXTE = re.compile(r"\s*[\[(]\s*S\d+(?:\s*(?:,|;|/|et)\s*S\d+)*\s*[\])]", re.IGNORECASE)
+# Reperes nus, hors crochets : « Sources mobilisables : S1. », « (sources : S3, S4) », « (..., 13 mars 2024, S5) »,
+# « S3 » seul (plans de dissertation, audit du 25/11, R10). Retires du texte seulement, sans toucher aux sources de
+# l'element, et seulement si chaque repere est un extrait de la table : « S. 1902 » (Sirey), « L2 S3 » restent.
+_LISTE = r"S\d{1,2}(?:\s*(?:,|;|/|et)\s*S\d{1,2})*"
+_SOURCES = r"(?i:sources?(?:\s+mobilisables?|\s+utiles?)?)\s*:\s*"
+_REPERES_NUS = re.compile(
+    rf"\(\s*(?:{_SOURCES})?{_LISTE}\s*\)"             # (sources : S3, S4)
+    rf"|{_SOURCES}{_LISTE}"                             # Sources mobilisables : S1
+    rf"|,\s*{_LISTE}(?=\s*\))"                          # (Cour de cassation, 13 mars 2024, S5)
+    rf"|(?<![\w.*-])(?<!semestre )(?<![LM]\d ){_LISTE}(?![\w-])"   # S3 seul
+)
 
 
 @dataclass
@@ -57,6 +68,23 @@ def verifier_texte(texte: str, passages: list[dict], controle: Controle) -> bool
     return True
 
 
+def retirer_reperes(texte: str, table: dict[str, dict]) -> str:
+    """Retire les reperes nus (_REPERES_NUS) et recolle la ponctuation autour."""
+    debut = 0
+    while m := _REPERES_NUS.search(texte, debut):
+        if not all(lab in table for lab in re.findall(r"S\d{1,2}", m.group(0))):
+            debut = m.end()
+            continue
+        avant, apres = texte[:m.start()].rstrip(), texte[m.end():].lstrip()
+        if apres[:1] == "." and avant[-1:] in (".", ":", ""):
+            apres = apres[1:].lstrip()
+        elif apres[:1] in (".", ")", "") and avant[-1:] in (",", ";", ":"):
+            avant = avant[:-1].rstrip()
+        sep = "" if not avant or not apres or apres[0] in ".,;:)" else " "
+        texte, debut = avant + sep + apres, len(avant)
+    return texte.strip()
+
+
 def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exiger_source: bool,
                       rubriques: tuple[str, ...] = ()) -> list[dict]:
     """rubriques : rubriques admises pour ces elements (le champ est garde s'il en fait partie)."""
@@ -68,7 +96,7 @@ def nettoyer_elements(items, table: dict[str, dict], controle: Controle, *, exig
             continue
         texte = str(it.get("texte", "")).strip()
         dans_texte = [lab for m in _LABELS_DANS_TEXTE.finditer(texte) for lab in _LABEL_RE.findall(m.group(0).upper())]
-        texte = _LABELS_DANS_TEXTE.sub("", texte).strip()
+        texte = retirer_reperes(_LABELS_DANS_TEXTE.sub("", texte), table)
         if not texte:
             continue
         sources = labels_valides(list((it or {}).get("sources") or []) + dans_texte, table, controle)

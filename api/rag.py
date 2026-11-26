@@ -272,7 +272,7 @@ class Lexia:
         refs = extraire(texte)
         anciens = concordance.anciens_numeros(refs)
         # Articles connus sans appel au modele : articles actuels d'un ancien numero cite, puis lexique.
-        locales = list(dict.fromkeys([("code_civil", n) for ns in anciens.values() for n in ns]
+        locales = list(dict.fromkeys([("code_civil", n) for n in concordance.a_servir(anciens)]
                                      + lexique.suggestions(texte, sources=sources)))
         # Question qui cite deja un article, une decision ou un pourvoi : la recherche par reference le trouve,
         # la reformulation couterait un appel Gemini (et ses 503) pour peu de gain.
@@ -521,6 +521,8 @@ class Lexia:
             passages = extraits_envoyes
             table = table_extraits(passages)
             reponse, controle = valider_reponse(brut, table, mode, cours_seul=option_cours == "seul")
+            # « article 1152 du Code civil » ecrit pour le droit actuel : ancienne numerotation signalee (D136)
+            concordance.signaler_anciens_numeros(reponse, passages)
             # Arret abandonne seul a l'appui d'une regle : ce n'est pas du droit positif (D124) ; fiche Lexia seule :
             # pas davantage, et un grand arret cite en source est nomme dans le texte (D128)
             grands_arrets.ecarter_abandonnes(reponse, passages)
@@ -560,8 +562,13 @@ class Lexia:
         if p["source_id"] in SOURCES_TEXTES and p["source_id"] != "constitution_1958":
             en_vigueur = bool(en_vigueur_aujourdhui(meta, p["source_id"]))
             actuelle = None
-            nouveaux = concordance.REFORME_2016.get(p.get("numero") or "") \
-                if p["source_id"] == "code_civil" and meta.get("date_fin") == concordance.DATE_REFORME else None
+            avant_reforme = p["source_id"] == "code_civil" and meta.get("date_fin") == concordance.DATE_REFORME
+            nouveaux = concordance.REFORME_2016.get(p.get("numero") or "") if avant_reforme else None
+            if avant_reforme and (p.get("numero") or "") in concordance.SANS_EQUIVALENT:
+                # La cause (anciens 1131 a 1133) : la version actuelle du meme numero traite d'autre chose (D136).
+                return {**base, "applicable": True, "en_vigueur": False, "version_en_vigueur": None,
+                        "message": (f"Ancienne numérotation, abrogée le 1er octobre 2016 : "
+                                    f"{concordance.devenir(p['numero'])}. Confirmez sur Légifrance avant de vous y fier.")}
             if nouveaux:
                 # Ancien numero : la version actuelle du meme numero aurait un autre objet.
                 for v in self.retriever.versions("code_civil", nouveaux[0]):

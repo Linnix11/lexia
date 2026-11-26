@@ -160,6 +160,8 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"execution forcee", ((CC, "1221"),)),
     (r"resolution du contrat|contrat .{0,20}resolu", ((CC, "1224"),)),
     (r"dommages(?: |-)et(?: |-)interets", ((CC, "1231-1"),)),
+    # clause penale : article 1231-5 (ancien 1152) ; la question sans numero ne le recevait pas (audit du 25/11, R4)
+    (r"clauses? penales?", ((CC, "1231-5"),)),
     (r"capacite (?:de|a) contracter|incapacite.{0,30}(?:mineur|contracter)|mineurs? non emancipes?", ((CC, "1145"), (CC, "1146"), (CC, "1148"))),
     (r"obligations? du (?:preneur|locataire)", ((CC, "1728"),)),
     (r"obligations? du bailleur|obligations? du loueur", ((CC, "1719"), (CC, "1720"))),

@@ -459,11 +459,10 @@ def avertir_anciens_numeros(reponse: dict, sources: list[dict], passages: list[d
         for ancien, nouveaux in anciens_numeros([p]).items():
             if any(f"article {ancien} " in e["texte"] for e in reponse["points_incertains"]):
                 continue
-            art = "à l'article" if len(nouveaux) == 1 else "aux articles"
             reponse["points_incertains"].append({
                 "texte": (f"Votre cours cite l'article {ancien} du Code civil. S'il s'agit de l'ancienne "
-                          f"numérotation (en vigueur jusqu'au 1er octobre 2016), son contenu se trouve aujourd'hui "
-                          f"{art} {', '.join(nouveaux)} : le numéro {ancien} vise désormais une autre règle."),
+                          f"numérotation (en vigueur jusqu'au 1er octobre 2016), {concordance.devenir(ancien)} : "
+                          f"le numéro {ancien} vise désormais une autre règle."),
                 "sources": [p["id"]]})
 
 

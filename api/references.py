@@ -124,6 +124,13 @@ def articles_cites(texte: str) -> tuple[tuple[str, str | None], ...]:
     return tuple(dict.fromkeys(out))
 
 
+def citations_d_articles(texte: str) -> list[tuple[int, tuple[str, ...], str | None]]:
+    """(fin de la citation, numeros, texte nomme juste apres) pour chaque « article(s) N » du texte, dans l'ordre :
+    la position sert a ecrire une precision juste apres la citation (api/concordance.py, annoter)."""
+    return [(m.end(), tuple(dict.fromkeys(_norm_num(n) for n in _NUM_RE.findall(_PRECISION_RE.sub(" ", m.group(1))))),
+             _texte_rattache(texte[m.end():])) for m in _ARTICLES_RE.finditer(texte)]
+
+
 def _motif(n: str) -> str:
     """'L2223-1' doit aussi reconnaitre 'L. 2223-1' et 'L 2223-1' ; 'R421-1' aussi 'R*421-1', 'LO119' 'L.O. 119'."""
     m = re.match(r"^(LO|[LRDA])(\d.*)$", n)
