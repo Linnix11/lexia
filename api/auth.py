@@ -415,6 +415,11 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
     def _ip(request: Request) -> str:
         return cle_ip(request)
 
+    def _ouvrir(request: Request, response: Response, uid: int) -> None:
+        """Session ouverte apres inscription ou connexion complete : le reseau devient connu du compte (D137)."""
+        comptes.noter_reseau(uid, _ip(request))
+        _poser_cookie(request, response, comptes.ouvrir_session(uid))
+
     @router.post("/inscription", status_code=201, dependencies=[Depends(verifier_origine)])
     def inscription(req: Inscription, request: Request, response: Response):
         if not req.accepte_cgu:
@@ -456,7 +461,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
                 log.warning("plafond atteint (adresse ou comptes non confirmes) : lien d'inscription non envoye")
         elif not (envoye := _envoyer_verification(request, u)):
             _annuler(t, *plafonds)
-        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
+        _ouvrir(request, response, u.id)
         return {**profil(comptes, comptes.par_id(u.id)), "lien_envoye": envoye}
 
     @router.post("/connexion", dependencies=[Depends(verifier_origine)])
@@ -464,16 +469,21 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
         email = req.email.strip().lower()
         # 5 echecs par compte ET par adresse IP, 50 par compte en tout (audit du 2026-11-16, point 7).
         cle, compte = f"{email}|{_ip(request)}", f"compte:{email}"
-        freins.verifier(_ip(request), cle, compte)
+        # Plafond par compte leve pour un reseau d'ou le compte s'est deja connecte (30 jours) : sinon 50 echecs
+        # envoyes d'ailleurs bloquaient le titulaire, meme chez lui (audit du 25/11, S2 ; D137).
+        connu = comptes.reseau_connu(email, _ip(request))
+        freins.verifier(_ip(request), cle, None if connu else compte)
         u = comptes.authentifier(email, req.mot_de_passe)
         if u is None:
             freins.echec(cle, compte)
             raise HTTPException(401, "E-mail ou mot de passe incorrect.")
-        freins.succes(cle, compte)
+        # Le compteur par compte n'est plus remis a zero : la connexion du titulaire depuis chez lui rendait
+        # sinon 50 essais a une attaque repartie en cours. Il s'efface seul apres 15 minutes.
+        freins.succes(cle)
         if u.double_authentification:
             # Mot de passe correct : la session ne s'ouvre qu'apres le code de l'application.
             return {"double_authentification_requise": True, "jeton": attentes.creer(u.id)}
-        _poser_cookie(request, response, comptes.ouvrir_session(u.id))
+        _ouvrir(request, response, u.id)
         return profil(comptes, u)
 
     @router.post("/connexion/code", dependencies=[Depends(verifier_origine)])
@@ -487,7 +497,7 @@ def creer_routes(comptes: Comptes, inscriptions_ip_jour: int = 20,
             raise HTTPException(401, "Code incorrect.")
         attentes.terminer(req.jeton)
         freins.succes(f"2fa:{uid}")
-        _poser_cookie(request, response, comptes.ouvrir_session(uid))
+        _ouvrir(request, response, uid)
         return profil(comptes, comptes.par_id(uid))
 
     def _code_2fa_valable(uid: int, code: str, request: Request) -> bool:

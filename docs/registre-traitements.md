@@ -35,7 +35,7 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
 | T4 | Limites d'usage et formules | Exécution du contrat | Compteurs de questions et questionnaires : 90 jours ; de résumés vocaux et de cartes mentales : un mois ; formule : comme le compte |
 | T5 | Facturation des formules payantes | Obligation légale (comptabilité) | 10 ans (6 ans si activité libérale, à confirmer) |
 | T6 | Journaux techniques et avis | Intérêt légitime | 12 mois |
-| T7 | Sécurité du service | Intérêt légitime | 14 jours (serveur web), 48 h (empreinte après suppression) |
+| T7 | Sécurité du service | Intérêt légitime | 14 jours (serveur web), 48 h (empreinte après suppression), 30 jours (réseaux connus d'un compte) |
 | T8 | Sauvegardes | Intérêt légitime (continuité du service) | 14 jours sur le serveur, 60 jours hors serveur |
 | T9 | Échanges par e-mail (demandes de formule, exercice des droits) | Mesures précontractuelles, obligation légale | 3 ans après le dernier échange (à appliquer par l'éditeur dans sa boîte) |
 | T10 | E-mails d'information et origine des inscriptions | Consentement (e-mails) ; intérêt légitime (origine, réponse facultative) | Comme le compte ; consentement effacé dès son retrait |
@@ -230,11 +230,17 @@ au code (chemin entre parenthèses) ; ce qui n'a pas pu être vérifié est marq
   depuis le site (table `suppressions`), qui empêche de se réinscrire dans les 24 h pour remettre son quota à zéro ;
   compteurs des e-mails envoyés et des codes de double authentification incorrects (table `compteurs_jour`, D119) :
   empreinte de la clé (numéro du compte, adresse IP ou réseau IPv6 /48, jamais en clair) et instant, pour les
-  plafonds sur 24 h qui survivent à un redémarrage.
+  plafonds sur 24 h qui survivent à un redémarrage ; réseaux d'où un compte s'est connecté (table
+  `reseaux_connus`, D137) : numéro du compte, empreinte du réseau (adresse IPv4 ou réseau IPv6 /64, HMAC avec
+  `CLE_SECRETS`, jamais en clair) et date de la dernière connexion réussie depuis ce réseau, pour que des échecs
+  de connexion envoyés d'ailleurs ne bloquent pas le titulaire chez lui (audit du 25/11, S2). Figurent dans
+  l'export des données (date seulement) et sont effacés avec le compte.
 - Destinataires : éditeur, Hostinger, Cloudflare.
 - Durée : journaux nginx 14 jours (rotation à vérifier sur le serveur : `/etc/logrotate.d/nginx`) ; empreinte
   compteurs de `compteurs_jour` : 24 h (lignes plus anciennes effacées au plus tard dix minutes après, à chaque
-  nouvel envoi ou code) ; empreinte
+  nouvel envoi ou code) ; réseaux connus d'un compte : 30 jours après la dernière connexion réussie depuis ce
+  réseau (ignorés au-delà, effacés par la purge quotidienne `Comptes.purger_reseaux`, test
+  `tests/test_reseaux_connus.py`) ; empreinte
   après suppression : effacée par la tâche de nuit une fois les 24 h écoulées, donc 48 h au plus
   (`Comptes.purger_sessions`, test `tests/test_rgpd.py`). La CNIL recommande de conserver les journaux de
   sécurité entre six mois et un an (https://www.cnil.fr/fr/la-cnil-publie-une-recommandation-relative-aux-mesures-de-journalisation) :

@@ -433,6 +433,7 @@ export function Confidentialite() {
           <li><strong>Questionnaire « Donner mon avis »</strong> (facultatif, comptes de la bêta) : la note d’utilité, ce qui vous a aidé, ce qui vous a manqué, une réponse fausse repérée et son lien, avec la date du jour. L’avis n’est pas rattaché à votre compte : ni adresse e-mail, ni numéro de compte, ni heure. N’y écrivez pas d’informations personnelles.</li>
           <li><strong>Mesure d’utilisation</strong> : pour chaque question, cas pratique, fiche, questionnaire, résumé vocal, carte mentale ou dépôt de cours, la fonction utilisée, le résultat (réussite, refus ou erreur) et la durée. Ni le texte, ni le compte, ni l’adresse IP n’y figurent ; l’éditeur n’en consulte que des totaux par jour et par fonction. Aucun cookie n’est utilisé pour cette mesure.</li>
           <li><strong>Journaux du serveur web</strong> : adresse IP, date, page demandée et navigateur, conservés 14 jours pour la sécurité du service.</li>
+          <li><strong>Réseaux de connexion</strong> : pour chaque réseau d’où vous vous êtes connecté (adresse IP de votre box ou de votre réseau), une empreinte qui ne permet pas de retrouver l’adresse, et la date de la dernière connexion. Elle sert à ne pas vous bloquer quand quelqu’un d’autre essaie des mots de passe faux sur votre compte.</li>
           <li><strong>Réponses déjà calculées</strong> : le texte d’une question et sa réponse sont gardés en mémoire vive 24 heures au plus, pour répondre immédiatement à une question identique ; ils ne sont jamais écrits sur disque et ne sont reliés à aucun compte.</li>
         </ul>
         <p>
@@ -558,7 +559,7 @@ export function Confidentialite() {
           <li>Vous envoyer les nouveautés de Lexia par e-mail, seulement si vous l’avez accepté (consentement, retirable à tout moment dans « Mon compte »).</li>
           <li>Savoir par quels canaux les étudiants connaissent Lexia, à partir de la réponse facultative donnée à l’inscription (intérêt légitime).</li>
           <li>Tenir la comptabilité des formules payantes (obligation légale).</li>
-          <li>Assurer la sécurité du service : journaux du serveur web, limites contre les abus, empreinte gardée après une suppression de compte (intérêt légitime).</li>
+          <li>Assurer la sécurité du service : journaux du serveur web, limites contre les abus, empreinte gardée après une suppression de compte, réseaux de connexion (intérêt légitime).</li>
           <li>Suivre la qualité et le coût du service : journaux techniques sans le texte des questions, avis « utile / pas utile » (intérêt légitime).</li>
           <li>Réserver l’inscription aux participants de la bêta fermée grâce au code d’accès (exécution du contrat), et améliorer Lexia avant son ouverture à partir du questionnaire de retour, facultatif, et de la mesure d’utilisation sans identifiant (intérêt légitime).</li>
         </ul>
@@ -572,6 +573,7 @@ export function Confidentialite() {
           <li>Compteurs de questions et de questionnaires : 90 jours. Compteurs de résumés vocaux et de cartes mentales : un mois.</li>
           <li>Cours déposés : jusqu’à ce que vous les retiriez, ou jusqu’à la suppression du compte ; les sauvegardes peuvent en garder une copie jusqu’à leur effacement (voir ci-dessous).</li>
           <li>Session de connexion : 30 jours au plus.</li>
+          <li>Réseaux de connexion : 30 jours après la dernière connexion depuis ce réseau, et effacés avec le compte.</li>
           <li>Journaux techniques et mesure d’utilisation : 12 mois, puis suppression automatique.</li>
           <li>Groupe du code d’accès de la bêta : comme le compte. Avis du questionnaire « Donner mon avis » : 12 mois, puis suppression automatique ; n’étant rattachés à aucun compte, ils ne sont pas effacés avec lui et ne figurent pas dans le fichier de vos données.</li>
           <li>Journaux du serveur web : 14 jours.</li>

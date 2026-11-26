@@ -104,6 +104,14 @@ CREATE TABLE IF NOT EXISTS suppressions (
     boite        TEXT PRIMARY KEY,
     supprime_le  TEXT NOT NULL
 );
+-- Reseaux d'ou le compte s'est connecte, 30 jours (D137) : le plafond d'echecs par compte ne s'y applique pas,
+-- sinon des echecs envoyes d'ailleurs bloquaient le titulaire (audit du 25/11, S2). Empreinte, pas l'adresse.
+CREATE TABLE IF NOT EXISTS reseaux_connus (
+    utilisateur  INTEGER NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    empreinte    TEXT NOT NULL,
+    vu_le        TEXT NOT NULL,
+    PRIMARY KEY (utilisateur, empreinte)
+);
 """
 
 
@@ -144,6 +152,7 @@ INACTIVITE = timedelta(days=730)
 PREAVIS_INACTIVITE = timedelta(days=30)
 # Compteurs d'usage : ne servent qu'au quota du jour et aux statistiques des 30 derniers jours.
 USAGE_CONSERVE = timedelta(days=90)
+RESEAUX_CONSERVES = timedelta(days=30)  # reseaux connus d'un compte (D137)
 # Comme TTL_SECONDES de api/quiz.py (questionnaires recopies dans la base des comptes, D5)
 QUESTIONNAIRES_CONSERVES_S = 3 * 3600
 # Prenom (D100) et nom (D102) : demandes a l'inscription depuis le site, vides pour les comptes plus anciens (invites
@@ -636,6 +645,34 @@ class Comptes:
         with self._lock:
             self._con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 
+    # --- reseaux connus (D137) -------------------------------------------------
+
+    @staticmethod
+    def _empreinte_reseau(uid: int, reseau: str) -> str:
+        # Numero du compte dans l'empreinte : deux comptes du meme reseau ne se relient pas dans une copie de la base
+        return coffre.empreinte(f"{uid}|{reseau}")
+
+    def noter_reseau(self, uid: int, reseau: str) -> None:
+        """Connexion reussie depuis ce reseau (/64 en IPv6, adresse en IPv4) : connu 30 jours a partir d'ici."""
+        self._q("INSERT INTO reseaux_connus (utilisateur, empreinte, vu_le) VALUES (?, ?, ?) "
+                "ON CONFLICT(utilisateur, empreinte) DO UPDATE SET vu_le = excluded.vu_le",
+                (uid, self._empreinte_reseau(uid, reseau), _maintenant().isoformat(timespec="seconds")))
+
+    def reseau_connu(self, email: str, reseau: str) -> bool:
+        rows = self._q("SELECT id FROM utilisateurs WHERE email = ?", ((email or "").strip().lower(),))
+        if not rows:
+            return False
+        uid = rows[0][0]
+        limite = (_maintenant() - RESEAUX_CONSERVES).isoformat(timespec="seconds")
+        return bool(self._q("SELECT 1 FROM reseaux_connus WHERE utilisateur = ? AND empreinte = ? AND vu_le >= ?",
+                            (uid, self._empreinte_reseau(uid, reseau), limite)))
+
+    def purger_reseaux(self) -> int:
+        """Reseaux connus de plus de RESEAUX_CONSERVES (30 jours). Renvoie le nombre de lignes effacees."""
+        limite = (_maintenant() - RESEAUX_CONSERVES).isoformat(timespec="seconds")
+        with self._lock, self._con:
+            return self._con.execute("DELETE FROM reseaux_connus WHERE vu_le < ?", (limite,)).rowcount
+
     def _table_existe(self, nom: str) -> bool:
         return self._con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
                                  (nom,)).fetchone() is not None
@@ -831,6 +868,7 @@ class Comptes:
             self.purger_usage()
             self.purger_inactifs()
             self.purger_questionnaires()
+            self.purger_reseaux()
         except Exception:  # une purge ratee se refait le lendemain ; elle ne doit pas casser le service
             log.exception("purge quotidienne des comptes")
         for tache in self.taches_quotidiennes:

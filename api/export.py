@@ -58,6 +58,8 @@ def donnees_du_compte(comptes: Comptes, uid: int) -> dict:
         "double_authentification": _double_authentification(comptes, uid),
         # Sessions de connexion ouvertes : date d'expiration seulement (le jeton n'est stocke qu'en empreinte)
         "sessions_ouvertes": _lignes(comptes, "sessions", ("expire_le",), "utilisateur = ? ORDER BY expire_le", (uid,)),
+        # Reseaux d'ou le compte s'est connecte (D137) : date de la derniere connexion (le reseau n'est qu'en empreinte)
+        "reseaux_connus": _lignes(comptes, "reseaux_connus", ("vu_le",), "utilisateur = ? ORDER BY vu_le", (uid,)),
         "usage_par_jour": _lignes(comptes, "usage", ("jour", "questions", "quiz"), "utilisateur = ? ORDER BY jour",
                                   (uid,)),
         # Compteurs du jour des resumes vocaux (D106) et des cartes mentales (D112), gardes un mois

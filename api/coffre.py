@@ -15,6 +15,8 @@ reactive. Sauvegardez quand meme CLE_SECRETS avec le reste de la configuration.
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import os
 
 from cryptography.exceptions import InvalidTag
@@ -58,6 +60,16 @@ def chiffrer(valeur: str | None) -> str | None:
     nonce = os.urandom(12)
     scelle = AESGCM(cle).encrypt(nonce, valeur.encode(), None)
     return PREFIXE + base64.urlsafe_b64encode(nonce + scelle).decode()
+
+
+def empreinte(valeur: str) -> str:
+    """Empreinte non reversible d'une petite valeur (reseau d'ou un compte se connecte, D137) : HMAC avec la cle
+    des secrets si elle est configuree. Un simple sha256 d'une adresse IPv4 se retrouve en essayant les 4 milliards
+    d'adresses ; avec le HMAC, une copie de la base sans la cle n'y suffit plus. Sans cle configuree : sha256 simple."""
+    cle = _cle()
+    if cle is None:
+        return hashlib.sha256(valeur.encode()).hexdigest()[:32]
+    return hmac.new(cle, b"empreinte:" + valeur.encode(), hashlib.sha256).hexdigest()[:32]
 
 
 def dechiffrer(valeur: str | None) -> str | None:
