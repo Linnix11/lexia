@@ -88,31 +88,39 @@ export function DepotCours() {
     ajouter(await fichiersDeposes(e.dataTransfer))
   }
 
-  const champ = 'rounded-[7px] border border-line bg-white p-[9px] text-[12px] text-ink'
+  const champ = 'min-h-10 rounded-[7px] border border-line bg-white px-[9px] text-[13px] text-ink'
   return (
     <Card className="mb-[18px] p-4 tab:p-[19px]">
-      <div onDragOver={(e) => { e.preventDefault(); setSurvol(true) }} onDragLeave={() => setSurvol(false)} onDrop={deposerFichiers}
-        data-testid="zone-depot" className={survol ? 'rounded-[10px] outline-2 outline-dashed outline-forest outline-offset-4' : ''}>
+      {/* Toute la carte accepte un glisser-deposer ; la zone pointillee le montre (D141 : avant, seul le sous-titre
+          le disait, et le cadre clignotait en passant sur les champs). */}
+      <div onDragOver={(e) => { e.preventDefault(); setSurvol(true) }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false) }}
+        onDrop={deposerFichiers} data-testid="zone-depot">
         <CardHead titre="Déposer des cours"
-          sousTitre={`${FORMATS_LISIBLES}, 20 Mo au plus par fichier. Glissez vos fichiers ici. Vos cours restent privés : vous seul pouvez les utiliser.`}
-          droite={coursMax > 0 ? <span className="text-[11px] text-muted">{mesCours.length} / {coursMax} cours</span> : undefined} />
+          sousTitre="Vos cours restent privés : vous seul pouvez les utiliser."
+          droite={coursMax > 0 ? <span className="text-[12px] text-muted">{mesCours.length} / {coursMax} cours</span> : undefined} />
         <form onSubmit={deposer} className="mt-3.5 flex flex-wrap items-end gap-2">
           {/* Champ natif masque : son bouton s'affichait en anglais selon le navigateur (« Choose File »). */}
-          <div className="grid min-w-[200px] flex-1 gap-1.5 text-[11px] text-muted">
-            <span id="depot-fichier-libelle">Fichiers</span>
+          <div className={`grid w-full gap-1.5 rounded-[10px] border-2 border-dashed p-3 text-center transition-colors ${
+            survol ? 'border-forest bg-mint' : 'border-line bg-[#fbfaf6]'}`}>
+            <span id="depot-fichier-libelle" className="sr-only">Fichiers</span>
             <input ref={choix} id="depot-fichier" data-testid="depot-fichier" type="file" multiple accept={ACCEPT}
               className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => ajouter([...(e.target.files ?? [])])} />
-            <span className="flex items-center gap-2.5 rounded-[7px] border border-line bg-white px-[5px] py-[4px] text-[12px] text-ink">
-              <button type="button" onClick={() => choix.current?.click()} aria-describedby="depot-fichier-nom" disabled={envoi}
-                className="shrink-0 rounded-[6px] border border-line bg-chip px-2.5 py-1 text-[12px] text-forest hover:border-[#9eafa3]">
-                Choisir des fichiers
-              </button>
-              <span id="depot-fichier-nom" className="min-w-0 truncate text-muted">
-                {lignes.length === 0 ? 'Aucun fichier choisi' : lignes.length === 1 ? lignes[0].fichier.name : `${lignes.length} fichiers`}
-              </span>
-            </span>
+            <p className="text-[13px] font-semibold text-ink">
+              {survol ? 'Lâchez pour ajouter les fichiers' : (
+                <><span className="pointer-coarse:hidden">Glissez ici vos fichiers ou un dossier, ou </span>
+                  <button type="button" onClick={() => choix.current?.click()} aria-describedby="depot-fichier-nom" disabled={envoi}
+                    className="inline-flex min-h-9 items-center rounded-[7px] border border-line bg-white px-3 text-[13px] text-forest hover:border-[#9eafa3] pointer-coarse:min-h-11">
+                    Choisir des fichiers
+                  </button></>
+              )}
+            </p>
+            <p className="text-[12px] text-muted">{FORMATS_LISIBLES} · 20 Mo au plus par fichier</p>
+            <p id="depot-fichier-nom" className="min-w-0 truncate text-[12px] text-ink">
+              {lignes.length === 0 ? 'Aucun fichier choisi' : lignes.length === 1 ? lignes[0].fichier.name : `${lignes.length} fichiers choisis`}
+            </p>
           </div>
-          <label className="grid gap-1.5 text-[11px] text-muted">
+          <label className="grid gap-1.5 text-[12px] text-muted">
             Matière
             <select value={matiere} onChange={(e) => { setMatiere(e.target.value); setAide(null) }} className={champ}>
               <option value="">Choisir…</option>
@@ -120,25 +128,26 @@ export function DepotCours() {
             </select>
           </label>
           {aEnvoyer.length <= 1 && (
-            <label className="grid min-w-[180px] flex-1 gap-1.5 text-[11px] text-muted">
+            <label className="grid min-w-[180px] flex-1 gap-1.5 text-[12px] text-muted">
               Titre (facultatif)
               <input value={titre} onChange={(e) => setTitre(e.target.value)} maxLength={120} placeholder="Ex. Chapitre 3 : les vices du consentement" className={champ} />
             </label>
           )}
           <button type="submit" disabled={envoi || plein} aria-describedby="aide-depot"
-            className="inline-flex items-center gap-1.5 rounded-[7px] bg-forest px-3 py-[9px] text-[12px] text-white hover:bg-forest-dark disabled:opacity-50">
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-[7px] bg-forest px-3 text-[13px] text-white hover:bg-forest-dark disabled:opacity-50 pointer-coarse:min-h-11">
             {envoi && <Rond className="h-3.5 w-3.5" />}
             {envoi ? 'Envoi…' : aEnvoyer.length > 1 ? `Déposer ${aEnvoyer.length} cours` : 'Déposer'}
           </button>
           <p id="aide-depot" role="status" className="w-full text-[12px] text-[#8c4a36] empty:hidden">{aide ?? ''}</p>
         </form>
       </div>
-      {plein && <p className="mt-2 text-[11px] text-[#8c4a36]">Limite atteinte pour votre formule : retirez un cours ou passez à une formule supérieure.</p>}
+      {plein && <p className="mt-2 text-[12px] text-[#8c4a36]">Limite atteinte pour votre formule : retirez un cours ou passez à une formule supérieure.</p>}
       {lignes.length > 0 && (
-        <ul aria-label="Fichiers à déposer" className="mt-3 grid gap-1.5 text-[11px]">
+        <ul aria-label="Fichiers à déposer" className="mt-3 grid gap-2 text-[12px]">
           {lignes.map((l, i) => <LigneDepot key={`${i}-${l.fichier.name}`} ligne={l} />)}
         </ul>
       )}
+      <Limites coursMax={coursMax} deposes={mesCours.length} />
     </Card>
   )
 }
@@ -166,5 +175,26 @@ function LigneDepot({ ligne: { fichier, etat } }: { ligne: Ligne }) {
       {etat.etape === 'fait' && <span role="status" className="text-muted">{etat.message}</span>}
       {etat.etape === 'refus' && <span role="alert" className="text-[#8c4a36]">{etat.message}</span>}
     </li>
+  )
+}
+
+/** Ce que Lexia sait lire et les limites, en clair (D141) : avant, seuls les formats et 20 Mo etaient dits ; la
+ * limite de pages scannees, celle des depots du jour et ce que donne la formule se decouvraient a un refus.
+ * Memes valeurs que le serveur (api/cours.py, api/extraction.py). */
+function Limites({ coursMax, deposes }: { coursMax: number; deposes: number }) {
+  return (
+    <details className="mt-3 text-[12px] text-muted">
+      <summary className="min-h-8 cursor-pointer py-1 text-forest pointer-coarse:min-h-11">Formats, scans et limites</summary>
+      <ul className="mt-1 grid list-disc gap-1 pl-5 leading-[1.5]">
+        <li>{FORMATS_LISIBLES}. Ancien Word (.doc) : enregistrez-le en .docx. Photo d’iPhone (HEIC) : en JPEG.</li>
+        <li>Scans et photos : lus par reconnaissance de caractères, 20 pages scannées au plus par fichier (sinon,
+          découpez-le). Vérifiez ensuite le texte lu avec « Aperçu » : les pages scannées y sont signalées.</li>
+        <li>20 Mo et 1 000 pages au plus par fichier ; un très long document est à découper en plusieurs cours.</li>
+        <li>
+          {coursMax > 0 ? `Votre formule : ${coursMax} cours au plus (${deposes} déposé${deposes > 1 ? 's' : ''}). ` : ''}
+          Retirer un cours libère sa place. 20 dépôts au plus par 24 heures, un fichier lu à la fois.
+        </li>
+      </ul>
+    </details>
   )
 }

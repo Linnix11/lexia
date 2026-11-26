@@ -37,6 +37,7 @@ MAX_SOURCES_REPONSE = 12
 TAILLE_MORCEAU = 3_000             # le secours ne recoit que les premiers morceaux (rag.pour_secours)
 MAX_MOTS = 800                     # environ 5 min 20 a 150 mots par minute
 MIN_MOTS = 40
+MAX_CARACTERES_INTERTITRE = 60
 MOTS_PAR_MINUTE = 150
 CONSERVATION_JOURS = 31            # compteurs par jour effaces apres un mois
 
@@ -144,15 +145,32 @@ def document_partiel(morceaux: list[dict], envoyes: list[dict]) -> bool:
 
 def nettoyer(brut: dict, document: list[dict], controle: Controle) -> list[str]:
     """Paragraphes verifies, sans repere S1, coupes a MAX_MOTS a la fin d'un paragraphe (ou d'une phrase)."""
-    gardes: list[str] = []
+    return [texte for _, texte in nettoyer_parties(brut, document, controle)]
+
+
+def _intertitre(brut: dict, i: int, n: int, document: list[dict], controle: Controle) -> str:
+    """Intertitre du paragraphe i, affiche a l'ecran (D141). Vide si le modele n'en donne pas un par paragraphe
+    (secours, ancien format) ou s'il cite une reference absente du document : le site numerote alors la partie."""
+    titres = brut.get("intertitres")
+    if not isinstance(titres, list) or len(titres) != n:
+        return ""
+    titre = " ".join(_REPERES.sub("", str(titres[i] or "")).split()).strip(" .:")[:MAX_CARACTERES_INTERTITRE]
+    return titre if titre and verifier_texte(titre, document, controle) else ""
+
+
+def nettoyer_parties(brut: dict, document: list[dict], controle: Controle) -> list[tuple[str, str]]:
+    """(intertitre, paragraphe) verifies, dans l'ordre ; memes regles que nettoyer()."""
+    gardes: list[tuple[str, str]] = []
     mots = 0
-    for p in brut.get("paragraphes") or []:
+    bruts = brut.get("paragraphes") or []
+    for i, p in enumerate(bruts):
         texte = _REPERES.sub("", str(p or "")).strip()
         if not texte:
             continue
         if not verifier_texte(texte, document, controle):
             controle.elements_retires += 1
             continue
+        titre = _intertitre(brut, i, len(bruts), document, controle)
         n = len(texte.split())
         if mots + n > MAX_MOTS:
             if not gardes:  # premier paragraphe trop long a lui seul : coupe a la derniere phrase qui tient
@@ -164,9 +182,9 @@ def nettoyer(brut: dict, document: list[dict], controle: Controle) -> list[str]:
                     retenu.append(ph)
                     mots += len(ph.split())
                 if retenu:
-                    gardes.append(" ".join(retenu))
+                    gardes.append((titre, " ".join(retenu)))
             break
-        gardes.append(texte)
+        gardes.append((titre, texte))
         mots += n
     return gardes
 
@@ -230,7 +248,8 @@ class ResumesVocaux:
             passages=morceaux, schema=prompts.SCHEMA_RESUME_VOCAL, temperature=0.3)
         controle = Controle()
         # Verifie contre ce que le modele a recu (le secours n'a que les premiers morceaux)
-        paragraphes = nettoyer(brut, envoyes, controle)
+        parties = nettoyer_parties(brut, envoyes, controle)
+        paragraphes = [texte for _, texte in parties]
         mots = sum(len(p.split()) for p in paragraphes)
         valide = mots >= MIN_MOTS
         titre_resume = str(brut.get("titre") or "").strip()[:200]
@@ -243,6 +262,7 @@ class ResumesVocaux:
         return {
             "titre": titre_resume or titre,
             "paragraphes": paragraphes if valide else [],
+            "intertitres": [titre for titre, _ in parties] if valide else [],  # "" : partie numerotee par le site
             "mots": mots if valide else 0,
             "duree_estimee_s": round(mots * 60 / MOTS_PAR_MINUTE) if valide else 0,
             "partiel": partiel,

@@ -164,3 +164,31 @@ def test_plafond_de_jetons_transmis_aux_modeles():
     assert g._body("s", "p", {}, 0.2)["generationConfig"]["maxOutputTokens"] == rv.MAX_JETONS_RESUME < 4096
     assert GeminiLLM(api_key="k", models=("m",))._body("s", "p", {}, 0.2)["generationConfig"]["maxOutputTokens"] == 4096
     assert GroqLLM(api_key="k", models=("m",), max_jetons=rv.MAX_JETONS_RESUME)._max_jetons == rv.MAX_JETONS_RESUME
+
+
+def test_intertitres_alignes_verifies_et_facultatifs(env):
+    """D141 : un intertitre par paragraphe, affiche par le site ; garde avec son paragraphe quand un autre est
+    retire, vide s'il cite une reference absente ou si le modele n'en donne pas un par paragraphe (secours)."""
+    client, llm, _, _ = env
+    inscrire(client)
+    llm.reponse = {**RESUME, "intertitres": ["Introduction [S1]", "L'article 9999", "À retenir."]}
+    res = client.post("/resume-vocal", json=demande_reponse()).json()
+    assert res["paragraphes"] == [PARAGRAPHE, "À retenir : faute, dommage et lien de causalité."]
+    assert res["intertitres"] == ["Introduction", "À retenir"]
+
+    llm.reponse = {**RESUME, "intertitres": ["Selon l'article 4242", "Deux", "Trois"]}
+    assert client.post("/resume-vocal", json=demande_reponse()).json()["intertitres"] == ["", "Trois"]
+
+    controle, simple = Controle(), "Il faut une faute, un dommage et un lien de causalité."
+    assert rv.nettoyer_parties({"paragraphes": [simple], "intertitres": ["Un", "Deux"]}, [], controle) \
+        == [("", simple)]
+    assert rv.nettoyer_parties({"paragraphes": [simple]}, [], controle) == [("", simple)]
+    long = rv.nettoyer_parties({"paragraphes": [simple], "intertitres": ["x" * 200]}, [], controle)
+    assert len(long[0][0]) == rv.MAX_CARACTERES_INTERTITRE
+
+
+def test_consigne_plan_annonce_et_intertitres():
+    systeme = rv.prompts.SYSTEME_RESUME_VOCAL
+    assert "Nous verrons d'abord" in systeme and '"intertitres"' in systeme
+    assert "intertitres" in rv.prompts.SCHEMA_RESUME_VOCAL["properties"]
+    assert rv.prompts.SCHEMA_RESUME_VOCAL["required"] == ["titre", "paragraphes"]  # secours sans intertitres

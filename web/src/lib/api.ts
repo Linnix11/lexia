@@ -466,7 +466,8 @@ function envoyerAvecProgres<T>(chemin: string, fichier: File, entetes: Record<st
 }
 
 export interface ApercuCours extends CoursDepose {
-  apercu: { page: number | null; page_fin: number | null; texte: string }[]
+  debut: number // rang du premier passage montre (D141 : apercu parcouru 5 passages a la fois)
+  apercu: { rang: number; page: number | null; page_fin: number | null; texte: string }[]
 }
 
 export interface CoursDepose {
@@ -480,6 +481,7 @@ export interface CoursDepose {
   statut: 'traitement' | 'pret' | 'erreur'
   ajoute_le: string
   avertissement?: string | null // ex. pages sans texte (scan) : leur contenu n'est pas pris en compte
+  pages_ocr?: number[] // pages lues par reconnaissance de caracteres, a verifier dans l'apercu (D141)
 }
 
 /** Cours a utiliser pour une demande ; avec_officiel = false : « Mon cours uniquement ». */
@@ -547,6 +549,7 @@ export type DemandeResume =
 export interface ResumeVocal {
   titre: string
   paragraphes: string[]
+  intertitres?: string[] // un par paragraphe ; "" ou absent : partie numerotee par le site (D141)
   mots: number
   duree_estimee_s: number
   partiel: boolean // document trop long : seul son debut est resume
@@ -668,7 +671,8 @@ export const api = {
         'X-Lexia-Fichier': encodeURIComponent(fichier.name),
         'X-Lexia-Titre': encodeURIComponent(titre),
       }, progres),
-    apercu: (id: number) => requete<ApercuCours>(`/cours/${id}/apercu`),
+    apercu: (id: number, ou: { debut?: number; page?: number } = {}) =>
+      requete<ApercuCours>(`/cours/${id}/apercu${ou.page ? `?page=${ou.page}` : ou.debut ? `?debut=${ou.debut}` : ''}`),
     modifier: (id: number, changement: { titre?: string; matiere?: string }) =>
       post<CoursDepose>(`/cours/${id}/modifier`, changement),
     supprimer: (id: number) => post<void>(`/cours/${id}/supprimer`, {}),

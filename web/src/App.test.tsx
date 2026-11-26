@@ -1170,6 +1170,63 @@ describe('Depots de cours, version 2 (D107)', () => {
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/cours/7/supprimer'))).toBe(true)
     confirmer.mockRestore()
   })
+
+  it('apercu parcouru au-dela des 5 premiers passages et ouvert sur une page scannee (D141)', async () => {
+    const scanne = { ...COURS, passages: 12, pages_ocr: [4], avertissement: 'Page 4 lue par reconnaissance de caractères (scan) : vérifiez le texte dans l’aperçu.' }
+    const passages = (debut: number, n: number) => Array.from({ length: n }, (_, k) => ({
+      rang: debut + k, page: debut + k + 1, page_fin: debut + k + 1, texte: `Passage numéro ${debut + k + 1}.` }))
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/cours')) return repondre({ cours: [scanne], maximum: 3, formats: ['.pdf'] })
+      if (url.endsWith('/cours/7/apercu?page=4')) return repondre({ ...scanne, debut: 3, apercu: passages(3, 5) })
+      if (url.endsWith('/cours/7/apercu?debut=5')) return repondre({ ...scanne, debut: 5, apercu: passages(5, 5) })
+      if (url.endsWith('/cours/7/apercu')) return repondre({ ...scanne, debut: 0, apercu: passages(0, 5) })
+      return base(url, init)
+    })
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Vérifier la page 4' }))
+    let apercu = await screen.findByRole('region', { name: 'Aperçu de « Chapitre 3 »' })
+    expect(await within(apercu).findByText(/passages 4 à 8 sur 12/)).toBeInTheDocument()
+    expect(within(apercu).getByText('p. 4 · lue sur un scan')).toBeInTheDocument()
+    expect(within(apercu).getByText('p. 5')).toBeInTheDocument() // page lue normalement : pas de mention
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aperçu' })) // ferme
+    fireEvent.click(screen.getByRole('button', { name: 'Aperçu' }))
+    apercu = await screen.findByRole('region', { name: 'Aperçu de « Chapitre 3 »' })
+    expect(await within(apercu).findByText(/passages 1 à 5 sur 12/)).toBeInTheDocument()
+    expect(within(apercu).getByRole('button', { name: 'Passages précédents' })).toBeDisabled()
+    fireEvent.click(within(apercu).getByRole('button', { name: 'Passages suivants' }))
+    expect(await within(apercu).findByText('Passage numéro 6.')).toBeInTheDocument()
+    expect(within(apercu).getByText(/passages 6 à 10 sur 12/)).toBeInTheDocument()
+    fireEvent.click(within(apercu).getByRole('button', { name: 'Aller à la page 4' }))
+    expect(await within(apercu).findByText(/passages 4 à 8 sur 12/)).toBeInTheDocument()
+  })
+
+  it('depot rapide sans matiere : bouton actif, la raison est dite au clic (audit du 25/11, M-4)', async () => {
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Assistant IA/ }))
+    fireEvent.change(screen.getByTestId('ajout-cours'), { target: { files: [new File(['%PDF'], 'scan.pdf', { type: 'application/pdf' })] } })
+    const panneau = await screen.findByRole('form', { name: 'Ajouter un cours' })
+    const bouton = within(panneau).getByRole('button', { name: 'Déposer' })
+    expect(bouton).toBeEnabled()
+    fireEvent.click(bouton)
+    expect(within(panneau).getByText('Choisissez la matière du cours.')).toBeInTheDocument()
+    expect(within(panneau).getByLabelText('Matière')).toHaveFocus()
+    expect(fetchMock.mock.calls.some(([u, i]) => String(u).includes('/cours?') && i?.method === 'POST')).toBe(false)
+  })
+
+  it('explique formats, scans et limites de la formule sous le depot (D141)', async () => {
+    const base = fetchMock.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/cours') ? repondre({ cours: [COURS], maximum: 3, formats: ['.pdf'] }) : base(url, init))
+    render(<Site />)
+    fireEvent.click(await screen.findByRole('button', { name: /Mes matières/ }))
+    expect(screen.getByText(/Glissez ici vos fichiers ou un dossier/)).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Formats, scans et limites'))
+    expect(screen.getByText(/20 pages scannées au plus par fichier/)).toBeInTheDocument()
+    expect(await screen.findByText(/Votre formule : 3 cours au plus \(1 déposé\)/)).toBeInTheDocument()
+  })
 })
 
 describe('Adresses de l espace etudiant (recette du 2026-11-23, D125)', () => {

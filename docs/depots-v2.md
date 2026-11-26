@@ -71,8 +71,11 @@ et `\uN` décodés.
 
 - Page « Mes cours » : plusieurs fichiers à la fois, zone de glisser-déposer, barre de progression de l'envoi puis
   « Lecture du fichier » ; formats et taille vérifiés avant l'envoi avec le nom du fichier en cause.
-- Liste des cours : pages, passages, statut, avertissement ; « Aperçu » (premiers passages lus),
-  « Modifier » (titre et matière), « Retirer ».
+- Liste des cours : pages, passages, statut, avertissement ; « Aperçu » (5 passages à la fois, précédents et
+  suivants), « Modifier » (titre et matière), « Retirer ».
+- Pages lues par OCR gardées avec le cours (`pages_ocr`, D141) : « Vérifier la page 3 » ouvre l'aperçu sur cette
+  page (`GET /cours/{id}/apercu?page=3`), pastilles des pages scannées et passages concernés encadrés.
+- Zone de glisser-déposer visible et « Formats, scans et limites » sous le formulaire (D141).
 
 ### Limites inchangées
 

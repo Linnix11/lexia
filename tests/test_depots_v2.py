@@ -274,3 +274,33 @@ def test_formats_annonces_par_l_api(env):  # noqa: F811
     client = TestClient(app)
     inscrire(client)
     assert {".rtf", ".jpg", ".jpeg", ".png"} <= set(client.get("/cours").json()["formats"])
+
+
+def test_apercu_page_par_page_et_pages_lues_par_ocr(env, monkeypatch):  # noqa: F811
+    """D141 : l'apercu se parcourt au-dela des 5 premiers passages et va a une page donnee ; le cours garde la liste
+    des pages lues par OCR pour que le site y mene directement."""
+    app, *_ = env
+    client = TestClient(app)
+    inscrire(client)
+    pages = [f"Page {n}. " + PARAGRAPHE * 12 for n in range(1, 9)]
+    reel = extraction.lire_isole
+    monkeypatch.setattr("api.cours.lire_isole",
+                        lambda nom, contenu: extraction.Lecture(reel(nom, contenu).pages, [3, 7]))
+    cid = deposer(client, fichier="long.pdf", contenu=pdf_pages(pages)).json()["id"]
+    liste = client.get("/cours").json()["cours"]
+    assert liste[0]["pages_ocr"] == [3, 7]
+    premier = client.get(f"/cours/{cid}/apercu").json()
+    total = premier["passages"]
+    assert total > 5 and premier["debut"] == 0 and [x["rang"] for x in premier["apercu"]] == [0, 1, 2, 3, 4]
+    suite = client.get(f"/cours/{cid}/apercu", params={"debut": 5}).json()
+    assert suite["debut"] == 5 and suite["apercu"][0]["rang"] == 5
+    sept = client.get(f"/cours/{cid}/apercu", params={"page": 7}).json()
+    x = sept["apercu"][0]
+    assert x["page"] <= 7 <= (x["page_fin"] or x["page"]) and "Page 7." in "".join(a["texte"] for a in sept["apercu"])
+    fin = client.get(f"/cours/{cid}/apercu", params={"debut": 99_999}).json()
+    assert fin["debut"] == total - 1 and len(fin["apercu"]) == 1
+    assert client.get(f"/cours/{cid}/apercu", params={"debut": -1}).status_code == 422
+    assert client.get(f"/cours/{cid}/apercu", params={"page": 0}).status_code == 422
+    # Cours sans page lue par OCR : liste vide
+    monkeypatch.undo()
+    assert deposer(client).json()["pages_ocr"] == []

@@ -21,7 +21,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from api.auth import verifier_origine
@@ -205,7 +205,8 @@ class Cours:
         # lisible dans le fichier de la base (audit C7).
         self._con.execute("PRAGMA secure_delete = ON")
         self._con.executescript(SCHEMA)
-        for table, colonne in (("cours", "avertissement TEXT"), ("cours_passages", "page_fin INTEGER")):
+        for table, colonne in (("cours", "avertissement TEXT"), ("cours_passages", "page_fin INTEGER"),
+                               ("cours", "pages_ocr TEXT")):  # « 2,5 » : pages lues par OCR (D141)
             if colonne.split()[0] not in {r[1] for r in self._con.execute(f"PRAGMA table_info({table})")}:
                 self._con.execute(f"ALTER TABLE {table} ADD COLUMN {colonne}")
         try:  # index plein texte : un mot supprime disparait aussi de l'index (SQLite 3.44 ou plus)
@@ -271,9 +272,10 @@ class Cours:
         with self._lock, self._con:
             cid = self._con.execute(
                 "INSERT INTO cours (utilisateur, matiere, titre, fichier, pages, passages, statut, ajoute_le,"
-                " avertissement) VALUES (?,?,?,?,?,?,?,?,?)",
+                " avertissement, pages_ocr) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (uid, matiere, titre, Path(fichier).name[:200], nb_pages, len(passages),
-                 "traitement" if self.embedder else "pret", maintenant, avertissement)).lastrowid
+                 "traitement" if self.embedder else "pret", maintenant, avertissement,
+                 ",".join(map(str, lecture.ocr)) or None)).lastrowid
             for rang, (page, page_fin, texte) in enumerate(passages):
                 pid = self._con.execute("INSERT INTO cours_passages (cours, rang, page, page_fin, texte)"
                                         " VALUES (?,?,?,?,?)", (cid, rang, page, page_fin, texte)).lastrowid
@@ -313,7 +315,7 @@ class Cours:
     # -- lecture --
 
     def fiche(self, uid: int, cid: int) -> dict:
-        rows = self._q("SELECT id, matiere, titre, fichier, pages, passages, statut, ajoute_le, avertissement"
+        rows = self._q("SELECT id, matiere, titre, fichier, pages, passages, statut, ajoute_le, avertissement, pages_ocr"
                        " FROM cours WHERE id = ? AND utilisateur = ?", (cid, uid))
         if not rows:
             raise ErreurCours("Cours introuvable.")
@@ -321,14 +323,16 @@ class Cours:
 
     @staticmethod
     def _dict(r) -> dict:
-        cles = ("id", "matiere", "titre", "fichier", "pages", "passages", "statut", "ajoute_le", "avertissement")
+        cles = ("id", "matiere", "titre", "fichier", "pages", "passages", "statut", "ajoute_le", "avertissement",
+                "pages_ocr")
         d = dict(zip(cles, r))
+        d["pages_ocr"] = [int(n) for n in (d["pages_ocr"] or "").split(",") if n.isdigit()]
         d["libelle_matiere"] = LIBELLES.get(d["matiere"], d["matiere"])
         return d
 
     def lister(self, uid: int) -> list[dict]:
         self._relancer(uid)
-        rows = self._q("SELECT id, matiere, titre, fichier, pages, passages, statut, ajoute_le, avertissement"
+        rows = self._q("SELECT id, matiere, titre, fichier, pages, passages, statut, ajoute_le, avertissement, pages_ocr"
                        " FROM cours WHERE utilisateur = ? ORDER BY matiere, ajoute_le DESC", (uid,))
         return [self._dict(r) for r in rows]
 
@@ -347,12 +351,23 @@ class Cours:
             raise ErreurCours("Cours introuvable.")
         return self.fiche(uid, cid)
 
-    def apercu(self, uid: int, cid: int) -> dict:
-        """Premiers passages lus dans un cours, pour verifier ce que Lexia en a compris (OCR surtout)."""
+    def apercu(self, uid: int, cid: int, debut: int = 0, page: int | None = None) -> dict:
+        """Passages lus dans un cours, APERCU_PASSAGES a la fois, pour verifier ce que Lexia en a compris (OCR
+        surtout). debut : rang du premier passage ; page : premier passage qui couvre cette page (D141 : avant,
+        seuls les 5 premiers passages etaient visibles, une page scannee plus loin ne pouvait pas etre relue)."""
         fiche = self.fiche(uid, cid)
-        rows = self._q("SELECT page, page_fin, texte FROM cours_passages WHERE cours = ? ORDER BY rang LIMIT ?",
-                       (cid, APERCU_PASSAGES))
-        return {**fiche, "apercu": [{"page": p, "page_fin": f, "texte": t} for p, f, t in rows]}
+        if page is not None:
+            trouve = self._q("SELECT min(rang) FROM cours_passages WHERE cours = ? AND page IS NOT NULL"
+                             " AND page <= ? AND coalesce(page_fin, page) >= ?", (cid, page, page))[0][0]
+            if trouve is None:  # page sans texte (scan illisible) : passage suivant
+                trouve = self._q("SELECT min(rang) FROM cours_passages WHERE cours = ? AND page > ?",
+                                 (cid, page))[0][0]
+            debut = trouve if trouve is not None else debut
+        debut = min(max(0, debut), max(0, fiche["passages"] - 1))
+        rows = self._q("SELECT rang, page, page_fin, texte FROM cours_passages WHERE cours = ? AND rang >= ?"
+                       " ORDER BY rang LIMIT ?", (cid, debut, APERCU_PASSAGES))
+        return {**fiche, "debut": debut,
+                "apercu": [{"rang": r, "page": p, "page_fin": f, "texte": t} for r, p, f, t in rows]}
 
     def supprimer(self, uid: int, cid: int) -> None:
         with self._lock:
@@ -532,10 +547,11 @@ def creer_routes_cours(cours: Cours, utilisateur_requis) -> APIRouter:
             en_cours.discard(u.id)
 
     @router.get("/cours/{cid}/apercu")
-    def apercu(cid: int, response: Response, u=Depends(utilisateur_requis)):
+    def apercu(cid: int, response: Response, debut: int = Query(0, ge=0, le=100_000),
+               page: int | None = Query(None, ge=1, le=10_000), u=Depends(utilisateur_requis)):
         response.headers["Cache-Control"] = "no-store"  # texte du cours : jamais garde par un cache
         try:
-            return cours.apercu(u.id, cid)
+            return cours.apercu(u.id, cid, debut, page)
         except ErreurCours as e:
             raise HTTPException(404, str(e)) from None
 

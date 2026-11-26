@@ -44,6 +44,14 @@ d'abord, puis les autres fr-*). Aucun son n'est produit ni stocké par le serveu
 - Une phrase par énoncé (`SpeechSynthesisUtterance`) : la phrase lue est surlignée, un clic sur une phrase y
   saute, et Chrome ne coupe plus les longs énoncés.
 - Navigateur sans synthèse vocale ou sans voix française : le résumé s'affiche à lire, avec un message.
+- Plan en parties (D141) : le premier paragraphe annonce le plan, chaque paragraphe a un intertitre (champ
+  `intertitres` du modèle, vérifié comme le texte ; sinon Introduction, Partie n, À retenir). Parties
+  cliquables avec leur instant de départ, partie précédente et suivante, temps restant selon la vitesse.
+- Reprise (D141) : le résumé et la phrase atteinte restent dans l'onglet pour le compte (sessionStorage, effacé à
+  la déconnexion) ; « Reprendre le résumé » ne rappelle pas le serveur et ne décompte rien. Vitesse et voix
+  retenues dans le navigateur.
+- Téléphone (D141) : écran gardé allumé pendant la lecture (Screen Wake Lock quand le navigateur l'offre) ; une
+  lecture coupée par le système passe en pause sur sa phrase. « Télécharger le texte » donne un .txt.
 
 La qualité dépend de l'appareil (voix système de macOS, iOS, Android et Windows correctes ; certaines
 distributions Linux n'ont qu'une voix robotique).
