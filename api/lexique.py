@@ -121,7 +121,10 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"(?:composition|membres) du conseil constitutionnel", ((CONST, "56"),)),
     (r"hierarchie des normes|autorite des traites|traites? (?:internationaux|et (?:les )?lois)", ((CONST, "55"),)),
     # --- droit des contrats ------------------------------------------------------
-    (r"force obligatoire", ((CC, "1103"), (CC, "1193"))),
+    # D139 (dossier enseignant, question 21) : la bonne foi (1104) et la sanction de l'inexecution (1217) manquaient.
+    # Quatre articles au plus (MAX_LEXIQUE) : l'effet relatif (1199) vient par le grand arret Boot shop de la notion
+    # « force_obligatoire » (registry/grands_arrets.yaml).
+    (r"force obligatoire", ((CC, "1103"), (CC, "1104"), (CC, "1193"), (CC, "1217"))),
     (r"liberte contractuelle", ((CC, "1102"),)),
     (r"bonne foi.{0,40}contrat|contrat.{0,40}bonne foi", ((CC, "1104"),)),
     (r"pourparlers|negociations? precontractuel", ((CC, "1112"),)),

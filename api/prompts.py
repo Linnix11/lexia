@@ -51,10 +51,27 @@ MODES = {
         "Mode : expliquer un concept. Donne la définition, la règle, ses conditions, ses exceptions "
         "et un exemple simple."
     ),
+    # D139 : dossier enseignant, question 21 (force obligatoire) : « jurisprudence clé » faite d'arrets d'espece
+    # (indemnite fixee a la cote Argus, clause de substitution), memo en une longue phrase, pieges absents.
     "fiche": (
-        "Mode : fiche de révision. Le titre nomme la notion. 'droit_positif' liste les règles essentielles ; "
-        "'explication' les points clés à retenir et l'articulation des notions ; 'points_incertains' les "
-        "pièges fréquents et ce qu'il faut vérifier."
+        "Mode : fiche de révision pour un étudiant de licence qui la relira avant l'examen. Le titre nomme la "
+        "notion. 'droit_positif' liste les règles essentielles, en commençant par les articles centraux de la "
+        "notion (le principe, puis ses limites et ses sanctions) quand ils figurent dans les extraits, chacun avec "
+        "son numéro. Rubriques de 'explication' : « Définition » : la notion en une ou deux phrases, avec l'article "
+        "qui la pose. « Règles à retenir » : le principe, ses conditions, ses exceptions et ses sanctions, chaque "
+        "fois avec l'article. « Jurisprudence clé » : seulement des arrêts de principe, d'abord les grands arrêts "
+        "signalés dans la note, puis les décisions dont l'extrait énonce une règle générale ; pour chacun, la "
+        "juridiction, la date, le nom d'usage s'il en a un et son apport en une phrase. Une décision qui ne fait "
+        "qu'appliquer la règle à des faits particuliers (montant d'une indemnité, clause propre à un contrat) est "
+        "un arrêt d'espèce : ne la mets pas dans cette rubrique. Si les extraits ne contiennent aucun arrêt de "
+        "principe, écris-le en une phrase dans la rubrique plutôt que de citer des arrêts d'espèce. « Pièges "
+        "fréquents » : les erreurs que font les étudiants, tirées des extraits : notion voisine à ne pas confondre, "
+        "condition ou exception oubliée, solution abandonnée ou ancienne numérotation, chacune en une phrase. "
+        "« Mémo » : trois à cinq éléments distincts de 'explication' portant cette rubrique (jamais un seul), "
+        "chacun très court (douze mots au plus) et de la forme « idée clé : article ou arrêt qui la fonde », en "
+        "reprenant le texte central et chaque arrêt de la rubrique « Jurisprudence clé » ; pas de phrase longue ni "
+        "de conseil de méthode. 'points_incertains' : ce que les extraits ne couvrent pas et ce que l'étudiant doit "
+        "vérifier dans son cours."
     ),
     "cas_pratique": (
         "Mode : méthode du cas pratique. Dans 'explication', suis les étapes : qualification juridique des faits, "
@@ -129,7 +146,8 @@ RUBRIQUES: dict[str, tuple[str, ...]] = {
 # demande simple). Le commentaire et la dissertation sont des methodes : pas de reponse courte.
 REPONSE_DIRECTE = {
     "expliquer": "'reponse_directe' : la définition et la règle essentielle, en deux ou trois phrases.",
-    "fiche": "'reponse_directe' : la notion résumée en deux ou trois phrases.",
+    "fiche": "'reponse_directe' : la notion résumée en deux ou trois phrases, avec son article central s'il figure dans les "
+             "extraits.",
     "cas_pratique": ("'reponse_directe' : la solution du cas en deux ou trois phrases, avec la règle qui la fonde ; "
                      "si aucun fait n'est donné, laisse-la vide."),
 }

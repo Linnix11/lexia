@@ -7,6 +7,39 @@ export interface Favori {
   mode: Mode
   enregistre_le: string
   reponse: ReponseChat
+  /** Matiere choisie quand la question a ete posee (D139) ; absente des fiches d'avant, null pour « Toutes ». */
+  matiere?: string | null
+}
+
+const normaliser = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+/** Texte cherche dans une fiche : titre, question et tout son contenu (rubriques, regles, sources). */
+function texteDeFiche(f: Favori): string {
+  const r = f.reponse
+  return [f.question, r.titre, ...[r.reponse_directe ?? [], r.droit_positif, r.explication, r.points_incertains]
+    .flatMap((items) => items.map((e) => e.texte)), ...r.sources.map((s) => s.entete)].join('\n')
+}
+
+/** Recherche dans « Mes fiches » (D139) : chaque mot doit figurer dans la fiche, sans tenir compte des accents
+ * ni des majuscules ; `matiere` : undefined toutes, null les fiches sans matiere, sinon cette matiere. */
+export function filtrerFiches(liste: Favori[], recherche: string, matiere?: string | null): Favori[] {
+  const mots = normaliser(recherche).split(/\s+/).filter(Boolean)
+  return liste.filter((f) => {
+    if (matiere !== undefined && (f.matiere ?? null) !== matiere) return false
+    const texte = mots.length ? normaliser(texteDeFiche(f)) : ''
+    return mots.every((m) => texte.includes(m))
+  })
+}
+
+/** Matieres des fiches, dans l'ordre de la liste des matieres, puis « Sans matière » s'il y en a. */
+export function matieresDesFiches(liste: Favori[], libelles: { id: string; libelle: string }[]): { id: string | null; libelle: string; nombre: number }[] {
+  const compte = new Map<string | null, number>()
+  for (const f of liste) compte.set(f.matiere ?? null, (compte.get(f.matiere ?? null) ?? 0) + 1)
+  const connues = libelles.filter((m) => compte.has(m.id)).map((m) => ({ id: m.id as string | null, libelle: m.libelle, nombre: compte.get(m.id)! }))
+  const inconnues = [...compte.keys()].filter((id): id is string => id !== null && !libelles.some((m) => m.id === id))
+    .map((id) => ({ id: id as string | null, libelle: id, nombre: compte.get(id)! }))
+  const sans = compte.has(null) ? [{ id: null, libelle: 'Sans matière', nombre: compte.get(null)! }] : []
+  return [...connues, ...inconnues, ...sans]
 }
 
 const ANCIENNE_CLE = 'lexia.favoris.v1'

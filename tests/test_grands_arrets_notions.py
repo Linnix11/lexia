@@ -338,4 +338,4 @@ def test_source_attendue_ga():
     assert correspond("ga:jand-heur", grands_arrets.fiche(f"{SOURCE_FICHES}:jand-heur"))
     assert correspond("ga:blieck", BLIECK)
     assert not correspond("ga:franck", grands_arrets.fiche(f"{SOURCE_FICHES}:jand-heur"))
-    assert len(charger(JEU)) == 25 and Path(JEU).exists()
+    assert len(charger(JEU)) == 26 and Path(JEU).exists()   # gan-26 : force obligatoire (D139)

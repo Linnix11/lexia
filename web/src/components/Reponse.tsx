@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import { api, type Element, type FicheSource, type ReponseChat } from '../lib/api'
+import { parRubrique, RUBRIQUE_MEMO, RUBRIQUE_PIEGES } from '../lib/exportFiches'
 import { libelleFraicheur, sourcesAnciennes, useFraicheur } from '../lib/fraicheur'
 import { estFicheLexia, infosMode, symbole } from '../lib/modes'
 import { numeroSource, titreCourt } from '../lib/sources'
@@ -192,6 +193,33 @@ function Developpements({ r, blocs }: { r: ReponseChat; blocs: [string, string, 
   )
 }
 
+/** Fiche de revision (D139) : une fiche se relit d'un bout a l'autre, ses rubriques (definition, regles,
+ * jurisprudence cle, pieges, memo) sont visibles sans clic, chacune sous son titre, et le memo est encadre.
+ * Seuls les textes sources (droit positif) et la liste des sources restent replies. */
+function DeveloppementsFiche({ r, blocs }: { r: ReponseChat; blocs: [string, string, string] }) {
+  const [titreDroit, titreExplication, titreAttention] = blocs
+  return (
+    <>
+      <Bloc titre="L’essentiel" items={r.reponse_directe ?? []} sources={r.sources} ton="droit" />
+      {parRubrique(r.explication, titreExplication).map(([rubrique, items]) =>
+        rubrique === RUBRIQUE_MEMO ? (
+          <section key={rubrique} aria-label="Mémo" className="mt-3.5 rounded-lg border-l-4 border-forest bg-surface px-3 pt-0.5 pb-2.5">
+            <Bloc titre={rubrique} items={items} sources={r.sources} ton="droit" rubriques={false} />
+          </section>
+        ) : (
+          <Bloc key={rubrique} titre={rubrique} items={items} sources={r.sources}
+            ton={rubrique === RUBRIQUE_PIEGES ? 'attention' : 'neutre'} rubriques={false} />
+        ))}
+      <Bloc titre={titreAttention} items={r.points_incertains} sources={r.sources} ton="attention" />
+      <details className="mt-3.5 border-t border-line-soft pt-2.5">
+        <summary className="cursor-pointer text-[11px] font-semibold text-forest hover:underline">Textes et sources</summary>
+        <Bloc titre={titreDroit} items={r.droit_positif} sources={r.sources} ton="droit" />
+        <ListeSources sources={r.sources} />
+      </details>
+    </>
+  )
+}
+
 /** titre=false : la fiche ouverte dans « Fiches & révisions » affiche deja le titre dans sa carte (point 6). */
 // Memoise : la saisie dans le champ de question ne redessine plus toutes les reponses (audit du 2026-11-19, WEB-21)
 export const Reponse = memo(ReponseComplete)
@@ -205,7 +233,9 @@ function ReponseComplete({ message, actions = true, titre = true }: { message: M
       {r.statut === 'reponse' ? (
         <>
           {titre && r.titre && <h3 className="font-display text-[18px] leading-tight">{r.titre}</h3>}
-          <Developpements r={r} blocs={infosMode(message.mode).blocs} />
+          {message.mode === 'fiche'
+            ? <DeveloppementsFiche r={r} blocs={infosMode(message.mode).blocs} />
+            : <Developpements r={r} blocs={infosMode(message.mode).blocs} />}
         </>
       ) : (
         <div className="border-l-2 border-[#c8a16d] bg-cream px-3 py-2.5 text-[14px] leading-[1.55] text-[#746347]">

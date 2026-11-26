@@ -28,6 +28,8 @@ export interface Message {
   id: string
   question: string
   mode: Mode
+  /** Matiere choisie a l'envoi, gardee avec la fiche pour la classer (D139) */
+  matiere?: string | null
   etat: 'en_cours' | 'ok' | 'erreur'
   reponse?: ReponseChat
   erreur?: string

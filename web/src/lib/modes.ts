@@ -13,7 +13,7 @@ export const MODES: InfosMode[] = [
   { id: 'expliquer', label: 'Expliquer', description: 'Définition, règle, conditions, exceptions et un exemple simple.',
     placeholder: 'Quelle notion voulez-vous comprendre ?', blocs: ['Droit positif', 'Explication', 'Points d’attention'] },
   { id: 'fiche', label: 'Fiche', description: 'Fiche de révision, enregistrée automatiquement dans « Fiches & révisions ».',
-    placeholder: 'Sur quelle notion voulez-vous une fiche ?', blocs: ['Règles essentielles', 'À retenir', 'Pièges fréquents'] },
+    placeholder: 'Sur quelle notion voulez-vous une fiche ?', blocs: ['Règles essentielles', 'À retenir', 'Points à vérifier'] },
   { id: 'cas_pratique', label: 'Cas pratique', description: 'Qualification des faits, problème de droit, majeure, mineure, conclusion.',
     placeholder: 'Décrivez les faits du cas pratique…', blocs: ['Règles applicables', 'Raisonnement', 'Points à vérifier'] },
   { id: 'commentaire', label: 'Commentaire d’arrêt', description: 'Fiche d’arrêt, sens, valeur et portée, problématique et plan.',

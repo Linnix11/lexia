@@ -150,7 +150,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const enregistrerFiche = useCallback(
     (m: Message) => {
       if (!m.reponse) return
-      const f: Favori = { id: m.reponse.reponse_id, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse }
+      const f: Favori = { id: m.reponse.reponse_id, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(),
+        reponse: m.reponse, matiere: m.matiere ?? null }
       setFavoris((liste) => {
         if (liste.some((x) => x.id === f.id)) return liste
         if (liste.length >= MAX_FICHES) {
@@ -188,13 +189,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setMode(m) // le choix affiche en haut de l'assistant suit la derniere demande
       const id = nouvelId()
-      setMessages((ms) => [...ms, { id, question: q, mode: m, etat: 'en_cours' }])
+      setMessages((ms) => [...ms, { id, question: q, mode: m, matiere, etat: 'en_cours' }])
       api
         .chat(q, m, matiere, niveau, semestre, optionsCours)
         .then((reponse) => {
           setMessages((ms) => ms.map((x) => (x.id === id ? { ...x, etat: 'ok', reponse } : x)))
           // Une fiche de revision est enregistree d'office (sans attendre un clic sur « Enregistrer »).
-          if (m === 'fiche' && reponse.statut === 'reponse') enregistrerFiche({ id, question: q, mode: m, etat: 'ok', reponse })
+          if (m === 'fiche' && reponse.statut === 'reponse') enregistrerFiche({ id, question: q, mode: m, matiere, etat: 'ok', reponse })
         })
         .catch((e: unknown) => {
           const erreur = e instanceof ApiError ? e.message : 'Une erreur est survenue.'
@@ -258,7 +259,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const suivante = existe
           ? liste.filter((f) => f.id !== rid)
-          : [{ id: rid, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse! }, ...liste]
+          : [{ id: rid, question: m.question, mode: m.mode, enregistre_le: new Date().toISOString(), reponse: m.reponse!,
+            matiere: m.matiere ?? null }, ...liste]
         if (!ecrireFavoris(suivante, compte)) notifier("Le navigateur n'a pas pu enregistrer ce favori.")
         else notifier(existe ? 'Retiré des fiches' : 'Enregistrée dans ce navigateur uniquement (« Fiches & révisions »)')
         return suivante

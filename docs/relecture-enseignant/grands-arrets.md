@@ -31,7 +31,7 @@ Statuts : actuel = toujours appliqué ; consacré = solution reprise par un text
 | Cass. ass. plén., 25 février 2000, Costedoat | Cour de cassation, Assemblée plénière | 2000-02-25 | 97-17.378 | Responsabilité du fait d'autrui, Responsabilité des commettants du fait de leurs préposés | oui (`judilibre:JURITEXT000007043704:sommaire`) | actuel |
 | Cass. ass. plén., 14 décembre 2001, Cousin | Cour de cassation, Assemblée plénière | 2001-12-14 | 00-82.066 | Responsabilité des commettants du fait de leurs préposés | oui (`judilibre:JURITEXT000007045753:sommaire`) | actuel |
 | Cass. ass. plén., 17 novembre 2000, Perruche | Cour de cassation, Assemblée plénière | 2000-11-17 | 99-13.701 | Préjudice d'être né handicapé | oui (`judilibre:JURITEXT000007041543:sommaire`) | abandonné |
-| Cass. ass. plén., 6 octobre 2006, Boot Shop (Myr'Ho) | Cour de cassation, Assemblée plénière | 2006-10-06 | 05-13.255 | Tiers victime d'un manquement contractuel | oui (`judilibre:JURITEXT000007052928:sommaire`) | nuancé |
+| Cass. ass. plén., 6 octobre 2006, Boot Shop (Myr'Ho) | Cour de cassation, Assemblée plénière | 2006-10-06 | 05-13.255 | Tiers victime d'un manquement contractuel, Force obligatoire du contrat | oui (`judilibre:JURITEXT000007052928:sommaire`) | nuancé |
 | Cass. ass. plén., 11 décembre 1992 | Cour de cassation, Assemblée plénière | 1992-12-11 | 91-11.900 | Changement de la mention du sexe | oui (`judilibre:JURITEXT000007030251:sommaire`) | nuancé |
 
 ### Droit des contrats
@@ -40,7 +40,7 @@ Statuts : actuel = toujours appliqué ; consacré = solution reprise par un text
 |---|---|---|---|---|---|---|
 | Cass. civ., 21 novembre 1911, Compagnie générale transatlantique | Cour de cassation, chambre civile | 1911-11-21 | sans numéro | Obligation de sécurité et contrat de transport, Obligations de moyens et de résultat, responsabilité médicale | non : fiche Lexia | actuel |
 | Cass. civ., 20 mai 1936, Mercier | Cour de cassation, chambre civile | 1936-05-20 | sans numéro | Obligations de moyens et de résultat, responsabilité médicale | non : fiche Lexia | nuancé |
-| Cass. civ., 6 mars 1876, Canal de Craponne | Cour de cassation, chambre civile | 1876-03-06 | sans numéro | Imprévision | non : fiche Lexia | abandonné |
+| Cass. civ., 6 mars 1876, Canal de Craponne | Cour de cassation, chambre civile | 1876-03-06 | sans numéro | Force obligatoire du contrat, Imprévision | non : fiche Lexia | abandonné |
 | Cass. civ. 1re, 22 février 1978, Poussin | Cour de cassation, première chambre civile | 1978-02-22 | 76-11.551 | Erreur et réticence dolosive | oui (`judilibre:JURITEXT000007000241:sommaire`) | consacré |
 | Cass. com., 3 novembre 1992, Huard | Cour de cassation, chambre commerciale | 1992-11-03 | 90-18.547 | Bonne foi dans l'exécution du contrat | oui (`cass_commerciale:JURITEXT000007029915:sommaire`) | actuel |
 | Cass. civ. 3e, 15 décembre 1993, Consorts Cruz | Cour de cassation, troisième chambre civile | 1993-12-15 | 91-10.199 | Promesse unilatérale de contrat | oui (`judilibre:JURITEXT000007031319:sommaire`) | abandonné |
@@ -50,7 +50,7 @@ Statuts : actuel = toujours appliqué ; consacré = solution reprise par un text
 | Cass. civ. 1re, 3 mai 2000, Baldus | Cour de cassation, première chambre civile | 2000-05-03 | 98-11.381 | Erreur et réticence dolosive | oui (`judilibre:JURITEXT000007043587:sommaire`) | consacré |
 | Cass. com., 26 novembre 2003, Manoukian | Cour de cassation, chambre commerciale | 2003-11-26 | 00-10.243 | Rupture des pourparlers | oui (`cass_commerciale:JURITEXT000007049778:sommaire`) | consacré |
 | Cass. ch. mixte, 26 mai 2006 | Cour de cassation, chambre mixte | 2006-05-26 | 03-19.376 | Pacte de préférence | oui (`judilibre:JURITEXT000007055468:sommaire`) | consacré |
-| Cass. com., 10 juillet 2007, Les Maréchaux | Cour de cassation, chambre commerciale | 2007-07-10 | 06-14.768 | Bonne foi dans l'exécution du contrat | oui (`cass_commerciale:JURITEXT000017908759:sommaire`) | actuel |
+| Cass. com., 10 juillet 2007, Les Maréchaux | Cour de cassation, chambre commerciale | 2007-07-10 | 06-14.768 | Force obligatoire du contrat, Bonne foi dans l'exécution du contrat | oui (`cass_commerciale:JURITEXT000017908759:sommaire`) | actuel |
 | Cass. com., 29 juin 2010, Faurecia | Cour de cassation, chambre commerciale | 2010-06-29 | 09-11.841 | Clauses limitatives de responsabilité et obligation essentielle | oui (`cass_commerciale:JURITEXT000022427254:sommaire`) | consacré |
 
 ### Droit des biens

@@ -9,9 +9,10 @@ import { DepotCours, ListeCoursMatiere } from '../components/MesCours'
 import { Card, CardHead } from '../components/Layout'
 import { Reponse } from '../components/Reponse'
 import { CarteRevisions, SeanceRevision } from '../components/Revision'
-import { aReviser } from '../lib/cartes'
+import { aReviser, carteDeFiche } from '../lib/cartes'
 import { filtrerCartes, lireCartesMentales, retirerCarteMentale, type CarteEnregistree } from '../lib/cartesEnregistrees'
-import { ficheEnMarkdown, fichesEnMarkdown, nomFichier, telecharger } from '../lib/exportFiches'
+import { ficheEnMarkdown, fichesEnMarkdown, imprimerFiche, nomFichier, telecharger } from '../lib/exportFiches'
+import { filtrerFiches, matieresDesFiches } from '../lib/favoris'
 import { libelleFraicheur, useFraicheur } from '../lib/fraicheur'
 import { ANNEES, filtrerMatieres, grouperParAnnee, LIBELLES_ANNEES, sourcesPrincipales, type Annee } from '../lib/matieres'
 import { MODES } from '../lib/modes'
@@ -230,7 +231,7 @@ export function VueMatieres() {
 }
 
 export function VueFiches() {
-  const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz, occupe } = useApp()
+  const { favoris, basculerFavori, envoyer, setVue, ouvrirQuiz, occupe, matieres, cartes, ajouterCartes } = useApp()
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [theme, setTheme] = useState('')
   const [revision, setRevision] = useState<{ matiere: string | null } | null>(null) // seance en cours (D140 : matiere)
@@ -238,6 +239,15 @@ export function VueFiches() {
   const [aide, setAide] = useState<string | null>(null)
   // Retrait d'une fiche en deux temps (WEB-20)
   const [aRetirer, setARetirer] = useState<string | null>(null)
+  const [recherche, setRecherche] = useState('')
+  // undefined : toutes les matieres ; null : fiches sans matiere
+  const [filtreChoisi, setFiltre] = useState<string | null | undefined>(undefined)
+  const groupes = matieresDesFiches(favoris, matieres)
+  const filtre = groupes.some((g) => g.id === filtreChoisi) ? filtreChoisi : undefined // matiere videe par un retrait
+  const visibles = filtrerFiches(favoris, recherche, filtre)
+  const libelleMatiere = (id?: string | null) => (id ? matieres.find((m) => m.id === id)?.libelle ?? id : undefined)
+  const puce = (actif: boolean) => `min-h-8 rounded-full border px-2.5 py-1 text-[11px] ${
+    actif ? 'border-forest bg-mint font-semibold text-forest' : 'border-line bg-chip text-[#59615b] hover:border-[#9eafa3]'}`
   const creer = (e: FormEvent) => {
     e.preventDefault()
     if (occupe) return setAide('Une réponse est en cours : patientez quelques secondes.')
@@ -285,8 +295,36 @@ export function VueFiches() {
           </button>
         </Card>
       ) : (
+        <>
+        {/* Recherche et classement par matiere (D139) : jusqu'a 100 fiches, la liste chronologique ne suffisait plus. */}
+        <div className="mb-3 grid gap-2">
+          <label className="flex min-w-0 items-center gap-2 rounded-[7px] border border-[#878f88] bg-white px-3 py-2 text-[12px] text-muted focus-within:border-forest focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest">
+            <span className="sr-only">Chercher dans mes fiches</span>
+            <span aria-hidden>⌕</span>
+            <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Chercher : notion, article, arrêt…" className="min-w-0 flex-1 bg-transparent text-ink outline-none" />
+          </label>
+          {groupes.length > 1 && (
+            <div role="group" aria-label="Matière" className="flex flex-wrap gap-1.5">
+              <button type="button" aria-pressed={filtre === undefined} onClick={() => setFiltre(undefined)} className={puce(filtre === undefined)}>
+                Toutes ({favoris.length})
+              </button>
+              {groupes.map((g) => (
+                <button key={g.id ?? 'sans'} type="button" aria-pressed={filtre === g.id}
+                  onClick={() => setFiltre(filtre === g.id ? undefined : g.id)} className={puce(filtre === g.id)}>
+                  {g.libelle} ({g.nombre})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {visibles.length < favoris.length && (
+          <p role="status" className="mb-2 text-[12px] text-muted">
+            {visibles.length === 0 ? 'Aucune fiche ne correspond.' : `${visibles.length} fiche${visibles.length > 1 ? 's' : ''} sur ${favoris.length}.`}
+          </p>
+        )}
         <ul className="grid gap-2.5">
-          {favoris.map((f) => (
+          {visibles.map((f) => (
             <li key={f.id}>
               <Card className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -294,13 +332,25 @@ export function VueFiches() {
                     onClick={() => setOuverte(ouverte === f.id ? null : f.id)}>
                     <span className="block font-display text-[17px]">{f.reponse.titre || f.question}</span>
                     <span className="mt-1 block text-[11px] text-muted">
-                      {MODES.find((m) => m.id === f.mode)?.label} · {new Date(f.enregistre_le).toLocaleDateString('fr-FR')} · {f.reponse.sources.length} source(s)
+                      {[MODES.find((m) => m.id === f.mode)?.label, libelleMatiere(f.matiere),
+                        new Date(f.enregistre_le).toLocaleDateString('fr-FR'), `${f.reponse.sources.length} source(s)`].filter(Boolean).join(' · ')}
                     </span>
                   </button>
-                  <span className="flex gap-3">
+                  <span className="flex flex-wrap gap-x-3">
+                    <button type="button" onClick={() => imprimerFiche(f, libelleMatiere(f.matiere))}
+                      aria-label={`Imprimer ou PDF : fiche « ${f.reponse.titre || f.question} »`}
+                      className="min-h-11 text-[11px] text-forest hover:underline">Imprimer ou PDF</button>
                     <button type="button" onClick={() => telecharger(nomFichier(f.reponse.titre || f.question), ficheEnMarkdown(f))}
-                      aria-label={`Exporter la fiche « ${f.reponse.titre || f.question} »`}
-                      className="min-h-11 text-[11px] text-forest hover:underline">Exporter</button>
+                      aria-label={`Exporter (.md) la fiche « ${f.reponse.titre || f.question} »`}
+                      className="min-h-11 text-[11px] text-forest hover:underline">Exporter (.md)</button>
+                    {/* Vers la revision espacee (D104), sans la changer : la carte de cette fiche seulement */}
+                    {cartes.some((c) => c.id === `fiche:${f.id}`) ? (
+                      <span className="inline-flex min-h-11 items-center text-[11px] text-muted">Dans vos révisions</span>
+                    ) : carteDeFiche(f) && (
+                      <button type="button" onClick={() => ajouterCartes([carteDeFiche(f)!])}
+                        aria-label={`Réviser cette fiche : « ${f.reponse.titre || f.question} »`}
+                        className="min-h-11 text-[11px] text-forest hover:underline">Réviser cette fiche</button>
+                    )}
                     <button type="button"
                       onClick={() => {
                         if (aRetirer !== f.id) return setARetirer(f.id)
@@ -323,6 +373,7 @@ export function VueFiches() {
             </li>
           ))}
         </ul>
+        </>
       )}
     </>
   )

@@ -1643,6 +1643,14 @@ notions:
     libelle: Obligations de moyens et de résultat, responsabilité médicale
     motifs: ['obligations? de moyens', 'obligations? de resultat', 'contrat medical', 'responsabilite (?:du |des )?medec']
     arrets: [mercier, cie-generale-transatlantique, epoux-v]
+  force_obligatoire:
+    # D139 : dossier enseignant, question 21 (fiche sur la force obligatoire) : aucune notion, la « jurisprudence
+    # cle » n'etait faite que d'arrets d'espece. Limite de la bonne foi, refus ancien de la revision (abandonne,
+    # article 1195), effet relatif et tiers au contrat.
+    libelle: Force obligatoire du contrat
+    motifs: ['force obligatoire', 'intangibilite', 'pacta sunt servanda', 'tiennent lieu de loi']
+    avec: 'contrat|contractu|convention|1103|1134'
+    arrets: [les-marechaux, canal-de-craponne, boot-shop]
   imprevision:
     libelle: Imprévision
     motifs: ['imprevision', 'changement (?:imprevisible )?de(?:s)? circonstances', 'revision (?:judiciaire )?du contrat', '\b1195\b']
