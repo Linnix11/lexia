@@ -113,6 +113,8 @@ NOTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
     (r"domaine de la loi", ((CONST, "34"), (CONST, "37"))),
     (r"destitu", ((CONST, "68"),)),
     (r"libre administration", ((CONST, "72"),)),
+    # D143 (dossier enseignant, question 8) : les pouvoirs propres sont les actes enumeres a l'article 19
+    (r"pouvoirs? propres|dispenses? de contreseing", ((CONST, "19"), (CONST, "8"), (CONST, "12"), (CONST, "16"))),
     (r"contreseing", ((CONST, "19"),)),
     (r"incompatib\w*.{0,40}(?:ministre|gouvernement|parlement)|(?:ministre|membres? du gouvernement).{0,40}(?:depute|senateur|parlementaire)",
      ((CONST, "23"),)),

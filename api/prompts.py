@@ -316,6 +316,22 @@ def note_constitutionnalite(question: str, passages: list[dict]) -> str:
     return note
 
 
+def note_contreseing(passages: list[dict]) -> str:
+    """Note au modele quand l'article 19 de la Constitution est fourni (D143). Dossier enseignant, question 8
+    (27/11) : la reponse lisait l'article 19 a l'envers, « un acte pris en application des articles mentionnes a
+    l'article 19 ne constitue pas un pouvoir propre et necessite un contreseing »."""
+    if not any(p.get("source_id") == "constitution_1958" and p.get("numero") == "19" for p in passages):
+        return ""
+    return ("Note : l'article 19 de la Constitution (dans les extraits) énumère les actes du Président DISPENSÉS de "
+            "contreseing : nomination du Premier ministre (article 8, alinéa 1), référendum (11), dissolution (12), "
+            "pouvoirs exceptionnels (16), messages au Parlement (18), saisine du Conseil constitutionnel sur un "
+            "engagement international (54), nomination de trois membres du Conseil constitutionnel (56) et saisine "
+            "du Conseil constitutionnel (61). Ces actes sont les pouvoirs propres du Président ; tous ses autres "
+            "actes sont contresignés par le Premier ministre et, le cas échéant, les ministres responsables "
+            "(pouvoirs partagés). Ne dis jamais qu'un acte fondé sur l'un de ces articles exige un contreseing, et "
+            "énumère ces pouvoirs propres si la question les demande.")
+
+
 def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | None = None,
                 semestre: int | None = None, anciens: dict | None = None, cours: str | None = None) -> str:
     consigne = (public(niveau, semestre) + consigne_cours(cours) + MODES[mode]
@@ -329,6 +345,8 @@ def prompt_chat(question: str, mode: str, passages: list[dict], niveau: str | No
         consigne += "\n" + mariage
     if constitutionnalite := note_constitutionnalite(question, passages):
         consigne += "\n" + constitutionnalite
+    if contreseing := note_contreseing(passages):
+        consigne += "\n" + contreseing
     if mode == "cas_pratique" and (garde := note_garde(question, passages)):
         consigne += "\n" + garde
     if grands := grands_arrets.note(passages):
