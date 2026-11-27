@@ -1,6 +1,6 @@
 # Relecture de Lexia par un enseignant
 
-Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia par un enseignant en droit ; réponses reposées le 25 novembre 2026.
+Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia par un enseignant en droit ; réponses reposées le 27 novembre 2026.
 
 | Fichier | Rôle | Destinataire |
 |---|---|---|
@@ -14,8 +14,9 @@ Dossier préparé le 23 novembre 2026 pour la relecture des réponses de Lexia p
 | `outils/interroger.py` | Pose les questions au moteur local (même chemin que `POST /chat`) | Éditeur |
 | `outils/generer.py` | Construit `dossier.md`, `dossier.docx`, `grille.xlsx` et `lettre.docx` | Éditeur |
 
-État : 30 réponses sur 30, reposées le 25 novembre 2026 (code `7208eab`). 25 justes, aucune fausse, 2 douteuses
-(21, 26), 3 abstentions correctes : voir `constats-avant-relecture.md`, sections 1 et 6, avant l'envoi.
+État : 30 réponses sur 30, reposées le 27 novembre 2026 (code `b2b0474`, question 8 reposée sur `be302de` (D143)). 27 justes,
+aucune fausse, 1 douteuse (29), 2 abstentions correctes : voir `constats-avant-relecture.md`, sections 1 et 6,
+avant l'envoi.
 
 Régénérer (depuis la racine du dépôt) :
 

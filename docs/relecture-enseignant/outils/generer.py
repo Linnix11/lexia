@@ -24,8 +24,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 
 DOSSIER = Path(__file__).resolve().parent.parent
-DATE = "25 novembre 2026"
-VERSION = "7208eab"
+DATE = "27 novembre 2026"
+VERSION = "be302de"
 
 PRESENTATION = [
     "Lexia est un assistant d'étude du droit français destiné aux étudiants de licence (L1 à L3), publié par Axion Studio et accessible sur https://lexia-axionstudio.cloud.",
