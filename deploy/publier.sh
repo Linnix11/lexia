@@ -124,6 +124,13 @@ chmod 755 deploy/sauvegarder_comptes.sh
 # Mise a jour nocturne du corpus (D78) : lancee par root, donc copie appartenant a root, hors de /opt/lexia.
 install -m 755 -o root -g root deploy/mettre_a_jour_corpus.sh /usr/local/sbin/lexia-mise-a-jour
 install -m 644 deploy/lexia.cron /etc/cron.d/lexia
+# Sonde du serveur (D144, deploy/sonde.py) : canal ntfy tire au hasard une seule fois, lisible par lexia seul (le
+# nom du canal suffit pour lire les alertes). Abonnement : ssh au serveur, cat /etc/lexia-sonde.conf.
+if [ ! -f /etc/lexia-sonde.conf ]; then
+  printf 'NTFY_SUJET=lexia-%s\nDOMAINE=%s\n' "\$(python3 -c 'import secrets; print(secrets.token_urlsafe(18))')" "$DOMAINE" > /etc/lexia-sonde.conf
+  echo "  /etc/lexia-sonde.conf cree : abonner le telephone au canal NTFY_SUJET (application ntfy)"
+fi
+chown root:lexia /etc/lexia-sonde.conf && chmod 640 /etc/lexia-sonde.conf
 # Adresse reelle des visiteurs derriere Cloudflare (inclus par la configuration nginx)
 install -m 644 deploy/nginx-cloudflare.conf /etc/nginx/snippets/lexia-cloudflare.conf
 if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then

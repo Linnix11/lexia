@@ -6,3 +6,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Mise a jour du corpus depuis la DILA (D78). Root seulement pour redemarrer le service : le script est une
 # copie appartenant a root (/usr/local/sbin), qui fait tout le reste en tant que lexia.
 30 4 * * * root /usr/local/sbin/lexia-mise-a-jour >> /var/log/lexia-mise-a-jour.log 2>&1
+# Sonde du serveur (D144) : chaque minute, en tant que lexia, avec le Python du systeme (independant du .venv).
+# Alerte sur le telephone (ntfy) et par e-mail quand un element tombe ou revient ; resume a 8 h.
+* * * * * lexia /usr/bin/python3 /opt/lexia/deploy/sonde.py >> /opt/lexia/logs/sonde.log 2>&1

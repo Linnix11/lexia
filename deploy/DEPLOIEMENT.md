@@ -109,6 +109,19 @@ La DILA publie chaque soir vers 21 h les textes et décisions modifiés du jour 
 
 Espace disque utilisé sur le serveur : environ 25 Go (archives DILA, extraction, passages, embeddings, trois index).
 
+### Sonde et alertes (chaque minute, D144)
+
+`deploy/sonde.py` tourne chaque minute sur le serveur (`/etc/cron.d/lexia`, en tant que `lexia`, Python du système). Elle vérifie le service, le lecteur de fichiers, `/api/sante` en local, le site public, Gemini (disjoncteur), le disque (15 % libre au moins), la mémoire (10 %), la fraîcheur du corpus et le certificat du serveur (14 jours). Quand un élément tombe (3 minutes d'échec, 10 pendant une publication ou la mise à jour de la nuit, 10 pour Gemini), puis quand il revient, elle envoie une notification sur le téléphone par ntfy et un e-mail aux `ADMIN_EMAILS`. Chaque matin à 8 h, un résumé sans son : s'il n'arrive pas, la sonde ou le serveur est arrêté.
+
+Téléphone : installer l'application ntfy, puis s'abonner au canal `NTFY_SUJET` de `/etc/lexia-sonde.conf` (créé par `publier.sh`, nom tiré au hasard, à garder pour soi : connaître le nom suffit pour lire les alertes).
+
+| Action | Commande (sur le serveur) |
+|---|---|
+| Essai d'envoi (téléphone et e-mail) | `sudo -u lexia python3 /opt/lexia/deploy/sonde.py --essai` |
+| Journal (changements seulement) | `tail -50 /opt/lexia/logs/sonde.log` |
+| État en cours | `cat /opt/lexia/logs/sonde.json` |
+| Couper les notifications | retirer la ligne `NTFY_SUJET` de `/etc/lexia-sonde.conf` |
+
 ## Administration
 
 Le tableau de bord `https://<domaine>/admin` est réservé aux comptes administrateurs :
