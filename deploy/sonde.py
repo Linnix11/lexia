@@ -242,6 +242,9 @@ def resume_du_jour(etat: dict, instant: float, domaine: str) -> dict | None:
     if local.hour < HEURE_RESUME or etat.get("dernier_resume") == jour:
         return None
     etat["dernier_resume"] = jour
+    # Sonde installee apres 8 h : pas de « bilan du matin » le soir de l'installation (constate le 27/11 a 21 h 56)
+    if etat.get("depuis", 0) > local.replace(hour=HEURE_RESUME, minute=0, second=0, microsecond=0).timestamp():
+        return None
     en_cours = [f"{NOMS.get(n, n)} ({c['detail']}), depuis {_minutes(instant - c['premier_echec'])}"
                 for n, c in etat.get("cibles", {}).items() if c.get("panne_depuis")]
     incidents = [j for j in etat.get("journal", []) if j[1] > instant - 86400]
@@ -328,6 +331,7 @@ def passage(conf: dict, etat: dict, instant: float, resultats: dict, duree_api: 
             redemarrage: bool) -> list[dict]:
     """Un passage sans entree ni sortie (teste) : rend les messages ajoutes a la file d'envoi."""
     domaine = conf.get("DOMAINE", "")
+    etat.setdefault("depuis", instant)
     if duree_api is not None:
         etat["durees_api"] = [x for x in etat.get("durees_api", []) if x[0] > instant - 86400] + [[instant, round(duree_api)]]
     nouveaux = []

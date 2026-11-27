@@ -105,6 +105,14 @@ def test_resume_du_matin_une_fois_par_jour():
     assert sonde.passage(CONF, etat, matin + 60, TOUT_VA_BIEN, 90.0, False) == []
 
 
+def test_pas_de_bilan_le_soir_de_l_installation():
+    etat = {}
+    soir = datetime(2026, 11, 27, 21, 56, tzinfo=PARIS).timestamp()
+    assert sonde.passage(CONF, etat, soir, TOUT_VA_BIEN, 30.0, False) == []
+    lendemain = datetime(2026, 11, 28, 8, 0, tzinfo=PARIS).timestamp()
+    assert sonde.passage(CONF, etat, lendemain, TOUT_VA_BIEN, 30.0, False)[0]["titre"] == "Lexia : bilan du matin"
+
+
 def test_resume_signale_une_panne_en_cours():
     etat = {}
     minutes(etat, panne_api(), NUIT, 5)
