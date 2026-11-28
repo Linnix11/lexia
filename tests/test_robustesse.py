@@ -71,7 +71,7 @@ def test_d5_l_application_garde_les_questionnaires_dans_la_base_des_comptes(tmp_
 
 def test_d5_le_service_lit_les_modeles_dans_le_cache():
     from pathlib import Path
-    service = (Path(__file__).parent.parent / "deploy" / "lexia.service").read_text()
+    service = (Path(__file__).parent.parent / "deploy" / "lexia@.service").read_text()
     assert "Environment=HF_HUB_OFFLINE=1" in service
 
 

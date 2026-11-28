@@ -1,7 +1,10 @@
-# Service systemd de Lexia (API + panel etudiant).
-# Installe par deploy/installer_serveur.sh dans /etc/systemd/system/lexia.service
+# Service systemd de Lexia (API + panel etudiant), une instance par port : lexia@8000 ou lexia@8001 (D145).
+# Installe par deploy/publier.sh dans /etc/systemd/system/lexia@.service. Une seule instance tourne, sauf pendant
+# une bascule (deploy/basculer.sh) : la nouvelle version demarre sur l'autre port, nginx passe dessus quand elle
+# repond, puis l'ancienne s'arrete. Ne pas lancer « systemctl restart lexia@<port> » (coupure de 2 minutes) :
+# /usr/local/sbin/lexia-basculer.
 [Unit]
-Description=Lexia - assistant d'etude en droit (API + panel)
+Description=Lexia - assistant d'etude en droit (API + panel), port %i
 After=network-online.target
 Wants=network-online.target
 
@@ -16,10 +19,13 @@ Environment=TOKENIZERS_PARALLELISM=false
 # (audit du 2026-11-18, D5). Nouveau serveur : HF_HUB_OFFLINE=0 dans .env pour le premier lancement
 # (le .env l'emporte sur cette ligne), puis le retirer.
 Environment=HF_HUB_OFFLINE=1
-# Un seul processus : les modeles (embeddings + reclassement, ~2 Go de RAM) ne sont charges qu'une fois.
-ExecStart=/opt/lexia/.venv/bin/uvicorn api.serveur:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+# Un seul processus par instance : les modeles (embeddings + reclassement, ~2 Go de RAM) ne sont charges qu'une fois.
+# --timeout-graceful-shutdown : a l'arret, les reponses en cours (jusqu'a ~60 s, 120 s au plus pour nginx) se
+# terminent ; au-dela, uvicorn ferme avant que systemd ne tue le processus (TimeoutStopSec).
+ExecStart=/opt/lexia/.venv/bin/uvicorn api.serveur:app --host 127.0.0.1 --port %i --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --timeout-graceful-shutdown 130
 # Le premier demarrage (HF_HUB_OFFLINE=0) telecharge les modeles (~1,6 Go) : laisser le temps
 TimeoutStartSec=600
+TimeoutStopSec=150
 Restart=on-failure
 RestartSec=5
 # Durcissement
@@ -56,7 +62,8 @@ AmbientCapabilities=
 SystemCallArchitectures=native
 # Modeles (~2 Go) et deux OCR simultanes : au-dela, le service est freine puis arrete et relance par systemd,
 # au lieu de laisser l'OOM killer du noyau choisir un autre processus (nginx, sshd). En pourcentage de la
-# memoire du VPS (8 Go conseilles, deploy/DEPLOIEMENT.md).
+# memoire du VPS (8 Go conseilles, deploy/DEPLOIEMENT.md), par instance : pendant une bascule, deux instances
+# tiennent ensemble (5,7 Go disponibles avec une seule le 28/11, ~2 Go par instance hors cache disque).
 MemoryHigh=65%
 MemoryMax=75%
 # Un lecteur de fichier (OCR) tue par manque de memoire ne doit pas arreter l'API : seul l'arret du processus

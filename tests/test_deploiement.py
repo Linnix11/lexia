@@ -107,7 +107,7 @@ def test_publier_compare_nginx_sans_arreter_la_publication():
 # --- B4 : durcissement systemd ----------------------------------------------------------------------------
 
 def test_service_durci():
-    service = (DEPLOY / "lexia.service").read_text()
+    service = (DEPLOY / "lexia@.service").read_text()
     for ligne in ("PrivateDevices=true", "ProtectKernelTunables=true", "ProtectKernelModules=true",
                   "ProtectKernelLogs=true", "ProtectControlGroups=true", "RestrictNamespaces=true",
                   "RestrictSUIDSGID=true", "LockPersonality=true", "CapabilityBoundingSet=",

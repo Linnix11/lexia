@@ -3,9 +3,16 @@
 Lexia tourne en **un seul service** : FastAPI sert l'API sous `/api` et le panel étudiant (React + Vite compilé) sur `/`. nginx est placé devant pour le HTTPS.
 
 ```
-Navigateur ──HTTPS──> nginx (443) ──> uvicorn 127.0.0.1:8000 ──> /api/*  (recherche, Gemini, contrôle des citations)
-                                                              └─> /*      (panel React compilé : web/dist)
+Navigateur ──HTTPS──> nginx (443) ──> uvicorn 127.0.0.1:8000 ou 8001 ──> /api/*  (recherche, Gemini, contrôle des citations)
+                                                                      └─> /*      (panel React compilé : web/dist)
 ```
+
+Une seule instance tourne (`lexia@8000` ou `lexia@8001`). nginx l'atteint par `lexia_amont` (`/etc/nginx/conf.d/lexia-amont.conf`). À chaque publication et à chaque nouvel index de la nuit, `lexia-basculer` (`deploy/basculer.sh`, D145) redémarre sans coupure :
+1. la nouvelle version démarre sur l'autre port pendant que l'ancienne sert ;
+2. nginx passe dessus quand elle répond et a fini son amorce ;
+3. l'ancienne s'arrête après avoir terminé ses réponses en cours.
+
+Si la nouvelle version ne démarre pas, l'ancienne reste en ligne.
 
 ## 1. Choisir l'offre
 
@@ -47,8 +54,8 @@ Le script :
 2. compile le front (`web/dist`) ;
 3. prend le verrou de publication du serveur (`/run/lexia-publication`) : un seul envoi à la fois, les autres attendent 30 minutes au plus ; il est rendu à la fin, même en cas d'échec. Puis il envoie le code et le front avec rsync. L'index de recherche du serveur est gardé tel quel, puisqu'il est mis à jour chaque nuit (voir « Mise à jour du corpus »). `LEXIA_AVEC_INDEX=1` envoie à la place celui du Mac (4 Go) ;
 4. installe les dépendances Python (PyTorch en version CPU) ;
-5. installe le service systemd et la configuration nginx, puis redémarre le service ;
-6. attend que `/api/sante` réponde ;
+5. installe le service systemd et la configuration nginx ;
+6. bascule sans coupure sur la nouvelle version (`lexia-basculer`), qui attend que `/api/sante` réponde : en cas d'échec, l'ancienne version reste en ligne et la publication s'arrête en erreur ;
 7. seulement avec `LEXIA_INDEXNOW=1` (désactivé par défaut) : signale les adresses du sitemap à IndexNow (`deploy/indexnow.py --envoyer`, D134) ; un refus n'annule pas la publication. Mise en service : `docs/seo-geo.md`, partie 8, point 3.
 
 **Premier lancement** : ajouter `HF_HUB_OFFLINE=0` à `/opt/lexia/.env` pour que le service télécharge les modèles (~1,6 Go, compter quelques minutes), puis retirer la ligne : ensuite, le service les lit dans le cache sans interroger Hugging Face.
@@ -59,7 +66,7 @@ Au premier envoi, `/opt/lexia/.env` est créé à partir de `deploy/env.producti
 
 ```bash
 nano /opt/lexia/.env        # renseigner GEMINI_API_KEY
-systemctl restart lexia
+/usr/local/sbin/lexia-basculer
 ```
 
 - Utiliser une **clé Gemini dédiée à la production**, de préférence au **niveau payant** : le gratuit plafonne à 20 requêtes par jour sur `gemini-3.5-flash` et sature souvent sur les modèles « lite ».
@@ -85,9 +92,11 @@ Puis ouvrir `https://lexia.mondomaine.fr` : le panel doit afficher « Mon espace
 
 | Action | Commande (sur le serveur) |
 |---|---|
-| État du service | `systemctl status lexia` |
-| Journaux du service | `journalctl -u lexia -n 100 -f` |
-| Redémarrer | `systemctl restart lexia` |
+| Instance en service (port) | `lexia-basculer --port` |
+| État du service | `systemctl status 'lexia@*'` |
+| Journaux du service | `journalctl -u 'lexia@*' -n 100 -f` |
+| Redémarrer sans coupure | `lexia-basculer` (jamais `systemctl restart lexia@<port>` : 2 minutes de coupure) |
+| Journal des bascules | dans le journal de la publication, ou `/var/log/lexia-mise-a-jour.log` pour la nuit |
 | Journaux applicatifs (sans texte des questions) | `/opt/lexia/logs/requetes.jsonl`, `/opt/lexia/logs/feedback.jsonl` |
 | Mettre à jour | relancer `deploy/publier.sh` depuis le Mac |
 
@@ -98,14 +107,14 @@ La DILA publie chaque soir vers 21 h les textes et décisions modifiés du jour 
 1. télécharge les nouvelles archives LEGI, CASS, JADE et CONSTIT dans `/opt/lexia/data/raw/dila` ;
 2. s'il y a du nouveau, réimporte les sources, calcule les embeddings des seuls passages nouveaux ou modifiés et construit `data/index.nouveau` (`python -m ingest.mise_a_jour`, en tant que `lexia`, en priorité basse) ;
 3. refuse le nouvel index s'il perd plus de 2 % des passages ou des embeddings, ou une source entière ;
-4. le met en service (l'ancien est gardé dans `data/index.precedent`), redémarre le service (une trentaine de secondes) et revient à l'ancien si `/api/sante` ne répond plus ; un e-mail part à chaque échec, et un second si le service reste muet avec l'ancien index ;
+4. le met en place (l'ancien est gardé dans `data/index.precedent`) et bascule sans coupure sur une instance qui le lit (`lexia-basculer`). Pendant ce temps, l'instance en service garde l'ancien index ouvert. Si la nouvelle ne démarre pas, l'ancien index revient à sa place. Un e-mail part à chaque échec, et un second si plus rien ne répond ;
 5. compare les articles cités par les pages publiques (`data/citations-publiees.json`, envoyé par `publier.sh`) au nouvel index et prévient par e-mail si l'un d'eux a changé (pages à recompiler sur le Mac).
 
 | Action | Commande (sur le serveur) |
 |---|---|
 | Journal | `tail -50 /var/log/lexia-mise-a-jour.log` |
 | Lancer tout de suite | `/usr/local/sbin/lexia-mise-a-jour` (`--forcer` pour reconstruire sans nouvelle archive) |
-| Revenir à l'index précédent | `cd /opt/lexia && sudo -u lexia bash -c 'mv data/index data/index.echec && mv data/index.precedent data/index' && systemctl restart lexia` |
+| Revenir à l'index précédent | `cd /opt/lexia && sudo -u lexia bash -c 'mv data/index data/index.echec && mv data/index.precedent data/index' && lexia-basculer` |
 
 Espace disque utilisé sur le serveur : environ 25 Go (archives DILA, extraction, passages, embeddings, trois index).
 
@@ -131,7 +140,7 @@ Le tableau de bord `https://<domaine>/admin` est réservé aux comptes administr
 - **Activité** : dernières requêtes (sans le texte des questions) et erreurs du modèle ;
 - **Serveur** : version, durée de fonctionnement, mémoire, disque, charge, corpus, modèles.
 
-Devenir administrateur : ajouter son adresse dans `ADMIN_EMAILS` de `/opt/lexia/.env` (puis `systemctl restart lexia`), ou `sudo -u lexia .venv/bin/python -m api.admin admin <email>`. Les actions effectuées depuis le tableau de bord sont tracées dans `/opt/lexia/logs/admin.jsonl`.
+Devenir administrateur : ajouter son adresse dans `ADMIN_EMAILS` de `/opt/lexia/.env` (puis `lexia-basculer`), ou `sudo -u lexia .venv/bin/python -m api.admin admin <email>`. Les actions effectuées depuis le tableau de bord sont tracées dans `/opt/lexia/logs/admin.jsonl`.
 
 ## Comptes et formules
 
@@ -164,7 +173,7 @@ Le script rapatrie les sauvegardes dans `~/Lexia-sauvegardes` (60 conservées), 
 
 Lancement quotidien : renseigner `deploy/fr.lexia.sauvegarde.plist` (chemin du dépôt, IP), le copier dans `~/Library/LaunchAgents/`, puis `launchctl load ~/Library/LaunchAgents/fr.lexia.sauvegarde.plist`. La clé SSH doit fonctionner sans saisie (agent ou trousseau). Journal : `/tmp/lexia-sauvegarde.log`.
 
-Restaurer : arrêter le service (`systemctl stop lexia`), supprimer `/opt/lexia/donnees/lexia.db-wal` et `/opt/lexia/donnees/lexia.db-shm` s'ils existent (sinon SQLite rejoue sur la copie un journal qui ne lui appartient pas), remplacer `/opt/lexia/donnees/lexia.db` par la copie (propriétaire `lexia`, droits 600), redémarrer.
+Restaurer : arrêter le service (`systemctl stop 'lexia@*'`), supprimer `/opt/lexia/donnees/lexia.db-wal` et `/opt/lexia/donnees/lexia.db-shm` s'ils existent (sinon SQLite rejoue sur la copie un journal qui ne lui appartient pas), remplacer `/opt/lexia/donnees/lexia.db` par la copie (propriétaire `lexia`, droits 600), redémarrer.
 
 `CLE_SECRETS` (dans `/opt/lexia/.env`) chiffre les secrets de double authentification : sans elle, une sauvegarde restaurée sur un nouveau serveur laisse les comptes avec 2FA bloqués. La garder aussi dans un gestionnaire de mots de passe, hors du VPS.
 
@@ -174,7 +183,7 @@ Restaurer : arrêter le service (`systemctl stop lexia`), supprimer `/opt/lexia/
 
 - L'API n'écoute que sur `127.0.0.1` : seul nginx est exposé.
 - Limite de requêtes côté nginx (par adresse IPv4, par réseau /64 en IPv6 : 120 par minute sur l'API, 5 par minute sur la connexion et les codes) et côté application (`RATE_LIMIT_PER_MINUTE`). `publier.sh` signale les lignes de `deploy/nginx-lexia.conf` absentes du serveur (fichier modifié par certbot, jamais remplacé) : les recopier, puis `nginx -t && systemctl reload nginx`.
-- Le service tourne sous un utilisateur système sans shell, durci par systemd (`deploy/lexia.service`, à vérifier avec `systemd-analyze security lexia`), mémoire limitée à 75 % du VPS, date de Paris (`TZ=Europe/Paris`).
+- Le service tourne sous un utilisateur système sans shell, durci par systemd (`deploy/lexia@.service`, à vérifier avec `systemd-analyze security lexia@$(lexia-basculer --port)`), mémoire limitée à 75 % du VPS, date de Paris (`TZ=Europe/Paris`).
 - Dépendances Python figées avec empreintes (`deploy/requirements-serveur.txt` et `deploy/requirements-torch.txt`, générés par `.venv/bin/python deploy/figer_dependances.py` à partir de `deploy/requirements-serveur.in`) et installées avec `--require-hashes`, un seul index par fichier.
 - Aucune donnée personnelle collectée : pas de compte, journaux sans le texte des questions, favoris stockés dans le navigateur.
 

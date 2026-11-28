@@ -10,8 +10,9 @@ Verifie : service lexia, lecteur de fichiers, /api/sante en local, site public (
 serveur. Alertes :
   - une notification sur le telephone (ntfy, https://docs.ntfy.sh/publish/) et un e-mail aux ADMIN_EMAILS
     (python -m ingest.fraicheur) quand un element tombe, puis quand il revient ; jamais une par minute ;
-  - pendant une publication (verrou /run/lexia-publication) ou la mise a jour nocturne (verrou flock), le service
-    redemarre : seuil de 10 minutes au lieu de 3, pour ne pas alerter sur les 2 minutes de chargement de l'index ;
+  - pendant une publication (verrou /run/lexia-publication) ou la mise a jour nocturne (verrou flock) : seuil de
+    10 minutes au lieu de 3. Depuis D145, ces redemarrages se font sans coupure ; le seuil reste pour une bascule
+    qui tourne mal ;
   - un resume chaque matin a 8 h (heure de Paris), sans son : s'il n'arrive pas, la sonde ou le serveur est mort.
 
 Reglages : /etc/lexia-sonde.conf (root:lexia, 640), lignes CLE=valeur : NTFY_SUJET (nom du canal ntfy, a garder
@@ -27,6 +28,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import re
 import shutil
 import socket
 import ssl
@@ -44,7 +46,8 @@ CONF = Path(os.environ.get("LEXIA_SONDE_CONF", "/etc/lexia-sonde.conf"))
 ETAT = APP / "logs" / "sonde.json"
 VERROU_PUBLICATION = Path(os.environ.get("LEXIA_VERROU", "/run/lexia-publication"))
 VERROU_MAJ = Path(os.environ.get("LEXIA_VERROU_MAJ", "/run/lexia-mise-a-jour.lock"))
-SANTE = "http://127.0.0.1:8000/api/sante"
+# Instance en service (8000 ou 8001), celle a qui nginx envoie les requetes (deploy/basculer.sh, D145)
+AMONT = Path(os.environ.get("LEXIA_AMONT", "/etc/nginx/conf.d/lexia-amont.conf"))
 PARIS = ZoneInfo("Europe/Paris")
 
 # Minutes d'echec consecutives avant de declarer une panne. Les redemarrages durent environ 2 minutes (veille du
@@ -149,10 +152,23 @@ def _certificat(domaine: str) -> tuple[bool | None, str]:
     return jours >= CERTIFICAT_JOURS, "" if jours >= CERTIFICAT_JOURS else f"expire dans {jours:.0f} jours"
 
 
+def instance_en_service(amont: Path | None = None) -> tuple[str, str]:
+    """(unite systemd, adresse de /api/sante) de l'instance qui recoit les requetes. Sans fichier d'amont (serveur
+    d'avant D145) : lexia.service sur le port 8000."""
+    try:
+        texte = (amont or AMONT).read_text()
+    except OSError:
+        return "lexia", "http://127.0.0.1:8000/api/sante"
+    m = re.search(r"^\s*server 127\.0\.0\.1:(\d+);", texte, re.M)
+    port = m.group(1) if m else "8000"
+    return f"lexia@{port}", f"http://127.0.0.1:{port}/api/sante"
+
+
 def mesurer(conf: dict) -> tuple[dict, float | None]:
     """Resultats de tous les controles, et duree de /api/sante en local (ms) quand elle a repondu."""
-    resultats = {"service": _systemd("lexia"), "lecteur": _systemd("lexia-lecteur.socket")}
-    code, texte, duree = _http(SANTE, 10)
+    unite, sante = instance_en_service()
+    resultats = {"service": _systemd(unite), "lecteur": _systemd("lexia-lecteur.socket")}
+    code, texte, duree = _http(sante, 10)
     resultats |= lire_sante(code, texte)
     domaine = conf.get("DOMAINE", "")
     if domaine:

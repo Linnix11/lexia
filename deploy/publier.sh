@@ -4,7 +4,7 @@
 #   LEXIA_SERVEUR=root@1.2.3.4 LEXIA_DOMAINE=lexia.mondomaine.fr deploy/publier.sh
 #
 # Etapes : tests, compilation du front, envoi du code + front + index de recherche,
-# installation des dependances, redemarrage du service, puis IndexNow si LEXIA_INDEXNOW=1 (D134, desactive par
+# installation des dependances, bascule sans coupure sur la nouvelle version (D145), puis IndexNow si LEXIA_INDEXNOW=1 (D134, desactive par
 # defaut). Le .env n'est envoye que s'il n'existe pas encore sur le serveur (deploy/env.production.exemple
 # sert de modele).
 set -euo pipefail
@@ -113,7 +113,10 @@ runuser -u lexia -- .venv/bin/pip install -q --no-cache-dir --require-hashes --n
   --index-url https://pypi.org/simple -r deploy/requirements-serveur.txt
 # Paquet ancien reste dans le .venv (plus dans la liste) : avertissement, sans arreter la publication en route.
 runuser -u lexia -- .venv/bin/pip check || echo "  ATTENTION : pip check signale des dependances incoherentes (ci-dessus)"
-cp deploy/lexia.service /etc/systemd/system/lexia.service
+# Une instance par port (D145) : lexia@8000 ou lexia@8001, basculees par lexia-basculer (copie de root, comme
+# la mise a jour nocturne qui l'appelle aussi).
+install -m 644 deploy/lexia@.service /etc/systemd/system/lexia@.service
+install -m 755 -o root -g root deploy/basculer.sh /usr/local/sbin/lexia-basculer
 # Lecteur de fichiers isole (B3, D120) : code et .venv lisibles par son utilisateur dynamique (le code est public),
 # .env, donnees, logs et sauvegardes restent en 600 et 700 et lui sont en plus masques par l'unite.
 install -m 644 deploy/lexia-lecteur.socket /etc/systemd/system/lexia-lecteur.socket
@@ -133,16 +136,34 @@ fi
 chown root:lexia /etc/lexia-sonde.conf && chmod 640 /etc/lexia-sonde.conf
 # Adresse reelle des visiteurs derriere Cloudflare (inclus par la configuration nginx)
 install -m 644 deploy/nginx-cloudflare.conf /etc/nginx/snippets/lexia-cloudflare.conf
+# Instance en service pour nginx (D145) : installee une fois (port 8000, celui de l'ancien lexia.service), puis
+# reecrite par lexia-basculer. La remplacer ici renverrait nginx sur une instance arretee.
+test -f /etc/nginx/conf.d/lexia-amont.conf || install -m 644 deploy/nginx-lexia-amont.conf /etc/nginx/conf.d/lexia-amont.conf
 if [ -n "$DOMAINE" ] && [ ! -f /etc/nginx/sites-available/lexia ]; then
   sed "s/lexia.exemple.fr/$DOMAINE/g" deploy/nginx-lexia.conf > /etc/nginx/sites-available/lexia
   ln -sf /etc/nginx/sites-available/lexia /etc/nginx/sites-enabled/lexia
   rm -f /etc/nginx/sites-enabled/default
   nginx -t && systemctl reload nginx
 fi
+# Site d'avant D145 (fichier modifie par certbot, jamais remplace) : proxy_pass vers le port 8000 remplace par
+# l'amont, une seule fois, avec retour a l'ancien fichier si nginx le refuse.
+SITE=/etc/nginx/sites-available/lexia
+if [ -f \$SITE ] && grep -q 'proxy_pass http://127.0.0.1:8000;' \$SITE; then
+  cp \$SITE /root/nginx-lexia.avant-d145
+  sed -i 's#proxy_pass http://127.0.0.1:8000;#proxy_pass http://lexia_amont;#' \$SITE
+  if nginx -t -q; then
+    systemctl reload nginx
+    echo "  nginx passe par lexia_amont (copie de l'ancien fichier : /root/nginx-lexia.avant-d145)"
+  else
+    cp /root/nginx-lexia.avant-d145 \$SITE
+    echo "  ATTENTION : nginx refuse lexia_amont, ancien fichier remis" >&2
+    exit 1
+  fi
+fi
 systemctl daemon-reload
 systemctl enable --now lexia-lecteur.socket >/dev/null
-systemctl enable lexia >/dev/null
-systemctl restart lexia
+# Bascule sans coupure : l'ancienne version sert jusqu'a ce que la nouvelle reponde (affiche /api/sante)
+/usr/local/sbin/lexia-basculer
 EOF
 
 echo "== Configuration nginx"
@@ -150,19 +171,11 @@ echo "== Configuration nginx"
 # debit (B9) et la route des codes de connexion (SEC-10) sont donc comparees a celles du depot.
 nginx_a_jour || true
 
-echo "== Attente du demarrage (le premier lancement telecharge les modeles)"
-for i in $(seq 1 60); do
-  if ssh "$SERVEUR" "curl -sf http://127.0.0.1:8000/api/sante" >/dev/null; then
-    ssh "$SERVEUR" "curl -s http://127.0.0.1:8000/api/sante"; echo
-    echo "Publie."
-    # IndexNow (D134) : prepare, desactive par defaut. LEXIA_INDEXNOW=1 signale les adresses du sitemap aux
-    # moteurs qui suivent le protocole (Bing...) ; un refus n'annule pas la publication (docs/seo-geo.md, partie 7).
-    if [ "${LEXIA_INDEXNOW:-}" = 1 ]; then
-      python3 deploy/indexnow.py --envoyer || echo "  ATTENTION : IndexNow n'a pas accepte l'envoi (ci-dessus)" >&2
-    fi
-    exit 0
-  fi
-  sleep 10
-done
-echo "Le service ne repond pas encore : ssh $SERVEUR journalctl -u lexia -n 50" >&2
-exit 1
+# La bascule (ci-dessus) a deja attendu la nouvelle version : un echec arrete publier.sh avant ce point, et
+# l'ancienne version reste en ligne (journal : ssh $SERVEUR journalctl -u 'lexia@*' -n 50).
+echo "Publie."
+# IndexNow (D134) : prepare, desactive par defaut. LEXIA_INDEXNOW=1 signale les adresses du sitemap aux
+# moteurs qui suivent le protocole (Bing...) ; un refus n'annule pas la publication (docs/seo-geo.md, partie 7).
+if [ "${LEXIA_INDEXNOW:-}" = 1 ]; then
+  python3 deploy/indexnow.py --envoyer || echo "  ATTENTION : IndexNow n'a pas accepte l'envoi (ci-dessus)" >&2
+fi

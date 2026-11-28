@@ -3,7 +3,8 @@
 #
 # Installe par publier.sh en copie appartenant a root (/usr/local/sbin/lexia-mise-a-jour) et lance par
 # /etc/cron.d/lexia a 4 h 30, apres la publication quotidienne de la DILA (vers 21 h). Root ne fait que
-# redemarrer le service : tout le reste tourne en tant que lexia, qui possede /opt/lexia. Journal :
+# basculer le service sur le nouvel index (lexia-basculer, sans coupure, D145) : tout le reste tourne en tant que
+# lexia, qui possede /opt/lexia. Journal :
 # /var/log/lexia-mise-a-jour.log (hors de /opt/lexia, que lexia pourrait remplacer par un lien).
 #
 #   lexia-mise-a-jour            # rien a faire s'il n'y a pas de nouvelle archive
@@ -11,7 +12,10 @@
 set -euo pipefail
 # Variables LEXIA_* : seulement pour les tests (tests/test_mise_a_jour_shell.py).
 APP="${LEXIA_APP:-/opt/lexia}"
-SANTE=http://127.0.0.1:8000/api/sante
+# Demarre une instance sur le nouvel index a cote de celle en service, puis nginx passe dessus (deploy/basculer.sh).
+# L'instance en service garde l'ancien index ouvert (api/retrieval/local.py) jusqu'a son arret. Codes : 0 bascule
+# faite ; 1 nouvelle instance refusee, l'ancienne repond toujours ; 2 plus rien ne repond.
+BASCULER="${LEXIA_BASCULER:-/usr/local/sbin/lexia-basculer}"
 
 exec 9>"${LEXIA_VERROU_MAJ:-/run/lexia-mise-a-jour.lock}"
 flock -n 9 || { echo "$(date -Is) deja en cours"; exit 0; }
@@ -19,10 +23,6 @@ cd "$APP"
 
 # TZ : date du jour a l'heure de Paris pour l'index, comme le service (audit du 2026-11-23, C4).
 en_lexia() { runuser -u lexia -- env HF_HOME="$APP/.cache/huggingface" TOKENIZERS_PARALLELISM=false TZ=Europe/Paris "$@"; }
-attendre() {
-  for _ in $(seq 1 60); do curl -sf "$SANTE" >/dev/null && return 0; sleep 5; done
-  return 1
-}
 # Passage reussi : date lue par /api/sante (corpus_a_jour) et la surveillance GitHub (audit B8).
 reussi() { en_lexia bash -c 'date -Is > data/mise_a_jour_reussie'; }
 # Echec : e-mail aux ADMIN_EMAILS (le 17/11/2026, un echec est passe inapercu).
@@ -71,17 +71,19 @@ if ! basculer; then
   alerte "bascule de l'index impossible (mv), index precedent garde"
   exit 1
 fi
-systemctl restart lexia
-if attendre; then
-  echo "$(date -Is) nouvel index en service : $(curl -s "$SANTE")"
+code=0
+sante=$("$BASCULER") || code=$?
+if [ "$code" -eq 0 ]; then
+  echo "$(date -Is) nouvel index en service : $sante"
   reussi
   exit 0
 fi
-echo "$(date -Is) ERREUR : le service ne repond plus, retour a l'index precedent" >&2
+echo "$(date -Is) ERREUR : le service ne demarre pas avec le nouvel index, retour a l'index precedent" >&2
 alerte "le service ne repondait plus avec le nouvel index, retour a l'index precedent"
 en_lexia bash -c 'rm -rf data/index.echec && mv data/index data/index.echec && mv data/index.precedent data/index'
-systemctl restart lexia
-if attendre; then
+# Code 1 : l'instance en service n'a jamais quitte l'ancien index, rien a relancer. Code 2 : plus rien ne repond,
+# une instance redemarre sur l'index precedent.
+if [ "$code" -eq 1 ] || "$BASCULER" >/dev/null; then
   echo "$(date -Is) index precedent remis en service"
 else
   # L'e-mail precedent laissait croire que tout etait rentre dans l'ordre (audit du 2026-11-23, C2).

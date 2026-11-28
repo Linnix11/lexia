@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 import threading
 import time
@@ -40,6 +41,19 @@ def meilleurs(sims: np.ndarray, masque: np.ndarray, n: int) -> np.ndarray:
     return retenus[ordre[:n]]
 
 
+def fichier_epingle(db: Path) -> str | Path:
+    """Chemin qui designe toujours le fichier ouvert ici, meme apres le remplacement de data/index (D145).
+
+    Les connexions des fils sont ouvertes au fil des questions, alors que les vecteurs (memoire mappee) et les
+    identifiants sont lus une fois. Pendant une bascule, l'instance en service continue de repondre ~2 minutes
+    apres que la mise a jour nocturne a mis le nouvel index a la place de l'ancien : par son chemin, un nouveau fil
+    aurait lu la base du nouvel index avec les vecteurs de l'ancien. /proc/self/fd/N reste sur le fichier ouvert
+    (verifie sur le serveur le 28/11, SQLite 3.45). Hors Linux (Mac de developpement) : le chemin."""
+    if not Path("/proc/self/fd").is_dir():
+        return db
+    return f"/proc/self/fd/{os.open(db, os.O_RDONLY)}"
+
+
 class LocalRetriever:
     mode = "local"
 
@@ -49,7 +63,7 @@ class LocalRetriever:
             raise FileNotFoundError(f"Index absent : {db}. Lancer `python -m ingest.build_index`.")
         # Une connexion en lecture seule par fil : un verrou unique faisait attendre toutes les questions
         # derriere la plus lente (audit du 2026-11-18, B4).
-        self._db = db
+        self._db = fichier_epingle(db)
         self._local = threading.local()
         self._ids: list[str] = []
         self._vecs = np.zeros((0, 0), dtype=np.float32)

@@ -193,3 +193,11 @@ def test_cron_en_tant_que_lexia():
     champs = lignes[0].split()
     assert champs[:5] == ["*"] * 5 and champs[5] == "lexia"
     assert "/usr/bin/python3" in lignes[0]
+
+
+def test_instance_en_service(tmp_path):
+    """D145 : la sonde suit l'instance a qui nginx envoie les requetes (8000 ou 8001)."""
+    amont = tmp_path / "lexia-amont.conf"
+    assert sonde.instance_en_service(amont) == ("lexia", "http://127.0.0.1:8000/api/sante")   # avant D145
+    amont.write_text("# Ecrit par lexia-basculer\nupstream lexia_amont {\n    server 127.0.0.1:8001;\n}\n")
+    assert sonde.instance_en_service(amont) == ("lexia@8001", "http://127.0.0.1:8001/api/sante")

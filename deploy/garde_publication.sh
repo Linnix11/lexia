@@ -80,7 +80,7 @@ rendre_verrou() {
 # limite (B9), zones, route des codes de connexion (SEC-10) et rafales. Avant, elles n'arrivaient sur le serveur
 # que recopiees a la main, sans que rien ne le rappelle (audit du 2026-11-23, B9). Avertit, ne bloque pas.
 _lignes_nginx() {
-  grep -E '^[[:space:]]*(map |"~|default \$binary_remote_addr|limit_req_zone |limit_req |location ~ )' \
+  grep -E '^[[:space:]]*(map |"~|default \$binary_remote_addr|limit_req_zone |limit_req |location ~ |proxy_pass )' \
     "${LEXIA_NGINX_DEPOT:-deploy/nginx-lexia.conf}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
 }
 
@@ -106,8 +106,10 @@ beta_concorde() {
   [ "${LEXIA_FORCER:-}" = 1 ] && return 0
   local fichier="${LEXIA_BETA_DEPOT:-web/src/site/beta-publiee.json}" lire='import json, sys; print(1 if json.load(sys.stdin).get("beta_fermee") else 0)'
   local depot serveur
+  # Port de l'instance en service (8000 ou 8001, D145), lu sur le serveur ; 8000 avant la premiere bascule
+  local url="${LEXIA_CONFIG_URL:-http://127.0.0.1:\$(/usr/local/sbin/lexia-basculer --port 2>/dev/null || echo 8000)/api/config}"
   depot=$(python3 -c "$lire" < "$fichier")
-  if ! serveur=$(ssh "$SERVEUR" "curl -sf --max-time 10 '${LEXIA_CONFIG_URL:-http://127.0.0.1:8000/api/config}'" | python3 -c "$lire" 2>/dev/null); then
+  if ! serveur=$(ssh "$SERVEUR" "curl -sf --max-time 10 \"$url\"" | python3 -c "$lire" 2>/dev/null); then
     echo "  ATTENTION : configuration du serveur illisible (service arrete ?) : beta non comparee" >&2
     return 0
   fi
